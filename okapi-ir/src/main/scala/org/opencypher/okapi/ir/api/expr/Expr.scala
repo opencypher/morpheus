@@ -85,7 +85,7 @@ final case class Param(name: String)(val cypherType: CypherType = CTWildcard) ex
 sealed trait Var extends Expr {
   def name: String
 
-  override def withoutType: String = s"`$name`"
+  override def withoutType: String = name
 }
 
 object Var {
@@ -127,9 +127,6 @@ final case class NodeVar(name: String)(val cypherType: CypherType = CTNode) exte
       case o => throw IllegalArgumentException(CTNode, o)
     }
   }
-
-  override def withoutType: String = s"$name"
-
 }
 
 final case class RelationshipVar(name: String)(val cypherType: CypherType = CTRelationship) extends ReturnItem {
@@ -143,8 +140,6 @@ final case class RelationshipVar(name: String)(val cypherType: CypherType = CTRe
       case o => throw IllegalArgumentException(CTRelationship, o)
     }
   }
-  override def withoutType: String = s"$name"
-
 }
 
 final case class SimpleVar(name: String)(val cypherType: CypherType) extends ReturnItem {
@@ -152,8 +147,6 @@ final case class SimpleVar(name: String)(val cypherType: CypherType) extends Ret
   override def owner: Option[Var] = Some(this)
 
   override def withOwner(expr: Var): SimpleVar = SimpleVar(expr.name)(expr.cypherType)
-
-  override def withoutType: String = s"$name"
 
 }
 
@@ -265,7 +258,7 @@ final case class Not(expr: Expr)(val cypherType: CypherType = CTWildcard) extend
 
   def inner: Expr = expr
 
-  override def withoutType = s"NOT ${expr.withoutType}"
+  override def withoutType = s"NOT(${expr.withoutType})"
 
 }
 
@@ -297,7 +290,7 @@ final case class HasType(rel: Expr, relType: RelType)
 
   override def withOwner(v: Var): HasType = HasType(v, relType)(cypherType)
 
-  override def withoutType: String = s"type(${rel.withoutType}) = '${relType.name}'"
+  override def withoutType: String = s"${rel.withoutType}:${relType.name}"
 
 }
 

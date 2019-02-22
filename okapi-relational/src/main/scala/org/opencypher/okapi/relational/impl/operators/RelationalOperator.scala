@@ -67,7 +67,7 @@ abstract class RelationalOperator[T <: Table[T] : TypeTag] extends AbstractTreeN
 
   def graphName: QualifiedGraphName = children.head.graphName
 
-  def returnItems: Option[Seq[Var]] = children.head.returnItems
+  def maybeReturnItems: Option[Seq[Var]] = children.head.maybeReturnItems
 
   protected def resolve(qualifiedGraphName: QualifiedGraphName)
     (implicit context: RelationalRuntimeContext[T]): RelationalCypherGraph[T] =
@@ -165,7 +165,7 @@ final case class Start[T <: Table[T] : TypeTag](
 
   override lazy val graphName: QualifiedGraphName = qgn
 
-  override lazy val returnItems: Option[Seq[Var]] = None
+  override lazy val maybeReturnItems: Option[Seq[Var]] = None
 
   override def toString: String = {
     val graphArg = qgn.toString
@@ -196,7 +196,7 @@ final case class PrefixGraph[T <: Table[T] : TypeTag](
   * Cache is a marker operator that indicates that its child operator is used multiple times within the query.
   */
 final case class Cache[T <: Table[T] : TypeTag](in: RelationalOperator[T])
-   extends RelationalOperator[T] {
+  extends RelationalOperator[T] {
 
   override lazy val _table: T = in._table.cache()
 
@@ -306,7 +306,7 @@ final case class Filter[T <: Table[T] : TypeTag](
 }
 
 final case class ReturnGraph[T <: Table[T] : TypeTag](in: RelationalOperator[T])
-   extends RelationalOperator[T] {
+  extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = RecordHeader.empty
 
@@ -330,8 +330,31 @@ final case class Select[T <: Table[T] : TypeTag](
     in.table.select(selectExpressions.map(header.column).distinct: _*)
   }
 
-  override lazy val returnItems: Option[Seq[Var]] =
+  override lazy val maybeReturnItems: Option[Seq[Var]] =
     Some(returnExpressions.flatMap(_.owner).collect { case e: Var => e }.distinct)
+}
+
+/**
+  * Renames physical columns to given header expression names.
+  * Ensures that there is a physical column for each return item, i.e. aliases lead to duplicate physical columns.
+  */
+final case class AlignColumnsWithReturnItems[T <: Table[T] : TypeTag](
+  in: RelationalOperator[T]
+) extends RelationalOperator[T] {
+
+  private lazy val logicalColumns = in.maybeReturnItems
+    .getOrElse(List.empty)
+    .flatMap(in.header.expressionsFor)
+    .map(expr => expr -> expr.withoutType.toString)
+    .toList
+
+  override lazy val header: RecordHeader = RecordHeader(logicalColumns.toMap)
+
+  override lazy val _table: T = {
+    val columnsWithAliases = logicalColumns.map { case (expr, col) => in.header.column(expr) -> col }
+    in.table.select(columnsWithAliases.head, columnsWithAliases.tail: _*)
+  }
+
 }
 
 final case class Distinct[T <: Table[T] : TypeTag](
@@ -349,7 +372,7 @@ final case class Aggregate[T <: Table[T] : TypeTag](
   aggregations: Set[(Var, Aggregator)]
 ) extends RelationalOperator[T] {
 
-  override lazy val header: RecordHeader = in.header.select(group).withExprs(aggregations.map(_._1))
+  override lazy val header: RecordHeader = in.header.select(group).withExprs(aggregations.map { case (v, _) => v })
 
   override lazy val _table: T = {
     val preparedAggregations = aggregations.map { case (v, agg) => agg -> (header.column(v) -> v.cypherType) }
@@ -505,7 +528,7 @@ final case class ConstructGraph[T <: Table[T] : TypeTag](
 
   override lazy val _table: T = session.records.unit().table
 
-  override def returnItems: Option[Seq[Var]] = None
+  override def maybeReturnItems: Option[Seq[Var]] = None
 
   override lazy val graph: RelationalCypherGraph[T] = constructedGraph
 

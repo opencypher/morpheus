@@ -69,19 +69,6 @@ trait RelationalCypherRecords[T <: Table[T]] extends CypherRecords {
 
   override def physicalColumns: Seq[String] = table.physicalColumns
 
-  override def columnsFor(returnItem: String): Set[String] = {
-    val returnExpressions = header.returnItems.filter(_.name == returnItem)
-
-    if(returnExpressions.isEmpty)
-      throw IllegalArgumentException(s"A return item in this table, which contains: $header", returnItem)
-
-    val withChildExpressions = returnExpressions.foldLeft(Set.empty[Expr]) {
-      case (acc, expr) =>
-        acc ++ header.expressionsFor(expr)
-    }
-    withChildExpressions.map(header.column)
-  }
-
   override def show(implicit options: PrintOptions): Unit =
     RecordsPrinter.print(this)
 }

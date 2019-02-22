@@ -34,7 +34,7 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.impl.util.Measurement.printTiming
 import org.opencypher.okapi.ir.api.expr.{Expr, _}
 import org.opencypher.okapi.relational.api.table.Table
@@ -64,11 +64,13 @@ object SparkTable {
 
     override def size: Long = df.count()
 
-    override def select(cols: String*): DataFrameTable = {
-      if (df.columns.toSeq == cols) {
+    override def select(col: (String, String), cols: (String, String)*): DataFrameTable = {
+      val columns = col +: cols
+      if (df.columns.toSeq == columns.map { case (_, alias) => alias }) {
         df
       } else {
-        df.select(cols.map(df.col): _*)
+        // Spark interprets dots in column names as struct accessors. Hence, we need to escape column names by default.
+        df.select(columns.map{ case (colName, alias) => df.col(s"`$colName`").as(alias) }: _*)
       }
     }
 
@@ -281,8 +283,6 @@ object SparkTable {
 
     def unpersist(blocking: Boolean): DataFrameTable = df.unpersist(blocking)
 
-    override def columnsFor(returnItem: String): Set[String] =
-      throw UnsupportedOperationException("A DataFrameTable does not have return items")
   }
 
   implicit class DataFrameMeta(val df: DataFrame) extends AnyVal {
@@ -504,7 +504,7 @@ object SparkTable {
     /**
       * Adds a new column `serializedColumn` containing the serialized values of the given input columns.
       *
-      * @param columns    input columns for the serialization function
+      * @param columns          input columns for the serialization function
       * @param serializedColumn column storing the result of the serialization function
       * @return DataFrame with an additional column that contains the serialized ID
       */

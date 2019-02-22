@@ -88,7 +88,6 @@ case class CAPSRecordsFactory(implicit caps: CAPSSession) extends RelationalCyph
   private case class EmptyRow()
 }
 
-
 case class CAPSRecords(
   header: RecordHeader,
   table: DataFrameTable,

@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.api.table
 
 import org.opencypher.okapi.api.table.CypherTable
-import org.opencypher.okapi.api.types.{CTNull, CypherType}
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.relational.impl.planning.{JoinType, Order}
@@ -57,7 +57,18 @@ trait Table[T <: Table[T]] extends CypherTable {
     * @param cols columns to select
     * @return table containing only requested columns
     */
-  def select(cols: String*): T
+  def select(cols: String*): T = {
+    val tuples = cols.zip(cols)
+    select(tuples.head, tuples.tail: _*)
+  }
+
+  /**
+    * Returns a table containing only the given columns. The column order within the table is aligned with the argument.
+    *
+    * @param cols columns to select and their alias
+    * @return table containing only requested aliased columns
+    */
+  def select(col: (String, String), cols: (String, String)*): T
 
   /**
     * Returns a table containing only rows where the given expression evaluates to true.
