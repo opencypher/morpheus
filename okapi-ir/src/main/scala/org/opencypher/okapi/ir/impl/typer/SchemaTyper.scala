@@ -528,6 +528,7 @@ object SchemaTyper {
         case Min | Max =>
           pure[R, Set[FunctionSignature]](
             Set(
+              FunctionSignature(Seq(CTNull), CTNull),
               FunctionSignature(Seq(CTInteger), CTInteger),
               FunctionSignature(Seq(CTFloat), CTFloat)
             ))
@@ -543,6 +544,7 @@ object SchemaTyper {
         case ToBoolean =>
           pure[R, Set[FunctionSignature]](
             Set(
+              FunctionSignature(Seq(CTNull), CTNull),
               FunctionSignature(Seq(CTString), CTBoolean.nullable),
               FunctionSignature(Seq(CTBoolean), CTBoolean)
             ))
