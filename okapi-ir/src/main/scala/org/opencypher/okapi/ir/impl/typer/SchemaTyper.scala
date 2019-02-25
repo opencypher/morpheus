@@ -35,7 +35,7 @@ import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.ir.impl.parse.functions.FunctionLookup
+import org.opencypher.okapi.ir.impl.parse.functions.FunctionExtensions
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
@@ -315,9 +315,6 @@ object SchemaTyper {
           error(WrongNumberOfArguments(expr, 1, seq.size))
       }
 
-    case expr: FunctionInvocation if expr.function == UnresolvedFunction =>
-      UnresolvedFunctionSignatureTyper(expr)
-
     case expr: FunctionInvocation =>
       BasicSignatureBasedTyper(expr)
 
@@ -487,14 +484,13 @@ object SchemaTyper {
         eligible <- pure(signatures.flatMap { sig =>
           val sigInputTypes = sig.input
           val sigOutputType = sig.output
+          val argTypes = args.map(_._2)
 
           def compatibleArity = sigInputTypes.size == args.size
 
-          def sigArgTypes = sigInputTypes.zip(args.map(_._2))
-
-          def compatibleTypes = sigArgTypes.forall {
+          def compatibleTypes = sigInputTypes.zip(argTypes).forall {
             case (_: CTMap | _: CTMapOrNull, _: CTMap) => true
-            case (signatureArg: CypherType, expressionArg: CypherType) => signatureArg couldBeSameTypeAs expressionArg
+            case (sigType, argType) => sigType couldBeSameTypeAs argType
           }
 
           if (compatibleArity && compatibleTypes) Some(sigInputTypes -> sigOutputType) else None
@@ -507,18 +503,6 @@ object SchemaTyper {
     ): Eff[R, Set[FunctionSignature]]
   }
 
-  private case object UnresolvedFunctionSignatureTyper extends SignatureBasedInvocationTyper[Expression] {
-    override protected def generateSignaturesFor[R: _hasSchema : _keepsErrors : _hasTracker : _logsTypes](
-      expr: Expression,
-      args: Seq[(Expression, CypherType)]
-    ): Eff[R, Set[FunctionSignature]] = expr match {
-      case f: FunctionInvocation => {
-        val signatures = FunctionLookup(f.name).flatMap(_.convert).toSet
-        pure(signatures)
-      }
-    }
-  }
-
   private case object BasicSignatureBasedTyper extends SignatureBasedInvocationTyper[Expression] {
     override protected def generateSignaturesFor[R: _hasSchema : _keepsErrors : _hasTracker : _logsTypes](
       expr: Expression,
@@ -526,9 +510,11 @@ object SchemaTyper {
     ): Eff[R, Set[FunctionSignature]] = expr match {
       case f: FunctionInvocation => f.function match {
 
-        case f: TypeSignatures =>
-          val set = f.signatures.flatMap(_.convert).toSet
-          pure(set)
+        case _ if FunctionExtensions.mappings.isDefinedAt(f.name) =>
+          pure(convertSignatures(FunctionExtensions.mappings(f.name)))
+
+        case t: TypeSignatures =>
+          pure(convertSignatures(t))
 
         case _ =>
           wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set.empty)
@@ -541,6 +527,14 @@ object SchemaTyper {
       case _ =>
         wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set.empty)
     }
+  }
+
+  private def convertSignatures(t: TypeSignatures): Set[FunctionSignature] = {
+      FunctionSignatures
+        .from(t)
+        .expandWithNulls
+        .withSubstitutions(CTFloat, CTNumber)
+        .signatures
   }
 
   private case object AddTyper extends SignatureBasedInvocationTyper[Add] {
