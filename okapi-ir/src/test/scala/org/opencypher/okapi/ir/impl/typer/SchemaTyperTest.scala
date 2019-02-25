@@ -60,11 +60,14 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   it("should type Date") {
-    implicit val context: TypeTracker = typeTracker("d" -> CTDate)
+    implicit val context: TypeTracker = typeTracker("n" -> CTNull, "ns" -> CTString.nullable, "ni" -> CTInteger.nullable)
 
-    assertExpr.from("date()") shouldHaveInferredType CTDate.nullable
-    assertExpr.from("date('2010-12-10')") shouldHaveInferredType CTDate.nullable
-    assertExpr.from("date({ year: 2018, month: 12, day: 18 })") shouldHaveInferredType CTDate.nullable
+    assertExpr.from("date()") shouldHaveInferredType CTDate
+    assertExpr.from("date('2010-12-10')") shouldHaveInferredType CTDate
+    assertExpr.from("date({ year: 2018, month: 12, day: 18 })") shouldHaveInferredType CTDate
+    assertExpr.from("date(n)") shouldHaveInferredType CTNull
+    assertExpr.from("date(ns)") shouldHaveInferredType CTDate.nullable
+    assertExpr.from("date(ni)") shouldHaveInferredType CTNull
   }
 
   it("should type Date members") {
@@ -75,12 +78,12 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   it("should type LocalDateTime") {
-    implicit val context: TypeTracker = typeTracker("d" -> CTLocalDateTime)
+    implicit val context: TypeTracker = typeTracker("n" -> CTNull, "ns" -> CTString.nullable, "ni" -> CTInteger.nullable)
 
-    assertExpr.from("localdatetime()") shouldHaveInferredType CTLocalDateTime.nullable
-    assertExpr.from("localdatetime('2010-12-10')") shouldHaveInferredType CTLocalDateTime.nullable
-    assertExpr.from("localdatetime('2010-12-10T00:00:00.000')") shouldHaveInferredType CTLocalDateTime.nullable
-    assertExpr.from("localdatetime({ year: 2018, month: 12, day: 18 })") shouldHaveInferredType CTLocalDateTime.nullable
+    assertExpr.from("localdatetime()") shouldHaveInferredType CTLocalDateTime
+    assertExpr.from("localdatetime('2010-12-10')") shouldHaveInferredType CTLocalDateTime
+    assertExpr.from("localdatetime('2010-12-10T00:00:00.000')") shouldHaveInferredType CTLocalDateTime
+    assertExpr.from("localdatetime({ year: 2018, month: 12, day: 18 })") shouldHaveInferredType CTLocalDateTime
     assertExpr.from(
       """
         |localdatetime({
@@ -92,7 +95,10 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
         | second: 11,
         | millisecond: 999,
         | mircosecond: 999,
-        | nanosecond: 999})""".stripMargin) shouldHaveInferredType CTLocalDateTime.nullable
+        | nanosecond: 999})""".stripMargin) shouldHaveInferredType CTLocalDateTime
+    assertExpr.from("localdatetime(n)") shouldHaveInferredType CTNull
+    assertExpr.from("localdatetime(ns)") shouldHaveInferredType CTLocalDateTime.nullable
+    assertExpr.from("localdatetime(ni)") shouldHaveInferredType CTNull
   }
 
   it("should type temporal accessors") {
@@ -103,18 +109,21 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   it("should type trim(), ltrim(), rtrim()") {
-    implicit val context: TypeTracker = typeTracker("n" -> CTString)
+    implicit val context: TypeTracker = typeTracker("n" -> CTString, "m" -> CTString.nullable)
 
-    assertExpr.from("trim(n)") shouldHaveInferredType CTString.nullable
-    assertExpr.from("ltrim(n)") shouldHaveInferredType CTString.nullable
-    assertExpr.from("rtrim(n)") shouldHaveInferredType CTString.nullable
+    assertExpr.from("trim(n)") shouldHaveInferredType CTString
+    assertExpr.from("ltrim(n)") shouldHaveInferredType CTString
+    assertExpr.from("rtrim(n)") shouldHaveInferredType CTString
+    assertExpr.from("trim(m)") shouldHaveInferredType CTString.nullable
+    assertExpr.from("ltrim(m)") shouldHaveInferredType CTString.nullable
+    assertExpr.from("rtrim(m)") shouldHaveInferredType CTString.nullable
   }
 
   it("should type timestamp()") {
     implicit val context: TypeTracker = typeTracker()
 
-    assertExpr.from("timestamp()") shouldHaveInferredType CTInteger.nullable
-    assertExpr.from("timestamp() + 5") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("timestamp()") shouldHaveInferredType CTInteger
+    assertExpr.from("timestamp() + 5") shouldHaveInferredType CTInteger
   }
 
   it("should type CASE") {
@@ -153,8 +162,8 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     implicit val context: TypeTracker = typeTracker("a" -> CTNode)
 
     assertExpr.from("count(*)") shouldHaveInferredType CTInteger
-    assertExpr.from("count(a)") shouldHaveInferredType CTInteger.nullable
-    assertExpr.from("count(a.name)") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("count(a)") shouldHaveInferredType CTInteger
+    assertExpr.from("count(a.name)") shouldHaveInferredType CTInteger
   }
 
   it("typing toString()") {
@@ -209,7 +218,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
     it("can type e()") {
       implicit val context: TypeTracker = typeTracker()
 
-      assertExpr.from("e()") shouldHaveInferredType CTFloat.nullable
+      assertExpr.from("e()") shouldHaveInferredType CTFloat
     }
   }
 

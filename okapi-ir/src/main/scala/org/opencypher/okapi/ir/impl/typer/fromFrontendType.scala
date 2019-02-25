@@ -87,27 +87,33 @@ object SignatureConverter {
     }
   }
 
-  def mask(size: Int, hits: Int) =
-    Seq.fill(hits)(true) ++ Seq.fill(size - hits)(false)
 
-  def masks(size: Int, minHits: Int, maxHits: Int) = for {
-      hits <- Range.inclusive(minHits, maxHits)
-      mask <- mask(size, hits).permutations
-    } yield mask
-
-  def substituteMasked[T](seq: Seq[T], mask: Int => Boolean)(sub: T => T) = for {
-      (orig, i) <- seq.zipWithIndex
-    } yield if (mask(i)) sub(orig) else orig
-
-  def substitutions[T](seq: Seq[T], minSubs: Int, maxSubs: Int)(sub: T => T): Seq[Seq[T]] =
-    masks(seq.size, minSubs, maxSubs).map(mask => substituteMasked(seq, mask)(sub))
 
   object FunctionSignatures {
     def from(original: TypeSignatures): FunctionSignatures =
       FunctionSignatures(original.signatures.flatMap(_.convertDirect))
+
+    private def mask(size: Int, hits: Int) =
+      Seq.fill(hits)(true) ++ Seq.fill(size - hits)(false)
+
+    private def masks(size: Int, minHits: Int, maxHits: Int) = for {
+      hits <- Range.inclusive(minHits, maxHits)
+      mask <- mask(size, hits).permutations
+    } yield mask
+
+    private def substituteMasked[T](seq: Seq[T], mask: Int => Boolean)(sub: T => T) = for {
+      (orig, i) <- seq.zipWithIndex
+    } yield if (mask(i)) sub(orig) else orig
+
+    private def substitutions[T](seq: Seq[T], minSubs: Int, maxSubs: Int)(sub: T => T): Seq[Seq[T]] =
+      masks(seq.size, minSubs, maxSubs).map(mask => substituteMasked(seq, mask)(sub))
+
+    private def replace[T](old: T, rep: T)(t: T) =
+      if (t == old) rep else t
   }
 
   case class FunctionSignatures(sigs: Seq[FunctionSignature]) {
+    import FunctionSignatures._
 
     def include(added: Seq[FunctionSignature]): FunctionSignatures =
       FunctionSignatures(sigs ++ added)
@@ -117,24 +123,30 @@ object SignatureConverter {
       alternative <- substitutions(signature.input, 1, signature.input.size)(_ => CTNull)
     } yield FunctionSignature(alternative, CTNull))
 
-    def expandWithNullable: FunctionSignatures = include(for {
+    def expandWithNullables: FunctionSignatures = include(for {
       signature <- sigs
       alternative <- substitutions(signature.input, 1, signature.input.size)(_.nullable)
     } yield FunctionSignature(alternative, signature.output.nullable))
 
-    def expandWithReplacement(old: CypherType, rep: CypherType): FunctionSignatures = include(for {
+    def expandWithSubstitutions(old: CypherType, rep: CypherType): FunctionSignatures = include(for {
       signature <- sigs
-      alternative <- substitutions(signature.input, 1, signature.input.size)(ct => if (ct == old) rep else old)
+      alternative <- substitutions(signature.input, 1, signature.input.size)(replace(old, rep))
     } yield FunctionSignature(alternative, signature.output))
+
+    def withSubstitutions(old: CypherType, rep: CypherType): FunctionSignatures = FunctionSignatures(for {
+      signature <- sigs
+      alternative = signature.input.map(replace(old, rep))
+    } yield FunctionSignature(alternative, signature.output))
+
     lazy val signatures: Set[FunctionSignature] = ListSet(sigs: _*)
   }
 
   def signatures(original: TypeSignatures): Set[FunctionSignature] = {
     FunctionSignatures
       .from(original)
-      .expandWithReplacement(CTFloat, CTInteger)
+      .expandWithSubstitutions(CTFloat, CTInteger)
       .expandWithNulls
-      .expandWithNullable
+      .expandWithNullables
       .signatures
 
   }
