@@ -29,7 +29,7 @@ package org.opencypher.okapi.relational.impl.graph
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.ir.api.expr.{NodeVar, RelationshipVar, Var}
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, RelationshipTable}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
@@ -111,13 +111,17 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
 
   override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): Records = {
     val scan = scanOperator(nodeCypherType, exactLabelMatch)
-    val namedScan = scan.assignScanName(name)
+    val namedScan = AlignColumnsWithReturnItems(
+      Select(scan.assignScanName(name), List(NodeVar(name)(nodeCypherType)))
+    )
     session.records.from(namedScan.header, namedScan.table)
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): Records = {
     val scan = scanOperator(relCypherType, exactLabelMatch = false)
-    val namedScan = scan.assignScanName(name)
+    val namedScan = AlignColumnsWithReturnItems(
+      Select(scan.assignScanName(name), List(RelationshipVar(name)(relCypherType)))
+    )
     session.records.from(namedScan.header, namedScan.table)
   }
 

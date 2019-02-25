@@ -45,7 +45,8 @@ trait RecordsVerificationFixture {
     df.columns.toSet should equal(expectedColumns.toSet)
 
     // Array equality is based on reference, not structure. Hence, we need to convert to lists.
-    val actual = df.select(expectedColumns.head, expectedColumns.tail: _*).collect().map { r =>
+    val escapedSelectItems = expectedColumns.map(escape)
+    val actual = df.select(escapedSelectItems.head, escapedSelectItems.tail: _*).collect().map { r =>
       Row(r.toSeq.map {
         case c: Array[_] => c.toList
         case other => other
@@ -54,4 +55,7 @@ trait RecordsVerificationFixture {
 
     actual should equal(expectedData)
   }
+
+  private def escape(colName: String) = s"`$colName`"
+
 }
