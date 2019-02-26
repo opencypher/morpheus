@@ -193,7 +193,7 @@ final case class SchemaImpl(
   override def nodePropertyKeysForCombinations(labelCombinations: Set[Set[String]]): PropertyKeys = {
     val allKeys = labelCombinations.toSeq.flatMap(nodePropertyKeys)
     val propertyKeys = allKeys.groupBy(_._1).mapValues { seq =>
-      if (seq.size == labelCombinations.size && seq.forall(seq.head == _)) {
+      if (seq.size == labelCombinations.size && seq.distinct.size == 1) {
         seq.head._2
       } else if (seq.size < labelCombinations.size) {
         seq.map(_._2).foldLeft(CTNull: CypherType)(_ join _)
@@ -220,9 +220,9 @@ final case class SchemaImpl(
   override def relationshipPropertyKeysForTypes(knownTypes: Set[String]): PropertyKeys = {
     val relevantTypes = if (knownTypes.isEmpty) relationshipTypes else knownTypes
 
-    val allKeys = relevantTypes.flatMap(relationshipPropertyKeys)
+    val allKeys = relevantTypes.toSeq.flatMap(relationshipPropertyKeys)
     val propertyKeys = allKeys.groupBy(_._1).mapValues { seq =>
-      if (seq.size == relevantTypes.size && seq.forall(seq.head == _)) {
+      if (seq.size == relevantTypes.size && seq.distinct.size == 1) {
         seq.head._2
       } else if (seq.size < relevantTypes.size) {
         seq.map(_._2).foldLeft(CTNull: CypherType)(_ join _)
