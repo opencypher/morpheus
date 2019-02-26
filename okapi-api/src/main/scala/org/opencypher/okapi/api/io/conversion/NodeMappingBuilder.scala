@@ -78,7 +78,7 @@ object NodeMappingBuilder {
 /**
   * Builder to build EntityMapping with a [[NodePattern]].
   *
-  * Represents a mapping from a source with key-based access to node components (e.g. a table definition) to a Cypher
+  * Represents a mapping from a source with key-based access of node components (e.g. a table definition) to a Cypher
   * node. The purpose of this class is to define a mapping from an external data source to a property graph.
   *
   * Construct a [[NodeMappingBuilder]] starting with [[NodeMappingBuilder#on]].

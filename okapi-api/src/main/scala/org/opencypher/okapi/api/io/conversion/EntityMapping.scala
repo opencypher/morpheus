@@ -36,7 +36,7 @@ object EntityMapping {
 
 // TODO add builder in Node/RelPattern style
 /**
-  * Represents a mapping from a source with key-based access to entity components (e.g. a table definition) to a Pattern.
+  * Represents a mapping from a source with key-based access of entity components (e.g. a table definition) to a Pattern.
   * The purpose of this class is to define a mapping from an external data source to a property graph.
   *
   * The [[pattern]] describes the shape of the pattern that is described by this mapping

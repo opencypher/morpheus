@@ -42,7 +42,7 @@ class EntityMappingTest extends ApiBaseTest {
 
       val pattern = NodePattern(CTNode("Person"))
       val expected = EntityMapping(
-        NodePattern(CTNode("Person")),
+        pattern,
         Map(
           pattern.nodeEntity -> Map("name" -> "name", "age" -> "YEARS")
         ),
