@@ -53,7 +53,7 @@ object DataFrameOutputExample extends ConsoleApp {
   val df: DataFrame = results.records.asDataFrame
 
   // 5) Select specific return items from the query result
-  val projection: DataFrame = df.select("`a.name`", "`b.name`")
+  val projection: DataFrame = df.select("a_name", "b_name")
 
   projection.show()
 }
