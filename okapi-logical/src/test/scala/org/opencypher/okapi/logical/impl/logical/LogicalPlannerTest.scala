@@ -77,8 +77,8 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
     val block = matchBlock(pattern)
 
 
-    val scan1 = NodeScan(irFieldA, leafPlan, emptySqm.withField(irFieldA).withPredicate(aLabelPredicate))
-    val scan2 = NodeScan(irFieldB, leafPlan, emptySqm.withField(irFieldB))
+    val scan1 = PatternScan.nodeScan(irFieldA, leafPlan, emptySqm.withField(irFieldA).withPredicate(aLabelPredicate))
+    val scan2 = PatternScan.nodeScan(irFieldB, leafPlan, emptySqm.withField(irFieldB))
     val ir = irFor(block)
     val result = plan(ir)
 
@@ -97,7 +97,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
     val block = matchBlock(pattern)
     val ir = irFor(block)
 
-    val scan = NodeScan(irFieldA, leafPlan, emptySqm.withField(irFieldA).withPredicate(aLabelPredicate))
+    val scan = PatternScan.nodeScan(irFieldA, leafPlan, emptySqm.withField(irFieldA).withPredicate(aLabelPredicate))
     val expandInto = ExpandInto(irFieldA, irFieldR, irFieldA, Outgoing, scan, SolvedQueryModel(Set(irFieldA, irFieldR), Set(aLabelPredicate)))
 
     plan(ir) should equalWithoutResult(expandInto)
@@ -130,12 +130,12 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
           varR,
           varG,
           Outgoing,
-          NodeScan(
+          PatternScan.nodeScan(
             varA,
             Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
             SolvedQueryModel(Set(irFieldA), Set(HasLabel(varA, Label("Administrator"))(CTBoolean)))
           ),
-          NodeScan(
+          PatternScan.nodeScan(
             varG,
             Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
             SolvedQueryModel(Set(irFieldG), Set(HasLabel(varG, Label("Group"))(CTBoolean)))
@@ -189,7 +189,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
           Var("r")(CTRelationship),
           varG,
           Outgoing,
-          NodeScan(
+          PatternScan.nodeScan(
             varA,
             Start(
               LogicalCatalogGraph(
@@ -200,7 +200,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
             ),
             SolvedQueryModel(Set(irFieldA), Set(HasLabel(varA, Label("Administrator"))(CTBoolean)))
           ),
-          NodeScan(
+          PatternScan.nodeScan(
             varG,
             Start(
               LogicalCatalogGraph(
@@ -252,7 +252,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
       Property(varA2, PropertyKey("prop"))(CTNull) -> Some(Var("a.prop")(CTNull)),
       Filter(
         Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean),
-        NodeScan(
+        PatternScan.nodeScan(
           varA2,
           Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
           SolvedQueryModel(Set(irFieldA), Set())

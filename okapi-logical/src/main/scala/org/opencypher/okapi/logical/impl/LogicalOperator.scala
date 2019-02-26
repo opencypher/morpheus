@@ -126,8 +126,8 @@ sealed abstract class BinaryLogicalOperator extends LogicalOperator {
 
 sealed abstract class LogicalLeafOperator extends LogicalOperator
 
-object NodeScan {
-  def apply(node: Var, in: LogicalOperator, solved: SolvedQueryModel): PatternScan = {
+object PatternScan {
+  def nodeScan(node: Var, in: LogicalOperator, solved: SolvedQueryModel): PatternScan = {
     val pattern = NodePattern(node.cypherType.toCTNode)
     PatternScan(pattern, Map(node -> pattern.nodeEntity), in, solved)
   }

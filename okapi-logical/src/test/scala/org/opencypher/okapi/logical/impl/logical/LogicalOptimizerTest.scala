@@ -127,8 +127,8 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       val irFieldA = IRField(varA.name)(varA.cypherType)
       val irFieldB = IRField(varB.name)(varB.cypherType)
 
-      val scanA = NodeScan(varA, startA, SolvedQueryModel(Set(irFieldA)))
-      val scanB = NodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
+      val scanA = PatternScan.nodeScan(varA, startA, SolvedQueryModel(Set(irFieldA)))
+      val scanB = PatternScan.nodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
       val cartesian = CartesianProduct(scanA, scanB, SolvedQueryModel(Set(irFieldA, irFieldB)))
       val filter = Filter(equals, cartesian, SolvedQueryModel(Set(irFieldA, irFieldB)))
 
@@ -153,8 +153,8 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       val irFieldA = IRField(varA.name)(varA.cypherType)
       val irFieldB = IRField(varB.name)(varB.cypherType)
 
-      val scanA = NodeScan(varA, startA, SolvedQueryModel(Set(irFieldA)))
-      val scanB = NodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
+      val scanA = PatternScan.nodeScan(varA, startA, SolvedQueryModel(Set(irFieldA)))
+      val scanB = PatternScan.nodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
       val cartesian = CartesianProduct(scanA, scanB, SolvedQueryModel(Set(irFieldA, irFieldB)))
       val filter = Filter(equals, cartesian, SolvedQueryModel(Set(irFieldA, irFieldB)))
 
@@ -180,7 +180,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       val equals = Equals(nameField, propB)(CTBoolean)
       val irFieldB = IRField(varB.name)(varB.cypherType)
 
-      val scanB = NodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
+      val scanB = PatternScan.nodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
       val cartesian = CartesianProduct(startDrivingTable, scanB, SolvedQueryModel(Set(nameField, irFieldB)))
       val filter = Filter(equals, cartesian, SolvedQueryModel(Set(nameField, irFieldB)))
 

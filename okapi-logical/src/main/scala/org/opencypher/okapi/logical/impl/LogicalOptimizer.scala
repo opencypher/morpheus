@@ -81,7 +81,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
               .reverse
           }.getOrElse(Set.empty).toSet
 
-        if ( canReplaceWithTripletPattern(exp, availablePatterns, g, context) ) {
+        if ( graphProvidesTripletPatternFor(exp, availablePatterns, g, context) ) {
           val sourceType = exp.source.cypherType.toCTNode
           val relType = exp.rel.cypherType.toCTRelationship
           val targetType = exp.target.cypherType.toCTNode
@@ -94,7 +94,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
           }
           replaceScans(exp.lhs, exp.source, pattern){_ => withPatternScan}
 
-        } else if ( canReplaceWithNodeRelPattern(exp, availablePatterns, g, context) ){
+        } else if ( graphProvidesNodeRelPatternFor(exp, availablePatterns, g, context) ){
           val nodeType = exp.source.cypherType.toCTNode
           val relType = exp.rel.cypherType.toCTRelationship
 
@@ -168,7 +168,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
       }
   }
 
-  private def canReplaceWithTripletPattern(
+  private def graphProvidesTripletPatternFor(
     exp: Expand,
     availablePatterns: Set[Pattern],
     g: QualifiedGraphName,
@@ -198,7 +198,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
     } && combos.nonEmpty
   }
 
-  private def canReplaceWithNodeRelPattern(
+  private def graphProvidesNodeRelPatternFor(
     exp: Expand,
     availablePatterns: Set[Pattern],
     g: QualifiedGraphName,
