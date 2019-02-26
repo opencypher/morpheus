@@ -229,12 +229,7 @@ object SparkTable {
           df.crossJoin(other.df)
 
         case _ =>
-
-          // TODO: the join produced corrupt data when the previous operator was a cross. We work around that by using a
-          // subsequent select. This can be removed, once https://issues.apache.org/jira/browse/SPARK-23855 is solved or we
-          // upgrade to Spark 2.3.0
-          val potentiallyCorruptedResult = df.safeJoin(other.df, joinCols, joinTypeString)
-          potentiallyCorruptedResult.select("*")
+          df.safeJoin(other.df, joinCols, joinTypeString)
       }
     }
 
