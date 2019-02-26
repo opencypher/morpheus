@@ -121,7 +121,7 @@ This allows to define different properties for `:Customer` and `:Employee`.
 Given a set of tables, there are two ways to convert them to a graph:
 
 * Manually with the <<graph-from-tables-scala-api, Scala API>>
-* Using the SQL PGDS with a <<graph-from-tables-graph-ddl, Graph DDL>>
+* Using the SQL Property Graph Data Source (PGDS) with a <<graph-from-tables-graph-ddl, Graph DDL>>
 
 If the data is already in the "tables for labels" format and contains unique identifiers, then using the Scala API is simpler.
 If the data is denormalised and does not contain unique identifiers, then we recommend using the Graph DDL.
@@ -237,10 +237,10 @@ CREATE GRAPH foodGraph USING SCHEMA peopleFood
       MAPPING (food_id) ONTO view_Food(id)
 ----
 
-Note that unlike the Scala API, the SQL PGDS will take care of automatically generating the internal IDs.
+Note that unlike the Scala API, the SQL PGDS will take care of automatically generating identifiers for nodes and relationships.
+The identifier generation strategy can be selected upon creation of a SQL PGDS.
 
 For more details on Graph DDL, see the <<backend-graphddl, Graph DDL documentation>>.
-
 
 [[graphs-from-tables-cypher-example]]
 == Running Cypher
