@@ -32,7 +32,7 @@ import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.junit.rules.TemporaryFolder
 import org.opencypher.graphddl
-import org.opencypher.graphddl.Graph
+import org.opencypher.graphddl.{Graph, NodeToViewMapping, NodeViewKey}
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
@@ -41,7 +41,6 @@ import org.opencypher.okapi.neo4j.io.MetaLabelSupport
 import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
 import org.opencypher.spark.api.FSGraphSources.FSGraphSourceFactory
 import org.opencypher.spark.api.io.FileFormat._
-import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure.nodeTableDirectoryName
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy._
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Hive
 import org.opencypher.spark.api.io.sql.util.DdlUtils._
@@ -63,11 +62,7 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
 
   executeScenariosWithContext(allScenarios, SessionContextFactory)
 
-  val sqlBlackList: Set[String] = Set("API: PropertyGraphDataSource: correct node/rel count for graph #1")
-
-  allSqlContextFactories.foreach(ctx =>
-    executeScenariosWithContext(allScenarios.filter(s => !sqlBlackList.contains(s.name)), ctx)
-  )
+  allSqlContextFactories.foreach(executeScenariosWithContext(allScenarios, _))
 
   allFileSystemContextFactories.foreach(executeScenariosWithContext(allScenarios, _))
 
@@ -211,18 +206,34 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
     override def initPgds(graphNames: List[GraphName]): SqlPropertyGraphDataSource = {
       val ddls = graphNames.map { gn =>
         val g = graph(gn)
-        val schema = g.schema
-        schema.labelCombinations.combos.foreach { labelCombination =>
-          val nodeDf = g.canonicalNodeTable(labelCombination).removePrefix(propertyPrefix)
-          val tableName = databaseName + "." + nodeTableDirectoryName(labelCombination)
-          writeTable(nodeDf, tableName)
+        val ddl = g.defaultDdl(gn, Some(dataSourceName), Some(databaseName))
+
+        ddl.graphs(gn).nodeToViewMappings.foreach { case (key: NodeViewKey, mapping: NodeToViewMapping) =>
+          val nodeDf = g.canonicalNodeTable(key.nodeType.elementTypes).removePrefix(propertyPrefix)
+          writeTable(nodeDf, mapping.view.tableName)
         }
-        schema.relationshipTypes.foreach { relType =>
-          val relDf = g.canonicalRelationshipTable(relType).removePrefix(propertyPrefix)
-          val tableName = databaseName + "." + relType
-          writeTable(relDf, tableName)
+
+        ddl.graphs(gn).edgeToViewMappings.foreach { edgeToViewMapping =>
+          val startNodeDf = g.canonicalNodeTable(edgeToViewMapping.relType.startNodeType.elementTypes)
+          val endNodeDf = g.canonicalNodeTable(edgeToViewMapping.relType.endNodeType.elementTypes)
+          val allRelsDf = g.canonicalRelationshipTable(edgeToViewMapping.key.relType.elementType).removePrefix(propertyPrefix)
+          val relDfColumns = allRelsDf.columns.toSeq
+
+          val tmpNodeId = s"node_${GraphEntity.sourceIdKey}"
+          val tmpStartNodeDf = startNodeDf.withColumnRenamed(GraphEntity.sourceIdKey, tmpNodeId)
+          val tmpEndNodeDf = endNodeDf.withColumnRenamed(GraphEntity.sourceIdKey, tmpNodeId)
+
+          val startNodesWithRelsDf = tmpStartNodeDf
+            .join(allRelsDf, tmpStartNodeDf.col(tmpNodeId) === allRelsDf.col(Relationship.sourceStartNodeKey))
+            .select(relDfColumns.head, relDfColumns.tail: _*)
+
+          val relsDf = startNodesWithRelsDf
+            .join(tmpEndNodeDf, startNodesWithRelsDf.col(Relationship.sourceEndNodeKey) === tmpEndNodeDf.col(tmpNodeId))
+            .select(relDfColumns.head, relDfColumns.tail: _*)
+
+          writeTable(relsDf, edgeToViewMapping.view.tableName)
         }
-        g.defaultDdl(gn, Some(dataSourceName), Some(databaseName))
+        ddl
       }
       val ddl = ddls.foldLeft(graphddl.GraphDdl(Map.empty[GraphName, Graph]))(_ ++ _)
       SqlPropertyGraphDataSource(ddl, Map(dataSourceName -> sqlDataSourceConfig), idGenerationStrategy)

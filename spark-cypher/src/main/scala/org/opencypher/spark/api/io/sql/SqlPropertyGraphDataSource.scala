@@ -28,14 +28,13 @@ package org.opencypher.spark.api.io.sql
 
 import java.net.URI
 
-import org.apache.spark.sql.types.DateType
 import org.apache.spark.sql.{DataFrame, DataFrameReader, functions}
 import org.opencypher.graphddl.GraphDdl.PropertyMappings
 import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTDate, CypherType}
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
@@ -45,6 +44,7 @@ import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNo
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy._
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.{File, Hive, Jdbc}
+import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.schema.CAPSSchema
@@ -137,15 +137,6 @@ case class SqlPropertyGraphDataSource(
   private def readSqlTable(viewId: ViewId, sqlDataSourceConfig: SqlDataSourceConfig) = {
     val spark = caps.sparkSession
 
-    val tableName = (viewId.maybeSetSchema, viewId.parts) match {
-      case (_, _ :: schema :: view :: Nil) => s"$schema.$view"
-      case (Some(SetSchemaDefinition(dataSource, schema)), view :: Nil) => s"$schema.$view"
-      case (None, view) if view.size < 3 =>
-        malformed("Relative view identifier requires a preceding SET SCHEMA statement", view.mkString("."))
-      case (Some(_), view) if view.size > 1 =>
-        malformed("Relative view identifier must have exactly one segment", view.mkString("."))
-    }
-
     implicit class DataFrameReaderOps(read: DataFrameReader) {
       def maybeOption(key: String, value: Option[String]): DataFrameReader =
         value.fold(read)(read.option(key, _))
@@ -159,11 +150,11 @@ case class SqlPropertyGraphDataSource(
           .option("driver", driver)
           .option("fetchSize", "100") // default value
           .options(options)
-          .option("dbtable", tableName)
+          .option("dbtable", viewId.tableName)
           .load()
 
       case SqlDataSourceConfig.Hive =>
-        spark.table(tableName)
+        spark.table(viewId.tableName)
 
       case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat))
     }
@@ -210,16 +201,12 @@ case class SqlPropertyGraphDataSource(
       case (_, column) => throw IllegalArgumentException(
         expected = s"Column with name $column",
         actual = indexedFields)
-    }.toSeq
-    val renamedDf = dataFrame.safeRenameColumns(columnRenamings: _*)
-    normalizeTemporalColumns(renamedDf, columnTypes)
-  }
-
-  private def normalizeTemporalColumns(df: DataFrame, columnTypes: Map[String, CypherType]): DataFrame = {
-    columnTypes
-      .mapValues(_.material)
-      .collect { case (column, _@CTDate) => column }
-      .foldLeft(df) { case (acc, dateCol) => acc.withColumn(dateCol, acc.col(dateCol).cast(DateType)) }
+    }.toMap
+    val renamedDf = dataFrame.safeRenameColumns(columnRenamings)
+    val columnCasts = columnTypes.map { case (columnName, cypherType) =>
+      renamedDf.col(columnRenamings.getOrElse(columnName, columnName)) -> cypherType.getSparkType
+    }
+    renamedDf.transformColumns(columnTypes.keys.toSeq: _*)(column => column.cast(columnCasts(column)))
   }
 
   private def normalizeMapping(mapping: EntityMapping): EntityMapping = {

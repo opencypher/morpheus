@@ -69,16 +69,17 @@ object DefaultGraphDirectoryStructure {
   // Because an empty path does not work, we need a special directory name for nodes without labels.
   val noLabelNodeDirectoryName: String = "__NO_LABEL__"
 
-  def nodeTableDirectoryName(labels: Set[String]): String = {
-    if (labels.isEmpty) {
-      noLabelNodeDirectoryName
-    } else {
-      labels.toSeq.sorted.mkString("_").encodeSpecialCharacters
-    }
-  }
+  def nodeTableDirectoryName(labels: Set[String]): String = concatDirectoryNames(labels.toSeq.sorted)
 
   def relKeyTableDirectoryName(relKey: String): String = relKey.encodeSpecialCharacters
 
+  def concatDirectoryNames(seq: Seq[String]): String = {
+    if (seq.isEmpty) {
+      noLabelNodeDirectoryName
+    } else {
+      seq.mkString("_").encodeSpecialCharacters
+    }
+  }
 }
 
 case class DefaultGraphDirectoryStructure(dataSourceRootPath: String) extends GraphDirectoryStructure {

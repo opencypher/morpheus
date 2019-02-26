@@ -471,6 +471,15 @@ case class ViewId(maybeSetSchema: Option[SetSchemaDefinition], parts: List[Strin
       case _ => malformed("Relative view identifier requires a preceding SET SCHEMA statement", parts.mkString("."))
     }
   }
+
+  lazy val tableName: String = (maybeSetSchema, parts) match {
+    case (_, _ :: schema :: view :: Nil) => s"$schema.$view"
+    case (Some(SetSchemaDefinition(_, schema)), view :: Nil) => s"$schema.$view"
+    case (None, view) if view.size < 3 =>
+      malformed("Relative view identifier requires a preceding SET SCHEMA statement", view.mkString("."))
+    case (Some(_), view) if view.size > 1 =>
+      malformed("Relative view identifier must have exactly one segment", view.mkString("."))
+  }
 }
 
 sealed trait ElementToViewMapping
