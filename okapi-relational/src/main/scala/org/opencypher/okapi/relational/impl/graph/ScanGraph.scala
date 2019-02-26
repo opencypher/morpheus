@@ -26,12 +26,12 @@
  */
 package org.opencypher.okapi.relational.impl.graph
 
+import org.opencypher.okapi.api.graph.{Entity, NodePattern, Pattern, RelationshipPattern}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
-import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, RelationshipTable}
+import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
@@ -44,13 +44,11 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
   (implicit val session: RelationalCypherSession[T])
   extends RelationalCypherGraph[T] {
 
+  validate()
+
   override type Records = RelationalCypherRecords[T]
 
   override type Session = RelationalCypherSession[T]
-
-  private lazy val nodeTables = scans.collect { case it: NodeTable[T] => it }
-
-  private lazy val relTables = scans.collect { case it: RelationshipTable[T] => it }
 
   // TODO: ScanGraph should be an operator that gets a set of tables as input
   private implicit def runtimeContext: RelationalRuntimeContext[T] = session.basicRuntimeContext()
@@ -58,71 +56,89 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
   override def tables: Seq[T] = scans.map(_.table)
 
   // TODO: Express `exactLabelMatch` with type
-  override def scanOperator(
-    entityType: CypherType,
-    exactLabelMatch: Boolean
-  ): RelationalOperator[T] = {
-    val targetEntity = Var.unnamed(entityType)
-    val selectedScans = scansForType(entityType, exactLabelMatch)
-    val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch)
-    val alignedEntityTableOps = selectedScans.map { scan =>
-      val inputEntity = scan.singleEntity
-      scan.alignWith(inputEntity, targetEntity, targetEntityHeader)
+  override def scanOperator(searchPattern: Pattern, exactLabelMatch: Boolean): RelationalOperator[T] = {
+    val selectedScans = scansForType(searchPattern, exactLabelMatch)
+
+    val alignedEntityTableOps = selectedScans.map {
+      case (scan, embedding) =>
+        embedding.foldLeft(scan) {
+          case (acc, (targetEntity, inputEntity)) =>
+            val inputEntityExpressions = scan.header.expressionsFor(inputEntity.toVar)
+            val targetHeader = acc.header -- inputEntityExpressions ++ schema.headerForEntity(targetEntity.toVar, exactLabelMatch)
+
+            acc.alignWith(inputEntity.toVar, targetEntity.toVar, targetHeader)
+        }
     }
 
     alignedEntityTableOps.toList match {
-      case Nil => Start.fromEmptyGraph(session.records.empty(targetEntityHeader))
+      case Nil =>
+        val scanHeader = searchPattern
+          .entities
+          .map { e => schema.headerForEntity(e.toVar) }
+          .reduce(_ ++ _)
+
+        Start.fromEmptyGraph(session.records.empty(scanHeader))
+
       case singleOp :: Nil => singleOp
+
       case multipleOps => multipleOps.reduce(TabularUnionAll(_, _))
     }
   }
 
   // TODO: Express `exactLabelMatch` with type
-  private def scansForType(ct: CypherType, exactLabelMatch: Boolean): Seq[RelationalOperator[T]] = {
-    val qgn = ct.graph.getOrElse(session.emptyGraphQgn)
-    ct match {
-      case nodeType@CTNode(labels, _) =>
-        val scans = if (exactLabelMatch) {
-          nodeTables.filter(_.entityType == ct)
-        } else {
-          nodeTables.filter(_.entityType.subTypeOf(ct).isTrue)
-        }
-        val startOpsForImpliedLabels = scans.map(scanRecords => Start(qgn, scanRecords))
+  private def scansForType(
+    searchPattern: Pattern,
+    exactLabelMatch: Boolean
+  ): Seq[(RelationalOperator[T], Map[Entity, Entity])] = {
+    val qgn = searchPattern.entities.head.cypherType.graph.getOrElse(session.emptyGraphQgn)
 
-        val startOpsForOptionalLabels = if (labels.isEmpty) {
-          Seq.empty
-        } else {
-          nodeTables
-            .filter(_.entityType == CTNode)
-            .filter(labels subsetOf _.mapping.optionalLabelKeys.toSet)
-            .map { table => Start(qgn, table).filterNodeLabels(nodeType, exactLabelMatch) }
-        }
+    val selectedScans = scans.flatMap { scan =>
+      val scanPattern = scan.mapping.pattern
+      scanPattern
+        .findMapping(searchPattern, exactLabelMatch)
+        .map(embedding => scan -> embedding)
+    }
 
-        startOpsForImpliedLabels ++ startOpsForOptionalLabels
-
-      case r: CTRelationship =>
-        relTables
-          .filter(relTable => relTable.entityType.couldBeSameTypeAs(ct))
-          .map(scanRecords => Start(qgn, scanRecords).filterRelTypes(r))
-
-      case other => throw IllegalArgumentException(s"Scan on $other")
+    selectedScans.map {
+      case (scan, embedding) => Start(qgn, scan) -> embedding
     }
   }
 
-  override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): Records = {
-    val scan = scanOperator(nodeCypherType, exactLabelMatch)
-    val namedScan = scan.assignScanName(name)
-    session.records.from(namedScan.header, namedScan.table)
-  }
-
-  override def relationships(name: String, relCypherType: CTRelationship): Records = {
-    val scan = scanOperator(relCypherType, exactLabelMatch = false)
-    val namedScan = scan.assignScanName(name)
-    session.records.from(namedScan.header, namedScan.table)
-  }
+  override lazy val patterns: Set[Pattern] = scans.map { scan =>
+    scan.mapping.pattern
+  }.toSet
 
   override def toString = s"ScanGraph(${
-    scans.map(_.entityType).mkString(", ")
+    scans.map(_.mapping.pattern).mkString(", ")
   })"
 
+  def validate(): Unit = {
+    schema.labelCombinations.combos.foreach { combo =>
+      val hasScan = patterns.exists {
+        case NodePattern(nodeType) => nodeType.labels == combo
+        case _ => false
+      }
+
+      if(!hasScan) {
+        throw IllegalArgumentException(
+          s"a scan with NodePattern for label combination $combo",
+          patterns
+        )
+      }
+    }
+
+    schema.relationshipTypes.foreach { relType =>
+      val hasScan = patterns.exists {
+        case RelationshipPattern(relTypes) => relTypes.types.head == relType
+        case _ => false
+      }
+
+      if(!hasScan) {
+        throw IllegalArgumentException(
+          s"a scan with a RelationshipPattern for relationship type $relType",
+          patterns
+        )
+      }
+    }
+  }
 }

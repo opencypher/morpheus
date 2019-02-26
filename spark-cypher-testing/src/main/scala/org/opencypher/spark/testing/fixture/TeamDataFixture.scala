@@ -27,16 +27,16 @@
 package org.opencypher.spark.testing.fixture
 
 import org.apache.spark.sql.{DataFrame, Row}
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
-import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
+import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.api.io.CAPSEntityTable
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 
 import scala.collection.mutable
 
@@ -44,12 +44,11 @@ trait TeamDataFixture extends TestDataFixture {
 
   self: CAPSSessionFixture =>
 
-  val n: Expr = Var("n")(CTNode)
+  val n: Var = Var("n")(CTNode)
   val nHasLabelGerman: Expr = HasLabel(n, Label("German"))(CTBoolean)
   val nHasLabelBook: Expr = HasLabel(n, Label("Book"))(CTBoolean)
   val nHasLabelPerson: Expr = HasLabel(n, Label("Person"))(CTBoolean)
   val nHasLabelProgrammer: Expr = HasLabel(n, Label("Programmer"))(CTBoolean)
-  val nHasLabelSwedish: Expr = HasLabel(n, Label("Swedish"))(CTBoolean)
   val nHasLabelBrogrammer: Expr = HasLabel(n, Label("Brogrammer"))(CTBoolean)
   val nHasPropertyLanguage: Expr = Property(n, PropertyKey("language"))(CTString)
   val nHasPropertyLuckyNumber: Expr = Property(n, PropertyKey("luckyNumber"))(CTInteger)
@@ -57,7 +56,7 @@ trait TeamDataFixture extends TestDataFixture {
   val nHasPropertyYear: Expr = Property(n, PropertyKey("year"))(CTInteger)
   val nHasPropertyName: Expr = Property(n, PropertyKey("name"))(CTString)
 
-  val r: Expr = Var("r")(CTRelationship)
+  val r: Var = Var("r")(CTRelationship)
   val rStart: Expr = StartNode(r)(CTNode)
   val rEnd: Expr = EndNode(r)(CTNode)
   val rHasTypeKnows: Expr = HasType(r, RelType("KNOWS"))(CTBoolean)
@@ -177,25 +176,29 @@ trait TeamDataFixture extends TestDataFixture {
     mutable.WrappedArray.make(s)
   }
 
-  private lazy val personMapping: NodeMapping = NodeMapping
+  protected lazy val personMapping: EntityMapping = NodeMappingBuilder
     .on("ID")
     .withImpliedLabel("Person")
-    .withOptionalLabel("Swedish" -> "IS_SWEDE")
     .withPropertyKey("name" -> "NAME")
     .withPropertyKey("luckyNumber" -> "NUM")
+    .build
 
   protected lazy val personDF: DataFrame = caps.sparkSession.createDataFrame(
     Seq(
-      (1L, true, "Mats", 23L),
-      (2L, false, "Martin", 42L),
-      (3L, false, "Max", 1337L),
-      (4L, false, "Stefan", 9L))
-  ).toDF("ID", "IS_SWEDE", "NAME", "NUM")
+      (1L, "Mats", 23L),
+      (2L, "Martin", 42L),
+      (3L, "Max", 1337L),
+      (4L, "Stefan", 9L))
+  ).toDF("ID", "NAME", "NUM")
 
-  lazy val personTable: CAPSNodeTable = CAPSNodeTable.fromMapping(personMapping, personDF)
+  lazy val personTable: CAPSEntityTable = CAPSEntityTable.create(personMapping, personDF)
 
-  private lazy val knowsMapping: RelationshipMapping = RelationshipMapping
-    .on("ID").from("SRC").to("DST").relType("KNOWS").withPropertyKey("since" -> "SINCE")
+  protected lazy val knowsMapping: EntityMapping = RelationshipMappingBuilder
+    .on("ID").from("SRC")
+    .to("DST")
+    .relType("KNOWS")
+    .withPropertyKey("since" -> "SINCE")
+    .build
 
 
   protected lazy val knowsDF: DataFrame = caps.sparkSession.createDataFrame(
@@ -208,15 +211,16 @@ trait TeamDataFixture extends TestDataFixture {
       (3L, 6L, 4L, 2016L))
   ).toDF("SRC", "ID", "DST", "SINCE")
 
-  lazy val knowsTable: CAPSRelationshipTable = CAPSRelationshipTable.fromMapping(knowsMapping, knowsDF)
+  lazy val knowsTable: CAPSEntityTable = CAPSEntityTable.create(knowsMapping, knowsDF)
 
-  private lazy val programmerMapping = NodeMapping
+  private lazy val programmerMapping: EntityMapping = NodeMappingBuilder
     .on("ID")
     .withImpliedLabel("Programmer")
     .withImpliedLabel("Person")
     .withPropertyKey("name" -> "NAME")
     .withPropertyKey("luckyNumber" -> "NUM")
     .withPropertyKey("language" -> "LANG")
+    .build
 
   private lazy val programmerDF: DataFrame = caps.sparkSession.createDataFrame(
     Seq(
@@ -226,13 +230,14 @@ trait TeamDataFixture extends TestDataFixture {
       (400L, "Carl", 49L, "R")
     )).toDF("ID", "NAME", "NUM", "LANG")
 
-  lazy val programmerTable: CAPSNodeTable = CAPSNodeTable.fromMapping(programmerMapping, programmerDF)
+  lazy val programmerTable: CAPSEntityTable= CAPSEntityTable.create(programmerMapping, programmerDF)
 
-  private lazy val brogrammerMapping = NodeMapping
+  private lazy val brogrammerMapping: EntityMapping = NodeMappingBuilder
     .on("ID")
     .withImpliedLabel("Brogrammer")
     .withImpliedLabel("Person")
     .withPropertyKey("language" -> "LANG")
+    .build
 
   private lazy val brogrammerDF = caps.sparkSession.createDataFrame(
     Seq(
@@ -243,13 +248,14 @@ trait TeamDataFixture extends TestDataFixture {
     )).toDF("ID", "LANG")
 
   // required to test conflicting input data
-  lazy val brogrammerTable: CAPSNodeTable = CAPSNodeTable.fromMapping(brogrammerMapping, brogrammerDF)
+  lazy val brogrammerTable: CAPSEntityTable = CAPSEntityTable.create(brogrammerMapping, brogrammerDF)
 
-  private lazy val bookMapping = NodeMapping
+  private lazy val bookMapping: EntityMapping = NodeMappingBuilder
     .on("ID")
     .withImpliedLabel("Book")
     .withPropertyKey("title" -> "NAME")
     .withPropertyKey("year" -> "YEAR")
+    .build
 
   private lazy val bookDF: DataFrame = caps.sparkSession.createDataFrame(
     Seq(
@@ -259,10 +265,10 @@ trait TeamDataFixture extends TestDataFixture {
       (40L, "The Circle", 2013L)
     )).toDF("ID", "NAME", "YEAR")
 
-  lazy val bookTable: CAPSNodeTable = CAPSNodeTable.fromMapping(bookMapping, bookDF)
+  lazy val bookTable: CAPSEntityTable = CAPSEntityTable.create(bookMapping, bookDF)
 
-  private lazy val readsMapping = RelationshipMapping
-    .on("ID").from("SRC").to("DST").relType("READS").withPropertyKey("recommends" -> "RECOMMENDS")
+  private lazy val readsMapping: EntityMapping = RelationshipMappingBuilder
+    .on("ID").from("SRC").to("DST").relType("READS").withPropertyKey("recommends" -> "RECOMMENDS").build
 
   private lazy val readsDF = caps.sparkSession.createDataFrame(
     Seq(
@@ -272,13 +278,13 @@ trait TeamDataFixture extends TestDataFixture {
       (400L, 400L, 20L, false)
     )).toDF("SRC", "ID", "DST", "RECOMMENDS")
 
-  lazy val readsTable: CAPSRelationshipTable = CAPSRelationshipTable.fromMapping(readsMapping, readsDF)
+  lazy val readsTable: CAPSEntityTable = CAPSEntityTable.create(readsMapping, readsDF)
 
-  private lazy val influencesMapping = RelationshipMapping
-    .on("ID").from("SRC").to("DST").relType("INFLUENCES")
+  private lazy val influencesMapping: EntityMapping = RelationshipMappingBuilder
+    .on("ID").from("SRC").to("DST").relType("INFLUENCES").build
 
   private lazy val influencesDF: DataFrame = caps.sparkSession.createDataFrame(
     Seq((10L, 1000L, 20L))).toDF("SRC", "ID", "DST")
 
-  lazy val influencesTable: CAPSRelationshipTable = CAPSRelationshipTable.fromMapping(influencesMapping, influencesDF)
+  lazy val influencesTable: CAPSEntityTable = CAPSEntityTable.create(influencesMapping, influencesDF)
 }

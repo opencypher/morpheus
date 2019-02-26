@@ -26,8 +26,9 @@
  */
 package org.opencypher.spark.impl.physical
 
+import org.opencypher.okapi.api.graph.Pattern
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTString, CypherType}
+import org.opencypher.okapi.api.types.CTString
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, Start}
@@ -63,10 +64,7 @@ class RecordHeaderMismatch extends CAPSTestSuite {
       override def tables: Seq[DataFrameTable] = Seq.empty
 
       // Always return empty records, which does not match what the schema promises
-      def scanOperator(
-        entityType: CypherType,
-        exactLabelMatch: Boolean
-      ): RelationalOperator[DataFrameTable] = {
+      def scanOperator(searchPattern: Pattern, exactLabelMatch: Boolean): RelationalOperator[DataFrameTable] = {
         Start.fromEmptyGraph(caps.records.empty())
       }
     }

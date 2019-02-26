@@ -26,14 +26,13 @@
  */
 package org.opencypher.okapi.relational.api.io
 
-import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.graph.{SourceEndNodeKey, SourceIdKey, SourceStartNodeKey}
+import org.opencypher.okapi.api.io.conversion.EntityMapping
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.impl.util.StringEncodingUtilities._
+import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
-import org.opencypher.okapi.relational.api.io.RelationalEntityMapping._
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
@@ -44,159 +43,76 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
 
   verify()
 
-  def schema: Schema
+  def schema: Schema = {
+    mapping.pattern.entities.map { entity =>
+      entity.cypherType match {
+        case CTNode(impliedTypes, _) =>
+          val propertyKeys = mapping.properties(entity).toSeq.map {
+            case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
+          }
+
+          Schema.empty.withNodePropertyKeys(impliedTypes.toSeq: _*)(propertyKeys: _*)
+
+        case CTRelationship(relTypes, _) =>
+
+          val propertyKeys = mapping.properties(entity).toSeq.map {
+            case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
+          }
+
+          relTypes.foldLeft(Schema.empty) {
+            case (partialSchema, relType) => partialSchema.withRelationshipPropertyKeys(relType)(propertyKeys: _*)
+          }
+
+        case other => throw IllegalArgumentException("an entity with type CTNode or CTRelationship", other)
+      }
+    }.reduce(_ ++ _)
+  }
 
   def mapping: EntityMapping
 
-  // TODO: create CTEntity type
-  val entityType: CypherType with DefiniteCypherType = mapping.cypherType
+  def header: RecordHeader = {
+    mapping.pattern.entities.map { entity =>
+      entity.cypherType match {
+        case n :CTNode =>
+          val nodeVar = Var(entity.name)(n)
 
-  def header: RecordHeader = mapping match {
-    case n: NodeMapping => headerFrom(n)
-    case r: RelationshipMapping => headerFrom(r)
+          val idMapping = Map(nodeVar -> mapping.idKeys(entity).head._2)
+
+          val propertyMapping = mapping.properties(entity).map {
+            case (key, source) => Property(nodeVar, PropertyKey(key))(table.columnType(source)) -> source
+          }
+
+          RecordHeader(idMapping ++ propertyMapping)
+
+        case r :CTRelationship =>
+          val relVar = Var(entity.name)(r)
+
+          val idMapping = mapping.idKeys(entity).map {
+            case (SourceIdKey, source) => relVar -> source
+            case (SourceStartNodeKey, source) => StartNode(relVar)(CTNode) -> source
+            case (SourceEndNodeKey, source) => EndNode(relVar)(CTNode) -> source
+          }
+
+          val propertyMapping = mapping.properties(entity).map {
+            case (key, source) => Property(relVar, PropertyKey(key))(table.columnType(source)) -> source
+          }
+
+          RecordHeader(idMapping ++ propertyMapping)
+
+        case other => throw IllegalArgumentException("an entity with type CTNode or CTRelationship", other)
+      }
+    }.reduce(_ ++ _)
   }
 
   protected def verify(): Unit = {
-    mapping.idKeys.foreach(key => table.verifyColumnType(key, CTIdentity, "id key"))
+    mapping.idKeys.values.toSeq.flatten.foreach {
+      case (_, column) => table.verifyColumnType(column, CTIdentity, "id key")
+    }
+
     if (table.physicalColumns.toSet != mapping.allSourceKeys.toSet) throw IllegalArgumentException(
       s"Columns: ${mapping.allSourceKeys.mkString(", ")}",
       s"Columns: ${table.physicalColumns.mkString(", ")}",
       s"Use CAPS[Node|Relationship]Table#fromMapping to create a valid EntityTable")
   }
-
-  protected def headerFrom(nodeMapping: NodeMapping): RecordHeader = {
-    val nodeVar = Var.unnamed(nodeMapping.cypherType)
-
-    val exprToColumn = Map[Expr, String](nodeMapping.id(nodeVar)) ++
-      nodeMapping.optionalLabels(nodeVar) ++
-      nodeMapping.properties(nodeVar, table.columnType)
-
-    RecordHeader(exprToColumn)
-  }
-
-  protected def headerFrom(relationshipMapping: RelationshipMapping): RecordHeader = {
-    val cypherType = relationshipMapping.cypherType
-    val relVar = Var.unnamed(cypherType)
-
-    val exprToColumn = Map[Expr, String](
-      relationshipMapping.id(relVar),
-      relationshipMapping.startNode(relVar),
-      relationshipMapping.endNode(relVar)) ++
-      relationshipMapping.relTypes(relVar) ++
-      relationshipMapping.properties(relVar, table.columnType)
-
-    RecordHeader(exprToColumn)
-  }
 }
 
-/**
-  * A node table describes how to map an input data frame to a Cypher node.
-  *
-  * A node table needs to have the canonical column ordering specified by [[EntityMapping#allSourceKeys]].
-  * The easiest way to transform the table to a canonical column ordering is to use one of the constructors on the
-  * companion object.
-  *
-  * Column names prefixed with `property#` are decoded by [[org.opencypher.okapi.impl.util.StringEncodingUtilities]] to
-  * recover the original property name.
-  *
-  * @param mapping mapping from input data description to a Cypher node
-  * @param table   input data frame
-  */
-abstract class NodeTable[T <: Table[T]](mapping: NodeMapping, table: T)
-  extends EntityTable[T] {
-
-  override lazy val schema: Schema = {
-    val propertyKeys = mapping.propertyMapping.toSeq.map {
-      case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
-    }
-
-    mapping.optionalLabelMapping.keys.toSet.subsets
-      .map(_.union(mapping.impliedLabels))
-      .map(combo => Schema.empty.withNodePropertyKeys(combo.toSeq: _*)(propertyKeys: _*))
-      .reduce(_ ++ _)
-  }
-
-  override protected def verify(): Unit = {
-    super.verify()
-    mapping.optionalLabelMapping.values.foreach { optionalLabelKey =>
-      table.verifyColumnType(optionalLabelKey, CTBoolean, "optional label")
-    }
-  }
-}
-
-/**
-  * A relationship table describes how to map an input data frame to a Cypher relationship.
-  *
-  * A relationship table needs to have the canonical column ordering specified by [[EntityMapping#allSourceKeys]].
-  * The easiest way to transform the table to a canonical column ordering is to use one of the constructors on the
-  * companion object.
-  *
-  * @param mapping mapping from input data description to a Cypher relationship
-  * @param table   input data frame
-  */
-abstract class RelationshipTable[T <: Table[T]](mapping: RelationshipMapping, table: T)
-  extends EntityTable[T] {
-
-  override lazy val schema: Schema = {
-    val relTypes = mapping.relTypeOrSourceRelTypeKey match {
-      case Left(name) => Set(name)
-      case Right((_, possibleTypes)) => possibleTypes
-    }
-
-    val propertyKeys = mapping.propertyMapping.toSeq.map {
-      case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
-    }
-
-    relTypes.foldLeft(Schema.empty) {
-      case (partialSchema, relType) => partialSchema.withRelationshipPropertyKeys(relType)(propertyKeys: _*)
-    }
-  }
-
-  override protected def verify(): Unit = {
-    super.verify()
-    table.verifyColumnType(mapping.sourceStartNodeKey, CTIdentity, "start node")
-    table.verifyColumnType(mapping.sourceEndNodeKey, CTIdentity, "end node")
-    mapping.relTypeOrSourceRelTypeKey.right.map { case (_, relTypes) =>
-      relTypes.foreach { relType =>
-        table.verifyColumnType(relType.toRelTypeColumnName, CTBoolean, "relationship type")
-      }
-    }
-  }
-}
-
-object RelationalEntityMapping {
-
-  implicit class EntityMappingOps(val mapping: EntityMapping) {
-
-    def id(v: Var): (Var, String) = v -> mapping.sourceIdKey
-
-    def properties(
-      v: Var,
-      columnToCypherType: Map[String, CypherType]
-    ): Map[Property, String] = mapping.propertyMapping.map {
-      case (key, sourceColumn) => Property(v, PropertyKey(key))(columnToCypherType(sourceColumn)) -> sourceColumn
-    }
-  }
-
-  implicit class NodeMappingOps(val mapping: NodeMapping) {
-
-    def optionalLabels(node: Var): Map[HasLabel, String] = mapping.optionalLabelMapping.map {
-      case (label, sourceColumn) => HasLabel(node, Label(label))(CTBoolean) -> sourceColumn
-    }
-  }
-
-  implicit class RelationshipMappingOps(val mapping: RelationshipMapping) {
-
-    def relTypes(rel: Var): Map[HasType, String] = mapping.relTypeOrSourceRelTypeKey match {
-      case Right((_, names)) =>
-        names.map(name => HasType(rel, RelType(name))(CTBoolean) -> name.toRelTypeColumnName).toMap
-      case Left(_) =>
-        Map.empty
-    }
-
-    def startNode(rel: Var): (StartNode, String) = StartNode(rel)(CTNode) -> mapping.sourceStartNodeKey
-
-    def endNode(rel: Var): (EndNode, String) = EndNode(rel)(CTNode) -> mapping.sourceEndNodeKey
-  }
-
-}

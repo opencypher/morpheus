@@ -26,9 +26,10 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.graph.{Entity, NodePattern, Pattern, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.impl.types.CypherTypeUtils._
 import org.opencypher.okapi.ir.api.Label
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr._
@@ -125,16 +126,17 @@ sealed abstract class BinaryLogicalOperator extends LogicalOperator {
 
 sealed abstract class LogicalLeafOperator extends LogicalOperator
 
-final case class NodeScan(node: Var, in: LogicalOperator, solved: SolvedQueryModel)
-  extends StackingLogicalOperator {
-  require(node.cypherType.isInstanceOf[CTNode], "A variable for a node scan needs to have type CTNode")
-
-  def labels: Set[String] = node.cypherType.asInstanceOf[CTNode].labels
-
-  override val fields: Set[Var] = node match {
-    case v: Var => in.fields + v
-    case _ => in.fields
+object PatternScan {
+  def nodeScan(node: Var, in: LogicalOperator, solved: SolvedQueryModel): PatternScan = {
+    val pattern = NodePattern(node.cypherType.toCTNode)
+    PatternScan(pattern, Map(node -> pattern.nodeEntity), in, solved)
   }
+}
+
+final case class PatternScan(pattern: Pattern, mapping: Map[Var, Entity], in: LogicalOperator, solved: SolvedQueryModel)
+  extends StackingLogicalOperator {
+
+  override val fields: Set[Var] = mapping.keySet
 }
 
 final case class Distinct(fields: Set[Var], in: LogicalOperator, solved: SolvedQueryModel)

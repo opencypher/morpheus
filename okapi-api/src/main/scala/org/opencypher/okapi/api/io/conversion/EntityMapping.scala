@@ -26,33 +26,44 @@
  */
 package org.opencypher.okapi.api.io.conversion
 
-import org.opencypher.okapi.api.types.{CypherType, DefiniteCypherType}
+import org.opencypher.okapi.api.graph.{Entity, IdKey, Pattern}
+import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
+object EntityMapping {
+  def empty(pattern: Pattern) = EntityMapping(pattern, Map.empty, Map.empty)
+}
+
+// TODO add builder in Node/RelPattern style
 /**
-  * Represents a map from node/relationship property keys to keys in the source data.
+  * Represents a mapping from a source with key-based access of entity components (e.g. a table definition) to a Pattern.
+  * The purpose of this class is to define a mapping from an external data source to a property graph.
+  *
+  * The [[pattern]] describes the shape of the pattern that is described by this mapping
+  *
+  * The [[idKeys]] describe the mappings for each pattern entity, which map the the entities identifiers
+  * to columns within the source data.
+  *
+  * The [[properties]] represent mappings for every pattern entity from property keys to keys in the source data.
+  * The retrieved value from the source is expected to be convertible to a valid [[org.opencypher.okapi.api.value.CypherValue]].
+  *
+  * @param pattern the pattern described by this mapping
+  * @param properties mapping from property key to source property key
+  * @param idKeys mapping for the key to access the entity identifier in the source data
   */
-trait EntityMapping {
+case class EntityMapping(
+  pattern: Pattern,
+  properties: Map[Entity, Map[String, String]],
+  idKeys: Map[Entity, Map[IdKey, String]]
+) {
 
-  // TODO: CTEntity
-  def cypherType: CypherType with DefiniteCypherType
+  validate()
 
-  def sourceIdKey: String
-
-  def propertyMapping: Map[String, String]
-
-  def idKeys: Seq[String]
-
-  def optionalLabelKeys: Seq[String] = Seq.empty
-
-  def relTypeKeys: Seq[String] = Seq.empty
-
-  def allSourceKeys: Seq[String] = idKeys ++ optionalLabelKeys ++ relTypeKeys ++ propertyMapping.values.toSeq.sorted
-
-  protected def preventOverwritingProperty(propertyKey: String): Unit =
-    if (propertyMapping.contains(propertyKey))
-      throw IllegalArgumentException("unique property key definitions",
-        s"given key $propertyKey overwrites existing mapping")
+  def allSourceKeys: Seq[String] =
+    (
+      idKeys.values.flatten.map(_._2).toSeq ++
+      properties.values.flatten.map(_._2)
+    ).sorted
 
   protected def validate(): Unit = {
     val sourceKeys = allSourceKeys
@@ -62,6 +73,15 @@ trait EntityMapping {
         "One-to-one mapping from entity elements to source keys",
         s"Duplicate columns: $duplicateColumns")
     }
-  }
 
+    pattern.entities.foreach {
+      case e@Entity(_, CTRelationship(types, _)) if types.size != 1 =>
+        throw IllegalArgumentException(
+          s"A single implied type for entity $e",
+          types
+        )
+      case _ => ()
+    }
+  }
 }
+

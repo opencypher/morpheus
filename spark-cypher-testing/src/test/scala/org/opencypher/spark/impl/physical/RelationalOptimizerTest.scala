@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.impl.physical
 
-import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.graph.{NodePattern, QualifiedGraphName}
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.logical.impl.LogicalCatalogGraph
@@ -35,10 +35,10 @@ import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.impl.operators.{Cache, Join, RelationalOperator, SwitchContext}
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 import org.opencypher.okapi.relational.impl.planning.{CrossJoin, RelationalOptimizer}
+import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.GraphConstructionFixture
-import org.opencypher.spark.impl.CAPSConverters._
 
 class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture {
 
@@ -66,11 +66,13 @@ class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixtur
     val cVar = Var("C")(CTNode)
     val dVar = Var("D")(CTNode)
 
-    val aPlan = planScan(None, logicalGraph, aVar)
-    val bPlan = planScan(None, logicalGraph, bVar)
+    val pattern = NodePattern(CTNode)
 
-    val cPlan = planScan(None, logicalGraph, cVar)
-    val dPlan = planScan(None, logicalGraph, dVar)
+    val aPlan = planScan(None, logicalGraph, pattern, Map(aVar -> pattern.nodeEntity))
+    val bPlan = planScan(None, logicalGraph, pattern, Map(bVar -> pattern.nodeEntity))
+
+    val cPlan = planScan(None, logicalGraph, pattern, Map(cVar -> pattern.nodeEntity))
+    val dPlan = planScan(None, logicalGraph, pattern, Map(dVar -> pattern.nodeEntity))
 
     val join1 = aPlan.join(bPlan, Seq.empty, CrossJoin)
     val join2 = cPlan.join(dPlan, Seq.empty, CrossJoin)

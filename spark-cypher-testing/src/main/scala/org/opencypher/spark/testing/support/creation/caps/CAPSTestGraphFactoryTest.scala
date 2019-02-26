@@ -28,17 +28,26 @@ package org.opencypher.spark.testing.support.creation.caps
 
 import java.sql.Date
 
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.apache.spark.sql.Row
+import org.opencypher.okapi.api.graph.{NodeRelPattern, TripletPattern}
+import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTDate, CTString}
+import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
+import org.opencypher.okapi.ir.impl.util.VarConverters._
+import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
-import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.api.io.CAPSEntityTable
+import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.fixture.RecordsVerificationFixture
 import org.opencypher.spark.testing.support.GraphMatchingTestSupport
 
-abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSupport  {
+abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatchingTestSupport with RecordsVerificationFixture  {
   def factory: CAPSTestGraphFactory
 
   val createQuery: String =
@@ -54,31 +63,35 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
       |CREATE (martin)-[:SPEAKS]->(orbital)
     """.stripMargin
 
-  val personTable: CAPSNodeTable = CAPSNodeTable.fromMapping(NodeMapping
+  val personAstronautTable: CAPSEntityTable = CAPSEntityTable.create(NodeMappingBuilder
     .on("ID")
-    .withImpliedLabel("Person")
-    .withOptionalLabel("Astronaut" -> "IS_ASTRONAUT")
-    .withOptionalLabel("Martian" -> "IS_MARTIAN")
+    .withImpliedLabels("Person", "Astronaut")
     .withPropertyKey("name" -> "NAME")
-    .withPropertyKey("birthday" -> "BIRTHDAY"), caps.sparkSession.createDataFrame(
-    Seq(
-      (0L, true, false, "Max", Date.valueOf("1991-07-10")),
-      (1L, false, true, "Martin", null))
-  ).toDF("ID", "IS_ASTRONAUT", "IS_MARTIAN", "NAME", "BIRTHDAY"))
+    .withPropertyKey("birthday" -> "BIRTHDAY")
+    .build, caps.sparkSession.createDataFrame(
+    Seq((0L, "Max", Date.valueOf("1991-07-10")))).toDF("ID", "NAME", "BIRTHDAY"))
 
-  val languageTable: CAPSNodeTable = CAPSNodeTable.fromMapping(NodeMapping
+  val personMartianTable: CAPSEntityTable = CAPSEntityTable.create(NodeMappingBuilder
+    .on("ID")
+    .withImpliedLabels("Person", "Martian")
+    .withPropertyKey("name" -> "NAME")
+    .build, caps.sparkSession.createDataFrame(
+    Seq((1L, "Martin"))).toDF("ID", "NAME"))
+
+  val languageTable: CAPSEntityTable = CAPSEntityTable.create(NodeMappingBuilder
     .on("ID")
     .withImpliedLabel("Language")
-    .withPropertyKey("title" -> "TITLE"), caps.sparkSession.createDataFrame(
+    .withPropertyKey("title" -> "TITLE")
+    .build, caps.sparkSession.createDataFrame(
     Seq(
       (2L, "Swedish"),
       (3L, "German"),
       (4L, "Orbital"))
   ).toDF("ID", "TITLE"))
 
-  val knowsScan: CAPSRelationshipTable = CAPSRelationshipTable.fromMapping(RelationshipMapping
+  val knowsScan: CAPSEntityTable = CAPSEntityTable.create(RelationshipMappingBuilder
     .on("ID")
-    .from("SRC").to("DST").relType("KNOWS"), caps.sparkSession.createDataFrame(
+    .from("SRC").to("DST").relType("KNOWS").build, caps.sparkSession.createDataFrame(
     Seq(
       (0L, 5L, 2L),
       (0L, 6L, 3L),
@@ -98,7 +111,104 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
 
   test("testAsScanGraph") {
     val propertyGraph = CreateGraphFactory(createQuery)
-    factory(propertyGraph).asCaps shouldMatch caps.graphs.create(personTable, languageTable, knowsScan)
+    val g = factory(propertyGraph).asCaps
+    g shouldMatch caps.graphs.create(personAstronautTable, personMartianTable, languageTable, knowsScan)
+  }
+
+  it("can create graphs containing list properties") {
+    val propertyGraph = CreateGraphFactory(
+      """
+        |CREATE ( {l: [1,2,3]} )
+      """.stripMargin)
+
+    val g = factory(propertyGraph).asCaps
+
+    g.cypher("MATCH (n) RETURN n.l as list").records.toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("list" -> List(1,2,3))
+    ))
+  }
+
+  it("can handle nodes with the same label but different properties") {
+    val propertyGraph = CreateGraphFactory(
+      """
+        |CREATE ( { } )
+        |CREATE ( {val1: 1} )
+        |CREATE ( {val1: 1, val2: "foo"} )
+      """.stripMargin)
+
+    val g = factory(propertyGraph).asCaps
+
+    g.cypher("MATCH (n) RETURN n.val1, n.val2").records.toMapsWithCollectedEntities should equal(Bag(
+      CypherMap("n.val1" -> 1,    "n.val2" -> "foo"),
+      CypherMap("n.val1" -> 1,    "n.val2" -> null),
+      CypherMap("n.val1" -> null, "n.val2" -> null)
+    ))
+  }
+
+  it("extracts additional patterns"){
+    val nodeRelPattern = NodeRelPattern(CTNode("Person", "Martian"), CTRelationship("SPEAKS"))
+    val tripletPattern = TripletPattern(CTNode("Person", "Martian"), CTRelationship("SPEAKS"), CTNode("Language"))
+
+    val propertyGraph = CreateGraphFactory(createQuery)
+    val g = factory(propertyGraph, Seq(nodeRelPattern, tripletPattern)).asCaps
+
+    g.patterns should contain(nodeRelPattern)
+    g.patterns should contain(tripletPattern)
+
+    {
+      val nodeVar = nodeRelPattern.nodeEntity.toVar
+      val relVar = nodeRelPattern.relEntity.toVar
+
+      val cols = Seq(
+        nodeVar,
+        HasLabel(nodeVar, Label("Person"))(CTBoolean),
+        HasLabel(nodeVar, Label("Martian"))(CTBoolean),
+        Property(nodeVar, PropertyKey("name"))(CTString),
+        relVar,
+        HasType(relVar, RelType("SPEAKS"))(CTBoolean),
+        StartNode(relVar)(),
+        EndNode(relVar)()
+      )
+
+      val data = Bag(
+        Row(1L.encodeAsCAPSId.toList, true, true, "Martin", 7L.encodeAsCAPSId.toList, true, 1L.encodeAsCAPSId.toList, 3L.encodeAsCAPSId.toList),
+        Row(1L.encodeAsCAPSId.toList, true, true, "Martin", 8L.encodeAsCAPSId.toList, true, 1L.encodeAsCAPSId.toList, 4L.encodeAsCAPSId.toList)
+      )
+
+      val scan = g.scanOperator(nodeRelPattern)
+      val result = caps.records.from(scan.header, scan.table)
+      verify(result, cols, data)
+    }
+
+    {
+      val sourceVar = tripletPattern.sourceEntity.toVar
+      val targetVar = tripletPattern.targetEntity.toVar
+      val relVar = tripletPattern.relEntity.toVar
+
+      val cols = Seq(
+        sourceVar,
+        HasLabel(sourceVar, Label("Person"))(CTBoolean),
+        HasLabel(sourceVar, Label("Martian"))(CTBoolean),
+        Property(sourceVar, PropertyKey("name"))(CTString),
+        relVar,
+        HasType(relVar, RelType("SPEAKS"))(CTBoolean),
+        StartNode(relVar)(),
+        EndNode(relVar)(),
+        targetVar,
+        HasLabel(targetVar, Label("Language"))(CTBoolean),
+        Property(targetVar, PropertyKey("title"))(CTString)
+      )
+
+      val data = Bag(
+
+        Row(1L.encodeAsCAPSId.toList, true, true, "Martin", 8L.encodeAsCAPSId.toList, true, 1L.encodeAsCAPSId.toList, 4L.encodeAsCAPSId.toList, 4L.encodeAsCAPSId.toList, true, "Orbital"),
+        Row(1L.encodeAsCAPSId.toList, true, true, "Martin", 7L.encodeAsCAPSId.toList, true, 1L.encodeAsCAPSId.toList, 3L.encodeAsCAPSId.toList, 3L.encodeAsCAPSId.toList, true, "German")
+      )
+
+      val scan = g.scanOperator(tripletPattern)
+      val result = caps.records.from(scan.header, scan.table)
+      verify(result, cols, data)
+    }
   }
 }
 

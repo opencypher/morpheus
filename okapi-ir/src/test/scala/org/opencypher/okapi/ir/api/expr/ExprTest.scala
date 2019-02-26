@@ -63,9 +63,10 @@ class ExprTest extends BaseTestSuite {
     p.hashCode should not equal v.hashCode
   }
 
-  test("alias expression has same type") {
+  test("alias expression has updated type") {
     val n = Var("n")(CTNode)
-    (n as Var("m")()).cypherType should equal(n.cypherType)
+    val aliasVar = Var("m")()
+    (n as aliasVar).cypherType should equal(aliasVar.cypherType)
   }
 
 }

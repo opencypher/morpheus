@@ -26,14 +26,17 @@
  */
 package org.opencypher.okapi.relational.api.graph
 
+import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.graph.{CypherResult, PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.ir.impl.util.VarConverters._
+import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
-import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable}
 import org.opencypher.okapi.relational.api.planning.{RelationalCypherResult, RelationalRuntimeContext}
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.graph.{EmptyGraph, PrefixedGraph, ScanGraph, UnionGraph}
@@ -58,11 +61,11 @@ trait RelationalCypherGraphFactory[T <: Table[T]] {
 
   def empty: Graph = EmptyGraph()
 
-  def create(nodeTable: NodeTable[T], entityTables: EntityTable[T]*): Graph = {
+  def create(nodeTable: EntityTable[T], entityTables: EntityTable[T]*): Graph = {
     create(None, nodeTable +: entityTables: _*)
   }
 
-  def create(maybeSchema: Option[Schema], nodeTable: NodeTable[T], entityTables: EntityTable[T]*): Graph = {
+  def create(maybeSchema: Option[Schema], nodeTable: EntityTable[T], entityTables: EntityTable[T]*): Graph = {
     create(maybeSchema, nodeTable +: entityTables: _*)
   }
 
@@ -94,7 +97,7 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
 
   def tables: Seq[T]
 
-  def scanOperator(entityType: CypherType, exactLabelMatch: Boolean = false): RelationalOperator[T]
+  def scanOperator(searchPattern: Pattern, exactLabelMatch: Boolean = false): RelationalOperator[T]
 
   override def cypher(
     query: String,
@@ -104,14 +107,16 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
   ): RelationalCypherResult[T] = session.cypherOnGraph(this, query, parameters, drivingTable, queryCatalog)
 
   override def nodes(name: String, nodeCypherType: CTNode, exactLabelMatch: Boolean = false): RelationalCypherRecords[T] = {
-    val scan = scanOperator(nodeCypherType, exactLabelMatch)
-    val namedScan = scan.assignScanName(name)
+    val pattern = NodePattern(nodeCypherType)
+    val scan = scanOperator(pattern, exactLabelMatch)
+    val namedScan = scan.assignScanName(Map(pattern.nodeEntity.toVar -> Var(name)(nodeCypherType)))
     session.records.from(namedScan.header, namedScan.table)
   }
 
   override def relationships(name: String, relCypherType: CTRelationship): RelationalCypherRecords[T] = {
-    val scan = scanOperator(relCypherType)
-    val namedScan = scan.assignScanName(name)
+    val pattern = RelationshipPattern(relCypherType)
+    val scan = scanOperator(pattern)
+    val namedScan = scan.assignScanName(Map(pattern.relEntity.toVar -> Var(name)(relCypherType)))
     session.records.from(namedScan.header, namedScan.table)
   }
 

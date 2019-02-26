@@ -26,24 +26,30 @@
  */
 package org.opencypher.okapi.logical.impl.logical
 
+import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, _}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, _}
+import org.opencypher.okapi.ir.impl.QueryLocalCatalog
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.logical.impl
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.MatchHelper._
+import org.opencypher.okapi.testing.support.TreeVerificationSupport
 import org.opencypher.okapi.trees.BottomUp
 
+import scala.collection.Map
 import scala.language.implicitConversions
 
-class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
+class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVerificationSupport {
 
   val emptySqm: SolvedQueryModel = SolvedQueryModel.empty
   val logicalGraph = LogicalCatalogGraph(testQualifiedGraphName, Schema.empty)
-  val schema: Schema = Schema.empty
+  val emptySchema: Schema = Schema.empty
+  val emptyGraph = TestGraph(emptySchema)
 
   //  //Helper to create nicer expected results with `asCode`
   //  import org.opencypher.caps.impl.common.AsCode._
@@ -55,40 +61,12 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
   //    (CTNode: CTNode) -> "CTNode"
   //  )
 
-  def plannerContext(schema: Schema) =
-    LogicalPlannerContext(schema, Set.empty, Map(testNamespace -> testGraphSource(testGraphName -> schema)))
-
-  it("pushes label filter into scan") {
-    val animalSchema = schema.withNodePropertyKeys("Animal")()
-    val animalGraph = LogicalCatalogGraph(testQualifiedGraphName, animalSchema)
-    val query =
-      """|MATCH (a:Animal)
-         |RETURN a""".stripMargin
-    val plan = logicalPlan(query, animalSchema)
-    val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(animalSchema))
-
-    val expected = Select(
-      List(Var("a")(CTNode(Set("Animal")))),
-      NodeScan(
-        Var("a")(CTNode(Set("Animal"))),
-        Start(
-          animalGraph,
-          emptySqm
-        ),
-        SolvedQueryModel(Set(IRField("a")(CTNode(Set("Animal")))), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)))
-      ),
-      SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean)))
-    )
-
-    optimizedLogicalPlan should equalWithTracing(expected)
-  }
-
   it("rewrites missing label scan to empty records") {
     val query =
       """|MATCH (a:Animal)
          |RETURN a""".stripMargin
-    val plan = logicalPlan(query, schema)
-    val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(schema))
+    val plan = logicalPlan(query, emptyGraph)
+    val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(emptyGraph))
 
     val expected = Select(
       List(Var("a")(CTNode(Set("Animal")))),
@@ -110,8 +88,8 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
     val schema = Schema.empty.withNodePropertyKeys("Animal")().withNodePropertyKeys("Astronaut")()
     val logicalGraph = LogicalCatalogGraph(testQualifiedGraphName, schema)
 
-    val plan = logicalPlan(query, schema)
-    val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(schema))
+    val plan = logicalPlan(query, TestGraph(schema))
+    val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(TestGraph(schema)))
 
     val expected = Select(
       List(Var("a")(CTNode(Set("Animal", "Astronaut")))),
@@ -149,8 +127,8 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
       val irFieldA = IRField(varA.name)(varA.cypherType)
       val irFieldB = IRField(varB.name)(varB.cypherType)
 
-      val scanA = NodeScan(varA, startA, SolvedQueryModel(Set(irFieldA)))
-      val scanB = NodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
+      val scanA = PatternScan.nodeScan(varA, startA, SolvedQueryModel(Set(irFieldA)))
+      val scanB = PatternScan.nodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
       val cartesian = CartesianProduct(scanA, scanB, SolvedQueryModel(Set(irFieldA, irFieldB)))
       val filter = Filter(equals, cartesian, SolvedQueryModel(Set(irFieldA, irFieldB)))
 
@@ -175,8 +153,8 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
       val irFieldA = IRField(varA.name)(varA.cypherType)
       val irFieldB = IRField(varB.name)(varB.cypherType)
 
-      val scanA = NodeScan(varA, startA, SolvedQueryModel(Set(irFieldA)))
-      val scanB = NodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
+      val scanA = PatternScan.nodeScan(varA, startA, SolvedQueryModel(Set(irFieldA)))
+      val scanB = PatternScan.nodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
       val cartesian = CartesianProduct(scanA, scanB, SolvedQueryModel(Set(irFieldA, irFieldB)))
       val filter = Filter(equals, cartesian, SolvedQueryModel(Set(irFieldA, irFieldB)))
 
@@ -202,7 +180,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
       val equals = Equals(nameField, propB)(CTBoolean)
       val irFieldB = IRField(varB.name)(varB.cypherType)
 
-      val scanB = NodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
+      val scanB = PatternScan.nodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
       val cartesian = CartesianProduct(startDrivingTable, scanB, SolvedQueryModel(Set(nameField, irFieldB)))
       val filter = Filter(equals, cartesian, SolvedQueryModel(Set(nameField, irFieldB)))
 
@@ -218,13 +196,273 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction {
     }
   }
 
-  private def logicalPlan(query: String, schema: Schema): LogicalOperator = {
+  describe("insert pattern scans") {
+    val schema = Schema.empty
+      .withNodePropertyKeys("A")()
+      .withNodePropertyKeys("C")()
+      .withRelationshipPropertyKeys("B")()
+
+    it("inserts NodeRelPatterns") {
+      val pattern = NodeRelPattern(CTNode(Set("A"), Some(testQualifiedGraphName)), CTRelationship(Set("B"), Some(testQualifiedGraphName)))
+      val graph = TestGraph(schema, Set(pattern))
+
+      val plan = logicalPlan(
+        """MATCH (a:A)-[b:B]->(c:C) RETURN a, b, c""",
+        graph
+      )
+
+      val optimizedPlan = LogicalOptimizer(plan)(plannerContext(graph))
+
+      optimizedPlan.occourences[ValueJoin] should be(1)
+      optimizedPlan.occourences[PatternScan] should be(2)
+
+      optimizedPlan.exists {
+        case _: Expand => true
+        case _ => false
+      } should be(false)
+
+      optimizedPlan.exists {
+        case PatternScan(otherPattern, map, _, _) =>
+          pattern == otherPattern &&
+          map == Map(Var("a")(CTNode) -> pattern.nodeEntity, Var("b")(CTRelationship) -> pattern.relEntity)
+        case _ => false
+      } should be(true)
+    }
+
+    it("inserts connecting NodeRelPatterns") {
+      val pattern = NodeRelPattern(CTNode(Set("A"), Some(testQualifiedGraphName)), CTRelationship(Set("B"), Some(testQualifiedGraphName)))
+      val graph = TestGraph(schema, Set(pattern))
+
+      val plan = logicalPlan(
+        """MATCH (c1:C)<-[b1:B]-(a:A)-[b2:B]->(c2:C) RETURN a""",
+        graph
+      )
+
+      val optimizedPlan = LogicalOptimizer(plan)(plannerContext(graph))
+
+      optimizedPlan.occourences[ValueJoin] should be(3)
+      optimizedPlan.occourences[PatternScan] should be(4)
+      optimizedPlan.exists {
+        case _: Expand => true
+        case _ => false
+      } should be(false)
+
+      optimizedPlan.exists {
+        case PatternScan(otherPattern, map, _, _) =>
+          pattern == otherPattern &&
+            map == Map(Var("a")(CTNode) -> pattern.nodeEntity, Var("b1")(CTRelationship) -> pattern.relEntity)
+        case _ => false
+      } should be(true)
+
+      optimizedPlan.exists {
+        case PatternScan(otherPattern, map, _, _) =>
+          pattern == otherPattern &&
+            map == Map(Var("a")(CTNode) -> pattern.nodeEntity, Var("b2")(CTRelationship) -> pattern.relEntity)
+        case _ => false
+      } should be(true)
+    }
+
+    it("inserts TripletPatterns") {
+      val pattern = TripletPattern(
+        CTNode(Set("A"), Some(testQualifiedGraphName)),
+        CTRelationship(Set("B"), Some(testQualifiedGraphName)),
+        CTNode(Set("C"), Some(testQualifiedGraphName))
+      )
+
+      val graph = TestGraph(schema, Set(pattern))
+
+      val plan = logicalPlan(
+        """MATCH (a:A)-[b:B]->(c:C) RETURN a, b, c""",
+        graph
+      )
+
+      val optimizedPlan = LogicalOptimizer(plan)(plannerContext(graph))
+
+      optimizedPlan.occourences[ValueJoin] should be(0)
+      optimizedPlan.occourences[PatternScan] should be(1)
+
+      optimizedPlan.exists {
+        case _: Expand => true
+        case _ => false
+      } should be(false)
+
+      optimizedPlan.exists {
+        case PatternScan(otherPattern, map, _, _) =>
+          pattern == otherPattern &&
+            map == Map(Var("a")(CTNode) -> pattern.sourceEntity, Var("b")(CTRelationship) -> pattern.relEntity, Var("c")(CTNode) -> pattern.targetEntity)
+        case _ => false
+      } should be(true)
+    }
+
+    it("inserts connecting TripletPatterns") {
+      val pattern = TripletPattern(
+        CTNode(Set("A"), Some(testQualifiedGraphName)),
+        CTRelationship(Set("B"), Some(testQualifiedGraphName)),
+        CTNode(Set("C"), Some(testQualifiedGraphName))
+      )
+      val graph = TestGraph(schema, Set(pattern))
+
+      val plan = logicalPlan(
+        """MATCH (c1:C)<-[b1:B]-(a:A)-[b2:B]->(c2:C) RETURN a""",
+        graph
+      )
+
+      val optimizedPlan = LogicalOptimizer(plan)(plannerContext(graph))
+
+      optimizedPlan.occourences[ValueJoin] should be(1)
+      optimizedPlan.occourences[PatternScan] should be(2)
+
+      optimizedPlan.exists {
+        case _: Expand => true
+        case _ => false
+      } should be(false)
+      optimizedPlan.exists {
+        case PatternScan(otherPattern, map, _, _) =>
+          pattern == otherPattern &&
+            map == Map(Var("a")(CTNode) -> pattern.sourceEntity, Var("b1")(CTRelationship) -> pattern.relEntity, Var("c1")(CTNode) -> pattern.targetEntity)
+        case _ => false
+      } should be(true)
+
+      optimizedPlan.exists {
+        case PatternScan(otherPattern, map, _, _) =>
+          pattern == otherPattern &&
+            map == Map(Var("a")(CTNode) -> pattern.sourceEntity, Var("b2")(CTRelationship) -> pattern.relEntity, Var("c2")(CTNode) -> pattern.targetEntity)
+        case _ => false
+      } should be(true)
+    }
+
+    it("does not insert node rel patterns if not all node label combos are covered") {
+      val pattern = NodeRelPattern(CTNode("Person"), CTRelationship("KNOWS"))
+      val schema = Schema.empty
+        .withNodePropertyKeys("Person")()
+        .withNodePropertyKeys("Person", "Employee")()
+        .withRelationshipPropertyKeys("KNOWS")()
+
+      val graph = TestGraph(schema, Set(pattern))
+
+      val plan = logicalPlan(
+        """MATCH (a:Person)-[:KNOWS]->(:Person) RETURN a""",
+        graph
+      )
+
+      val optimizedPlan = LogicalOptimizer(plan)(plannerContext(graph))
+      optimizedPlan.occourences[PatternScan] should be(2)
+
+      optimizedPlan.exists {
+        case PatternScan(_: NodeRelPattern, _, _, _) => true
+        case _ => false
+      } should be(false)
+    }
+
+    it("does not insert node rel patterns if not all rel types are covered") {
+      val pattern = NodeRelPattern(CTNode("Person"), CTRelationship("KNOWS"))
+      val schema = Schema.empty
+        .withNodePropertyKeys("Person")()
+        .withRelationshipPropertyKeys("KNOWS")()
+        .withRelationshipPropertyKeys("LOVES")()
+
+      val graph = TestGraph(schema, Set(pattern))
+
+      val plan = logicalPlan(
+        """MATCH (a:Person)-[:KNOWS|LOVES]->(:Person) RETURN a""",
+        graph
+      )
+
+      val optimizedPlan = LogicalOptimizer(plan)(plannerContext(graph))
+      optimizedPlan.occourences[PatternScan] should be(2)
+      optimizedPlan.occourences[ValueJoin] should be(0)
+    }
+
+    it("does not insert triplet patterns if not all node label combos are covered") {
+      val pattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Person"))
+      val schema = Schema.empty
+        .withNodePropertyKeys("Person")()
+        .withNodePropertyKeys("Person", "Employee")()
+        .withRelationshipPropertyKeys("KNOWS")()
+
+      val graph = TestGraph(schema, Set(pattern))
+
+      val plan = logicalPlan(
+        """MATCH (a:Person)-[:KNOWS]->(:Person) RETURN a""",
+        graph
+      )
+
+      val optimizedPlan = LogicalOptimizer(plan)(plannerContext(graph))
+      optimizedPlan.occourences[PatternScan] should be(2)
+
+      optimizedPlan.exists {
+        case PatternScan(_: TripletPattern, _, _, _) => true
+        case _ => false
+      } should be(false)
+    }
+
+    it("does not insert triplet patterns if not all rel types are covered") {
+      val pattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Person"))
+      val schema = Schema.empty
+        .withNodePropertyKeys("Person")()
+        .withRelationshipPropertyKeys("KNOWS")()
+        .withRelationshipPropertyKeys("LOVES")()
+
+      val graph = TestGraph(schema, Set(pattern))
+
+      val plan = logicalPlan(
+        """MATCH (a:Person)-[:KNOWS|LOVES]->(:Person) RETURN a""",
+        graph
+      )
+
+      val optimizedPlan = LogicalOptimizer(plan)(plannerContext(graph))
+      optimizedPlan.occourences[PatternScan] should be(2)
+
+      optimizedPlan.exists {
+        case PatternScan(_: TripletPattern, _, _, _) => true
+        case _ => false
+      } should be(false)
+    }
+  }
+
+  def plannerContext(graph: PropertyGraph): LogicalPlannerContext = {
+    val catalog = QueryLocalCatalog
+      .empty
+      .withGraph(testQualifiedGraphName, graph)
+      .withSchema(testQualifiedGraphName, graph.schema)
+
+    LogicalPlannerContext(
+      graph.schema,
+      Set.empty,
+      Map.empty,
+      catalog
+    )
+  }
+
+  private def logicalPlan(query: String, graph: PropertyGraph): LogicalOperator = {
     val producer = new LogicalOperatorProducer
     val logicalPlanner = new LogicalPlanner(producer)
-    val ir = query.asCypherQuery(testGraphName -> schema)(schema)
-    val logicalPlannerContext = plannerContext(schema)
+    val ir = query.asCypherQuery(testGraphName -> graph.schema)(graph.schema)
+
+    val logicalPlannerContext = plannerContext(graph)
+
     val logicalPlan = logicalPlanner(ir)(logicalPlannerContext)
     logicalPlan
   }
 
+  case class TestGraph(
+    override val schema: Schema,
+    override val patterns: Set[Pattern] = Set.empty
+  ) extends PropertyGraph {
+
+    override def session: CypherSession = ???
+
+    override def nodes(
+      name: String,
+      nodeCypherType: CTNode,
+      exactLabelMatch: Boolean
+    ): CypherRecords = ???
+
+    override def relationships(
+      name: String,
+      relCypherType: CTRelationship
+    ): CypherRecords = ???
+
+    override def unionAll(others: PropertyGraph*): PropertyGraph = ???
+  }
 }

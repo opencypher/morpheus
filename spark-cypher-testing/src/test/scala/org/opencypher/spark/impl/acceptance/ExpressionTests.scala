@@ -373,7 +373,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit {
     ))
   }
 
-  test("addition") {
+  it("supports addition") {
     // Given
     val given = initGraph("CREATE ({val: 4})-[:REL]->({val: 5, other: 3})-[:REL]->()")
 

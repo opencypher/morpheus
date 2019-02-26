@@ -26,22 +26,25 @@
  */
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql.types.{BooleanType, LongType, StructField, StructType}
 import org.apache.spark.sql.{Row, functions}
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.graph._
+import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMappingBuilder, RelationshipMappingBuilder}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
+import org.opencypher.okapi.ir.impl.util.VarConverters._
+import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
-import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.api.value.CAPSEntity._
-import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
+import org.opencypher.spark.api.value.CAPSRelationship
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.testing.support.EntityTableCreationSupport
 import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
-import scala.collection.JavaConverters._
-
-class ScanGraphTest extends CAPSGraphTest {
+class ScanGraphTest extends CAPSGraphTest with EntityTableCreationSupport {
 
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
@@ -56,7 +59,6 @@ class ScanGraphTest extends CAPSGraphTest {
       nHasLabelBook,
       nHasLabelPerson,
       nHasLabelProgrammer,
-      nHasLabelSwedish,
       nHasPropertyLanguage,
       nHasPropertyLuckyNumber,
       nHasPropertyName,
@@ -74,18 +76,18 @@ class ScanGraphTest extends CAPSGraphTest {
     )
 
     val nodeData = Bag(
-      Row(1L.encodeAsCAPSId.withPrefix(0).toList, false, true, false, true, null, 23L, "Mats", null, null),
-      Row(2L.encodeAsCAPSId.withPrefix(0).toList, false, true, false, false, null, 42L, "Martin", null, null),
-      Row(3L.encodeAsCAPSId.withPrefix(0).toList, false, true, false, false, null, 1337L, "Max", null, null),
-      Row(4L.encodeAsCAPSId.withPrefix(0).toList, false, true, false, false, null, 9L, "Stefan", null, null),
-      Row(10L.encodeAsCAPSId.withPrefix(1).toList, true, false, false, false, null, null, null, "1984", 1949L),
-      Row(20L.encodeAsCAPSId.withPrefix(1).toList, true, false, false, false, null, null, null, "Cryptonomicon", 1999L),
-      Row(30L.encodeAsCAPSId.withPrefix(1).toList, true, false, false, false, null, null, null, "The Eye of the World", 1990L),
-      Row(40L.encodeAsCAPSId.withPrefix(1).toList, true, false, false, false, null, null, null, "The Circle", 2013L),
-      Row(100L.encodeAsCAPSId.withPrefix(1).toList, false, true, true, false, "C", 42L, "Alice", null, null),
-      Row(200L.encodeAsCAPSId.withPrefix(1).toList, false, true, true, false, "D", 23L, "Bob", null, null),
-      Row(300L.encodeAsCAPSId.withPrefix(1).toList, false, true, true, false, "F", 84L, "Eve", null, null),
-      Row(400L.encodeAsCAPSId.withPrefix(1).toList, false, true, true, false, "R", 49L, "Carl", null, null)
+      Row(1L.encodeAsCAPSId.withPrefix(0).toList, false, true, false,  null, 23L, "Mats", null, null),
+      Row(2L.encodeAsCAPSId.withPrefix(0).toList, false, true, false,  null, 42L, "Martin", null, null),
+      Row(3L.encodeAsCAPSId.withPrefix(0).toList, false, true, false,  null, 1337L, "Max", null, null),
+      Row(4L.encodeAsCAPSId.withPrefix(0).toList, false, true, false,  null, 9L, "Stefan", null, null),
+      Row(10L.encodeAsCAPSId.withPrefix(1).toList, true, false, false, null, null, null, "1984", 1949L),
+      Row(20L.encodeAsCAPSId.withPrefix(1).toList, true, false, false, null, null, null, "Cryptonomicon", 1999L),
+      Row(30L.encodeAsCAPSId.withPrefix(1).toList, true, false, false, null, null, null, "The Eye of the World", 1990L),
+      Row(40L.encodeAsCAPSId.withPrefix(1).toList, true, false, false, null, null, null, "The Circle", 2013L),
+      Row(100L.encodeAsCAPSId.withPrefix(1).toList, false, true, true, "C", 42L, "Alice", null, null),
+      Row(200L.encodeAsCAPSId.withPrefix(1).toList, false, true, true, "D", 23L, "Bob", null, null),
+      Row(300L.encodeAsCAPSId.withPrefix(1).toList, false, true, true, "F", 84L, "Eve", null, null),
+      Row(400L.encodeAsCAPSId.withPrefix(1).toList, false, true, true, "R", 49L, "Carl", null, null)
     )
 
     val relData = Bag(
@@ -106,7 +108,7 @@ class ScanGraphTest extends CAPSGraphTest {
   }
 
   it("dont lose schema information when mapping") {
-    val nodes = CAPSNodeTable.fromMapping(NodeMapping.on("id"),
+    val nodes = CAPSEntityTable.create(NodeMappingBuilder.on("id").build,
       caps.sparkSession.createDataFrame(
         Seq(
           Tuple1(10L),
@@ -121,7 +123,7 @@ class ScanGraphTest extends CAPSGraphTest {
         )
       ).toDF("id"))
 
-    val rs = CAPSRelationshipTable.fromMapping(RelationshipMapping.on("ID").from("SRC").to("DST").relType("FOO"),
+    val rs = CAPSEntityTable.create(RelationshipMappingBuilder.on("ID").from("SRC").to("DST").relType("FOO").build,
       caps.sparkSession.createDataFrame(
         Seq(
           (10L, 1000L, 20L),
@@ -147,15 +149,14 @@ class ScanGraphTest extends CAPSGraphTest {
     val cols = Seq(
       n,
       nHasLabelPerson,
-      nHasLabelSwedish,
       nHasPropertyLuckyNumber,
       nHasPropertyName
     )
     val data = Bag(
-      Row(1L.encodeAsCAPSId.toList, true, true, 23L, "Mats"),
-      Row(2L.encodeAsCAPSId.toList, true, false, 42L, "Martin"),
-      Row(3L.encodeAsCAPSId.toList, true, false, 1337L, "Max"),
-      Row(4L.encodeAsCAPSId.toList, true, false, 9L, "Stefan")
+      Row(1L.encodeAsCAPSId.toList, true, 23L, "Mats"),
+      Row(2L.encodeAsCAPSId.toList, true, 42L, "Martin"),
+      Row(3L.encodeAsCAPSId.toList, true, 1337L, "Max"),
+      Row(4L.encodeAsCAPSId.toList, true, 9L, "Stefan")
     )
     verify(nodes, cols, data)
   }
@@ -167,21 +168,20 @@ class ScanGraphTest extends CAPSGraphTest {
       n,
       nHasLabelBook,
       nHasLabelPerson,
-      nHasLabelSwedish,
       nHasPropertyLuckyNumber,
       nHasPropertyName,
       nHasPropertyTitle,
       nHasPropertyYear
     )
     val data = Bag(
-      Row(1L.encodeAsCAPSId.toList, false, true, true, 23L, "Mats", null, null),
-      Row(2L.encodeAsCAPSId.toList, false, true, false, 42L, "Martin", null, null),
-      Row(3L.encodeAsCAPSId.toList, false, true, false, 1337L, "Max", null, null),
-      Row(4L.encodeAsCAPSId.toList, false, true, false, 9L, "Stefan", null, null),
-      Row(10L.encodeAsCAPSId.toList, true, false, false, null, null, "1984", 1949L),
-      Row(20L.encodeAsCAPSId.toList, true, false, false, null, null, "Cryptonomicon", 1999L),
-      Row(30L.encodeAsCAPSId.toList, true, false, false, null, null, "The Eye of the World", 1990L),
-      Row(40L.encodeAsCAPSId.toList, true, false, false, null, null, "The Circle", 2013L)
+      Row(1L.encodeAsCAPSId.toList, false, true,  23L, "Mats", null, null),
+      Row(2L.encodeAsCAPSId.toList, false, true,  42L, "Martin", null, null),
+      Row(3L.encodeAsCAPSId.toList, false, true,  1337L, "Max", null, null),
+      Row(4L.encodeAsCAPSId.toList, false, true,  9L, "Stefan", null, null),
+      Row(10L.encodeAsCAPSId.toList, true, false, null, null, "1984", 1949L),
+      Row(20L.encodeAsCAPSId.toList, true, false, null, null, "Cryptonomicon", 1999L),
+      Row(30L.encodeAsCAPSId.toList, true, false, null, null, "The Eye of the World", 1990L),
+      Row(40L.encodeAsCAPSId.toList, true, false, null, null, "The Circle", 2013L)
     )
     verify(nodes, cols, data)
   }
@@ -207,20 +207,20 @@ class ScanGraphTest extends CAPSGraphTest {
     val aDf = caps.sparkSession.createDataFrame(Seq(
       (0L, "A")
     )).toDF("_node_id", "name").withColumn("size", functions.lit(null))
-    val aMapping: NodeMapping = NodeMapping.create("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("A")
-    val aTable = CAPSNodeTable.fromMapping(aMapping, aDf)
+    val aMapping: EntityMapping = NodeMappingBuilder.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("A").build
+    val aTable = CAPSEntityTable.create(aMapping, aDf)
 
     val bDf = caps.sparkSession.createDataFrame(Seq(
       (1L, "B")
     )).toDF("_node_id", "name").withColumn("size", functions.lit(null))
-    val bMapping = NodeMapping.create("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("B")
-    val bTable = CAPSNodeTable.fromMapping(bMapping, bDf)
+    val bMapping = NodeMappingBuilder.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("B").build
+    val bTable = CAPSEntityTable.create(bMapping, bDf)
 
     val comboDf = caps.sparkSession.createDataFrame(Seq(
       (2L, "COMBO", 2)
     )).toDF("_node_id", "name", "size")
-    val comboMapping = NodeMapping.create("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabels("A", "B")
-    val comboTable = CAPSNodeTable.fromMapping(comboMapping, comboDf)
+    val comboMapping = NodeMappingBuilder.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabels("A", "B").build
+    val comboTable = CAPSEntityTable.create(comboMapping, comboDf)
 
     val graph = caps.graphs.create(aTable, bTable, comboTable)
 
@@ -257,21 +257,20 @@ class ScanGraphTest extends CAPSGraphTest {
       n,
       nHasLabelBook,
       nHasLabelPerson,
-      nHasLabelSwedish,
       nHasPropertyLuckyNumber,
       nHasPropertyName,
       nHasPropertyTitle,
       nHasPropertyYear
     )
     val data = Bag(
-      Row(1L.encodeAsCAPSId.toList, false, true, true, 23L, "Mats", null, null),
-      Row(2L.encodeAsCAPSId.toList, false, true, false, 42L, "Martin", null, null),
-      Row(3L.encodeAsCAPSId.toList, false, true, false, 1337L, "Max", null, null),
-      Row(4L.encodeAsCAPSId.toList, false, true, false, 9L, "Stefan", null, null),
-      Row(10L.encodeAsCAPSId.toList, true, false, false, null, null, "1984", 1949L),
-      Row(20L.encodeAsCAPSId.toList, true, false, false, null, null, "Cryptonomicon", 1999L),
-      Row(30L.encodeAsCAPSId.toList, true, false, false, null, null, "The Eye of the World", 1990L),
-      Row(40L.encodeAsCAPSId.toList, true, false, false, null, null, "The Circle", 2013L)
+      Row(1L.encodeAsCAPSId.toList, false, true,  23L, "Mats", null, null),
+      Row(2L.encodeAsCAPSId.toList, false, true,  42L, "Martin", null, null),
+      Row(3L.encodeAsCAPSId.toList, false, true,  1337L, "Max", null, null),
+      Row(4L.encodeAsCAPSId.toList, false, true,  9L, "Stefan", null, null),
+      Row(10L.encodeAsCAPSId.toList, true, false, null, null, "1984", 1949L),
+      Row(20L.encodeAsCAPSId.toList, true, false, null, null, "Cryptonomicon", 1999L),
+      Row(30L.encodeAsCAPSId.toList, true, false, null, null, "The Eye of the World", 1990L),
+      Row(40L.encodeAsCAPSId.toList, true, false, null, null, "The Circle", 2013L)
     )
 
     verify(nodes, cols, data)
@@ -283,15 +282,14 @@ class ScanGraphTest extends CAPSGraphTest {
     val cols = Seq(
       n,
       nHasLabelPerson,
-      nHasLabelSwedish,
       nHasPropertyLuckyNumber,
       nHasPropertyName
     )
     val data = Bag(
-      Row(1L.encodeAsCAPSId.toList, true, true, 23L, "Mats"),
-      Row(2L.encodeAsCAPSId.toList, true, false, 42L, "Martin"),
-      Row(3L.encodeAsCAPSId.toList, true, false, 1337L, "Max"),
-      Row(4L.encodeAsCAPSId.toList, true, false, 9L, "Stefan")
+      Row(1L.encodeAsCAPSId.toList, true, 23L, "Mats"),
+      Row(2L.encodeAsCAPSId.toList, true, 42L, "Martin"),
+      Row(3L.encodeAsCAPSId.toList, true, 1337L, "Max"),
+      Row(4L.encodeAsCAPSId.toList, true, 9L, "Stefan")
     )
     verify(nodes, cols, data)
   }
@@ -379,20 +377,19 @@ class ScanGraphTest extends CAPSGraphTest {
       n,
       nHasLabelPerson,
       nHasLabelProgrammer,
-      nHasLabelSwedish,
       nHasPropertyLanguage,
       nHasPropertyLuckyNumber,
       nHasPropertyName
     )
     val data = Bag(
-      Row(1L.encodeAsCAPSId.toList, true, false, true, null, 23L, "Mats"),
-      Row(2L.encodeAsCAPSId.toList, true, false, false, null, 42L, "Martin"),
-      Row(3L.encodeAsCAPSId.toList, true, false, false, null, 1337L, "Max"),
-      Row(4L.encodeAsCAPSId.toList, true, false, false, null, 9L, "Stefan"),
-      Row(100L.encodeAsCAPSId.toList, true, true, false, "C", 42L, "Alice"),
-      Row(200L.encodeAsCAPSId.toList, true, true, false, "D", 23L, "Bob"),
-      Row(300L.encodeAsCAPSId.toList, true, true, false, "F", 84L, "Eve"),
-      Row(400L.encodeAsCAPSId.toList, true, true, false, "R", 49L, "Carl")
+      Row(1L.encodeAsCAPSId.toList, true, false,  null, 23L, "Mats"),
+      Row(2L.encodeAsCAPSId.toList, true, false,  null, 42L, "Martin"),
+      Row(3L.encodeAsCAPSId.toList, true, false,  null, 1337L, "Max"),
+      Row(4L.encodeAsCAPSId.toList, true, false,  null, 9L, "Stefan"),
+      Row(100L.encodeAsCAPSId.toList, true, true, "C", 42L, "Alice"),
+      Row(200L.encodeAsCAPSId.toList, true, true, "D", 23L, "Bob"),
+      Row(300L.encodeAsCAPSId.toList, true, true, "F", 84L, "Eve"),
+      Row(400L.encodeAsCAPSId.toList, true, true, "R", 49L, "Carl")
     )
 
     verify(nodes, cols, data)
@@ -405,90 +402,142 @@ class ScanGraphTest extends CAPSGraphTest {
       n,
       nHasLabelBrogrammer,
       nHasLabelPerson,
-      nHasLabelSwedish,
       nHasPropertyLanguage,
       nHasPropertyLuckyNumber,
       nHasPropertyName
     )
     val data = Bag(
-      Row(1L.encodeAsCAPSId.toList, false, true, true, null, 23L, "Mats"),
-      Row(2L.encodeAsCAPSId.toList, false, true, false, null, 42L, "Martin"),
-      Row(3L.encodeAsCAPSId.toList, false, true, false, null, 1337L, "Max"),
-      Row(4L.encodeAsCAPSId.toList, false, true, false, null, 9L, "Stefan"),
-      Row(100L.encodeAsCAPSId.toList, true, true, false, "Node", null, null),
-      Row(200L.encodeAsCAPSId.toList, true, true, false, "Coffeescript", null, null),
-      Row(300L.encodeAsCAPSId.toList, true, true, false, "Javascript", null, null),
-      Row(400L.encodeAsCAPSId.toList, true, true, false, "Typescript", null, null)
+      Row(1L.encodeAsCAPSId.toList, false, true,  null, 23L, "Mats"),
+      Row(2L.encodeAsCAPSId.toList, false, true,  null, 42L, "Martin"),
+      Row(3L.encodeAsCAPSId.toList, false, true,  null, 1337L, "Max"),
+      Row(4L.encodeAsCAPSId.toList, false, true,  null, 9L, "Stefan"),
+      Row(100L.encodeAsCAPSId.toList, true, true, "Node", null, null),
+      Row(200L.encodeAsCAPSId.toList, true, true, "Coffeescript", null, null),
+      Row(300L.encodeAsCAPSId.toList, true, true, "Javascript", null, null),
+      Row(400L.encodeAsCAPSId.toList, true, true, "Typescript", null, null)
     )
 
     verify(nodes, cols, data)
   }
 
-  describe("Optional labels") {
+  describe("scanning complex patterns") {
+    it("can scan for NodeRelPattern") {
+      val pattern = NodeRelPattern(CTNode("Person"), CTRelationship("KNOWS"))
 
-    val nodes = Seq(
-      Row(1L, true, false, false),
-      Row(2L, true, true, false),
-      Row(3L, false, false, true)
-    ).toList.asJava
+      val graph = initGraph(
+        """
+          |CREATE (a:Person {name: "Alice"})
+          |CREATE (b:Person {name: "Bob"})
+          |CREATE (a)-[:KNOWS {since: 2017}]->(b)
+        """.stripMargin, Seq(pattern))
 
-    val schema = StructType(Seq(
-      StructField("id", LongType, false),
-      StructField("Person", BooleanType, false),
-      StructField("Employee", BooleanType, false),
-      StructField("Animal", BooleanType, false)
-    ))
+      val scan = graph.scanOperator(pattern)
+      val renamedScan = scan.assignScanName(
+        Map(
+          pattern.nodeEntity.toVar -> n,
+          pattern.relEntity.toVar -> r
+        )
+      )
+      val result = caps.records.from(renamedScan.header, renamedScan.table)
 
-    val df = caps.sparkSession.createDataFrame(nodes, schema)
+      val cols = Seq(
+        n,
+        nHasLabelPerson,
+        nHasPropertyName,
+        rStart,
+        r,
+        rHasTypeKnows,
+        rEnd,
+        rHasPropertySince
+      )
 
-    val mapping = NodeMapping.on("id")
-      .withOptionalLabel("Person")
-      .withOptionalLabel("Employee")
-      .withOptionalLabel("Animal")
+      val data = Bag(
+        Row(0L.encodeAsCAPSId.toList, true, "Alice", 0L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, true, 1L.encodeAsCAPSId.toList, 2017L)
+      )
 
-    it("Selects the correct table for optional labels with inexact match") {
-      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
-
-      graph.nodes("n", CTNode("Employee"), false).toMapsWithCollectedEntities should equal(Bag(
-        CypherMap("n" -> CAPSNode(2L, Set("Person", "Employee")))
-      ))
+      verify(result, cols, data)
     }
 
-    it("Selects the correct table for optional labels with exact match") {
-      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
+    it("can scan for TripletPatterns") {
+      val pattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Person"))
 
-      graph.nodes("n", CTNode("Employee"), true).toMapsWithCollectedEntities shouldBe empty
+      val graph = initGraph(
+        """
+          |CREATE (a:Person {name: "Alice"})
+          |CREATE (b:Person {name: "Bob"})
+          |CREATE (a)-[:KNOWS {since: 2017}]->(b)
+        """.stripMargin, Seq(pattern))
+      val scan = graph.scanOperator(pattern)
+
+      val result = caps.records.from(scan.header, scan.table)
+
+      val sourceVar = pattern.sourceEntity.toVar
+      val targetVar = pattern.targetEntity.toVar
+      val relVar = pattern.relEntity.toVar
+      val cols = Seq(
+        sourceVar,
+        HasLabel(sourceVar, Label("Person"))(CTBoolean),
+        Property(sourceVar, PropertyKey("name"))(CTString),
+        relVar,
+        HasType(relVar, RelType("KNOWS"))(CTBoolean),
+        StartNode(relVar)(),
+        EndNode(relVar)(),
+        Property(relVar, PropertyKey("since"))(CTInteger),
+        targetVar,
+        HasLabel(targetVar, Label("Person"))(CTBoolean),
+        Property(targetVar, PropertyKey("name"))(CTString)
+      )
+
+      val data = Bag(
+        Row(0L.encodeAsCAPSId.toList, true, "Alice", 2L.encodeAsCAPSId.toList, true, 0L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, 2017L, 1L.encodeAsCAPSId.toList, true, "Bob")
+      )
+
+      verify(result, cols, data)
     }
 
-    it("Selects the correct tables for implied and optional labels with inexact match") {
-      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
-      graph.nodes("n", CTNode("Person"), false).toMapsWithCollectedEntities should equal(Bag(
-        CypherMap("n" -> CAPSNode(1L, Set("Person"))),
-        CypherMap("n" -> CAPSNode(2L, Set("Person", "Employee")))
-      ))
-    }
+    it("can align different complex pattern scans") {
+      val scanPattern= TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode)
 
-    it("Selects the correct tables for implied labels with exact match") {
-      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
-      graph.nodes("n", CTNode("Person"), true).toMapsWithCollectedEntities should equal(Bag(
-        CypherMap("n" -> CAPSNode(1L, Set("Person")))
-      ))
-    }
+      val personPattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Person"))
+      val animalPattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Animal"))
 
-    it("Selects the correct tables for implied and optional labels with exact match") {
-      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
-      graph.nodes("n", CTNode("Person", "Employee"), true).toMapsWithCollectedEntities should equal(Bag(
-        CypherMap("n" -> CAPSNode(2L, Set("Person", "Employee")))
-      ))
-    }
+      val graph = initGraph(
+        """
+          |CREATE (a:Person {name: "Alice"})
+          |CREATE (b:Person {name: "Bob"})
+          |CREATE (c:Animal {name: "Garfield"})
+          |CREATE (a)-[:KNOWS {since: 2017}]->(b)
+          |CREATE (a)-[:KNOWS {since: 2017}]->(c)
+        """.stripMargin, Seq(personPattern, animalPattern))
 
-    it("Supports all node scans") {
-      val graph = caps.readFrom(CAPSNodeTable.fromMapping(mapping, df))
-      graph.nodes("n").toMapsWithCollectedEntities should equal(Bag(
-        CypherMap("n" -> CAPSNode(1L, Set("Person"))),
-        CypherMap("n" -> CAPSNode(2L, Set("Person", "Employee"))),
-        CypherMap("n" -> CAPSNode(3L, Set("Animal")))
-      ))
+      val scan = graph.scanOperator(scanPattern)
+
+      val result = caps.records.from(scan.header, scan.table)
+
+      val sourceVar = scanPattern.sourceEntity.toVar
+      val targetVar = scanPattern.targetEntity.toVar
+      val relVar = scanPattern.relEntity.toVar
+      val cols = Seq(
+        sourceVar,
+        HasLabel(sourceVar, Label("Person"))(CTBoolean),
+        Property(sourceVar, PropertyKey("name"))(CTString),
+        relVar,
+        HasType(relVar, RelType("KNOWS"))(CTBoolean),
+        StartNode(relVar)(),
+        EndNode(relVar)(),
+        Property(relVar, PropertyKey("since"))(CTInteger.nullable),
+        targetVar,
+        HasLabel(targetVar, Label("Person"))(CTBoolean),
+        HasLabel(targetVar, Label("Animal"))(CTBoolean),
+        Property(targetVar, PropertyKey("name"))(CTString)
+      )
+
+      val data = Bag(
+        Row(0L.encodeAsCAPSId.toList, true, "Alice", 3L.encodeAsCAPSId.toList, true, 0L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, 2017L, 1L.encodeAsCAPSId.toList, true, false, "Bob"),
+        Row(0L.encodeAsCAPSId.toList, true, "Alice", 4L.encodeAsCAPSId.toList, true, 0L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, 2017L, 2L.encodeAsCAPSId.toList, false, true, "Garfield")
+      )
+
+      verify(result, cols, data)
     }
   }
 }

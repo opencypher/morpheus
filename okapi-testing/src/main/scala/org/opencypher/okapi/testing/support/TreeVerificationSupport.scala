@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,18 +24,22 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.testing.support.creation.caps
+package org.opencypher.okapi.testing.support
 
-import org.opencypher.okapi.api.graph.Pattern
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.testing.propertygraph.{CreateGraphFactory, CypherTestGraphFactory}
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
+import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.okapi.trees.TreeNode
 
-trait CAPSTestGraphFactory extends CypherTestGraphFactory[CAPSSession] {
-  def initGraph(createQuery: String, additionalPatterns: Seq[Pattern] = Seq.empty)
-    (implicit caps: CAPSSession): RelationalCypherGraph[DataFrameTable] = {
-    apply(CreateGraphFactory(createQuery), additionalPatterns).asCaps
+import scala.reflect.ClassTag
+
+trait TreeVerificationSupport {
+  self: BaseTestSuite =>
+
+  implicit class TreeNodeTestsUtils[T <: TreeNode[T]](op: T) {
+    def occourences[B <: TreeNode[T] : ClassTag]: Int = {
+      op.transform[Int] {
+        case (_: B, list) => list.sum + 1
+        case (_, list) => list.sum
+      }
+    }
   }
 }

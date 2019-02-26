@@ -26,12 +26,13 @@
  */
 package org.opencypher.okapi.relational.impl.graph
 
+import org.opencypher.okapi.api.graph.Pattern
 import org.opencypher.okapi.api.schema.LabelPropertyMap._
 import org.opencypher.okapi.api.schema.RelTypePropertyMap._
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
-import org.opencypher.okapi.ir.api.expr.Var
+import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.schema.RelationalSchema._
@@ -44,6 +45,13 @@ import scala.reflect.runtime.universe.TypeTag
 // TODO: This should be a planned tree of physical operators instead of a graph
 final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCypherGraph[T]])
   (implicit context: RelationalRuntimeContext[T]) extends RelationalCypherGraph[T] {
+
+  // TODO: We could be better here by also keeping patterns for which we know that they cover parts of the schema
+  //  that only the respective subgraph supplies
+  override def patterns: Set[Pattern] =
+    graphs
+      .map(_.patterns)
+      .foldLeft(Set.empty[Pattern])(_ intersect _)
 
   require(graphs.nonEmpty, "Union requires at least one graph")
 
@@ -60,41 +68,49 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCyph
   override def toString = s"UnionGraph(graphs=[${graphs.mkString(",")}])"
 
   override def scanOperator(
-    entityType: CypherType,
+    searchPattern: Pattern,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {
-    val targetEntity = Var.unnamed(entityType)
-    val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch)
-    val alignedScans = graphs
-      .flatMap { graph =>
-        val isEmptyScan = entityType match {
-          case CTNode(knownLabels, _) if knownLabels.isEmpty =>
-            graph.schema.allCombinations.isEmpty
-          case CTNode(knownLabels, _) =>
-            graph.schema.labelPropertyMap.filterForLabels(knownLabels).isEmpty
-          case CTRelationship(types, _) if types.isEmpty =>
-            graph.schema.relationshipTypes.isEmpty
-          case CTRelationship(types, _) =>
-            graph.schema.relTypePropertyMap.filterForRelTypes(types).isEmpty
-          case other => throw UnsupportedOperationException(s"Cannot scan on $other")
-        }
 
-        if (isEmptyScan) {
-          None
-        }
-        else {
-          val scanOp = graph.scanOperator(entityType, exactLabelMatch)
-          val inputEntity = scanOp.singleEntity
-          Some(scanOp.alignWith(inputEntity, targetEntity, targetEntityHeader))
-        }
+    val alignedEntityTableOps = graphs.flatMap { graph =>
+
+      val isEmptyScan = searchPattern.entities.map(_.cypherType).exists {
+        case CTNode(knownLabels, _) if knownLabels.isEmpty =>
+          graph.schema.allCombinations.isEmpty
+        case CTNode(knownLabels, _) =>
+          graph.schema.labelPropertyMap.filterForLabels(knownLabels).isEmpty
+        case CTRelationship(types, _) if types.isEmpty =>
+          graph.schema.relationshipTypes.isEmpty
+        case CTRelationship(types, _) =>
+          graph.schema.relTypePropertyMap.filterForRelTypes(types).isEmpty
+        case other => throw UnsupportedOperationException(s"Cannot scan on $other")
       }
 
-    alignedScans match {
-      case Nil =>
-        Start.fromEmptyGraph(session.records.empty(targetEntityHeader))
-      case _ =>
-        alignedScans.reduce(TabularUnionAll(_, _))
+      if (isEmptyScan) {
+        None
+      } else {
+        val selectedScan = graph.scanOperator(searchPattern, exactLabelMatch)
+        val alignedScanOp = searchPattern.entities.foldLeft(selectedScan) {
+
+          case (acc, entity) =>
+            val inputEntityExpressions = selectedScan.header.expressionsFor(entity.toVar)
+            val targetHeader = acc.header -- inputEntityExpressions ++ schema.headerForEntity(entity.toVar)
+
+            acc.alignWith(entity.toVar, entity.toVar, targetHeader)
+        }
+        Some(alignedScanOp)
+      }
     }
 
+    alignedEntityTableOps match {
+      case Nil =>
+        val scanHeader = searchPattern
+          .entities
+          .map { e => schema.headerForEntity(e.toVar) }
+          .reduce(_ ++ _)
+        Start.fromEmptyGraph(session.records.empty(scanHeader))
+      case _ =>
+        alignedEntityTableOps.reduce(TabularUnionAll(_, _))
+    }
   }
 }

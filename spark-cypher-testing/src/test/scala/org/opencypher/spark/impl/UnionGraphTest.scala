@@ -68,21 +68,20 @@ class UnionGraphTest extends CAPSGraphTest
       n,
       nHasLabelBook,
       nHasLabelPerson,
-      nHasLabelSwedish,
       nHasPropertyLuckyNumber,
       nHasPropertyName,
       nHasPropertyTitle,
       nHasPropertyYear
     )
     val data = Bag(
-      Row(0L.withPrefix(0).toList, false, true, true, 23L, "Mats", null, null),
-      Row(1L.withPrefix(0).toList, false, true, false, 42L, "Martin", null, null),
-      Row(2L.withPrefix(0).toList, false, true, false, 1337L, "Max", null, null),
-      Row(3L.withPrefix(0).toList, false, true, false, 9L, "Stefan", null, null),
-      Row(0L.withPrefix(1).toList, true, false, false, null, null, "1984", 1949L),
-      Row(1L.withPrefix(1).toList, true, false, false, null, null, "Cryptonomicon", 1999L),
-      Row(2L.withPrefix(1).toList, true, false, false, null, null, "The Eye of the World", 1990L),
-      Row(3L.withPrefix(1).toList, true, false, false, null, null, "The Circle", 2013L)
+      Row(0L.withPrefix(0).toList, false, true, 23L, "Mats", null, null),
+      Row(1L.withPrefix(0).toList, false, true, 42L, "Martin", null, null),
+      Row(2L.withPrefix(0).toList, false, true, 1337L, "Max", null, null),
+      Row(3L.withPrefix(0).toList, false, true, 9L, "Stefan", null, null),
+      Row(0L.withPrefix(1).toList, true, false, null, null, "1984", 1949L),
+      Row(1L.withPrefix(1).toList, true, false, null, null, "Cryptonomicon", 1999L),
+      Row(2L.withPrefix(1).toList, true, false, null, null, "The Eye of the World", 1990L),
+      Row(3L.withPrefix(1).toList, true, false, null, null, "The Circle", 2013L)
     )
 
     verify(nodes, cols, data)
@@ -98,19 +97,18 @@ class UnionGraphTest extends CAPSGraphTest
     val cols = Seq(
       n,
       nHasLabelPerson,
-      nHasLabelSwedish,
       nHasPropertyLuckyNumber,
       nHasPropertyName
     )
     val data = Bag(
-      Row(1L.withPrefix(0).toList, true, true, 23L, "Mats"),
-      Row(2L.withPrefix(0).toList, true, false, 42L, "Martin"),
-      Row(3L.withPrefix(0).toList, true, false, 1337L, "Max"),
-      Row(4L.withPrefix(0).toList, true, false, 9L, "Stefan"),
-      Row(1L.withPrefix(1).toList, true, true, 23L, "Mats"),
-      Row(2L.withPrefix(1).toList, true, false, 42L, "Martin"),
-      Row(3L.withPrefix(1).toList, true, false, 1337L, "Max"),
-      Row(4L.withPrefix(1).toList, true, false, 9L, "Stefan")
+      Row(1L.withPrefix(0).toList, true, 23L, "Mats"),
+      Row(2L.withPrefix(0).toList, true, 42L, "Martin"),
+      Row(3L.withPrefix(0).toList, true, 1337L, "Max"),
+      Row(4L.withPrefix(0).toList, true, 9L, "Stefan"),
+      Row(1L.withPrefix(1).toList, true, 23L, "Mats"),
+      Row(2L.withPrefix(1).toList, true, 42L, "Martin"),
+      Row(3L.withPrefix(1).toList, true, 1337L, "Max"),
+      Row(4L.withPrefix(1).toList, true, 9L, "Stefan")
     )
 
     verify(nodes, cols, data)

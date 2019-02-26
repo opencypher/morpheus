@@ -31,9 +31,9 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.value.CAPSEntity
+import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{RecordsVerificationFixture, TeamDataFixture}
-import CAPSEntity._
 
 class CAPSGraphOperationsTest extends CAPSTestSuite with TeamDataFixture with RecordsVerificationFixture {
 
@@ -50,7 +50,6 @@ class CAPSGraphOperationsTest extends CAPSTestSuite with TeamDataFixture with Re
       nHasLabelBook,
       nHasLabelPerson,
       nHasLabelProgrammer,
-      nHasLabelSwedish,
       nHasPropertyLanguage,
       nHasPropertyLuckyNumber,
       nHasPropertyName,
@@ -58,18 +57,18 @@ class CAPSGraphOperationsTest extends CAPSTestSuite with TeamDataFixture with Re
       nHasPropertyYear)
 
     verify(nodeRecords, nExprs, Bag(
-      Row(1L.withPrefix(0).toList, false, true, false, true, null, 23L, "Mats", null, null),
-      Row(2L.withPrefix(0).toList, false, true, false, false, null, 42L, "Martin", null, null),
-      Row(3L.withPrefix(0).toList, false, true, false, false, null, 1337L, "Max", null, null),
-      Row(4L.withPrefix(0).toList, false, true, false, false, null, 9L, "Stefan", null, null),
-      Row(10L.withPrefix(1).toList, true, false, false, false, null, null, null, "1984", 1949L),
-      Row(20L.withPrefix(1).toList, true, false, false, false, null, null, null, "Cryptonomicon", 1999L),
-      Row(30L.withPrefix(1).toList, true, false, false, false, null, null, null, "The Eye of the World", 1990L),
-      Row(40L.withPrefix(1).toList, true, false, false, false, null, null, null, "The Circle", 2013L),
-      Row(100L.withPrefix(1).toList, false, true, true, false, "C", 42L, "Alice", null, null),
-      Row(200L.withPrefix(1).toList, false, true, true, false, "D", 23L, "Bob", null, null),
-      Row(300L.withPrefix(1).toList, false, true, true, false, "F", 84L, "Eve", null, null),
-      Row(400L.withPrefix(1).toList, false, true, true, false, "R", 49L, "Carl", null, null)
+      Row(1L.withPrefix(0).toList, false, true, false,  null, 23L, "Mats", null, null),
+      Row(2L.withPrefix(0).toList, false, true, false,  null, 42L, "Martin", null, null),
+      Row(3L.withPrefix(0).toList, false, true, false,  null, 1337L, "Max", null, null),
+      Row(4L.withPrefix(0).toList, false, true, false,  null, 9L, "Stefan", null, null),
+      Row(10L.withPrefix(1).toList, true, false, false, null, null, null, "1984", 1949L),
+      Row(20L.withPrefix(1).toList, true, false, false, null, null, null, "Cryptonomicon", 1999L),
+      Row(30L.withPrefix(1).toList, true, false, false, null, null, null, "The Eye of the World", 1990L),
+      Row(40L.withPrefix(1).toList, true, false, false, null, null, null, "The Circle", 2013L),
+      Row(100L.withPrefix(1).toList, false, true, true, "C", 42L, "Alice", null, null),
+      Row(200L.withPrefix(1).toList, false, true, true, "D", 23L, "Bob", null, null),
+      Row(300L.withPrefix(1).toList, false, true, true, "F", 84L, "Eve", null, null),
+      Row(400L.withPrefix(1).toList, false, true, true, "R", 49L, "Carl", null, null)
     ))
 
     val relRecords = result.relationships("r")

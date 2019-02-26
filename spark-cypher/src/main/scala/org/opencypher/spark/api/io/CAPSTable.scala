@@ -26,11 +26,10 @@
  */
 package org.opencypher.spark.api.io
 
-import org.apache.spark.sql.{DataFrame, _}
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
-import org.opencypher.okapi.api.types._
+import org.apache.spark.sql.DataFrame
+import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
-import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable, RelationshipTable}
+import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.api.table.RelationalEntityTableFactory
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.table.SparkTable.{DataFrameTable, _}
@@ -40,132 +39,87 @@ import org.opencypher.spark.impl.{CAPSRecords, RecordBehaviour}
 import scala.reflect.runtime.universe._
 
 case object CAPSEntityTableFactory extends RelationalEntityTableFactory[DataFrameTable] {
-  override def nodeTable(
-    nodeMapping: NodeMapping,
+  override def entityTable(
+    nodeMapping: EntityMapping,
     table: DataFrameTable
-  ): NodeTable[DataFrameTable] = {
-    CAPSNodeTable(nodeMapping, table)
-  }
-
-  override def relationshipTable(
-    relationshipMapping: RelationshipMapping,
-    table: DataFrameTable
-  ): RelationshipTable[DataFrameTable] = {
-    CAPSRelationshipTable(relationshipMapping, table)
+  ): EntityTable[DataFrameTable] = {
+    CAPSEntityTable.create(nodeMapping, table)
   }
 }
 
+case class CAPSEntityTable private[spark](
+  override val mapping: EntityMapping,
+  override val table: DataFrameTable
+) extends EntityTable[DataFrameTable] with RecordBehaviour {
 
-trait CAPSEntityTable extends EntityTable[DataFrameTable] {
+  override type Records = CAPSEntityTable
 
   private[spark] def records(implicit caps: CAPSSession): CAPSRecords = caps.records.fromEntityTable(entityTable = this)
 
+  override def cache(): CAPSEntityTable = {
+    table.cache()
+    this
+  }
 }
 
-case class CAPSNodeTable(
-  override val mapping: NodeMapping,
-  override val table: DataFrameTable
-) extends NodeTable(mapping, table) with CAPSEntityTable with RecordBehaviour {
+object CAPSEntityTable {
+  def create(mapping: EntityMapping, table: DataFrameTable): CAPSEntityTable = {
+    val sourceIdColumns = mapping.idKeys.values.toSeq.flatten.map(_._2)
+    val idCols = table.df.encodeIdColumns(sourceIdColumns: _*)
+    val remainingCols = mapping.allSourceKeys.filterNot(sourceIdColumns.contains).map(table.df.col)
+    val colsToSelect = idCols ++ remainingCols
 
-  override type Records = CAPSNodeTable
-
-  override def cache(): CAPSNodeTable = {
-    table.df.cache()
-    this
+    CAPSEntityTable(mapping, table.df.select(colsToSelect: _*))
   }
 }
 
 object CAPSNodeTable {
 
-  def apply[E <: Node : TypeTag](nodes: Seq[E])(implicit caps: CAPSSession): CAPSNodeTable = {
+  def apply[E <: Node : TypeTag](nodes: Seq[E])(implicit caps: CAPSSession): CAPSEntityTable = {
     val nodeLabels = Annotation.labels[E]
     val nodeDF = caps.sparkSession.createDataFrame(nodes)
-    val nodeProperties = properties(nodeDF.columns)
-    val nodeMapping = NodeMapping.create(nodeIdKey = GraphEntity.sourceIdKey, impliedLabels = nodeLabels, propertyKeys = nodeProperties)
-    fromMapping(nodeMapping, nodeDF)
+    val nodeProperties = nodeDF.columns.filter(_ != GraphEntity.sourceIdKey).toSet
+    val nodeMapping = NodeMappingBuilder.create(nodeIdKey = GraphEntity.sourceIdKey, impliedLabels = nodeLabels, propertyKeys = nodeProperties)
+    CAPSEntityTable.create(nodeMapping, nodeDF)
   }
 
   /**
     * Creates a node table from the given [[DataFrame]]. By convention, there needs to be one column storing node
-    * identifiers and named after [[GraphEntity.sourceIdKey]]. All remaining columns are interpreted as node property
-    * columns, the column name is used as property key.
-    *
-    * @param impliedLabels implied node labels
-    * @param nodeDF        node data
-    * @return a node table with inferred node mapping
-    */
-  def apply(impliedLabels: Set[String], nodeDF: DataFrame): CAPSNodeTable =
-    CAPSNodeTable(impliedLabels, Map.empty, nodeDF)
-
-  /**
-    * Creates a node table from the given [[DataFrame]]. By convention, there needs to be one column storing node
-    * identifiers and named after [[GraphEntity.sourceIdKey]]. Optional labels are defined by a mapping from label to
-    * column name. All remaining columns are interpreted as node property columns, the column name is used as property
+    * identifiers and named after [[GraphEntity.sourceIdKey]]. All remaining columns are interpreted as node property columns, the column name is used as property
     * key.
     *
     * @param impliedLabels  implied node labels
-    * @param optionalLabels mapping from optional labels to column names
     * @param nodeDF         node data
     * @return a node table with inferred node mapping
     */
-  def apply(impliedLabels: Set[String], optionalLabels: Map[String, String], nodeDF: DataFrame): CAPSNodeTable = {
-    val propertyColumnNames = properties(nodeDF.columns) -- optionalLabels.values
+  def apply(impliedLabels: Set[String], nodeDF: DataFrame): CAPSEntityTable = {
+    val propertyColumnNames = nodeDF.columns.filter(_ != GraphEntity.sourceIdKey).toSet
+    val propertyKeyMapping = propertyColumnNames.map(p => p.toProperty -> p)
 
-    val baseMapping = NodeMapping(GraphEntity.sourceIdKey, impliedLabels, optionalLabels)
+    val mapping = NodeMappingBuilder
+      .on(GraphEntity.sourceIdKey)
+      .withImpliedLabels(impliedLabels.toSeq: _*)
+      .withPropertyKeyMappings(propertyKeyMapping.toSeq: _*)
+      .build
 
-    val nodeMapping = propertyColumnNames.foldLeft(baseMapping) { (mapping, propertyColumn) =>
-      mapping.withPropertyKey(propertyColumn.toProperty, propertyColumn)
-    }
-
-    fromMapping(nodeMapping, nodeDF)
-  }
-
-  /**
-    * Creates a node table from the given [[NodeMapping]] and [[DataFrame]].
-    *
-    * @param mapping      node mapping
-    * @param initialTable node data
-    * @return a node table
-    */
-  def fromMapping(mapping: NodeMapping, initialTable: DataFrame): CAPSNodeTable = {
-    val idCols = initialTable.encodeIdColumns(mapping.idKeys: _*)
-    val remainingCols = mapping.allSourceKeys.filterNot(mapping.idKeys.contains).map(initialTable.col)
-    val colsToSelect = idCols ++ remainingCols
-    CAPSNodeTable(mapping, initialTable.select(colsToSelect: _*))
-  }
-
-  private def properties(nodeColumnNames: Seq[String]): Set[String] = {
-    nodeColumnNames.filter(_ != GraphEntity.sourceIdKey).toSet
-  }
-}
-
-case class CAPSRelationshipTable(
-  override val mapping: RelationshipMapping,
-  override val table: DataFrameTable
-) extends RelationshipTable(mapping, table) with CAPSEntityTable with RecordBehaviour {
-
-  override type Records = CAPSRelationshipTable
-
-  override def cache(): CAPSRelationshipTable = {
-    table.df.cache()
-    this
+    CAPSEntityTable.create(mapping, nodeDF)
   }
 }
 
 object CAPSRelationshipTable {
 
-  def apply[E <: Relationship : TypeTag](relationships: Seq[E])(implicit caps: CAPSSession): CAPSRelationshipTable = {
+  def apply[E <: Relationship : TypeTag](relationships: Seq[E])(implicit caps: CAPSSession): CAPSEntityTable = {
     val relationshipType: String = Annotation.relType[E]
     val relationshipDF = caps.sparkSession.createDataFrame(relationships)
-    val relationshipProperties = properties(relationshipDF.columns)
+    val relationshipProperties = relationshipDF.columns.filter(!Relationship.nonPropertyAttributes.contains(_)).toSet
 
-    val relationshipMapping = RelationshipMapping.create(GraphEntity.sourceIdKey,
+    val relationshipMapping = RelationshipMappingBuilder.create(GraphEntity.sourceIdKey,
       Relationship.sourceStartNodeKey,
       Relationship.sourceEndNodeKey,
       relationshipType,
       relationshipProperties)
 
-    fromMapping(relationshipMapping, relationshipDF)
+    CAPSEntityTable.create(relationshipMapping, relationshipDF)
   }
 
   /**
@@ -182,54 +136,19 @@ object CAPSRelationshipTable {
     * @param relationshipDF   relationship data
     * @return a relationship table with inferred relationship mapping
     */
-  def apply(relationshipType: String, relationshipDF: DataFrame): CAPSRelationshipTable = {
-    val propertyColumnNames = properties(relationshipDF.columns)
+  def apply(relationshipType: String, relationshipDF: DataFrame): CAPSEntityTable = {
+    val propertyColumnNames = relationshipDF.columns.filter(!Relationship.nonPropertyAttributes.contains(_)).toSet
+    val propertyKeyMapping = propertyColumnNames.map(p => p.toProperty -> p)
 
-    val baseMapping = RelationshipMapping.create(GraphEntity.sourceIdKey,
-      Relationship.sourceStartNodeKey,
-      Relationship.sourceEndNodeKey,
-      relationshipType)
+    val mapping = RelationshipMappingBuilder
+      .on(GraphEntity.sourceIdKey)
+      .from(Relationship.sourceStartNodeKey)
+      .to(Relationship.sourceEndNodeKey)
+      .withRelType(relationshipType)
+      .withPropertyKeyMappings(propertyKeyMapping.toSeq: _*)
+      .build
 
-    val relationshipMapping = propertyColumnNames.foldLeft(baseMapping) { (mapping, propertyColumn) =>
-      mapping.withPropertyKey(propertyColumn.toProperty, propertyColumn)
-    }
-
-    fromMapping(relationshipMapping, relationshipDF)
-  }
-
-  /**
-    * Creates a relationship table from the given [[RelationshipMapping]] and [[DataFrame]].
-    *
-    * @param mapping      relationship mapping
-    * @param initialTable node data
-    * @return a relationship table
-    */
-  def fromMapping(mapping: RelationshipMapping, initialTable: DataFrame): CAPSRelationshipTable = {
-
-    val updatedTable = mapping.relTypeOrSourceRelTypeKey match {
-
-      // Flatten rel type column into boolean columns
-      case Right((typeColumnName, relTypes)) =>
-        DataFrameTable(initialTable).verifyColumnType(typeColumnName, CTString, "relationship type")
-        val updatedTable = relTypes.foldLeft(initialTable) { case (currentDf, relType) =>
-          val typeColumn = currentDf.col(typeColumnName)
-          val relTypeColumnName = relType.toRelTypeColumnName
-          currentDf
-            .withColumn(relTypeColumnName, typeColumn === functions.lit(relType))
-        }
-        updatedTable.drop(updatedTable.col(typeColumnName))
-
-      case _ => initialTable
-    }
-
-    val idCols = initialTable.encodeIdColumns(mapping.idKeys: _*)
-    val remainingCols = mapping.allSourceKeys.filterNot(mapping.idKeys.contains).map(updatedTable.col)
-    val colsToSelect = idCols ++ remainingCols
-    CAPSRelationshipTable(mapping, updatedTable.select(colsToSelect: _*))
-  }
-
-  private def properties(relColumnNames: Seq[String]): Set[String] = {
-    relColumnNames.filter(!Relationship.nonPropertyAttributes.contains(_)).toSet
+    CAPSEntityTable.create(mapping, relationshipDF)
   }
 }
 

@@ -27,17 +27,16 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.InternalException
+import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
-import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.CAPSConverters._
@@ -111,7 +110,6 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     records.header.expressions.map(s => s -> s.cypherType) should equal(Set(
       Var("ID")() -> CTInteger,
-      Var("IS_SWEDE")() -> CTBoolean,
       Var("NAME")() -> CTString.nullable,
       Var("NUM")() -> CTInteger
     ))
@@ -126,37 +124,35 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
     // Then
     df.collect().toBag should equal(Bag(
-      Row(1L.encodeAsCAPSId, true, "Mats", 23),
-      Row(2L.encodeAsCAPSId, false, "Martin", 42),
-      Row(3L.encodeAsCAPSId, false, "Max", 1337),
-      Row(4L.encodeAsCAPSId, false, "Stefan", 9)
+      Row(1L.encodeAsCAPSId, "Mats", 23),
+      Row(2L.encodeAsCAPSId, "Martin", 42),
+      Row(3L.encodeAsCAPSId, "Max", 1337),
+      Row(4L.encodeAsCAPSId, "Stefan", 9)
     ))
   }
 
   it("verify CAPSRecords header") {
     val givenDF = sparkSession.createDataFrame(
       Seq(
-        (1L, true, "Mats"),
-        (2L, false, "Martin"),
-        (3L, false, "Max"),
-        (4L, false, "Stefan")
-      )).toDF("ID", "IS_SWEDE", "NAME")
+        (1L, "Mats"),
+        (2L, "Martin"),
+        (3L, "Max"),
+        (4L, "Stefan")
+      )).toDF("ID", "NAME")
 
-    val givenMapping = NodeMapping.on("ID")
+    val givenMapping = NodeMappingBuilder.on("ID")
       .withImpliedLabel("Person")
-      .withOptionalLabel("Swedish" -> "IS_SWEDE")
       .withPropertyKey("name" -> "NAME")
+      .build
 
-    val nodeTable = CAPSNodeTable.fromMapping(givenMapping, givenDF)
+    val nodeTable = CAPSEntityTable.create(givenMapping, givenDF)
 
     val records = caps.records.fromEntityTable(nodeTable)
 
-    val entityVar = Var.unnamed(CTNode("Person"))
-
+    val entityVar = Var("node")(CTNode("Person"))
     records.header.expressions should equal(
       Set(
         entityVar,
-        HasLabel(entityVar, Label("Swedish"))(CTBoolean),
         Property(entityVar, PropertyKey("name"))(CTString.nullable)
       ))
   }
@@ -171,17 +167,18 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
         (13L, 4L, 1L, "yellow")
       )).toDF("ID", "FROM", "TO", "COLOR")
 
-    val givenMapping = RelationshipMapping.on("ID")
+    val givenMapping = RelationshipMappingBuilder.on("ID")
       .from("FROM")
       .to("TO")
       .relType("NEXT")
       .withPropertyKey("color" -> "COLOR")
+      .build
 
-    val relTable = CAPSRelationshipTable.fromMapping(givenMapping, givenDF)
+    val relTable = CAPSEntityTable.create(givenMapping, givenDF)
 
     val records = caps.records.fromEntityTable(relTable)
 
-    val entityVar = Var.unnamed(CTRelationship("NEXT"))
+    val entityVar = Var("rel")(CTRelationship("NEXT"))
 
     records.header.expressions should equal(
       Set(
@@ -189,39 +186,6 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
         StartNode(entityVar)(CTNode),
         EndNode(entityVar)(CTNode),
         Property(entityVar, PropertyKey("color"))(CTString.nullable)
-      )
-    )
-  }
-
-  it("contract relationships with a dynamic type") {
-    val givenDF = sparkSession.createDataFrame(
-      Seq(
-        (10L, 1L, 2L, "RED"),
-        (11L, 2L, 3L, "BLUE"),
-        (12L, 3L, 4L, "GREEN"),
-        (13L, 4L, 1L, "YELLOW")
-      )).toDF("ID", "FROM", "TO", "COLOR")
-
-    val givenMapping = RelationshipMapping.on("ID")
-      .from("FROM")
-      .to("TO")
-      .withSourceRelTypeKey("COLOR", Set("RED", "BLUE", "GREEN", "YELLOW"))
-
-    val relTable = CAPSRelationshipTable.fromMapping(givenMapping, givenDF)
-
-    val records = caps.records.fromEntityTable(relTable)
-
-    val entityVar = Var.unnamed(CTRelationship("RED", "BLUE", "GREEN", "YELLOW"))
-
-    records.header.expressions should equalWithTracing(
-      Set(
-        entityVar,
-        StartNode(entityVar)(CTNode),
-        EndNode(entityVar)(CTNode),
-        HasType(entityVar, RelType("RED"))(CTBoolean),
-        HasType(entityVar, RelType("BLUE"))(CTBoolean),
-        HasType(entityVar, RelType("GREEN"))(CTBoolean),
-        HasType(entityVar, RelType("YELLOW"))(CTBoolean)
       )
     )
   }

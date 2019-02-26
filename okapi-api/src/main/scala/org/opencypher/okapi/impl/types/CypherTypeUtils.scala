@@ -1,4 +1,4 @@
-/*
+/**
  * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -24,18 +24,21 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.testing.support.creation.caps
+package org.opencypher.okapi.impl.types
 
-import org.opencypher.okapi.api.graph.Pattern
-import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.testing.propertygraph.{CreateGraphFactory, CypherTestGraphFactory}
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 
-trait CAPSTestGraphFactory extends CypherTestGraphFactory[CAPSSession] {
-  def initGraph(createQuery: String, additionalPatterns: Seq[Pattern] = Seq.empty)
-    (implicit caps: CAPSSession): RelationalCypherGraph[DataFrameTable] = {
-    apply(CreateGraphFactory(createQuery), additionalPatterns).asCaps
+object CypherTypeUtils {
+  implicit class RichCypherType(val ct: CypherType) extends AnyVal {
+    def toCTNode: CTNode = ct match {
+      case n: CTNode => n
+      case other => throw UnsupportedOperationException(s"cannot convert $other into a CTNode")
+    }
+
+    def toCTRelationship: CTRelationship = ct match {
+      case r: CTRelationship => r
+      case other => throw UnsupportedOperationException(s"cannot convert $other into a CTRelationship")
+    }
   }
 }

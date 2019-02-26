@@ -30,14 +30,14 @@ import java.sql.Date
 
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.DecimalType
-import org.opencypher.okapi.api.io.conversion.{NodeMapping, RelationshipMapping}
+import org.opencypher.okapi.api.graph.Pattern
+import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.impl.util.StringEncodingUtilities._
+import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.api.value.CAPSEntity._
@@ -52,78 +52,79 @@ case class Friend(id: Long, source: Long, target: Long, since: String) extends R
 
 class EntityTableTest extends CAPSTestSuite {
 
-  private val nodeMapping: NodeMapping = NodeMapping
+  private val nodeMapping: EntityMapping = NodeMappingBuilder
     .withSourceIdKey("ID")
     .withImpliedLabel("A")
     .withImpliedLabel("B")
-    .withOptionalLabel("C" -> "IS_C")
     .withPropertyKey("foo" -> "FOO")
     .withPropertyKey("bar" -> "BAR")
+    .build
 
-  private val relMapping: RelationshipMapping = RelationshipMapping
+  private val relMapping: EntityMapping = RelationshipMappingBuilder
     .withSourceIdKey("ID")
     .withSourceStartNodeKey("FROM")
     .withSourceEndNodeKey("TO")
     .withRelType("A")
     .withPropertyKey("foo" -> "FOO")
     .withPropertyKey("bar" -> "BAR")
-
-  private val relMappingWithTypeColumn: RelationshipMapping = RelationshipMapping
-    .withSourceIdKey("ID")
-    .withSourceStartNodeKey("FROM")
-    .withSourceEndNodeKey("TO")
-    .withSourceRelTypeKey("REL_TYPES", Set("A", "B", "C"))
-    .withPropertyKey("foo" -> "FOO")
-    .withPropertyKey("bar" -> "BAR")
+    .build
 
   it("mapping from scala classes") {
     val personTableScala = CAPSNodeTable(List(Person(0, "Alice", 15)))
-    personTableScala.mapping should equal(NodeMapping
+    personTableScala.mapping should equal(NodeMappingBuilder
       .withSourceIdKey("id")
       .withImpliedLabel("Person")
       .withPropertyKey("name")
-      .withPropertyKey("age"))
+      .withPropertyKey("age")
+      .build)
+
 
     val friends = List(Friend(0, 0, 1, "23/01/1987"), Friend(1, 1, 2, "12/12/2009"))
     val friendTableScala = CAPSRelationshipTable(friends)
 
-    friendTableScala.mapping should equal(RelationshipMapping
+    friendTableScala.mapping should equal(RelationshipMappingBuilder
       .withSourceIdKey("id")
       .withSourceStartNodeKey("source")
       .withSourceEndNodeKey("target")
       .withRelType("FRIEND_OF")
-      .withPropertyKey("since"))
+      .withPropertyKey("since")
+      .build)
   }
 
-  it("throws an IllegalArgumentException when a relationship table does not have the expected column ordering") {
+  // TODO: What is the expected column ordering?
+  ignore("throws an IllegalArgumentException when a relationship table does not have the expected column ordering") {
     val df = sparkSession.createDataFrame(Seq((1, 1, 1, true))).toDF("ID", "TARGET", "SOURCE", "TYPE")
-    val relMapping = RelationshipMapping.on("ID").from("SOURCE").to("TARGET").withSourceRelTypeKey("TYPE", Set("A"))
+    val relMapping = RelationshipMappingBuilder
+      .on("ID")
+      .from("SOURCE")
+      .to("TARGET")
+      .withRelType("A")
+      .build
+
     an[IllegalArgumentException] should be thrownBy {
-      CAPSRelationshipTable(relMapping, df)
+      CAPSEntityTable.create(relMapping, df)
     }
   }
 
   it("NodeTable should create correct schema from given mapping") {
-    val df = sparkSession.createDataFrame(Seq((1L, true, "Mats", 23L))).toDF("ID", "IS_C", "FOO", "BAR")
+    val df = sparkSession.createDataFrame(Seq((1L, "Mats", 23L))).toDF("ID", "FOO", "BAR")
 
-    val nodeTable = CAPSNodeTable.fromMapping(nodeMapping, df)
+    val nodeTable = CAPSEntityTable.create(nodeMapping, df)
 
     nodeTable.schema should equal(
       Schema.empty
-        .withNodePropertyKeys("A", "B")("foo" -> CTString.nullable, "bar" -> CTInteger)
-        .withNodePropertyKeys("A", "B", "C")("foo" -> CTString.nullable, "bar" -> CTInteger))
+        .withNodePropertyKeys("A", "B")("foo" -> CTString.nullable, "bar" -> CTInteger))
   }
 
   it("NodeTable should create correct header from given mapping") {
-    val df = sparkSession.createDataFrame(Seq((1L, true, "Mats", 23L))).toDF("ID", "IS_C", "FOO", "BAR")
+    val df = sparkSession.createDataFrame(Seq((1L, "Mats", 23L))).toDF("ID", "FOO", "BAR")
 
-    val nodeTable = CAPSNodeTable.fromMapping(nodeMapping, df)
+    val nodeTable = CAPSEntityTable.create(nodeMapping, df)
 
-    val v = Var.unnamed(CTNode("A", "B"))
+    val v = Var(Pattern.DEFAULT_NODE_NAME)(CTNode("A", "B"))
 
     nodeTable.header should equal(RecordHeader(Map(
       v -> "ID",
-      HasLabel(v, Label("C"))(CTBoolean) -> "IS_C",
       Property(v, PropertyKey("foo"))(CTString) -> "FOO",
       Property(v, PropertyKey("bar"))(CTInteger) -> "BAR"
     )
@@ -135,7 +136,7 @@ class EntityTableTest extends CAPSTestSuite {
       .createDataFrame(Seq((1L, 2L, 3L, true, "Mats", 23L)))
       .toDF("ID", "FROM", "TO", "IS_A", "FOO", "BAR")
 
-    val relationshipTable = CAPSRelationshipTable.fromMapping(relMapping, df)
+    val relationshipTable = CAPSEntityTable.create(relMapping, df)
 
     relationshipTable.schema should equal(
       Schema.empty
@@ -144,41 +145,21 @@ class EntityTableTest extends CAPSTestSuite {
 
   it("Relationship table should create correct header from given mapping") {
     val df = sparkSession
-      .createDataFrame(Seq((1L, 2L, 3L, true, "Mats", 23L)))
-      .toDF("ID", "FROM", "TO", "IS_A", "FOO", "BAR")
+      .createDataFrame(Seq((1L, 2L, 3L, "Mats", 23L)))
+      .toDF("ID", "FROM", "TO", "FOO", "BAR")
 
-    val relationshipTable = CAPSRelationshipTable.fromMapping(relMapping, df)
+    val relationshipTable = CAPSEntityTable.create(relMapping, df)
 
-    val v = Var.unnamed(CTRelationship("A"))
+    val v = Var(Pattern.DEFAULT_REL_NAME)(CTRelationship("A"))
 
-    relationshipTable.header should equal(RecordHeader(Map(
-      v -> "ID",
-      StartNode(v)(CTNode) -> "FROM",
-      EndNode(v)(CTNode) -> "TO",
-      Property(v, PropertyKey("foo"))(CTString) -> "FOO",
-      Property(v, PropertyKey("bar"))(CTInteger) -> "BAR")
-    ))
-  }
-
-  it("Relationship table should create correct header from given mapping with type column") {
-    val df = sparkSession
-      .createDataFrame(Seq((1L, 2L, 3L, "A", "Mats", 23L)))
-      .toDF("ID", "FROM", "TO", "REL_TYPES", "FOO", "BAR")
-
-    val relationshipTable = CAPSRelationshipTable.fromMapping(relMappingWithTypeColumn, df)
-
-    val v = Var.unnamed(CTRelationship("A", "B", "C"))
-
-    val createdHeader = relationshipTable.header
-    createdHeader should equal(RecordHeader(Map(
-      v -> "ID",
-      StartNode(v)(CTNode) -> "FROM",
-      EndNode(v)(CTNode) -> "TO",
-      HasType(v, RelType("A"))(CTBoolean) -> "A".toRelTypeColumnName,
-      HasType(v, RelType("B"))(CTBoolean) -> "B".toRelTypeColumnName,
-      HasType(v, RelType("C"))(CTBoolean) -> "C".toRelTypeColumnName,
-      Property(v, PropertyKey("foo"))(CTString) -> "FOO",
-      Property(v, PropertyKey("bar"))(CTInteger) -> "BAR")
+    relationshipTable.header should equal(RecordHeader(
+      Map(
+        v -> "ID",
+        StartNode(v)(CTNode) -> "FROM",
+        EndNode(v)(CTNode) -> "TO",
+        Property(v, PropertyKey("foo"))(CTString) -> "FOO",
+        Property(v, PropertyKey("bar"))(CTInteger) -> "BAR"
+      )
     ))
   }
 
@@ -187,72 +168,54 @@ class EntityTableTest extends CAPSTestSuite {
     val dfBinary = sparkSession.createDataFrame(Seq((Array[Byte](49.toByte), true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
     val dfLong = sparkSession.createDataFrame(Seq((49L, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
     val dfInt = sparkSession.createDataFrame(Seq((49, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
-    val dfString = sparkSession.createDataFrame(Seq(("1", true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
+    val dfString = sparkSession.createDataFrame(Seq(("1", 10.toShort, 23.1f))).toDF("ID", "FOO", "BAR")
 
     val dfs = Seq(dfBinary, dfString, dfLong, dfInt)
 
     dfs.foreach { df =>
-      val nodeTable = CAPSNodeTable.fromMapping(nodeMapping, df)
+      val nodeTable = CAPSEntityTable.create(nodeMapping, df)
 
       nodeTable.schema should equal(
         Schema.empty
-          .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "bar" -> CTFloat)
-          .withNodePropertyKeys("A", "B", "C")("foo" -> CTInteger, "bar" -> CTFloat))
+          .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "bar" -> CTFloat))
 
-      nodeTable.records.df.collect().toSet should equal(Set(Row(49L.encodeAsCAPSId, true, 23.1f.toDouble, 10L)))
+      nodeTable.records.df.collect().toSet should equal(Set(Row(49L.encodeAsCAPSId, 23.1f.toDouble, 10)))
     }
-
   }
 
   it("NodeTable can handle shuffled columns due to cast") {
-    val df = sparkSession.createDataFrame(Seq((1L, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
+    val df = sparkSession.createDataFrame(Seq((1L, 10.toShort, 23.1f))).toDF("ID", "FOO", "BAR")
 
-    val nodeTable = CAPSNodeTable.fromMapping(nodeMapping, df)
+    val nodeTable = CAPSEntityTable.create(nodeMapping, df)
 
     val graph = caps.graphs.create(nodeTable)
     graph.nodes("n").collect.toSet should equal(Set(
-      CypherMap("n" -> CAPSNode(1, Set("A", "B", "C"), CypherMap("bar" -> 23.1f, "foo" -> 10)))
+      CypherMap("n" -> CAPSNode(1, Set("A", "B"), CypherMap("bar" -> 23.1f, "foo" -> 10)))
     ))
   }
 
-  it("NodeTable should not accept wrong source id key type") {
+  it("NodeTable should not accept wrong source id key type (should be compatible to LongType)") {
     val e = the[IllegalArgumentException] thrownBy {
-      val df = sparkSession.createDataFrame(Seq((Date.valueOf("1987-01-23"), true))).toDF("ID", "IS_A")
-      val nodeMapping = NodeMapping.on("ID").withOptionalLabel("A" -> "IS_A")
-      CAPSNodeTable.fromMapping(nodeMapping, df)
+      val df = sparkSession.createDataFrame(Seq(Tuple1(Date.valueOf("1987-01-23")))).toDF("ID")
+      val nodeMapping = NodeMappingBuilder.on("ID").withImpliedLabel("A").build
+      CAPSEntityTable.create(nodeMapping, df)
     }
     e.getMessage should (include("Column `ID` should have a valid identifier data type") and include("Unsupported column type `DateType`"))
   }
 
-  it("NodeTable should not accept wrong optional label source key type (should be BooleanType") {
-    an[IllegalArgumentException] should be thrownBy {
-      val df = sparkSession.createDataFrame(Seq((1, "true"))).toDF("ID", "IS_A")
-      val nodeMapping = NodeMapping.on("ID").withOptionalLabel("A" -> "IS_A")
-      CAPSNodeTable.fromMapping(nodeMapping, df)
-    }
-  }
-
   it("RelationshipTable should not accept wrong sourceId, -StartNode, -EndNode key type") {
-    val relMapping = RelationshipMapping.on("ID").from("SOURCE").to("TARGET").relType("A")
+    val relMapping = RelationshipMappingBuilder.on("ID").from("SOURCE").to("TARGET").relType("A").build
     an[IllegalArgumentException] should be thrownBy {
       val df = sparkSession.createDataFrame(Seq((1.toByte, 1, 1))).toDF("ID", "SOURCE", "TARGET")
-      CAPSRelationshipTable.fromMapping(relMapping, df)
+      CAPSEntityTable.create(relMapping, df)
     }
     an[IllegalArgumentException] should be thrownBy {
       val df = sparkSession.createDataFrame(Seq((1, 1.toByte, 1))).toDF("ID", "SOURCE", "TARGET")
-      CAPSRelationshipTable.fromMapping(relMapping, df)
+      CAPSEntityTable.create(relMapping, df)
     }
     an[IllegalArgumentException] should be thrownBy {
       val df = sparkSession.createDataFrame(Seq((1, 1, 1.toByte))).toDF("ID", "SOURCE", "TARGET")
-      CAPSRelationshipTable.fromMapping(relMapping, df)
-    }
-  }
-
-  it("RelationshipTable should not accept wrong source relType key type (should be StringType)") {
-    an[IllegalArgumentException] should be thrownBy {
-      val relMapping = RelationshipMapping.on("ID").from("SOURCE").to("TARGET").withSourceRelTypeKey("TYPE", Set("A"))
-      val df = sparkSession.createDataFrame(Seq((1, 1, 1, true))).toDF("ID", "SOURCE", "TARGET", "TYPE")
-      CAPSRelationshipTable.fromMapping(relMapping, df)
+      CAPSEntityTable.create(relMapping, df)
     }
   }
 
@@ -260,8 +223,8 @@ class EntityTableTest extends CAPSTestSuite {
     assert(!SparkConversions.supportedTypes.contains(DecimalType))
     an[IllegalArgumentException] should be thrownBy {
       val df = sparkSession.createDataFrame(Seq((1L, true, BigDecimal(13.37)))).toDF("ID", "IS_A", "PROP")
-      val nodeMapping = NodeMapping.on("ID").withOptionalLabel("A" -> "IS_A").withPropertyKey("PROP")
-      CAPSNodeTable.fromMapping(nodeMapping, df)
+      val nodeMapping = NodeMappingBuilder.on("ID").withImpliedLabel("A").withPropertyKey("PROP").build
+      CAPSEntityTable.create(nodeMapping, df)
     }
   }
 
@@ -277,16 +240,6 @@ class EntityTableTest extends CAPSTestSuite {
         "birthYear" -> CTInteger,
         "isGood" -> CTBoolean,
         "luckyNumber" -> CTFloat))
-  }
-
-  it("NodeTable should infer the correct schema including optional labels") {
-    val df = sparkSession.createDataFrame(Seq((1L, "Alice", true))).toDF("id", "name", "IS_SWEDE")
-
-    val nodeTable = CAPSNodeTable(Set("Person"), Map("Swede" -> "IS_SWEDE"), df)
-
-    nodeTable.schema should equal(Schema.empty
-      .withNodePropertyKeys("Person", "Swede")("name" -> CTString.nullable)
-      .withNodePropertyKeys("Person")("name" -> CTString.nullable))
   }
 
   it("RelationshipTable should infer the correct schema") {

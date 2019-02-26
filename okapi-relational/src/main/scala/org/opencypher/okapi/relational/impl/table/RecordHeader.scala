@@ -44,23 +44,18 @@ object RecordHeader {
 
   def from[T <: Expr](exprs: Seq[T]): RecordHeader = from(exprs.head, exprs.tail: _*)
 
-  def from(relType: CTRelationship): RecordHeader = {
-    val v = Var.unnamed(relType)
-
-    from(
+  def from(v: Var): RecordHeader = v.cypherType match {
+    case n: CTNode =>
+      from(
+        v,
+        n.labels.map(l => HasLabel(v, Label(l))(CTBoolean)).toSeq: _*
+      )
+    case r: CTRelationship => from(
       v,
       Seq(StartNode(v)(CTIdentity), EndNode(v)(CTIdentity))
-      ++ relType.types.map(t => HasType(v, RelType(t))(CTBoolean)): _*
+        ++ r.types.map(t => HasType(v, RelType(t))(CTBoolean)): _*
     )
-  }
-
-  def from(nodeType: CTNode): RecordHeader = {
-    val v = Var.unnamed(nodeType)
-
-    from(
-      v,
-      nodeType.labels.map(l => HasLabel(v, Label(l))(CTBoolean)).toSeq: _*
-    )
+    case other => throw IllegalArgumentException("A node or relationship variable", other)
   }
 }
 
@@ -411,7 +406,8 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
   }
 
   def addExprToColumn(expr: Expr, columnName: String): RecordHeader = {
-    copy(exprToColumn = exprToColumn + (expr -> columnName))
+    // We need to possibly remove the existing expression in order to update the CypherType
+    copy(exprToColumn = exprToColumn - expr + (expr -> columnName))
   }
 
   override def toString: String = exprToColumn.keys

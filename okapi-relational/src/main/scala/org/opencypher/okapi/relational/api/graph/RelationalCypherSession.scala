@@ -42,7 +42,7 @@ import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext, QueryLocalCata
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintOptimizedRelationalPlan, PrintQueryExecutionStages, PrintRelationalPlan}
-import org.opencypher.okapi.relational.api.io.{EntityTable, NodeTable}
+import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.api.planning.{RelationalCypherResult, RelationalRuntimeContext}
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, RelationalCypherRecordsFactory, RelationalEntityTableFactory, Table}
 import org.opencypher.okapi.relational.impl.RelationalConverters._
@@ -83,7 +83,7 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
     * @param entityTables sequence of node and relationship tables defining the graph
     * @return property graph
     */
-  def readFrom(nodeTable: NodeTable[T], entityTables: EntityTable[T]*): PropertyGraph = {
+  def readFrom(nodeTable: EntityTable[T], entityTables: EntityTable[T]*): PropertyGraph = {
     graphs.create(nodeTable, entityTables: _ *)
   }
 
@@ -211,13 +211,18 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
     maybeDrivingTable: Option[RelationalCypherRecords[T]],
     queryLocalCatalog: QueryLocalCatalog
   ): Result = {
-    val logicalPlan = planLogical(cypherQuery, graph, inputFields)
+    val logicalPlan = planLogical(cypherQuery, graph, inputFields, queryLocalCatalog)
     planRelational(maybeDrivingTable, allParameters, logicalPlan, queryLocalCatalog)
   }
 
-  protected def planLogical(ir: CypherQuery, graph: PropertyGraph, inputFields: Set[Var]): LogicalOperator = {
+  protected def planLogical(
+    ir: CypherQuery,
+    graph: PropertyGraph,
+    inputFields: Set[Var],
+    queryLocalCatalog: QueryLocalCatalog
+  ): LogicalOperator = {
     logStageProgress("Logical planning ...", newLine = false)
-    val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, catalog.listSources)
+    val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, catalog.listSources, queryLocalCatalog)
     val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
     logStageProgress("Done!")
     if (PrintLogicalPlan.isSet) {
