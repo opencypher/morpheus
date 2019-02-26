@@ -62,11 +62,7 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
 
   executeScenariosWithContext(allScenarios, SessionContextFactory)
 
-  val sqlBlackList: Set[String] = Set.empty
-
-  allSqlContextFactories.foreach(ctx =>
-    executeScenariosWithContext(allScenarios.filter(s => !sqlBlackList.contains(s.name)), ctx)
-  )
+  allSqlContextFactories.foreach(executeScenariosWithContext(allScenarios, _))
 
   allFileSystemContextFactories.foreach(executeScenariosWithContext(allScenarios, _))
 
