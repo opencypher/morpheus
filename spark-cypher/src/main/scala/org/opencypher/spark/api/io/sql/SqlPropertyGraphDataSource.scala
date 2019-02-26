@@ -45,6 +45,7 @@ import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNo
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy._
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.{File, Hive, Jdbc}
+import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.schema.CAPSSchema
@@ -137,15 +138,6 @@ case class SqlPropertyGraphDataSource(
   private def readSqlTable(viewId: ViewId, sqlDataSourceConfig: SqlDataSourceConfig) = {
     val spark = caps.sparkSession
 
-    val tableName = (viewId.maybeSetSchema, viewId.parts) match {
-      case (_, _ :: schema :: view :: Nil) => s"$schema.$view"
-      case (Some(SetSchemaDefinition(dataSource, schema)), view :: Nil) => s"$schema.$view"
-      case (None, view) if view.size < 3 =>
-        malformed("Relative view identifier requires a preceding SET SCHEMA statement", view.mkString("."))
-      case (Some(_), view) if view.size > 1 =>
-        malformed("Relative view identifier must have exactly one segment", view.mkString("."))
-    }
-
     implicit class DataFrameReaderOps(read: DataFrameReader) {
       def maybeOption(key: String, value: Option[String]): DataFrameReader =
         value.fold(read)(read.option(key, _))
@@ -159,11 +151,11 @@ case class SqlPropertyGraphDataSource(
           .option("driver", driver)
           .option("fetchSize", "100") // default value
           .options(options)
-          .option("dbtable", tableName)
+          .option("dbtable", viewId.tableName)
           .load()
 
       case SqlDataSourceConfig.Hive =>
-        spark.table(tableName)
+        spark.table(viewId.tableName)
 
       case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat))
     }
@@ -210,16 +202,16 @@ case class SqlPropertyGraphDataSource(
       case (_, column) => throw IllegalArgumentException(
         expected = s"Column with name $column",
         actual = indexedFields)
-    }.toSeq
-    val renamedDf = dataFrame.safeRenameColumns(columnRenamings: _*)
-    normalizeTemporalColumns(renamedDf, columnTypes)
-  }
-
-  private def normalizeTemporalColumns(df: DataFrame, columnTypes: Map[String, CypherType]): DataFrame = {
-    columnTypes
-      .mapValues(_.material)
-      .collect { case (column, _@CTDate) => column }
-      .foldLeft(df) { case (acc, dateCol) => acc.withColumn(dateCol, acc.col(dateCol).cast(DateType)) }
+    }
+    val renamedDf = dataFrame.safeRenameColumns(columnRenamings)
+    val columnCasts = columnTypes.map { case (columnName, cypherType) =>
+      val sparkType = cypherType match {
+        case CTDate => DateType
+        case other => other.getSparkType
+      }
+      renamedDf.col(columnRenamings.getOrElse(columnName, columnName)) -> sparkType
+    }
+    renamedDf.transformColumns(columnTypes.keys.toSeq: _*)(column => column.cast(columnCasts(column)))
   }
 
   private def normalizeMapping(mapping: EntityMapping): EntityMapping = {
