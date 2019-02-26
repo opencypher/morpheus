@@ -28,14 +28,13 @@ package org.opencypher.spark.api.io.sql
 
 import java.net.URI
 
-import org.apache.spark.sql.types.DateType
 import org.apache.spark.sql.{DataFrame, DataFrameReader, functions}
 import org.opencypher.graphddl.GraphDdl.PropertyMappings
 import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.{CTDate, CypherType}
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
@@ -202,7 +201,7 @@ case class SqlPropertyGraphDataSource(
       case (_, column) => throw IllegalArgumentException(
         expected = s"Column with name $column",
         actual = indexedFields)
-    }
+    }.toMap
     val renamedDf = dataFrame.safeRenameColumns(columnRenamings)
     val columnCasts = columnTypes.map { case (columnName, cypherType) =>
       renamedDf.col(columnRenamings.getOrElse(columnName, columnName)) -> cypherType.getSparkType
