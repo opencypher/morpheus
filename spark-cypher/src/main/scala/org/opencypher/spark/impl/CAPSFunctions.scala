@@ -26,8 +26,8 @@
  */
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql.catalyst.analysis.UnresolvedExtractValue
-import org.apache.spark.sql.catalyst.expressions.{ArrayContains, StringTranslate, XxHash64}
+import org.apache.spark.sql.catalyst.analysis.{UnresolvedAttribute, UnresolvedExtractValue}
+import org.apache.spark.sql.catalyst.expressions.{ArrayContains, ArrayFilter, IsNotNull, LambdaFunction, StringTranslate, XxHash64}
 import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions.{monotonically_increasing_id, udf}
 import org.apache.spark.sql.types.{ArrayType, StringType}
@@ -46,9 +46,6 @@ object CAPSFunctions {
     def get(idx: Column): Column =
       new Column(UnresolvedExtractValue(column.expr, idx.expr))
   }
-
-  val rangeUdf: UserDefinedFunction =
-    udf[Array[Int], Int, Int, Int]((from: Int, to: Int, step: Int) => from.to(to, step).toArray)
 
   private[spark] val rowIdSpaceBitsUsedByMonotonicallyIncreasingId = 33
 
@@ -75,15 +72,6 @@ object CAPSFunctions {
   def serialize(columns: Column*): Column = {
     new Column(Serialize(columns.map(_.expr)))
   }
-
-  def array_append_long(array: Column, value: Column): Column =
-    appendLongUDF(array, value)
-
-  private val appendLongUDF =
-    functions.udf(appendLong _)
-
-  private def appendLong(array: Seq[Long], element: Long): Seq[Long] =
-    array :+ element
 
   def get_rel_type(relTypeNames: Seq[String]): UserDefinedFunction = {
     val extractRelTypes = (booleanMask: Seq[Boolean]) => filterWithMask(relTypeNames)(booleanMask)

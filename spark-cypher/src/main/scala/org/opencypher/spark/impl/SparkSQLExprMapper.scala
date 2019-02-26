@@ -382,7 +382,7 @@ object SparkSQLExprMapper {
 
         case Range(from, to, maybeStep) =>
           val stepCol = maybeStep.map(_.asSparkSQLExpr).getOrElse(ONE_LIT)
-          rangeUdf(from.asSparkSQLExpr, to.asSparkSQLExpr, stepCol)
+          functions.sequence(from.asSparkSQLExpr, to.asSparkSQLExpr, stepCol)
 
         case Replace(original, search, replacement) => translateColumn(original.asSparkSQLExpr, search.asSparkSQLExpr, replacement.asSparkSQLExpr)
 
