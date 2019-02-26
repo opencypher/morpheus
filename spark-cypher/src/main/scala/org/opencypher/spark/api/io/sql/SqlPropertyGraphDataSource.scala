@@ -205,11 +205,7 @@ case class SqlPropertyGraphDataSource(
     }
     val renamedDf = dataFrame.safeRenameColumns(columnRenamings)
     val columnCasts = columnTypes.map { case (columnName, cypherType) =>
-      val sparkType = cypherType match {
-        case CTDate => DateType
-        case other => other.getSparkType
-      }
-      renamedDf.col(columnRenamings.getOrElse(columnName, columnName)) -> sparkType
+      renamedDf.col(columnRenamings.getOrElse(columnName, columnName)) -> cypherType.getSparkType
     }
     renamedDf.transformColumns(columnTypes.keys.toSeq: _*)(column => column.cast(columnCasts(column)))
   }
