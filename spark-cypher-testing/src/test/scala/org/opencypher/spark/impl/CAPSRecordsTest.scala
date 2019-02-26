@@ -57,6 +57,10 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
       caps.cypher("RETURN 'foo' STARTS WITH 'f'").records.asCaps.df.columns.toSet should equal(Set("'foo' STARTS WITH 'f'"))
     }
 
+    it("escapes property accessors") {
+      caps.cypher("MATCH (n) RETURN n.foo").records.asCaps.df.columns.toSet should equal(Set("n_foo"))
+    }
+
     it("creates column names for params") {
       caps.cypher("RETURN $x", parameters = CypherMap("x" -> 1)).records.asCaps.df.columns should equal(Array("$x"))
     }
@@ -67,7 +71,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
       val result = given.cypher("FROM GRAPH foo MATCH (n) RETURN n")
 
-      result.records.asCaps.df.columns.toSet should equal(Set("n", "n:L", "n.val"))
+      result.records.asCaps.df.columns.toSet should equal(Set("n", "n:L", "n_val"))
     }
 
     it("creates column names for relationship expressions") {
@@ -76,7 +80,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
       val result = given.cypher("FROM GRAPH foo MATCH (n)-[r]->(m) RETURN r")
 
-      result.records.asCaps.df.columns.toSet should equal(Set("r", "r:R", "source(r)", "target(r)", "r.prop"))
+      result.records.asCaps.df.columns.toSet should equal(Set("r", "r:R", "source(r)", "target(r)", "r_prop"))
     }
 
     it("retains user-specified order of return items") {
@@ -88,7 +92,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
       val dfColumns = result.records.asCaps.df.columns
       dfColumns.head should equal("bar")
       dfColumns.last should equal("foo")
-      dfColumns.toSet should equal(Set("bar", "n", "n:L", "n.val", "foo"))
+      dfColumns.toSet should equal(Set("bar", "n", "n:L", "n_val", "foo"))
     }
 
     it("can handle ambiguous return items") {
@@ -98,9 +102,9 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
       val result = given.cypher("FROM GRAPH foo MATCH (n) RETURN n, n.val")
 
       val dfColumns = result.records.asCaps.df.columns
-      dfColumns.collect { case col if col == "n.val" => col }.length should equal(2)
-      dfColumns.last should equal("n.val")
-      dfColumns.toSet should equal(Set("n", "n:L", "n.val"))
+      dfColumns.collect { case col if col == "n_val" => col }.length should equal(2)
+      dfColumns.last should equal("n_val")
+      dfColumns.toSet should equal(Set("n", "n:L", "n_val"))
     }
   }
 

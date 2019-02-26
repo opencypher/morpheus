@@ -345,7 +345,7 @@ final case class AlignColumnsWithReturnItems[T <: Table[T] : TypeTag](
   private lazy val logicalColumns = in.maybeReturnItems
     .getOrElse(List.empty)
     .flatMap(in.header.expressionsFor)
-    .map(expr => expr -> expr.withoutType.toString)
+    .map(expr => expr -> expr.withoutType.toString.replace('.', '_'))
     .toList
 
   override lazy val header: RecordHeader = RecordHeader(logicalColumns.toMap)

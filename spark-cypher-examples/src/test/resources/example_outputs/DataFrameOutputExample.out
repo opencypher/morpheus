@@ -1,5 +1,5 @@
 +------+------+
-|a.name|b.name|
+|a_name|b_name|
 +------+------+
 | Alice|   Bob|
 |   Bob| Carol|
