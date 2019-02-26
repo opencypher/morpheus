@@ -87,11 +87,8 @@ object Neo4jHelpers {
       try {
         f(session)
       } finally {
-        session.closeAsync.whenCompleteAsync(new BiConsumer[Void, Throwable]() {
-          override def accept(result: Void, error: Throwable): Unit = {
-            driver.closeAsync()
-          }
-        })
+        session.close()
+        driver.close()
       }
     }
 
