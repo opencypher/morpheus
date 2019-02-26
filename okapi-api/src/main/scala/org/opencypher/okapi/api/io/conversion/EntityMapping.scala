@@ -47,9 +47,9 @@ object EntityMapping {
   * The [[properties]] represent mappings for every pattern entity from property keys to keys in the source data.
   * The retrieved value from the source is expected to be convertible to a valid [[org.opencypher.okapi.api.value.CypherValue]].
   *
-  * @param pattern the pattern described by this mapping
+  * @param pattern    the pattern described by this mapping
   * @param properties mapping from property key to source property key
-  * @param idKeys mapping for the key to access the entity identifier in the source data
+  * @param idKeys     mapping for the key to access the entity identifier in the source data
   */
 case class EntityMapping(
   pattern: Pattern,
@@ -59,11 +59,11 @@ case class EntityMapping(
 
   validate()
 
-  def allSourceKeys: Seq[String] =
-    (
-      idKeys.values.flatten.map(_._2).toSeq ++
-      properties.values.flatten.map(_._2)
-    ).sorted
+  def allSourceIdKeys: Seq[String] = idKeys.values.flatMap(keyMapping => keyMapping.values).toSeq
+
+  def allSourcePropertyKeys: Seq[String] = properties.values.flatMap(keyMapping => keyMapping.values).toSeq
+
+  def allSourceKeys: Seq[String] = (allSourceIdKeys ++ allSourcePropertyKeys).sorted
 
   protected def validate(): Unit = {
     val sourceKeys = allSourceKeys
