@@ -73,12 +73,13 @@ object DefaultGraphDirectoryStructure {
     if (labels.isEmpty) {
       noLabelNodeDirectoryName
     } else {
-      labels.toSeq.sorted.mkString("_").encodeSpecialCharacters
+      concatDirectoryNames(labels.toSeq.sorted)
     }
   }
 
   def relKeyTableDirectoryName(relKey: String): String = relKey.encodeSpecialCharacters
 
+  def concatDirectoryNames(seq: Seq[String]): String = seq.mkString("_").encodeSpecialCharacters
 }
 
 case class DefaultGraphDirectoryStructure(dataSourceRootPath: String) extends GraphDirectoryStructure {

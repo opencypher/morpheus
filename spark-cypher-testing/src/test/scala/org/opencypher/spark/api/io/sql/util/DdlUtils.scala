@@ -31,8 +31,8 @@ import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.SchemaPattern
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure.{concatDirectoryNames, nodeTableDirectoryName, relKeyTableDirectoryName}
 import org.opencypher.spark.api.io.{GraphEntity, Relationship}
-import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure.nodeTableDirectoryName
 import org.opencypher.spark.impl.CAPSConverters._
 
 object DdlUtils {
@@ -72,8 +72,12 @@ object DdlUtils {
         ViewId(maybeSchemaDefinition, pathPrefixParts :+ nodeTableDirectoryName(labelCombination))
       }
 
-      def relViewId(relType: String): ViewId = {
-        ViewId(maybeSchemaDefinition, pathPrefixParts :+ relType)
+      def relViewId(sourceLabelCombination: Set[String], relType: String, targetLabelCombination: Set[String]): ViewId = {
+        val relTypeDir = concatDirectoryNames(Seq(
+          nodeTableDirectoryName(sourceLabelCombination),
+          relKeyTableDirectoryName(relType),
+          nodeTableDirectoryName(targetLabelCombination)))
+        ViewId(maybeSchemaDefinition, pathPrefixParts :+ relTypeDir)
       }
 
       def nodeViewKey(labelCombination: Set[String]): NodeViewKey = {
@@ -92,12 +96,11 @@ object DdlUtils {
       val edgeToViewMappings: List[EdgeToViewMapping] = {
         val schemaPatterns: Map[String, Set[SchemaPattern]] = pg.schemaPatterns.groupBy(_.relType)
         schemaPatterns.flatMap { case (relType, patterns) =>
-          val viewId = relViewId(relType)
           val relKeyMapping = schema.relationshipPropertyKeys(relType).keySet.map(k => k -> k).toMap
           patterns.map { case SchemaPattern(sourceLabelCombination, _, targetLabelCombination) =>
             EdgeToViewMapping(
               RelationshipType(NodeType(sourceLabelCombination), relType, NodeType(targetLabelCombination)),
-              viewId,
+              relViewId(sourceLabelCombination, relType, targetLabelCombination),
               StartNode(nodeViewKey(sourceLabelCombination), joinFromStartNode),
               EndNode(nodeViewKey(targetLabelCombination), joinFromEndNode),
               relKeyMapping)
