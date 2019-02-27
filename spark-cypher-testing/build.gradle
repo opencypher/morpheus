@@ -1,4 +1,3 @@
-
 description = 'Cypher for Apache Spark - Test Utilities'
 
 dependencies {
@@ -6,12 +5,14 @@ dependencies {
     compile project(':okapi-testing')
     compile project(':okapi-neo4j-io-testing')
 
-    compile group: 'org.apache.spark',     name: "spark-core".scala(),     version: ver.spark
-    compile group: 'org.apache.spark',     name: "spark-sql".scala(),      version: ver.spark
-    compile group: 'org.apache.spark',     name: "spark-hive".scala(),     version: ver.spark
-    compile group: 'org.apache.hadoop',    name: 'hadoop-minicluster',     version: ver.hadoop
-    compile group: 'ch.cern.sparkmeasure', name: "spark-measure".scala(),  version: ver.sparkmeasure
+    compile group: 'org.apache.spark', name: "spark-core".scala(), version: ver.spark
+    compile group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark
+    compile group: 'org.apache.spark', name: "spark-hive".scala(), version: ver.spark
+    compile group: 'org.apache.hadoop', name: 'hadoop-minicluster', version: ver.hadoop
+    compile group: 'ch.cern.sparkmeasure', name: "spark-measure".scala(), version: ver.sparkmeasure
 
-    testCompile group: 'org.neo4j',      name: 'neo4j-cypher-util-3.4', version: ver.neo4j.main
-    testCompile group: 'com.h2database', name: 'h2',                    version: ver.h2
+    testCompile project(':okapi-api').sourceSets.test.output
+    testCompile group: 'org.neo4j', name: 'neo4j-cypher-util-3.4', version: ver.neo4j.main
+    testCompile group: 'com.h2database', name: 'h2', version: ver.h2
+    testCompile group: 'org.spire-math', name: 'claimant'.scala(), version: ver.claimant
 }
