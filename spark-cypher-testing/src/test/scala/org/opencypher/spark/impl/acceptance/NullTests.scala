@@ -38,7 +38,7 @@ class NullTests extends CAPSTestSuite with ScanGraphInit with TestNameFixture {
   override protected def separator: String = "calling:"
 
   private def returnsNull(call: String = testName) =
-    {println("call: " + call); returnsValue(null, call)}
+    returnsValue(null, call)
 
   private def returnsValue(exp: Any, call: String = testName) =
     caps
@@ -49,10 +49,8 @@ class NullTests extends CAPSTestSuite with ScanGraphInit with TestNameFixture {
 
   describe("null input produces null") {
     it("calling: id(null)")(returnsNull())
-    it("calling: prefixId(null)")(returnsNull()) // no syntax
-    it("calling: toId(null)")(returnsNull()) // no syntax
-    it("calling: labels(null)")(returnsNull()) // no inference
-    it("calling: type(null)")(returnsNull()) // no inference
+    it("calling: labels(null)")(returnsNull())
+    it("calling: type(null)")(returnsNull())
     it("calling: exists(null.b)")(returnsNull())
     it("calling: size(null)")(returnsNull())
     it("calling: keys(null)")(returnsNull())
@@ -62,7 +60,6 @@ class NullTests extends CAPSTestSuite with ScanGraphInit with TestNameFixture {
     it("calling: toInteger(null)")(returnsNull())
     it("calling: toString(null)")(returnsNull())
     it("calling: toBoolean(null)")(returnsNull())
-    it("calling: explode(null)")(returnsNull()) // no syntax
     it("calling: trim(null)")(returnsNull())
     it("calling: lTrim(null)")(returnsNull())
     it("calling: rTrim(null)")(returnsNull())

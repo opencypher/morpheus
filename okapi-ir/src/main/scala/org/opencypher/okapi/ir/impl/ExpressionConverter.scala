@@ -143,7 +143,7 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
 
     case ast.Null() => NullLit(typings(e))
 
-    case RegexMatch(lhs, rhs) => expr.RegexMatch(convert(lhs), convert(rhs))
+    case RegexMatch(lhs, rhs) => expr.RegexMatch(convert(lhs), convert(rhs))(typings(e))
 
     case _ =>
       throw NotImplementedException(s"Not yet able to convert expression: $e")

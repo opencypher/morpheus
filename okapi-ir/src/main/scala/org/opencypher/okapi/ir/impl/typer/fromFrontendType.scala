@@ -27,9 +27,9 @@
 package org.opencypher.okapi.ir.impl.typer
 
 import org.opencypher.okapi.api.types._
-import org.opencypher.v9_0.expressions.{TypeSignature, TypeSignatures}
-import org.opencypher.v9_0.util.{symbols => frontend}
 import org.opencypher.okapi.ir.impl.parse.{functions => ext}
+import org.opencypher.v9_0.expressions.TypeSignature
+import org.opencypher.v9_0.util.{symbols => frontend}
 
 import scala.collection.immutable.ListSet
 
@@ -92,8 +92,8 @@ object SignatureConverter {
 
 
   object FunctionSignatures {
-    def from(original: TypeSignatures): FunctionSignatures =
-      FunctionSignatures(original.signatures.flatMap(_.convertDirect))
+    def from(original: Seq[TypeSignature]): FunctionSignatures =
+      FunctionSignatures(original.flatMap(_.convertDirect))
 
     private def mask(size: Int, hits: Int) =
       Seq.fill(hits)(true) ++ Seq.fill(size - hits)(false)
@@ -143,21 +143,5 @@ object SignatureConverter {
 
     lazy val signatures: Set[FunctionSignature] = ListSet(sigs: _*)
   }
-
-  def signatures(original: TypeSignatures): Set[FunctionSignature] = {
-    FunctionSignatures
-      .from(original)
-      .expandWithSubstitutions(CTFloat, CTInteger)
-      .expandWithNulls
-      .expandWithNullables
-      .signatures
-
-  }
-    //for {
-    //  orig <- original.signatures
-    //  sig <- orig.convertDirect
-    //  alt <- substitutions(sig.input, CTNull)
-    //  foo = FunctionSignature()
-    //}
 
 }

@@ -84,6 +84,9 @@ object SchemaTyper {
         schema <- ask[R, Schema]
         result <- varTyp.material match {
 
+          case CTVoid =>
+            recordAndUpdate(expr -> CTNull)
+
           // This means that the node can have any possible label combination, as the user did not specify any constraints
           case n: CTNode if n.labels.isEmpty =>
             val propType = schema.allCombinations
@@ -220,8 +223,12 @@ object SchemaTyper {
       expr.arguments match {
         case Seq(first: Property) =>
           for {
-            _ <- process[R](first)
-            existsType <- recordAndUpdate(expr -> CTBoolean)
+            argType <- process[R](first)
+            existsType <- pure(argType match {
+              case CTNull => CTNull
+              case _ => CTBoolean
+            })
+            _ <- recordAndUpdate(expr -> existsType)
           } yield existsType
         case Seq(nonProp) =>
           error(InvalidArgument(expr, nonProp))
@@ -234,23 +241,27 @@ object SchemaTyper {
         case Seq(first) =>
           for {
             inner <- process[R](first)
-            schema <- ask[R, Schema]
-            properties <- inner.material match {
-              case CTNode(labels, _) =>
-                pure[R, PropertyKeys](schema.nodePropertyKeysForCombinations(schema.combinationsFor(labels)))
-              case CTRelationship(types, _) =>
-                pure[R, PropertyKeys](schema.relationshipPropertyKeysForTypes(types))
-              case CTMap(properties) =>
-                pure[R, PropertyKeys](properties)
-              case _ =>
-                wrong[R, TyperError](InvalidArgument(expr, first)) >> pure[R, PropertyKeys](Map.empty)
+            outType <- inner match {
+              case CTNull =>
+                pure[R, CypherType](CTNull)
+              case _ => for {
+                schema <- ask[R, Schema]
+                properties <- inner.material match {
+                  case CTNode(labels, _) =>
+                    pure[R, PropertyKeys](schema.nodePropertyKeysForCombinations(schema.combinationsFor(labels)))
+                  case CTRelationship(types, _) =>
+                    pure[R, PropertyKeys](schema.relationshipPropertyKeysForTypes(types))
+                  case CTMap(properties) =>
+                    pure[R, PropertyKeys](properties)
+                  case _ =>
+                    wrong[R, TyperError](InvalidArgument(expr, first)) >> pure[R, PropertyKeys](Map.empty)
+                }
+                mapType <- pure[R, CypherType](CTMap(properties).asNullableAs(inner))
+              } yield mapType
             }
-            mapType <- {
-              val mapType = CTMap(properties)
-              val nullableMapType = if (inner.isNullable) mapType.nullable else mapType
-              recordAndUpdate(expr -> nullableMapType)
-            }
-          } yield mapType
+            _ <- recordAndUpdate(expr -> outType)
+          } yield outType
+
         case seq =>
           error(WrongNumberOfArguments(expr, 1, seq.size))
       }
@@ -472,34 +483,37 @@ object SchemaTyper {
       expr: Expression,
       args: Seq[(Expression, CypherType)]
     ): Eff[R, Set[FunctionSignature]] = expr match {
-      case f: FunctionInvocation => f.function match {
 
-        case _ if FunctionExtensions.mappings.isDefinedAt(f.name) =>
-          pure(convertSignatures(FunctionExtensions.mappings(f.name)))
+      case f: FunctionInvocation =>
 
-        case t: TypeSignatures =>
-          pure(convertSignatures(t))
+        val function =
+          FunctionExtensions
+            .get(f.name)
+            .getOrElse(f.function)
 
-        case _ =>
-          wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set.empty)
-      }
+        function match {
 
-      case f: OperatorExpression =>
-        val set = f.signatures.flatMap(_.convert).toSet
-        pure(set)
+          case t: TypeSignatures => pure(
+            FunctionSignatures.from(t.signatures)
+              .expandWithNulls
+              .expandWithSubstitutions(CTFloat, CTInteger)
+              .signatures
+          )
+
+          case _ =>
+            wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set.empty)
+        }
+
+      case o: OperatorExpression => pure(
+        FunctionSignatures.from(o.signatures)
+          .expandWithNulls
+          .expandWithSubstitutions(CTFloat, CTInteger)
+          .signatures
+      )
 
       case _ =>
         wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set.empty)
     }
-  }
-
-  private def convertSignatures(t: TypeSignatures): Set[FunctionSignature] = {
-      val sigs = FunctionSignatures
-        .from(t)
-        .expandWithNulls
-        .expandWithSubstitutions(CTFloat, CTInteger)
-        .signatures
-    sigs
   }
 
   private case object AddTyper extends SignatureBasedInvocationTyper[Add] {
