@@ -231,8 +231,9 @@ object SchemaTyper {
         case Seq(first: Property) =>
           for {
             argType <- process[R](first)
-            existsType <- pure(argType match {
-              case CTNull => CTNull
+            mapType <- process[R](first.map)
+            existsType <- pure((mapType, argType) match {
+              case (CTNull, _) => CTNull
               case _ => CTBoolean
             })
             _ <- recordAndUpdate(expr -> existsType)

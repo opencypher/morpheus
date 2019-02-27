@@ -607,6 +607,28 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
           CypherMap("exists" -> false)
         ))
     }
+
+    it("exists() on null property") {
+      val given = initGraph("CREATE ()")
+
+      val result = given.cypher("RETURN exists({name: null}.name) AS exists")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("exists" -> false)
+        ))
+    }
+
+    it("exists() on null map") {
+      val given = initGraph("CREATE ()")
+
+      val result = given.cypher("RETURN exists(null.name) AS exists")
+
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("exists" -> null)
+        ))
+    }
   }
 
   describe("type") {
