@@ -40,426 +40,391 @@ import org.scalatest.mockito.MockitoSugar
 
 import scala.language.reflectiveCalls
 
-class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with MockitoSugar {
+class SchemaTyperTest extends SchemaTyperTestSuite with MockitoSugar {
 
-  val schema: Schema = Schema.empty
-    .withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger)
-    .withNodePropertyKeys("Foo")("name" -> CTBoolean, "age" -> CTFloat)
-    .withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger, "relative" -> CTBoolean)
+  val baseTypes = Seq[CypherType](
+    CTAny, CTNumber, CTNull, CTVoid,
+    CTBoolean, CTInteger, CTFloat, CTString,
+    CTDate, CTLocalDateTime, CTDuration,
+    CTIdentity, CTPath
+  )
 
-  val typer = SchemaTyper(schema)
+  val simple =
+    baseTypes.map(tpe => tpe.name -> tpe) ++
+    baseTypes.map(tpe => s"${tpe.name}_OR_NULL" -> tpe.nullable)
+
+  private val lists = simple
+    .map { case (n, t) => s"LIST_$n" -> CTList(t) }
+
+  private val maps = Seq(
+    "NODE" -> CTNode(Set("Node")),
+    "NODE_EMPTY" -> CTNode(),
+    "REL" -> CTRelationship(Set("REL")),
+    "REL_EMPTY" -> CTRelationship(),
+    "MAP" -> CTMap(simple.toMap),
+    "MAP_EMPTY" -> CTMap(Map())
+  )
+
+  private val all = Seq(
+    simple,
+    lists,
+    lists.map { case (n, t) => s"${n}_OR_NULL" -> t.nullable },
+    maps,
+    maps.map { case (n, t) => s"${n}_OR_NULL" -> t.nullable }
+  ).flatten
+
+  private val properties  =
+    simple ++ Seq("name" -> CTString,  "age" -> CTInteger)
+
+  private val properties2 =
+    simple ++ Seq("name" -> CTBoolean, "age" -> CTFloat)
+
+  private val propertiesJoined =
+    simple ++ Seq("name" -> CTAny, "age" -> CTNumber)
+
+  private val schema: Schema = Schema.empty
+    .withNodePropertyKeys("Node")(properties : _*)
+    .withRelationshipPropertyKeys("REL")(properties: _*)
+    .withNodePropertyKeys("Node2")(properties2 : _*)
+    .withRelationshipPropertyKeys("REL2")(properties2: _*)
+
+  implicit val typer: SchemaTyper =
+    SchemaTyper(schema)
+
+  implicit val context: TypeTracker =
+    typeTracker(all: _*)
+      .withParameters(Map(
+        "STRING_EMPTY" -> CypherValue(""),
+        "STRING_BOOLEAN" -> CypherValue("BOOLEAN"),
+        "FLOAT_0" -> CypherValue(0.0),
+        "INTEGER_0" -> CypherValue(0),
+        "BOOLEAN_FALSE" -> CypherValue(false),
+        "NULL" -> CypherValue(null)
+      ))
 
   it("should report good error on unsupported functions") {
-    implicit val context: TypeTracker = typeTracker("a" -> CTList(CTInteger))
+    val f = Tail.asInvocation(Variable("LIST_INTEGER")(pos))(pos)
 
-    val f = Tail.asInvocation(Variable("a")(pos))(pos)
-
-    assertExpr.from("tail(a)") shouldFailToInferTypeWithErrors(
+    assertExpr.from("tail(LIST_INTEGER)") shouldFailToInferTypeWithErrors(
       UnsupportedExpr(f), NoSuitableSignatureForExpr(f, Seq(CTList(CTInteger)))
     )
   }
 
   it("should type Date") {
-    implicit val context: TypeTracker = typeTracker("n" -> CTNull, "ns" -> CTString.nullable, "ni" -> CTInteger.nullable)
-
     assertExpr.from("date()") shouldHaveInferredType CTDate
-    assertExpr.from("date('2010-12-10')") shouldHaveInferredType CTDate
+    assertExpr.from("date(STRING)") shouldHaveInferredType CTDate
     assertExpr.from("date({ year: 2018, month: 12, day: 18 })") shouldHaveInferredType CTDate
-    assertExpr.from("date(n)") shouldHaveInferredType CTNull
-    assertExpr.from("date(ns)") shouldHaveInferredType CTDate.nullable
-    assertExpr.from("date(ni)") shouldHaveInferredType CTNull
+    assertExpr.from("date(NULL)") shouldHaveInferredType CTNull
+    assertExpr.from("date(STRING_OR_NULL)") shouldHaveInferredType CTDate.nullable
+    assertExpr.from("date(INTEGER_OR_NULL)") shouldHaveInferredType CTNull
   }
 
   it("should type Date members") {
-    implicit val context: TypeTracker = typeTracker("d" -> CTDate, "e" -> CTDate.nullable)
-
-    assertExpr.from("d.year") shouldHaveInferredType CTInteger
-    assertExpr.from("e.year") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("DATE.year") shouldHaveInferredType CTInteger
+    assertExpr.from("DATE_OR_NULL.year") shouldHaveInferredType CTInteger.nullable
   }
 
   it("should type LocalDateTime") {
-    implicit val context: TypeTracker = typeTracker("n" -> CTNull, "ns" -> CTString.nullable, "ni" -> CTInteger.nullable)
-
     assertExpr.from("localdatetime()") shouldHaveInferredType CTLocalDateTime
-    assertExpr.from("localdatetime('2010-12-10')") shouldHaveInferredType CTLocalDateTime
-    assertExpr.from("localdatetime('2010-12-10T00:00:00.000')") shouldHaveInferredType CTLocalDateTime
-    assertExpr.from("localdatetime({ year: 2018, month: 12, day: 18 })") shouldHaveInferredType CTLocalDateTime
-    assertExpr.from(
-      """
-        |localdatetime({
-        | year: 2018,
-        | month: 12,
-        | day: 18,
-        | hour: 11,
-        | minute: 11,
-        | second: 11,
-        | millisecond: 999,
-        | mircosecond: 999,
-        | nanosecond: 999})""".stripMargin) shouldHaveInferredType CTLocalDateTime
-    assertExpr.from("localdatetime(n)") shouldHaveInferredType CTNull
-    assertExpr.from("localdatetime(ns)") shouldHaveInferredType CTLocalDateTime.nullable
-    assertExpr.from("localdatetime(ni)") shouldHaveInferredType CTNull
+    assertExpr.from("localdatetime(STRING)") shouldHaveInferredType CTLocalDateTime
+    assertExpr.from("localdatetime(MAP)") shouldHaveInferredType CTLocalDateTime
+    assertExpr.from("localdatetime(NULL)") shouldHaveInferredType CTNull
+    assertExpr.from("localdatetime(STRING_OR_NULL)") shouldHaveInferredType CTLocalDateTime.nullable
+    assertExpr.from("localdatetime(INTEGER_OR_NULL)") shouldHaveInferredType CTNull
   }
 
   it("should type temporal accessors") {
-    implicit val context: TypeTracker = typeTracker("date" -> CTDate, "localdatetime" -> CTLocalDateTime)
-
-    assertExpr.from("date.year") shouldHaveInferredType CTInteger
-    assertExpr.from("localdatetime.month") shouldHaveInferredType CTInteger
+    assertExpr.from("DATE.year") shouldHaveInferredType CTInteger
+    assertExpr.from("LOCALDATETIME.month") shouldHaveInferredType CTInteger
   }
 
   it("should type trim(), ltrim(), rtrim()") {
-    implicit val context: TypeTracker = typeTracker("n" -> CTString, "m" -> CTString.nullable)
-
-    assertExpr.from("trim(n)") shouldHaveInferredType CTString
-    assertExpr.from("ltrim(n)") shouldHaveInferredType CTString
-    assertExpr.from("rtrim(n)") shouldHaveInferredType CTString
-    assertExpr.from("trim(m)") shouldHaveInferredType CTString.nullable
-    assertExpr.from("ltrim(m)") shouldHaveInferredType CTString.nullable
-    assertExpr.from("rtrim(m)") shouldHaveInferredType CTString.nullable
+    assertExpr.from("trim(STRING)") shouldHaveInferredType CTString
+    assertExpr.from("ltrim(STRING)") shouldHaveInferredType CTString
+    assertExpr.from("rtrim(STRING)") shouldHaveInferredType CTString
+    assertExpr.from("trim(STRING_OR_NULL)") shouldHaveInferredType CTString.nullable
+    assertExpr.from("ltrim(STRING_OR_NULL)") shouldHaveInferredType CTString.nullable
+    assertExpr.from("rtrim(STRING_OR_NULL)") shouldHaveInferredType CTString.nullable
   }
 
   it("should type timestamp()") {
-    implicit val context: TypeTracker = typeTracker()
-
     assertExpr.from("timestamp()") shouldHaveInferredType CTInteger
     assertExpr.from("timestamp() + 5") shouldHaveInferredType CTInteger
   }
 
   it("should type CASE") {
-    implicit val context: TypeTracker = typeTracker("a" -> CTInteger, "b" -> CTInteger.nullable, "c" -> CTString)
-
-    assertExpr.from("CASE WHEN a > b THEN c END") shouldHaveInferredType CTString
-    assertExpr.from("CASE WHEN c THEN a WHEN c THEN b END") shouldHaveInferredType CTInteger.nullable
-    assertExpr.from("CASE WHEN c THEN a WHEN a THEN b ELSE c END") shouldHaveInferredType CTAny.nullable
+    assertExpr.from("CASE WHEN INTEGER > INTEGER_OR_NULL THEN STRING END") shouldHaveInferredType CTString
+    assertExpr.from("CASE WHEN STRING THEN INTEGER WHEN STRING THEN INTEGER_OR_NULL END") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("CASE WHEN STRING THEN INTEGER WHEN INTEGER THEN INTEGER_OR_NULL ELSE STRING END") shouldHaveInferredType CTAny.nullable
   }
 
   it("should type coalesce()") {
-    implicit val context: TypeTracker = typeTracker("a" -> CTInteger, "b" -> CTInteger.nullable, "c" -> CTString)
-
-    assertExpr.from("coalesce(a, a)") shouldHaveInferredType CTInteger
-    assertExpr.from("coalesce(b, b)") shouldHaveInferredType CTInteger.nullable
-    assertExpr.from("coalesce(a, b)") shouldHaveInferredType CTInteger
-    assertExpr.from("coalesce(a, c)") shouldHaveInferredType CTInteger
-    assertExpr.from("coalesce(b, c)") shouldHaveInferredType CTAny.nullable
+    assertExpr.from("coalesce(INTEGER,         INTEGER)") shouldHaveInferredType CTInteger
+    assertExpr.from("coalesce(INTEGER_OR_NULL, INTEGER_OR_NULL)") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("coalesce(INTEGER,         INTEGER_OR_NULL)") shouldHaveInferredType CTInteger
+    assertExpr.from("coalesce(INTEGER,         STRING)") shouldHaveInferredType CTInteger
+    assertExpr.from("coalesce(INTEGER_OR_NULL, STRING)") shouldHaveInferredType CTAny.nullable
     assertExpr.from("coalesce()") shouldFailToInferTypeWithErrors
       WrongNumberOfArguments("coalesce()", 1, 0)
   }
 
   it("typing exists()") {
-    implicit val context: TypeTracker = typeTracker("n" -> CTNode)
-
-    assertExpr.from("exists(n.prop)") shouldHaveInferredType CTBoolean
-    assertExpr.from("exists([n.prop])") shouldFailToInferTypeWithErrors
-      InvalidArgument("exists([n.prop])", "[n.prop]")
+    assertExpr.from("exists(NODE.BOOLEAN)") shouldHaveInferredType CTBoolean
+    assertExpr.from("exists([NODE.BOOLEAN])") shouldFailToInferTypeWithErrors
+      InvalidArgument("exists([NODE.BOOLEAN])", "[NODE.BOOLEAN]")
     assertExpr.from("exists()") shouldFailToInferTypeWithErrors
       WrongNumberOfArguments("exists()", 1, 0)
-    assertExpr.from("exists(n.prop, n.prop)") shouldFailToInferTypeWithErrors
-      WrongNumberOfArguments("exists(n.prop, n.prop)", 1, 2)
+    assertExpr.from("exists(NODE.BOOLEAN, NODE.BOOLEAN)") shouldFailToInferTypeWithErrors
+      WrongNumberOfArguments("exists(NODE.BOOLEAN, NODE.BOOLEAN)", 1, 2)
   }
 
   it("typing count()") {
-    implicit val context: TypeTracker = typeTracker("a" -> CTNode)
-
     assertExpr.from("count(*)") shouldHaveInferredType CTInteger
-    assertExpr.from("count(a)") shouldHaveInferredType CTInteger
-    assertExpr.from("count(a.name)") shouldHaveInferredType CTInteger
+    assertExpr.from("count(NODE)") shouldHaveInferredType CTInteger
+    assertExpr.from("count(NODE.STRING)") shouldHaveInferredType CTInteger
   }
 
   it("typing toString()") {
-    implicit val context: TypeTracker = typeTracker("a" -> CTInteger, "b" -> CTBoolean, "c" -> CTFloat, "d" -> CTString)
-
-    assertExpr.from("toString(a)") shouldHaveInferredType CTString
-    assertExpr.from("toString(b)") shouldHaveInferredType CTString
-    assertExpr.from("toString(c)") shouldHaveInferredType CTString
-    assertExpr.from("toString(d)") shouldHaveInferredType CTString
+    assertExpr.from("toString(INTEGER)") shouldHaveInferredType CTString
+    assertExpr.from("toString(BOOLEAN)") shouldHaveInferredType CTString
+    assertExpr.from("toString(FLOAT)") shouldHaveInferredType CTString
+    assertExpr.from("toString(STRING)") shouldHaveInferredType CTString
+    assertExpr.from("toString(INTEGER_OR_NULL)") shouldHaveInferredType CTString.nullable
+    assertExpr.from("toString(BOOLEAN_OR_NULL)") shouldHaveInferredType CTString.nullable
+    assertExpr.from("toString(FLOAT_OR_NULL)") shouldHaveInferredType CTString.nullable
+    assertExpr.from("toString(STRING_OR_NULL)") shouldHaveInferredType CTString.nullable
+    assertExpr.from("toString(NULL)") shouldHaveInferredType CTNull
   }
 
   it("typing toBoolean()") {
-    implicit val context: TypeTracker = typeTracker("true" -> CTBoolean, "false" -> CTBoolean)
-
-    assertExpr.from("toBoolean(true)") shouldHaveInferredType CTBoolean
-    assertExpr.from("toBoolean(false)") shouldHaveInferredType CTBoolean
+    assertExpr.from("toBoolean(BOOLEAN)") shouldHaveInferredType CTBoolean
+    assertExpr.from("toBoolean(BOOLEAN_OR_NULL)") shouldHaveInferredType CTBoolean.nullable
   }
 
   describe("logarithmic functions") {
     it("can type sqrt()") {
-      implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger, "c" -> CTNull)
-
-      assertExpr.from("sqrt(a)") shouldHaveInferredType CTFloat
-      assertExpr.from("sqrt(b)") shouldHaveInferredType CTFloat
-      assertExpr.from("sqrt(c)") shouldHaveInferredType CTNull
+      assertExpr.from("sqrt(FLOAT)") shouldHaveInferredType CTFloat
+      assertExpr.from("sqrt(INTEGER)") shouldHaveInferredType CTFloat
+      assertExpr.from("sqrt(NULL)") shouldHaveInferredType CTNull
     }
 
     it("can type log()") {
-      implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger, "c" -> CTNull)
-
-      assertExpr.from("log(a)") shouldHaveInferredType CTFloat
-      assertExpr.from("log(b)") shouldHaveInferredType CTFloat
-      assertExpr.from("log(c)") shouldHaveInferredType CTNull
+      assertExpr.from("log(FLOAT)") shouldHaveInferredType CTFloat
+      assertExpr.from("log(INTEGER)") shouldHaveInferredType CTFloat
+      assertExpr.from("log(NULL)") shouldHaveInferredType CTNull
     }
 
     it("can type log10()") {
-      implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger, "c" -> CTNull)
-
-      assertExpr.from("log10(a)") shouldHaveInferredType CTFloat
-      assertExpr.from("log10(b)") shouldHaveInferredType CTFloat
-      assertExpr.from("log10(c)") shouldHaveInferredType CTNull
+      assertExpr.from("log10(FLOAT)") shouldHaveInferredType CTFloat
+      assertExpr.from("log10(INTEGER)") shouldHaveInferredType CTFloat
+      assertExpr.from("log10(NULL)") shouldHaveInferredType CTNull
     }
 
     it("can type exp()") {
-      implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger, "c" -> CTNull)
-
-      assertExpr.from("exp(a)") shouldHaveInferredType CTFloat
-      assertExpr.from("exp(b)") shouldHaveInferredType CTFloat
-      assertExpr.from("exp(c)") shouldHaveInferredType CTNull
+      assertExpr.from("exp(FLOAT)") shouldHaveInferredType CTFloat
+      assertExpr.from("exp(INTEGER)") shouldHaveInferredType CTFloat
+      assertExpr.from("exp(NULL)") shouldHaveInferredType CTNull
     }
 
     it("can type e()") {
-      implicit val context: TypeTracker = typeTracker()
-
       assertExpr.from("e()") shouldHaveInferredType CTFloat
     }
   }
 
   describe("numeric functions") {
     it("can type abs()") {
-      implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger, "c" -> CTNull)
-
-      assertExpr.from("abs(a)") shouldHaveInferredType CTFloat
-      assertExpr.from("abs(b)") shouldHaveInferredType CTInteger
-      assertExpr.from("abs(c)") shouldHaveInferredType CTNull
+      assertExpr.from("abs(FLOAT)") shouldHaveInferredType CTFloat
+      assertExpr.from("abs(INTEGER)") shouldHaveInferredType CTInteger
+      assertExpr.from("abs(NULL)") shouldHaveInferredType CTNull
     }
 
     it("can type ceil()") {
-      implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger, "c" -> CTNull)
-
-      assertExpr.from("ceil(a)") shouldHaveInferredType CTFloat
-      assertExpr.from("ceil(b)") shouldHaveInferredType CTFloat
-      assertExpr.from("ceil(c)") shouldHaveInferredType CTNull
+      assertExpr.from("ceil(FLOAT)") shouldHaveInferredType CTFloat
+      assertExpr.from("ceil(INTEGER)") shouldHaveInferredType CTFloat
+      assertExpr.from("ceil(NULL)") shouldHaveInferredType CTNull
     }
 
     it("can type floor()") {
-      implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger, "c" -> CTNull)
-
-      assertExpr.from("floor(a)") shouldHaveInferredType CTFloat
-      assertExpr.from("floor(b)") shouldHaveInferredType CTFloat
-      assertExpr.from("floor(c)") shouldHaveInferredType CTNull
+      assertExpr.from("floor(FLOAT)") shouldHaveInferredType CTFloat
+      assertExpr.from("floor(INTEGER)") shouldHaveInferredType CTFloat
+      assertExpr.from("floor(NULL)") shouldHaveInferredType CTNull
     }
 
     it("can type rand()") {
-      implicit val context: TypeTracker = typeTracker()
-
-      assertExpr.from("rand()") shouldHaveInferredType CTFloat.nullable
+      assertExpr.from("rand()") shouldHaveInferredType CTFloat
     }
 
     it("can type round()") {
-      implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger, "c" -> CTNull)
-
-      assertExpr.from("round(a)") shouldHaveInferredType CTFloat
-      assertExpr.from("round(b)") shouldHaveInferredType CTFloat
-      assertExpr.from("round(c)") shouldHaveInferredType CTNull
+      assertExpr.from("round(FLOAT)") shouldHaveInferredType CTFloat
+      assertExpr.from("round(INTEGER)") shouldHaveInferredType CTFloat
+      assertExpr.from("round(NULL)") shouldHaveInferredType CTNull
     }
 
     it("can type sign()") {
-      implicit val context: TypeTracker = typeTracker("a" -> CTFloat, "b" -> CTInteger, "c" -> CTNull)
-
-      assertExpr.from("sign(a)") shouldHaveInferredType CTInteger
-      assertExpr.from("sign(b)") shouldHaveInferredType CTInteger
-      assertExpr.from("sign(c)") shouldHaveInferredType CTNull
+      assertExpr.from("sign(FLOAT)") shouldHaveInferredType CTInteger
+      assertExpr.from("sign(INTEGER)") shouldHaveInferredType CTInteger
+      assertExpr.from("sign(NULL)") shouldHaveInferredType CTNull
     }
   }
 
   it("typing property of node without label") {
-    implicit val context: TypeTracker = typeTracker("a" -> CTNode)
-
-    assertExpr.from("a.name") shouldHaveInferredType CTAny
-    assertExpr.from("a.age") shouldHaveInferredType CTNumber
+    assertExpr.from("NODE_EMPTY.name") shouldHaveInferredType CTAny
+    assertExpr.from("NODE_EMPTY.age") shouldHaveInferredType CTNumber
   }
 
   it("typing add") {
-    implicit val context: TypeTracker =
-      typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTBoolean)
+    assertExpr.from("INTEGER + INTEGER") shouldHaveInferredType CTInteger
+    assertExpr.from("FLOAT + FLOAT") shouldHaveInferredType CTFloat
+    assertExpr.from("INTEGER + FLOAT") shouldHaveInferredType CTFloat
+    assertExpr.from("FLOAT + INTEGER") shouldHaveInferredType CTFloat
+    assertExpr.from("INTEGER + NUMBER") shouldHaveInferredType CTNumber
+    assertExpr.from("NUMBER + FLOAT") shouldHaveInferredType CTNumber
 
-    assertExpr.from("a + a") shouldHaveInferredType CTInteger
-    assertExpr.from("b + b") shouldHaveInferredType CTFloat
-    assertExpr.from("a + b") shouldHaveInferredType CTFloat
-    assertExpr.from("b + a") shouldHaveInferredType CTFloat
-    assertExpr.from("a + c") shouldHaveInferredType CTNumber
-    assertExpr.from("c + b") shouldHaveInferredType CTNumber
+    assertExpr.from("INTEGER + ANY_OR_NULL") shouldHaveInferredType CTAny.nullable
+    assertExpr.from("ANY_OR_NULL + NUMBER") shouldHaveInferredType CTAny.nullable
 
-    assertExpr.from("a + d") shouldHaveInferredType CTAny.nullable
-    assertExpr.from("d + c") shouldHaveInferredType CTAny.nullable
-
-    assertExpr.from("a + e") shouldFailToInferTypeWithErrors
-      NoSuitableSignatureForExpr("a + e", Seq(CTInteger, CTBoolean))
-    assertExpr.from("e + a") shouldFailToInferTypeWithErrors
-      NoSuitableSignatureForExpr("e + a", Seq(CTBoolean, CTInteger))
-    assertExpr.from("e + e") shouldFailToInferTypeWithErrors
-      NoSuitableSignatureForExpr("e + e", Seq(CTBoolean, CTBoolean))
+    assertExpr.from("INTEGER + BOOLEAN") shouldFailToInferTypeWithErrors
+      NoSuitableSignatureForExpr("INTEGER + BOOLEAN", Seq(CTInteger, CTBoolean))
+    assertExpr.from("BOOLEAN + INTEGER") shouldFailToInferTypeWithErrors
+      NoSuitableSignatureForExpr("BOOLEAN + INTEGER", Seq(CTBoolean, CTInteger))
+    assertExpr.from("BOOLEAN + BOOLEAN") shouldFailToInferTypeWithErrors
+      NoSuitableSignatureForExpr("BOOLEAN + BOOLEAN", Seq(CTBoolean, CTBoolean))
   }
 
   it("typing add for string and list concatenation") {
-    assertExpr.from("'foo' + 'bar'") shouldHaveInferredType CTString
-    assertExpr.from("[] + [1, 2, 3]") shouldHaveInferredType CTList(CTInteger)
-    assertExpr.from("[true] + [1, 2, 3]") shouldHaveInferredType CTList(CTAny)
+    assertExpr.from("STRING + STRING") shouldHaveInferredType CTString
+    assertExpr.from("LIST_VOID + LIST_INTEGER") shouldHaveInferredType CTList(CTInteger)
+    assertExpr.from("LIST_BOOLEAN + LIST_INTEGER") shouldHaveInferredType CTList(CTAny)
 
-    assertExpr.from("'foo' + 1") shouldHaveInferredType CTString
-    assertExpr.from("'foo' + 3.14") shouldHaveInferredType CTString
-    assertExpr.from("'foo' + ['bar', 'giz']") shouldHaveInferredType CTList(CTString)
+    assertExpr.from("STRING + INTEGER") shouldHaveInferredType CTString
+    assertExpr.from("STRING + FLOAT") shouldHaveInferredType CTString
+    assertExpr.from("STRING + LIST_STRING") shouldHaveInferredType CTList(CTString)
 
-    assertExpr.from("[] + 1") shouldHaveInferredType CTList(CTInteger)
-    assertExpr.from("[3.14] + 1") shouldHaveInferredType CTList(CTNumber)
+    assertExpr.from("LIST_VOID + INTEGER") shouldHaveInferredType CTList(CTInteger)
+    assertExpr.from("LIST_FLOAT + INTEGER") shouldHaveInferredType CTList(CTNumber)
 
-    assertExpr.from("['foo'] + null") shouldFailToInferTypeWithErrors
-      UnsupportedExpr(parseExpr("['foo'] + null"))
+    assertExpr.from("LIST_STRING + NULL") shouldFailToInferTypeWithErrors
+      UnsupportedExpr(parseExpr("LIST_STRING + NULL"))
   }
 
   it("typing subtract") {
-    implicit val context: TypeTracker =
-      typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString,
-        "date" -> CTDate, "localdatetime" -> CTLocalDateTime, "duration" -> CTDuration)
+    assertExpr.from("INTEGER - INTEGER") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("FLOAT - FLOAT") shouldHaveInferredType CTFloat.nullable
+    assertExpr.from("INTEGER - FLOAT") shouldHaveInferredType CTFloat.nullable
+    assertExpr.from("FLOAT - INTEGER") shouldHaveInferredType CTFloat.nullable
 
-    assertExpr.from("a - a") shouldHaveInferredType CTInteger.nullable
-    assertExpr.from("b - b") shouldHaveInferredType CTFloat.nullable
-    assertExpr.from("a - b") shouldHaveInferredType CTFloat.nullable
-    assertExpr.from("b - a") shouldHaveInferredType CTFloat.nullable
+    assertExpr.from("INTEGER - ANY_OR_NULL") shouldHaveInferredType CTNumber.nullable
 
-    assertExpr.from("a - d") shouldHaveInferredType CTNumber.nullable
+    assertExpr.from("DATE - DURATION") shouldHaveInferredType CTDate.nullable
+    assertExpr.from("LOCALDATETIME - DURATION") shouldHaveInferredType CTLocalDateTime.nullable
 
-    assertExpr.from("date - duration") shouldHaveInferredType CTDate.nullable
-    assertExpr.from("localdatetime - duration") shouldHaveInferredType CTLocalDateTime.nullable
-
-    assertExpr.from("a - e") shouldFailToInferTypeWithErrors
+    assertExpr.from("INTEGER - STRING") shouldFailToInferTypeWithErrors
       NoSuitableSignatureForExpr(
-        Subtract(Variable("a")(InputPosition.NONE), Variable("e")(InputPosition.NONE))(InputPosition.NONE),
+        Subtract(Variable("INTEGER")(InputPosition.NONE), Variable("STRING")(InputPosition.NONE))(InputPosition.NONE),
         Seq(CTInteger, CTString)
       )
   }
 
   it("typing multiply") {
-    implicit val context: TypeTracker =
-      typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
+    assertExpr.from("INTEGER * INTEGER") shouldHaveInferredType CTInteger
+    assertExpr.from("FLOAT * FLOAT") shouldHaveInferredType CTFloat
+    assertExpr.from("INTEGER * FLOAT") shouldHaveInferredType CTFloat
+    assertExpr.from("FLOAT * INTEGER") shouldHaveInferredType CTFloat
+    assertExpr.from("INTEGER * NUMBER") shouldHaveInferredType CTNumber
+    assertExpr.from("NUMBER * FLOAT") shouldHaveInferredType CTNumber
 
-    assertExpr.from("a * a") shouldHaveInferredType CTInteger
-    assertExpr.from("b * b") shouldHaveInferredType CTFloat
-    assertExpr.from("a * b") shouldHaveInferredType CTFloat
-    assertExpr.from("b * a") shouldHaveInferredType CTFloat
-    assertExpr.from("a * c") shouldHaveInferredType CTNumber
-    assertExpr.from("c * b") shouldHaveInferredType CTNumber
+    assertExpr.from("INTEGER * ANY_OR_NULL") shouldHaveInferredType CTAny.nullable
+    assertExpr.from("ANY_OR_NULL * NUMBER") shouldHaveInferredType CTAny.nullable
 
-    assertExpr.from("a * d") shouldHaveInferredType CTAny.nullable
-    assertExpr.from("d * c") shouldHaveInferredType CTAny.nullable
-
-    assertExpr.from("a * e") shouldFailToInferTypeWithErrors
-      InvalidType("e", Seq(CTInteger, CTFloat, CTNumber), CTString)
+    assertExpr.from("INTEGER * STRING") shouldFailToInferTypeWithErrors
+      InvalidType("STRING", Seq(CTInteger, CTFloat, CTNumber), CTString)
   }
 
   it("typing divide") {
-    implicit val context: TypeTracker =
+    //implicit val context: TypeTracker =
       typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
 
-    assertExpr.from("a / a") shouldHaveInferredType CTInteger
-    assertExpr.from("b / b") shouldHaveInferredType CTFloat
-    assertExpr.from("a / b") shouldHaveInferredType CTFloat
-    assertExpr.from("b / a") shouldHaveInferredType CTFloat
-    assertExpr.from("a / c") shouldHaveInferredType CTNumber
-    assertExpr.from("c / b") shouldHaveInferredType CTNumber
+    assertExpr.from("INTEGER / INTEGER") shouldHaveInferredType CTInteger
+    assertExpr.from("FLOAT / FLOAT") shouldHaveInferredType CTFloat
+    assertExpr.from("INTEGER / FLOAT") shouldHaveInferredType CTFloat
+    assertExpr.from("FLOAT / INTEGER") shouldHaveInferredType CTFloat
+    assertExpr.from("INTEGER / NUMBER") shouldHaveInferredType CTNumber
+    assertExpr.from("NUMBER / FLOAT") shouldHaveInferredType CTNumber
 
-    assertExpr.from("a / d") shouldHaveInferredType CTAny.nullable
-    assertExpr.from("d / c") shouldHaveInferredType CTAny.nullable
+    assertExpr.from("INTEGER / ANY_OR_NULL") shouldHaveInferredType CTAny.nullable
+    assertExpr.from("ANY_OR_NULL / NUMBER") shouldHaveInferredType CTAny.nullable
 
-    assertExpr.from("a / e") shouldFailToInferTypeWithErrors
-      InvalidType("e", Seq(CTInteger, CTFloat, CTNumber), CTString)
+    assertExpr.from("INTEGER / STRING") shouldFailToInferTypeWithErrors
+      InvalidType("STRING", Seq(CTInteger, CTFloat, CTNumber), CTString)
   }
 
   it("typing label predicates") {
-    implicit val context: TypeTracker = typeTracker("n" -> CTNode())
-
-    assertExpr.from("n:Person") shouldHaveInferredType CTBoolean
-    assertExpr.from("n:Person:Car") shouldHaveInferredType CTBoolean
-    assertExpr.from("NOT n:Person:Car") shouldHaveInferredType CTBoolean
-    assertExpr.from("NOT(NOT(n:Person:Car))") shouldHaveInferredType CTBoolean
+    assertExpr.from("NODE:Person") shouldHaveInferredType CTBoolean
+    assertExpr.from("NODE:Person:Car") shouldHaveInferredType CTBoolean
+    assertExpr.from("NOT NODE:Person:Car") shouldHaveInferredType CTBoolean
+    assertExpr.from("NOT(NOT(NODE:Person:Car))") shouldHaveInferredType CTBoolean
   }
 
   it("typing AND and OR") {
-    implicit val context: TypeTracker = typeTracker("b" -> CTBoolean, "c" -> CTBoolean, "int" -> CTInteger, "d" -> CTBoolean.nullable)
+    assertExpr.from("BOOLEAN AND BOOLEAN") shouldHaveInferredType CTBoolean
+    assertExpr.from("BOOLEAN OR BOOLEAN_OR_NULL") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("BOOLEAN AND true") shouldHaveInferredType CTBoolean
+    assertExpr.from("BOOLEAN OR false") shouldHaveInferredType CTBoolean
+    assertExpr.from("(BOOLEAN AND true) OR (BOOLEAN AND BOOLEAN)") shouldHaveInferredType CTBoolean
 
-    assertExpr.from("b AND d") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("b OR d") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("b AND true") shouldHaveInferredType CTBoolean
-    assertExpr.from("b OR false") shouldHaveInferredType CTBoolean
-    assertExpr.from("(b AND true) OR (b AND c)") shouldHaveInferredType CTBoolean
-
-    Seq("b AND int", "int OR b", "b AND int AND c").foreach { s =>
-      assertExpr(parseExpr(s)) shouldFailToInferTypeWithErrors InvalidType(varFor("int"), CTBoolean, CTInteger)
+    Seq("BOOLEAN AND INTEGER", "INTEGER OR BOOLEAN", "BOOLEAN AND INTEGER AND BOOLEAN").foreach { s =>
+      assertExpr(parseExpr(s)) shouldFailToInferTypeWithErrors InvalidType(varFor("INTEGER"), CTBoolean, CTInteger)
     }
   }
 
   it("can get label information through combined predicates") {
-    implicit val tracker: TypeTracker = typeTracker("b" -> CTBoolean, "n" -> CTNode(), "x" -> CTString)
-
-    assertExpr.from("b AND n:Person AND b AND n:Foo") shouldHaveInferredType CTBoolean
-    assertExpr.from("b AND n:Person AND b AND n:Foo") shouldMake varFor("n") haveType CTNode("Person", "Foo")
-    assertExpr.from("n.name = x AND n:Person") shouldMake varFor("n") haveType CTNode("Person")
-    assertExpr.from("n.name = x AND n:Person") shouldMake prop("n", "name") haveType CTString
+    assertExpr.from("BOOLEAN AND NODE_EMPTY:Person AND BOOLEAN AND NODE_EMPTY:Foo") shouldHaveInferredType CTBoolean
+    assertExpr.from("BOOLEAN AND NODE_EMPTY:Person AND BOOLEAN AND NODE_EMPTY:Foo") shouldMake varFor("NODE_EMPTY") haveType CTNode("Person", "Foo")
+    assertExpr.from("NODE_EMPTY.name = STRING AND NODE_EMPTY:Person") shouldMake varFor("NODE_EMPTY") haveType CTNode("Person")
+    assertExpr.from("NODE_EMPTY.name = STRING AND NODE_EMPTY:Person") shouldMake prop("NODE_EMPTY", "name") haveType CTString
   }
 
   it("should detail entity type from predicate") {
-    implicit val context: TypeTracker = typeTracker("n" -> CTNode)
-
-    assertExpr.from("n:Person") shouldMake varFor("n") haveType CTNode("Person")
-    assertExpr.from("n:Person AND n:Dog") shouldMake varFor("n") haveType CTNode("Person", "Dog")
+    assertExpr.from("NODE_EMPTY:Person") shouldMake varFor("NODE_EMPTY") haveType CTNode("Person")
+    assertExpr.from("NODE_EMPTY:Person AND NODE_EMPTY:Dog") shouldMake varFor("NODE_EMPTY") haveType CTNode("Person", "Dog")
   }
 
   it("typing equality") {
-    implicit val context: TypeTracker = typeTracker("n" -> CTInteger)
-
-    assertExpr.from("n = 1") shouldHaveInferredType CTBoolean
-    assertExpr.from("n <> 1") shouldHaveInferredType CTBoolean
+    assertExpr.from("INTEGER = 1") shouldHaveInferredType CTBoolean
+    assertExpr.from("INTEGER <> 1") shouldHaveInferredType CTBoolean
   }
 
   it("typing less than") {
-    implicit val context: TypeTracker = typeTracker("n" -> CTInteger, "m" -> CTFloat, "o" -> CTString)
-
-    assertExpr.from("n < n") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("n < m") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("n < o") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("o < n") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("INTEGER < INTEGER") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("INTEGER < FLOAT") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("INTEGER < STRING") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("STRING  < INTEGER") shouldHaveInferredType CTBoolean.nullable
   }
 
   it("typing less than or equal") {
-    implicit val context: TypeTracker = typeTracker("n" -> CTInteger, "m" -> CTInteger.nullable, "o" -> CTString)
-
-    assertExpr.from("n <= n") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("n <= m") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("n <= o") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("o <= n") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("INTEGER <= INTEGER") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("INTEGER <= INTEGER_OR_NULL") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("INTEGER <= STRING") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("STRING <= INTEGER") shouldHaveInferredType CTBoolean.nullable
   }
 
   it("typing greater than") {
-    implicit val context: TypeTracker = typeTracker("n" -> CTInteger, "m" -> CTInteger, "o" -> CTString)
-
-    assertExpr.from("n > m") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("n > o") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("o > n") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("INTEGER > INTEGER") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("INTEGER > STRING") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("STRING > INTEGER") shouldHaveInferredType CTBoolean.nullable
   }
 
   it("typing greater than or equal") {
-    implicit val context: TypeTracker = typeTracker("n" -> CTInteger, "m" -> CTInteger, "o" -> CTString)
-
-    assertExpr.from("n >= m") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("n >= o") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("o >= n") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("INTEGER >= INTEGER") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("INTEGER >= STRING") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("STRING >= INTEGER") shouldHaveInferredType CTBoolean.nullable
   }
 
   it("typing property equality and IN") {
-    implicit val context: TypeTracker = typeTracker("n" -> CTNode("Person"))
-
-    assertExpr.from("n.name = 'foo'") shouldHaveInferredType CTBoolean
-    assertExpr.from("n.name IN ['foo', 'bar']") shouldHaveInferredType CTBoolean
-    assertExpr.from("n.name IN 'foo'") shouldFailToInferTypeWithErrors
-      InvalidType(parseExpr("'foo'"), CTList(CTWildcard), CTString)
+    assertExpr.from("NODE.STRING = STRING") shouldHaveInferredType CTBoolean
+    assertExpr.from("NODE.STRING IN LIST_STRING") shouldHaveInferredType CTBoolean
+    assertExpr.from("NODE.STRING IN STRING") shouldFailToInferTypeWithErrors
+      InvalidType(parseExpr("STRING"), CTList(CTWildcard), CTString)
   }
 
   it("typing of unsupported expressions") {
@@ -468,15 +433,11 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   it("typing of variables") {
-    implicit val tracker: TypeTracker = typeTracker("n" -> CTNode("Person"))
-
-    assertExpr.from("n") shouldHaveInferredType CTNode("Person")
+    assertExpr.from("NODE") shouldHaveInferredType CTNode("Node")
   }
 
   it("typing of parameters (1)") {
-    implicit val tracker: TypeTracker = TypeTracker.empty.withParameters(Map("param" -> CypherValue("foobar")))
-
-    assertExpr.from("$param") shouldHaveInferredType CTString
+    assertExpr.from("$STRING_EMPTY") shouldHaveInferredType CTString
   }
 
   it("typing of basic literals") {
@@ -499,126 +460,116 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
   }
 
   it("typing of list indexing") {
-    implicit val context: TypeTracker = TypeTracker.empty.updated(Parameter("param", symbols.CTAny)(pos), CTInteger)
-
-    assertExpr.from("[1, 2][15]") shouldHaveInferredType CTInteger.nullable
-    assertExpr.from("[3.14, -1, 5000][15]") shouldHaveInferredType CTNumber.nullable
-    assertExpr.from("[[], 1, true][15]") shouldHaveInferredType CTAny.nullable
-    assertExpr.from("[1, 2][1]") shouldHaveInferredType CTInteger.nullable
-    assertExpr.from("[3.14, -1, 5000][$param]")(TypeTracker.empty.withParameters(Map("param" -> CypherValue(42L)))) shouldHaveInferredType CTNumber.nullable
-    assertExpr.from("[[], 1, true][$param]")(TypeTracker.empty.withParameters(Map("param" -> CypherValue(21L)))) shouldHaveInferredType CTAny.nullable
+    assertExpr.from("LIST_INTEGER[15]") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("LIST_NUMBER[15]") shouldHaveInferredType CTNumber.nullable
+    assertExpr.from("LIST_ANY[15]") shouldHaveInferredType CTAny.nullable
+    assertExpr.from("LIST_INTEGER[1]") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("LIST_NUMBER[$INTEGER_0]") shouldHaveInferredType CTNumber.nullable
+    assertExpr.from("LIST_ANY[$INTEGER_0]") shouldHaveInferredType CTAny.nullable
   }
 
   it("typing of map indexing") {
-    implicit val context: TypeTracker = TypeTracker.empty
-      .updated(Variable("map")(pos), CTMap(Map("foo" -> CTInteger, "bar" -> CTBoolean)))
-      .updated(Variable("stringKey")(pos), CTString)
-      .updated(Variable("intKey")(pos), CTInteger)
-      .withParameters(Map(
-        "stringParam" -> CypherValue("bar"),
-        "intParam" -> CypherValue(42L)
-      ))
+    //implicit val context: TypeTracker = TypeTracker.empty
+    //  .updated(Variable("map")(pos), CTMap(Map("foo" -> CTInteger, "bar" -> CTBoolean)))
+    //  .updated(Variable("stringKey")(pos), CTString)
+    //  .updated(Variable("intKey")(pos), CTInteger)
+    //  .withParameters(Map(
+    //    "stringParam" -> CypherValue("bar"),
+    //    "intParam" -> CypherValue(42L)
+    //  ))
 
-    assertExpr.from("""map["foo"]""") shouldHaveInferredType CTInteger
-    assertExpr.from("""map["bar"]""") shouldHaveInferredType CTBoolean
-    assertExpr.from("""map["baz"]""") shouldHaveInferredType CTVoid
+    assertExpr.from("""MAP["INTEGER"]""") shouldHaveInferredType CTInteger
+    assertExpr.from("""MAP["BOOLEAN"]""") shouldHaveInferredType CTBoolean
+    assertExpr.from("""MAP["baz"]""") shouldHaveInferredType CTVoid
 
-    assertExpr.from("""map[stringKey]""") shouldHaveInferredType CTAny.nullable
-    assertExpr.from("""map[intKey]""") shouldFailToInferTypeWithErrors InvalidType(Variable("intKey")(pos), CTString, CTInteger)
+    assertExpr.from("""MAP[STRING]""") shouldHaveInferredType CTAny.nullable
+    assertExpr.from("""MAP[INTEGER]""") shouldFailToInferTypeWithErrors InvalidType(Variable("INTEGER")(pos), CTString, CTInteger)
 
-    assertExpr.from("""map[$stringParam]""") shouldHaveInferredType CTBoolean
-    assertExpr.from("""map[$intParam]""") shouldFailToInferTypeWithErrors InvalidType(Parameter("intParam", symbols.CTAny)(pos), CTString, CTInteger)
+    assertExpr.from("""MAP[$STRING_BOOLEAN]""") shouldHaveInferredType CTBoolean
+    assertExpr.from("""MAP[$INTEGER_0]""") shouldFailToInferTypeWithErrors InvalidType(Parameter("INTEGER_0", symbols.CTAny)(pos), CTString, CTInteger)
   }
 
   it("infer type of node property lookup") {
-    implicit val context: TypeTracker = typeTracker("n" -> CTNode("Person"))
-
-    assertExpr.from("n.name") shouldHaveInferredType CTString
+    assertExpr.from("NODE.STRING") shouldHaveInferredType CTString
   }
 
   it("infer type of relationship property lookup") {
-    implicit val context: TypeTracker = typeTracker("r" -> CTRelationship("KNOWS"))
-
-    assertExpr.from("r.relative") shouldHaveInferredType CTBoolean
+    assertExpr.from("REL.BOOLEAN") shouldHaveInferredType CTBoolean
   }
 
   it("types of id function") {
-    implicit val context: TypeTracker = typeTracker("n" -> CTNode("Person"), "m" -> CTNode("Person").nullable)
-
-    assertExpr.from("id(n)") shouldHaveInferredType CTIdentity
-    assertExpr.from("id(m)") shouldHaveInferredType CTIdentity.nullable
+    assertExpr.from("id(NODE)") shouldHaveInferredType CTIdentity
+    assertExpr.from("id(NODE_OR_NULL)") shouldHaveInferredType CTIdentity.nullable
   }
 
   it("types functions") {
-    assertExpr.from("toInteger(1.0)") shouldHaveInferredType CTInteger.nullable
-    assertExpr.from("size([0, true, []])") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("toInteger(FLOAT)") shouldHaveInferredType CTInteger
+    assertExpr.from("size(LIST_ANY)") shouldHaveInferredType CTInteger
 
-    assertExpr.from("percentileDisc(1, 3.14)") shouldHaveInferredType CTInteger.nullable
-    assertExpr.from("percentileDisc(6.67, 3.14)") shouldHaveInferredType CTFloat.nullable
-    assertExpr.from("percentileDisc([1, 3.14][0], 3.14)") shouldHaveInferredType CTNumber.nullable
+    assertExpr.from("percentileDisc(INTEGER, FLOAT)") shouldHaveInferredType CTInteger
+    assertExpr.from("percentileDisc(FLOAT, FLOAT)") shouldHaveInferredType CTFloat
 
     // TODO: Making this work requires union types and changing how nullability works. Sad!
     //
-    // implicit val context = TyperContext.empty :+ Parameter("param", symbols.CTAny)(pos) -> CTInteger
+    //implicit val context = TyperContext.empty :+ Parameter("param", symbols.CTAny)(pos) -> CTInteger
     // assertExpr.from("percentileDisc([1, 3.14][$param], 3.14)") shouldHaveInferredType CTInteger
   }
 
   it("types the properties function") {
-    implicit val context: TypeTracker = typeTracker(
-      "person" -> CTNode(Set("Person")),
-      "personFoo" -> CTNode().nullable,
-      "rel" -> CTRelationship(),
-      "knows" -> CTRelationship("KNOWS").nullable,
-      "map" -> CTMap(Map("foo" -> CTString, "bar" -> CTInteger))
-    )
+    assertExpr.from("properties(NODE)") shouldHaveInferredType CTMap(properties.toMap)
+    assertExpr.from("properties(NODE_OR_NULL)") shouldHaveInferredType CTMap(properties.toMap).nullable
+    assertExpr.from("properties(NODE_EMPTY)") shouldHaveInferredType CTMap(propertiesJoined.toMap)
+    assertExpr.from("properties(NODE_EMPTY_OR_NULL)") shouldHaveInferredType CTMap(propertiesJoined.toMap).nullable
+    assertExpr.from("properties(REL)") shouldHaveInferredType CTMap(properties.toMap)
+    assertExpr.from("properties(REL_EMPTY)") shouldHaveInferredType CTMap(propertiesJoined.toMap)
+    assertExpr.from("properties(REL_EMPTY_OR_NULL)") shouldHaveInferredType CTMap(propertiesJoined.toMap).nullable
+    assertExpr.from("properties(REL_OR_NULL)") shouldHaveInferredType CTMap(properties.toMap).nullable
+    assertExpr.from("properties(MAP)") shouldHaveInferredType CTMap(simple.toMap)
+    assertExpr.from("properties(MAP_OR_NULL)") shouldHaveInferredType CTMap(simple.toMap).nullable
+  }
 
-    assertExpr.from("properties(person)") shouldHaveInferredType CTMap(Map("name" -> CTString, "age" -> CTInteger))
-    assertExpr.from("properties(personFoo)") shouldHaveInferredType CTMap(Map("name" -> CTAny, "age" -> CTNumber)).nullable
-    assertExpr.from("properties(rel)") shouldHaveInferredType CTMap(Map("since" -> CTInteger, "relative" -> CTBoolean))
-    assertExpr.from("properties(knows)") shouldHaveInferredType CTMap(Map("since" -> CTInteger, "relative" -> CTBoolean)).nullable
-    assertExpr.from("properties(map)") shouldHaveInferredType CTMap(Map("foo" -> CTString, "bar" -> CTInteger))
+  it("types the keys function") {
+    assertExpr.from("keys(NODE)") shouldHaveInferredType CTList(CTString)
+    assertExpr.from("keys(NULL)") shouldHaveInferredType CTNull
   }
 
   it("types the range function") {
-    implicit val context: TypeTracker = typeTracker("from" -> CTInteger, "to" -> CTInteger, "step" -> CTInteger)
-    assertExpr.from("range(from, to, step)") shouldHaveInferredType CTList(CTInteger).nullable
+    assertExpr.from("range(INTEGER, INTEGER, INTEGER)") shouldHaveInferredType CTList(CTInteger)
   }
 
   it("types the range function with nullable") {
-    implicit val context: TypeTracker = typeTracker("from" -> CTInteger.nullable, "to" -> CTInteger)
-    assertExpr.from("range(from, to)") shouldHaveInferredType CTList(CTInteger).nullable
+    assertExpr.from("range(INTEGER_OR_NULL, INTEGER)") shouldHaveInferredType CTList(CTInteger).nullable
   }
 
   it("types STARTS WITH, CONTAINS, ENDS WITH") {
-    implicit val context: TypeTracker = typeTracker("string" -> CTString, "r" -> CTString)
-    assertExpr.from("string STARTS WITH r") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("string ENDS WITH r") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("string CONTAINS r") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("STRING STARTS WITH STRING") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("STRING ENDS WITH STRING") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("STRING CONTAINS STRING") shouldHaveInferredType CTBoolean.nullable
   }
 
   it("types STARTS WITH, CONTAINS, ENDS WITH with null test") {
-    implicit val context: TypeTracker = typeTracker("string" -> CTString, "r" -> CTNull)
-    assertExpr.from("string STARTS WITH r") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("string ENDS WITH r") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("string CONTAINS r") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("STRING STARTS WITH NULL") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("STRING ENDS WITH NULL") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("STRING CONTAINS NULL") shouldHaveInferredType CTBoolean.nullable
   }
 
   it("types STARTS WITH, CONTAINS, ENDS WITH with null string") {
-    implicit val context: TypeTracker = typeTracker("string" -> CTNull, "r" -> CTString)
-    assertExpr.from("string STARTS WITH r") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("string ENDS WITH r") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("string CONTAINS r") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("NULL STARTS WITH STRING") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("NULL ENDS WITH STRING") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("NULL CONTAINS STRING") shouldHaveInferredType CTBoolean.nullable
   }
+}
 
-  private def typeTracker(typings: (String, CypherType)*): TypeTracker =
+protected abstract class SchemaTyperTestSuite extends BaseTestSuite with Neo4jAstTestSupport {
+  def typeTracker(typings: (String, CypherType)*): TypeTracker =
     TypeTracker(typings.map { case (v, t) => varFor(v) -> t }.toMap)
 
-  private object assertExpr {
-    def from(exprText: String)(implicit tracker: TypeTracker = TypeTracker.empty) =
+  object assertExpr {
+    def from(exprText: String)(implicit typer: SchemaTyper, tracker: TypeTracker = TypeTracker.empty) =
       assertExpr(parseExpr(exprText))
   }
 
-  private case class assertExpr(expr: Expression)(implicit val tracker: TypeTracker = TypeTracker.empty) {
+  case class assertExpr(expr: Expression)(implicit typer: SchemaTyper, tracker: TypeTracker = TypeTracker.empty) {
 
     def shouldMake(inner: Expression): Object {
       def haveType(t: CypherType): Assertion
@@ -645,4 +596,6 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
       }
     }
   }
+
 }
+
