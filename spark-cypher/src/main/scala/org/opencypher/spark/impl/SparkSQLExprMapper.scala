@@ -89,6 +89,8 @@ object SparkSQLExprMapper {
 
       expr match {
 
+        case e:UnaryFunctionExpr if e.cypherType == CTNull && e.expr.cypherType == CTNull => NULL_LIT
+
         // Context based lookups
         case p@Param(name) if p.cypherType.isInstanceOf[CTList] =>
           parameters(name) match {
@@ -179,7 +181,6 @@ object SparkSQLExprMapper {
                 col.isNotNull,
                 functions.size(col).cast(LongType)
               )
-            case CTNull => NULL_LIT
             case other => throw NotImplementedException(s"size() on values of type $other")
           }
 
@@ -287,7 +288,6 @@ object SparkSQLExprMapper {
                 .unzip
               val booleanLabelFlagColumn = functions.array(labelColumns: _*)
               get_node_labels(labelNames)(booleanLabelFlagColumn)
-            case CTNull => NULL_LIT
             case other => throw IllegalArgumentException("an expression with type CTNode, CTNodeOrNull, or CTNull", other)
           }
 

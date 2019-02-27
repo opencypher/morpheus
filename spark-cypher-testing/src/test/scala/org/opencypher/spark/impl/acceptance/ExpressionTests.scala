@@ -1166,6 +1166,29 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
         CypherMap("props" -> CypherMap("val1" -> "bar", "val2" -> 21))
       ))
     }
+
+    it("returns null for null literal") {
+      val result = caps.cypher(
+        """
+          |RETURN properties(null) AS res
+        """.stripMargin
+      )
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> null)
+      ))
+    }
+
+    it("returns null for null node") {
+      val result = caps.cypher(
+        """
+          |OPTIONAL MATCH (foo)
+          |RETURN properties(foo) AS res
+        """.stripMargin
+      )
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> null)
+      ))
+    }
   }
 
   describe("map support") {
