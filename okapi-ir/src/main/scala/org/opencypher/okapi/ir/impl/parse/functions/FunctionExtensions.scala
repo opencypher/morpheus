@@ -38,15 +38,9 @@ case object FunctionExtensions {
     LocalDateTime.name -> LocalDateTime,
     Date.name -> Date,
     Duration.name -> Duration,
-    ToBoolean.name -> ToBoolean
+    ToBoolean.name -> ToBoolean,
+    Id.name -> Id
   )
-
-  def apply(name: String): Vector[TypeSignature] =
-    mappings
-      .get(name)
-      .map(_.signatures.toVector)
-      .getOrElse(Vector.empty[TypeSignature])
-
 }
 
 case object Timestamp extends Function with TypeSignatures {
@@ -93,5 +87,19 @@ case object ToBoolean extends Function with TypeSignatures {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTString), outputType = CTBoolean),
     TypeSignature(argumentTypes = Vector(CTBoolean), outputType = CTBoolean)
+  )
+}
+
+object CTIdentity extends CypherType {
+  override def parentType: CypherType = CTAny
+  override def toNeoTypeString: String = "IDENTITY"
+}
+
+case object Id extends Function with TypeSignatures {
+  def name: String = functions.Id.name
+
+  override val signatures: Vector[TypeSignature] = Vector(
+    TypeSignature(argumentTypes = Vector(CTNode), outputType = CTIdentity),
+    TypeSignature(argumentTypes = Vector(CTRelationship), outputType = CTIdentity)
   )
 }

@@ -39,7 +39,7 @@ import org.opencypher.okapi.ir.impl.parse.functions.FunctionExtensions
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.{Abs, Acos, Asin, Atan, Atan2, Ceil, Coalesce, Collect, Cos, Cot, Degrees, Exists, Exp, Floor, Haversin, Id, Keys, Log, Log10, Max, Min, Properties, Radians, Round, Sign, Sin, Sqrt, Tan, ToBoolean, ToString, UnresolvedFunction}
+import org.opencypher.v9_0.expressions.functions.{Coalesce, Collect, Exists, Keys, Properties}
 
 final case class SchemaTyper(schema: Schema) {
 
@@ -225,18 +225,6 @@ object SchemaTyper {
           } yield existsType
         case Seq(nonProp) =>
           error(InvalidArgument(expr, nonProp))
-        case seq =>
-          error(WrongNumberOfArguments(expr, 1, seq.size))
-      }
-
-    // TODO: Remove as soon as FunctionInvocationTyper is capable of supporting all Neo4j front end types
-    case expr: FunctionInvocation if expr.function == ToString =>
-      expr.arguments match {
-        case Seq(first) =>
-          for {
-            inner <- process[R](first)
-            existsType <- recordAndUpdate(expr -> CTString.asNullableAs(inner))
-          } yield existsType
         case seq =>
           error(WrongNumberOfArguments(expr, 1, seq.size))
       }
@@ -530,11 +518,12 @@ object SchemaTyper {
   }
 
   private def convertSignatures(t: TypeSignatures): Set[FunctionSignature] = {
-      FunctionSignatures
+      val sigs = FunctionSignatures
         .from(t)
         .expandWithNulls
-        .withSubstitutions(CTFloat, CTNumber)
+        .expandWithSubstitutions(CTFloat, CTInteger)
         .signatures
+    sigs
   }
 
   private case object AddTyper extends SignatureBasedInvocationTyper[Add] {
