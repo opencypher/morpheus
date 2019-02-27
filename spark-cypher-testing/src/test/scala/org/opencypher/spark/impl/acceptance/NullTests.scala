@@ -95,17 +95,13 @@ class NullTests extends CAPSTestSuite with ScanGraphInit with TestNameFixture {
     it("calling: null > null")(returnsNull())
     it("calling: null >= null")(returnsNull())
     it("calling: null IN null")(returnsNull())
-    it("calling: null & null")(returnsNull()) // no syntax
-    it("calling: null | null")(returnsNull()) // no syntax
-    it("calling: null << null")(returnsNull()) // no syntax
-    it("calling: null >>> null")(returnsNull()) // no syntax
     it("calling: NOT null")(returnsNull())
     it("calling: null:FOO")(returnsNull())
     it("calling: type(null) = null")(returnsNull())
     it("calling: null + null")(returnsNull())
     it("calling: null - null")(returnsNull())
     it("calling: null * null")(returnsNull())
-    it("calling: null / null")(returnsNull(""))
+    it("calling: null / null")(returnsNull())
     it("calling: null.foo")(returnsNull())
     it("calling: range(null, null)")(returnsNull())
     it("calling: replace(null, null, null)")(returnsNull())

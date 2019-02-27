@@ -39,7 +39,7 @@ import org.opencypher.okapi.ir.impl.parse.functions.FunctionExtensions
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.{Coalesce, Collect, Exists, Keys, Properties}
+import org.opencypher.v9_0.expressions.functions.{Coalesce, Collect, Exists, Properties}
 
 final case class SchemaTyper(schema: Schema) {
 
@@ -128,16 +128,21 @@ object SchemaTyper {
     case HasLabels(node, labels) =>
       for {
         nodeType <- process[R](node)
-        result <- nodeType.material match {
+        result<- nodeType.material match {
+          case CTVoid =>
+            updateTyping[R](node -> CTNull) >>
+            pure[R, CypherType](CTNull)
+
           case CTNode(nodeLabels, qgn) =>
             val detailed = nodeLabels ++ labels.map(_.name).toSet
-            recordType[R](node -> nodeType) >>
-              updateTyping[R](node -> CTNode(detailed, qgn)) >>
-              recordAndUpdate[R](expr -> CTBoolean)
+            updateTyping[R](node -> CTNode(detailed, qgn)) >>
+            pure[R, CypherType](CTBoolean)
 
           case x =>
             error(InvalidType(node, CTNode, x))
         }
+        _ <- recordType[R](node -> nodeType)
+        _ <- recordAndUpdate[R](expr -> result)
       } yield result
 
     case Not(inner) =>
@@ -178,12 +183,14 @@ object SchemaTyper {
       for {
         lhsType <- process[R](lhs)
         rhsType <- process[R](rhs)
-        result <- rhsType match {
-          case _: CTList | _: CTListOrNull | CTNull =>
-            recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> CTBoolean)
-          case x =>
-            error(InvalidType(rhs, CTList(CTWildcard), x))
+        result <- (rhsType, lhsType) match {
+          case (CTNull, _) => pure[R, CypherType](CTNull)
+          case (_, CTNull) => pure[R, CypherType](CTNull)
+          case (_: CTList |  _: CTListOrNull, _)  => pure[R, CypherType](CTBoolean)
+          case (r, _) => error(InvalidType(rhs, CTList(CTWildcard), r))
         }
+        _ <- recordTypes(lhs -> lhsType, rhs -> rhsType)
+        _ <- recordAndUpdate(expr -> result)
       } yield result
 
     case IsNull(inner) =>
