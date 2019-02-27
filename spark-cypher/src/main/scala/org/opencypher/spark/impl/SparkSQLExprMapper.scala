@@ -30,7 +30,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, InternalException, NotImplementedException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.temporal.TemporalTypesHelper._
 import org.opencypher.okapi.impl.temporal.{Duration => DurationValue}
 import org.opencypher.okapi.ir.api.PropertyKey
@@ -42,6 +42,8 @@ import org.opencypher.spark.impl.expressions.AddPrefix._
 import org.opencypher.spark.impl.expressions.EncodeLong._
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 import org.opencypher.spark.impl.temporal.TemporalUdfs
+
+final case class SparkSQLMappingException(msg: String) extends InternalException(msg)
 
 object SparkSQLExprMapper {
 
@@ -91,14 +93,22 @@ object SparkSQLExprMapper {
 
         case e:UnaryFunctionExpr if e.cypherType == CTNull && e.expr.cypherType == CTNull => NULL_LIT
 
-        // Context based lookups
-        case p@Param(name) if p.cypherType.isInstanceOf[CTList] =>
-          parameters(name) match {
-            case CypherList(l) => functions.array(l.unwrap.map(functions.lit): _*)
-            case notAList => throw IllegalArgumentException("a Cypher list", notAList)
+        case Param(name) =>
+          expr.cypherType match {
+            case CTList(inner) => inner.toSparkType match {
+              case None => throw SparkSQLMappingException(s"List paramater with inner type $inner not supported")
+              // Solve using pattern matching instead of casting
+              case _ => functions.array(parameters(name).asInstanceOf[CypherList].value.unwrap.map(functions.lit): _*)
+            }
+            case _ => toSparkLiteral(parameters(name).unwrap)
           }
 
-        case Param(name) => toSparkLiteral(parameters(name).unwrap)
+        case ListLit(exprs) =>
+          val ct = expr.cypherType
+          ct.toSparkType match {
+            case None => throw SparkSQLMappingException(s"List literal with inner type $ct not supported")
+            case _ => functions.array(exprs.map(_.asSparkSQLExpr): _*)
+          }
 
         case Property(e, PropertyKey(key)) =>
           e.cypherType.material match {
@@ -128,8 +138,6 @@ object SparkSQLExprMapper {
 
         case AliasExpr(innerExpr, _) => innerExpr.asSparkSQLExpr
 
-        // Literals
-        case ListLit(exprs) => functions.array(exprs.map(_.asSparkSQLExpr): _*)
         case NullLit(ct) => NULL_LIT.cast(ct.getSparkType)
 
         case LocalDateTime(dateExpr) =>
@@ -223,13 +231,13 @@ object SparkSQLExprMapper {
                 case CTDate => concatUDF[java.sql.Date].apply(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
                 case CTLocalDateTime => concatUDF[java.sql.Timestamp].apply(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
                 // TODO: Handle lists of null literals
-                case other => throw UnsupportedOperationException(s"List concatenation with type ${other} is not supported")
+                case other => throw UnsupportedOperationException(s"List concatenation with type $other is not supported")
               }
 
-            case (_: CTList, _) =>
+            case (CTList(inner), nonListType) if inner == nonListType =>
               throw UnsupportedOperationException("List + scalar concatenation is not supported")
 
-            case (_, _: CTList) =>
+            case (nonListType, CTList(inner)) if inner == nonListType =>
               throw UnsupportedOperationException("Scalar + list concatenation is not supported")
 
             case (CTString, _) if rhsCT.subTypeOf(CTNumber).maybeTrue =>

@@ -36,6 +36,7 @@ import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
+import org.opencypher.spark.impl.SparkSQLMappingException
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalacheck.Prop
 import org.scalatest.junit.JUnitRunner
@@ -765,6 +766,13 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
         CypherMap("p" -> List(1, null))
       ))
     }
+
+    it("throws exception with mixed types") {
+      val e = the[SparkSQLMappingException] thrownBy
+        caps.cypher("RETURN [toInteger(1), toString('string')] AS res")
+          .records.toMaps
+      e.getMessage should(include("List literal with inner type") and include ("not supported"))
+    }
   }
 
   describe("ANDs") {
@@ -976,6 +984,31 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
         """.stripMargin
       ).records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(null, null))
+      ))
+    }
+
+  }
+
+  describe("parameters") {
+
+    it("can do list parameters") {
+      caps.cypher("RETURN $listParam AS res", CypherMap("listParam" -> CypherList(1, 2)))
+        .records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList(1, 2))
+      ))
+    }
+
+    it("throws exception on mixed types in list parameter") {
+      val e = the[SparkSQLMappingException] thrownBy
+        caps.cypher("RETURN $listParam AS res", CypherMap("listParam" -> CypherList(1, "string")))
+          .records.toMaps
+      e.getMessage should(include("List paramater with inner type") and include ("not supported"))
+    }
+
+    it("can support empty list parameter") {
+      caps.cypher("RETURN $listParam AS res", CypherMap("listParam" -> CypherList()))
+        .records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList())
       ))
     }
 

@@ -663,11 +663,7 @@ object SchemaTyper {
     private implicit class RichCTList(val left: CTList) extends AnyVal {
       def listConcatJoin(right: CypherType): CypherType = (left, right) match {
         case (CTList(lInner), CTList(rInner)) => CTList(lInner join rInner)
-        case (CTList(CTString), CTString) => left
-        case (CTList(CTInteger), CTInteger) => left
-        case (CTList(CTFloat), CTInteger) => CTList(CTNumber)
-        case (CTList(CTVoid), _) => CTList(right)
-        case _ => CTVoid
+        case (CTList(lInner), _) => CTList(lInner join right)
       }
     }
   }
