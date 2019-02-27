@@ -466,7 +466,7 @@ object SchemaTyper {
 
           def compatibleTypes = sigInputTypes.zip(argTypes).forall {
             case (_: CTMap | _: CTMapOrNull, _: CTMap) => true
-            case (sigType, argType) => sigType couldBeSameTypeAs argType
+            case (sigType, argType) => sigType intersects argType
           }
 
           if (compatibleArity && compatibleTypes) Some(sigOutputType) else None

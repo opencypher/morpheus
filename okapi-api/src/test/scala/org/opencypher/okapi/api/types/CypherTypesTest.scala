@@ -81,6 +81,32 @@ class CypherTypesTest extends ApiBaseTest {
     CTInteger.nullable couldBeSameTypeAs CTNull shouldBe true
   }
 
+  it("intersects") {
+    CTAny intersects CTNode shouldBe true
+    CTNode intersects CTAny shouldBe true
+    CTInteger intersects CTNumber shouldBe true
+    CTNumber intersects CTInteger shouldBe true
+    CTFloat intersects CTInteger shouldBe false
+    CTBoolean intersects CTInteger shouldBe false
+
+    CTRelationship intersects CTNode shouldBe false
+
+    CTList(CTInteger) intersects CTList(CTFloat) shouldBe true
+    CTList(CTInteger) intersects CTList(CTAny) shouldBe true
+    CTList(CTAny) intersects CTList(CTInteger) shouldBe true
+
+    CTNull intersects CTInteger.nullable shouldBe true
+    CTInteger.nullable intersects CTNull shouldBe true
+
+    CTString.nullable intersects CTInteger.nullable shouldBe true
+    CTNode.nullable intersects CTBoolean.nullable shouldBe true
+
+    CTVoid intersects CTBoolean shouldBe false
+    CTVoid intersects CTBoolean.nullable shouldBe false
+    CTVoid intersects CTAny shouldBe false
+    CTVoid intersects CTBoolean.nullable shouldBe false
+  }
+
   it("joining with list of void") {
     val voidList = CTList(CTVoid)
     val otherList = CTList(CTString).nullable
