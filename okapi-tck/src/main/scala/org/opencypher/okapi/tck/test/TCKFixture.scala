@@ -34,7 +34,7 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherDate => OKAPICypherDate, CypherList => OKAPICypherList, CypherLocalDateTime => OKAPICypherLocalDateTime, CypherMap => OKAPICypherMap, CypherNode => OKAPICypherNode, CypherRelationship => OKAPICypherRelationship, CypherString => OKAPICypherString, CypherValue => OKAPICypherValue}
 import org.opencypher.okapi.impl.exception.NotImplementedException
-import org.opencypher.okapi.ir.impl.typer.exception.TypingException
+import org.opencypher.okapi.ir.impl.exception.TypingException
 import org.opencypher.okapi.tck.test.TCKFixture._
 import org.opencypher.okapi.testing.propertygraph.{CreateGraphFactory, CypherTestGraphFactory}
 import org.opencypher.tools.tck.api._

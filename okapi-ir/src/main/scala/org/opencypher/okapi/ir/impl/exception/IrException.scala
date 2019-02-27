@@ -28,10 +28,10 @@ package org.opencypher.okapi.ir.impl.exception
 
 import org.opencypher.okapi.impl.exception.InternalException
 
-abstract class IrException(msg: String) extends InternalException(msg)
+abstract class IrException(msg: String, cause: Option[Throwable] = None) extends InternalException(msg, cause)
 
 final case class PatternConversionException(msg: String) extends IrException(msg)
 
-final case class TyperException(msg: String) extends IrException(msg)
+final case class TypingException(msg: String, cause: Option[Throwable] = None) extends IrException(msg, cause)
 
 final case class ParsingException(msg: String) extends IrException(msg)

@@ -37,7 +37,7 @@ import org.opencypher.okapi.ir.api.block.SourceBlock
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField, IRGraph}
-import org.opencypher.okapi.ir.impl.typer.exception.TypingException
+import org.opencypher.okapi.ir.impl.exception.TypingException
 import org.opencypher.okapi.ir.impl.typer.{SchemaTyper, TypeTracker, UnsupportedExpr}
 import org.opencypher.v9_0.ast.ViewInvocation
 import org.opencypher.v9_0.ast.semantics.SemanticState
@@ -79,9 +79,9 @@ final case class IRBuilderContext(
       case Left(errors) =>
         errors.collect { case u: UnsupportedExpr => u } match {
           case Nil =>
-            throw TypingException(s"Type inference errors: ${errors.toList.mkString(", ")}")
+            throw TypingException(s"Type inference errors: ${errors.toList.mkString(", ")}", Some(errors.head))
           case List(u) =>
-            throw NotImplementedException(u.toString)
+            throw NotImplementedException(u.toString, Some(u))
         }
     }
   }
