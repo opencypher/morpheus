@@ -32,8 +32,8 @@ import org.opencypher.spark.testing.CAPSTestSuite
 
 class SparkTests extends CAPSTestSuite {
 
-  // Example for: https://issues.apache.org/jira/browse/SPARK-23855
-  ignore("should correctly perform a join after a cross") {
+  // Reproduces https://issues.apache.org/jira/browse/SPARK-23855, which was relevant to Spark 2.2
+  it("should correctly perform a join after a cross") {
     val df1 = sparkSession.createDataFrame(Seq(Tuple1(0L)))
       .toDF("a")
 

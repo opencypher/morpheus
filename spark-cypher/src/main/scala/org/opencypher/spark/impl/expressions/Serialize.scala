@@ -36,6 +36,8 @@ import org.apache.spark.unsafe.types.UTF8String
 import org.opencypher.okapi.impl.exception
 import org.opencypher.spark.impl.expressions.EncodeLong.encodeLong
 import org.opencypher.spark.impl.expressions.Serialize._
+import org.apache.spark.sql.catalyst.expressions.codegen._
+import org.apache.spark.sql.catalyst.expressions.codegen.Block._
 
 /**
   * Encodes all children to a byte array (BinaryType).
@@ -68,7 +70,7 @@ case class Serialize(children: Seq[Expression]) extends Expression {
     ctx: CodegenContext,
     ev: ExprCode
   ): ExprCode = {
-    ev.isNull = "false"
+    ev.isNull = FalseLiteral
     val out = ctx.freshName("out")
     val serializeChildren = children.map { child =>
       val childEval = child.genCode(ctx)
@@ -79,7 +81,7 @@ case class Serialize(children: Seq[Expression]) extends Expression {
     }.mkString("\n")
     val baos = classOf[ByteArrayOutputStream].getName
     ev.copy(
-      s"""|$baos $out = new $baos();
+      code = code"""|$baos $out = new $baos();
           |$serializeChildren
           |byte[] ${ev.value} = $out.toByteArray();""".stripMargin)
   }
