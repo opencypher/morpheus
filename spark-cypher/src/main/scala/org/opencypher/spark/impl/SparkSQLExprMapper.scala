@@ -128,7 +128,7 @@ object SparkSQLExprMapper {
 
         // Literals
         case ListLit(exprs) => functions.array(exprs.map(_.asSparkSQLExpr): _*)
-        case NullLit(ct) => NULL_LIT.cast(ct.toSparkType.get)
+        case NullLit(ct) => NULL_LIT.cast(ct.getSparkType)
 
         case LocalDateTime(dateExpr) =>
           dateExpr match {
