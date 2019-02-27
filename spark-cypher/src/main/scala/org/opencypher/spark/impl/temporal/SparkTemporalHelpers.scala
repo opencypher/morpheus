@@ -126,15 +126,15 @@ object SparkTemporalHelpers extends Logging{
       case "week" => functions.weekofyear(temporalColumn)
       case "day" => functions.dayofmonth(temporalColumn)
       case "ordinalday" => functions.dayofyear(temporalColumn)
-      case "weekyear" => TemporalUDFS.weekYear[I].apply(temporalColumn)
-      case "dayofquarter" => TemporalUDFS.dayOfQuarter[I].apply(temporalColumn)
-      case "dayofweek" | "weekday" => TemporalUDFS.dayOfWeek[I].apply(temporalColumn)
+      case "weekyear" => TemporalUdfs.weekYear[I].apply(temporalColumn)
+      case "dayofquarter" => TemporalUdfs.dayOfQuarter[I].apply(temporalColumn)
+      case "dayofweek" | "weekday" => TemporalUdfs.dayOfWeek[I].apply(temporalColumn)
 
       case "hour" => functions.hour(temporalColumn)
       case "minute" => functions.minute(temporalColumn)
       case "second" => functions.second(temporalColumn)
-      case "millisecond" => TemporalUDFS.milliseconds[I].apply(temporalColumn)
-      case "microsecond" => TemporalUDFS.microseconds[I].apply(temporalColumn)
+      case "millisecond" => TemporalUdfs.milliseconds[I].apply(temporalColumn)
+      case "microsecond" => TemporalUdfs.microseconds[I].apply(temporalColumn)
       case other => throw UnsupportedOperationException(s"Unknown Temporal Accessor: $other")
     }
   }
