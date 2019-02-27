@@ -5,7 +5,7 @@ ext {
     ]
 
     ver = [
-            self        : '0.2.7-SNAPSHOT',
+            self        : '0.3.0-SNAPSHOT',
 
             jvm         : '1.8',
 
