@@ -452,38 +452,30 @@ object SchemaTyper {
         argExprs <- pure(expr.arguments)
         argTypes <- argExprs.toList.traverse(process[R])
         arguments <- pure(argExprs.zip(argTypes))
-        signatures <- selectSignaturesFor(expr, arguments)
-        computedType <- signatures.map(_._2).reduceLeftOption(_ join _) match {
-          case Some(outputType) =>
-            pure[R, CypherType](if (argTypes.exists(_.isNullable)) outputType.nullable else outputType)
-
-          case None =>
-            error(NoSuitableSignatureForExpr(expr, argTypes))
-        }
-        resultType <- recordAndUpdate(expr -> computedType)
-      } yield resultType
-
-    protected def selectSignaturesFor[R: _hasSchema : _keepsErrors : _hasTracker : _logsTypes](
-      expr: T,
-      args: Seq[(Expression, CypherType)]
-    ): Eff[R, Set[(Seq[CypherType], CypherType)]] =
-      for {
-        signatures <- generateSignaturesFor(expr, args)
-        eligible <- pure(signatures.flatMap { sig =>
+        signatures <- generateSignaturesFor(expr, arguments)
+        outTypes <- pure(signatures.flatMap { sig =>
           val sigInputTypes = sig.input
           val sigOutputType = sig.output
-          val argTypes = args.map(_._2)
+          val argTypes = arguments.map(_._2)
 
-          def compatibleArity = sigInputTypes.size == args.size
+          def compatibleArity = sigInputTypes.size == arguments.size
 
           def compatibleTypes = sigInputTypes.zip(argTypes).forall {
             case (_: CTMap | _: CTMapOrNull, _: CTMap) => true
             case (sigType, argType) => sigType couldBeSameTypeAs argType
           }
 
-          if (compatibleArity && compatibleTypes) Some(sigInputTypes -> sigOutputType) else None
+          if (compatibleArity && compatibleTypes) Some(sigOutputType) else None
         })
-      } yield eligible
+        computedType <- outTypes.reduceLeftOption(_ join _) match {
+          case Some(outputType) =>
+            pure[R, CypherType](if (argTypes.exists(_.isNullable)) outputType.nullable else outputType)
+
+          case None =>
+            error(NoSuitableSignatureForExpr(expr, argTypes))
+        }
+        _ <- recordAndUpdate(expr -> computedType)
+      } yield computedType
 
     protected def generateSignaturesFor[R: _hasSchema : _keepsErrors : _hasTracker : _logsTypes](
       expr: T,
