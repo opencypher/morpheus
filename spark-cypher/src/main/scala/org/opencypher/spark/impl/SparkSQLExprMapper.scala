@@ -41,7 +41,7 @@ import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.expressions.AddPrefix._
 import org.opencypher.spark.impl.expressions.EncodeLong._
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
-import org.opencypher.spark.impl.temporal.{SparkTemporalHelpers, TemporalUDFS}
+import org.opencypher.spark.impl.temporal.TemporalUdfs
 
 object SparkSQLExprMapper {
 
@@ -59,10 +59,6 @@ object SparkSQLExprMapper {
 
   implicit class RichExpression(expr: Expr) {
 
-    def verify(implicit header: RecordHeader): Unit = {
-      if (header.expressionsFor(expr).isEmpty) throw IllegalStateException(s"Expression $expr not in header:\n${header.pretty}")
-    }
-
     /**
       * This is possible without violating Cypher semantics because
       *   - Spark SQL returns null when comparing across types (from initial investigation)
@@ -73,13 +69,13 @@ object SparkSQLExprMapper {
       comparator(lhs.asSparkSQLExpr)(rhs.asSparkSQLExpr)
     }
 
-    def lt(c: Column): Column => Column = c < _
+    def lt(column: Column): Column => Column = column < _
 
-    def lteq(c: Column): Column => Column = c <= _
+    def lteq(column: Column): Column => Column = column <= _
 
-    def gt(c: Column): Column => Column = c > _
+    def gt(column: Column): Column => Column = column > _
 
-    def gteq(c: Column): Column => Column = c >= _
+    def gteq(column: Column): Column => Column = column >= _
 
     /**
       * Attempts to create a Spark SQL expression from the CAPS expression.
@@ -93,15 +89,14 @@ object SparkSQLExprMapper {
 
       expr match {
 
-        // context based lookups
+        // Context based lookups
         case p@Param(name) if p.cypherType.isInstanceOf[CTList] =>
           parameters(name) match {
             case CypherList(l) => functions.array(l.unwrap.map(functions.lit): _*)
             case notAList => throw IllegalArgumentException("a Cypher list", notAList)
           }
 
-        case Param(name) =>
-          toSparkLiteral(parameters(name).unwrap)
+        case Param(name) => toSparkLiteral(parameters(name).unwrap)
 
         case Property(e, PropertyKey(key)) =>
           e.cypherType.material match {
@@ -109,48 +104,36 @@ object SparkSQLExprMapper {
               if (inner.keySet.contains(key)) e.asSparkSQLExpr.getField(key) else functions.lit(null)
 
             case CTDate =>
-              SparkTemporalHelpers.temporalAccessor[Date](e.asSparkSQLExpr, key)
+              temporalAccessor[Date](e.asSparkSQLExpr, key)
 
             case CTLocalDateTime =>
-              SparkTemporalHelpers.temporalAccessor[Timestamp](e.asSparkSQLExpr, key)
+              temporalAccessor[Timestamp](e.asSparkSQLExpr, key)
 
             case CTDuration =>
-              TemporalUDFS.durationAccessor(key.toLowerCase).apply(e.asSparkSQLExpr)
+              TemporalUdfs.durationAccessor(key.toLowerCase).apply(e.asSparkSQLExpr)
 
             case _ if !header.contains(expr) || !df.columns.contains(header.column(expr)) =>
               NULL_LIT
 
             case _ =>
-              verify
-
-              df.col(header.column(expr))
+              columnFor(expr)
           }
 
-        // direct column lookup
-        case _: Var | _: Param | _: HasLabel | _: HasType | _: StartNode | _: EndNode =>
-          verify
+        case IsNull(e) => e.asSparkSQLExpr.isNull
+        case IsNotNull(e) => e.asSparkSQLExpr.isNotNull
 
-          val colName = header.column(expr)
-          if (df.columns.contains(colName)) {
-            df.col(colName)
-          } else {
-            NULL_LIT
-          }
+        case _: Var | _: Param | _: HasLabel | _: HasType | _: StartNode | _: EndNode => columnFor(expr)
 
-        case AliasExpr(innerExpr, _) =>
-          innerExpr.asSparkSQLExpr
+        case AliasExpr(innerExpr, _) => innerExpr.asSparkSQLExpr
 
         // Literals
-        case ListLit(exprs) =>
-          functions.array(exprs.map(_.asSparkSQLExpr): _*)
-
-        case NullLit(ct) =>
-          NULL_LIT.cast(ct.getSparkType)
+        case ListLit(exprs) => functions.array(exprs.map(_.asSparkSQLExpr): _*)
+        case NullLit(ct) => NULL_LIT.cast(ct.getSparkType)
 
         case LocalDateTime(dateExpr) =>
           dateExpr match {
             case Some(e) =>
-              val localDateTimeValue = SparkTemporalHelpers.resolveTemporalArgument(e)
+              val localDateTimeValue = resolveTemporalArgument(e)
                 .map(parseLocalDateTime)
                 .map(java.sql.Timestamp.valueOf)
                 .map {
@@ -187,8 +170,6 @@ object SparkSQLExprMapper {
         // predicates
         case Equals(e1, e2) => e1.asSparkSQLExpr === e2.asSparkSQLExpr
         case Not(e) => !e.asSparkSQLExpr
-        case IsNull(e) => e.asSparkSQLExpr.isNull
-        case IsNotNull(e) => e.asSparkSQLExpr.isNotNull
         case Size(e) =>
           val col = e.asSparkSQLExpr
           e.cypherType match {
@@ -202,11 +183,8 @@ object SparkSQLExprMapper {
             case other => throw NotImplementedException(s"size() on values of type $other")
           }
 
-        case Ands(exprs) =>
-          exprs.map(_.asSparkSQLExpr).foldLeft(TRUE_LIT)(_ && _)
-
-        case Ors(exprs) =>
-          exprs.map(_.asSparkSQLExpr).foldLeft(FALSE_LIT)(_ || _)
+        case Ands(exprs) => exprs.map(_.asSparkSQLExpr).foldLeft(TRUE_LIT)(_ && _)
+        case Ors(exprs) => exprs.map(_.asSparkSQLExpr).foldLeft(FALSE_LIT)(_ || _)
 
         case In(lhs, rhs) =>
           if (rhs.cypherType == CTNull || lhs.cypherType == CTNull) {
@@ -222,12 +200,9 @@ object SparkSQLExprMapper {
         case GreaterThanOrEqual(lhs, rhs) => compare(gteq, lhs, rhs)
         case GreaterThan(lhs, rhs) => compare(gt, lhs, rhs)
 
-        case StartsWith(lhs, rhs) =>
-          lhs.asSparkSQLExpr.startsWith(rhs.asSparkSQLExpr)
-        case EndsWith(lhs, rhs) =>
-          lhs.asSparkSQLExpr.endsWith(rhs.asSparkSQLExpr)
-        case Contains(lhs, rhs) =>
-          lhs.asSparkSQLExpr.contains(rhs.asSparkSQLExpr)
+        case StartsWith(lhs, rhs) => lhs.asSparkSQLExpr.startsWith(rhs.asSparkSQLExpr)
+        case EndsWith(lhs, rhs) => lhs.asSparkSQLExpr.endsWith(rhs.asSparkSQLExpr)
+        case Contains(lhs, rhs) => lhs.asSparkSQLExpr.contains(rhs.asSparkSQLExpr)
 
         case RegexMatch(prop, Param(name)) =>
           val regex: String = parameters(name).unwrap.toString
@@ -254,17 +229,16 @@ object SparkSQLExprMapper {
               functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
 
             case (CTDate, CTDuration) =>
-              TemporalUDFS.dateAdd(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
+              TemporalUdfs.dateAdd(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
 
             case _ =>
               lhs.asSparkSQLExpr + rhs.asSparkSQLExpr
           }
 
         case Subtract(lhs, rhs) if lhs.cypherType.material.subTypeOf(CTDate).isTrue && rhs.cypherType.material.subTypeOf(CTDuration).isTrue =>
-          TemporalUDFS.dateSubtract(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
+          TemporalUdfs.dateSubtract(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
 
-        case Subtract(lhs, rhs) =>
-          lhs.asSparkSQLExpr - rhs.asSparkSQLExpr
+        case Subtract(lhs, rhs) => lhs.asSparkSQLExpr - rhs.asSparkSQLExpr
 
         case Multiply(lhs, rhs) => lhs.asSparkSQLExpr * rhs.asSparkSQLExpr
         case div@Divide(lhs, rhs) => (lhs.asSparkSQLExpr / rhs.asSparkSQLExpr).cast(div.cypherType.getSparkType)
@@ -272,10 +246,7 @@ object SparkSQLExprMapper {
         // Id functions
 
         case Id(e) => e.asSparkSQLExpr
-
-        case PrefixId(idExpr, prefix) =>
-          idExpr.asSparkSQLExpr.addPrefix(functions.lit(prefix))
-
+        case PrefixId(idExpr, prefix) => idExpr.asSparkSQLExpr.addPrefix(functions.lit(prefix))
         case ToId(e) =>
           e.cypherType.material match {
             // TODO: Remove this call; we shouldn't have nodes or rels as concrete types here
@@ -360,11 +331,8 @@ object SparkSQLExprMapper {
           header.endNodeFor(rel).asSparkSQLExpr
 
         case ToFloat(e) => e.asSparkSQLExpr.cast(DoubleType)
-
         case ToInteger(e) => e.asSparkSQLExpr.cast(IntegerType)
-
         case ToString(e) => e.asSparkSQLExpr.cast(StringType)
-
         case ToBoolean(e) => e.asSparkSQLExpr.cast(BooleanType)
 
         case Explode(list) => list.cypherType match {
@@ -420,24 +388,16 @@ object SparkSQLExprMapper {
         case Sin(e) => functions.sin(e.asSparkSQLExpr)
         case Tan(e) => functions.tan(e.asSparkSQLExpr)
 
-
         // Time functions
 
         case Timestamp() => functions.current_timestamp().cast(LongType)
 
         // Bit operations
 
-        case BitwiseAnd(lhs, rhs) =>
-          lhs.asSparkSQLExpr.bitwiseAND(rhs.asSparkSQLExpr)
-
-        case BitwiseOr(lhs, rhs) =>
-          lhs.asSparkSQLExpr.bitwiseOR(rhs.asSparkSQLExpr)
-
-        case ShiftLeft(value, IntegerLit(shiftBits)) =>
-          functions.shiftLeft(value.asSparkSQLExpr, shiftBits.toInt)
-
-        case ShiftRightUnsigned(value, IntegerLit(shiftBits)) =>
-          functions.shiftRightUnsigned(value.asSparkSQLExpr, shiftBits.toInt)
+        case BitwiseAnd(lhs, rhs) => lhs.asSparkSQLExpr.bitwiseAND(rhs.asSparkSQLExpr)
+        case BitwiseOr(lhs, rhs) => lhs.asSparkSQLExpr.bitwiseOR(rhs.asSparkSQLExpr)
+        case ShiftLeft(value, IntegerLit(shiftBits)) => functions.shiftLeft(value.asSparkSQLExpr, shiftBits.toInt)
+        case ShiftRightUnsigned(value, IntegerLit(shiftBits)) => functions.shiftRightUnsigned(value.asSparkSQLExpr, shiftBits.toInt)
 
         // Pattern Predicate
         case ep: ExistsPatternExpr => ep.targetField.asSparkSQLExpr
@@ -487,6 +447,18 @@ object SparkSQLExprMapper {
         case _ =>
           throw NotImplementedException(s"No support for converting Cypher expression $expr to a Spark SQL expression")
       }
+    }
+  }
+
+  private def columnFor(expr: Expr)(implicit header: RecordHeader, df: DataFrame): Column = {
+    val columnName = header.getColumn(expr).getOrElse(throw IllegalArgumentException(
+      expected = s"Expression in ${header.expressions.mkString("[", ", ", "]")}",
+      actual = expr)
+    )
+    if (df.columns.contains(columnName)) {
+      df.col(columnName)
+    } else {
+      NULL_LIT
     }
   }
 

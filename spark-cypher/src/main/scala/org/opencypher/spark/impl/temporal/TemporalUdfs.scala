@@ -37,7 +37,7 @@ import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 
 import scala.reflect.runtime.universe._
 
-object TemporalUDFS extends Logging {
+object TemporalUdfs extends Logging {
 
   /**
     * Adds a duration to a date.
