@@ -305,15 +305,20 @@ class SchemaTyperTest extends SchemaTyperTestSuite with MockitoSugar {
   }
 
   it("typing subtract") {
-    assertExpr.from("INTEGER - INTEGER") shouldHaveInferredType CTInteger.nullable
-    assertExpr.from("FLOAT - FLOAT") shouldHaveInferredType CTFloat.nullable
-    assertExpr.from("INTEGER - FLOAT") shouldHaveInferredType CTFloat.nullable
-    assertExpr.from("FLOAT - INTEGER") shouldHaveInferredType CTFloat.nullable
+    assertExpr.from("INTEGER - INTEGER") shouldHaveInferredType CTInteger
+    assertExpr.from("FLOAT - FLOAT") shouldHaveInferredType CTFloat
+    assertExpr.from("INTEGER - FLOAT") shouldHaveInferredType CTFloat
+    assertExpr.from("FLOAT - INTEGER") shouldHaveInferredType CTFloat
+
+    assertExpr.from("INTEGER - NULL") shouldHaveInferredType CTNull
+    assertExpr.from("FLOAT - NULL") shouldHaveInferredType CTNull
+    assertExpr.from("NULL - FLOAT") shouldHaveInferredType CTNull
+    assertExpr.from("NULL - INTEGER") shouldHaveInferredType CTNull
 
     assertExpr.from("INTEGER - ANY_OR_NULL") shouldHaveInferredType CTNumber.nullable
 
-    assertExpr.from("DATE - DURATION") shouldHaveInferredType CTDate.nullable
-    assertExpr.from("LOCALDATETIME - DURATION") shouldHaveInferredType CTLocalDateTime.nullable
+    assertExpr.from("DATE - DURATION") shouldHaveInferredType CTDate
+    assertExpr.from("LOCALDATETIME - DURATION") shouldHaveInferredType CTLocalDateTime
 
     assertExpr.from("INTEGER - STRING") shouldFailToInferTypeWithErrors
       NoSuitableSignatureForExpr(
@@ -330,6 +335,11 @@ class SchemaTyperTest extends SchemaTyperTestSuite with MockitoSugar {
     assertExpr.from("INTEGER * NUMBER") shouldHaveInferredType CTNumber
     assertExpr.from("NUMBER * FLOAT") shouldHaveInferredType CTNumber
 
+    assertExpr.from("INTEGER * NULL") shouldHaveInferredType CTNull
+    assertExpr.from("NUMBER * NULL") shouldHaveInferredType CTNull
+    assertExpr.from("NULL * NUMBER") shouldHaveInferredType CTNull
+    assertExpr.from("NULL * FLOAT") shouldHaveInferredType CTNull
+
     assertExpr.from("INTEGER * ANY_OR_NULL") shouldHaveInferredType CTAny.nullable
     assertExpr.from("ANY_OR_NULL * NUMBER") shouldHaveInferredType CTAny.nullable
 
@@ -338,15 +348,17 @@ class SchemaTyperTest extends SchemaTyperTestSuite with MockitoSugar {
   }
 
   it("typing divide") {
-    //implicit val context: TypeTracker =
-      typeTracker("a" -> CTInteger, "b" -> CTFloat, "c" -> CTNumber, "d" -> CTAny.nullable, "e" -> CTString)
-
     assertExpr.from("INTEGER / INTEGER") shouldHaveInferredType CTInteger
     assertExpr.from("FLOAT / FLOAT") shouldHaveInferredType CTFloat
     assertExpr.from("INTEGER / FLOAT") shouldHaveInferredType CTFloat
     assertExpr.from("FLOAT / INTEGER") shouldHaveInferredType CTFloat
     assertExpr.from("INTEGER / NUMBER") shouldHaveInferredType CTNumber
     assertExpr.from("NUMBER / FLOAT") shouldHaveInferredType CTNumber
+
+    assertExpr.from("INTEGER / NULL") shouldHaveInferredType CTNull
+    assertExpr.from("NUMBER / NULL") shouldHaveInferredType CTNull
+    assertExpr.from("NULL / NUMBER") shouldHaveInferredType CTNull
+    assertExpr.from("NULL / FLOAT") shouldHaveInferredType CTNull
 
     assertExpr.from("INTEGER / ANY_OR_NULL") shouldHaveInferredType CTAny.nullable
     assertExpr.from("ANY_OR_NULL / NUMBER") shouldHaveInferredType CTAny.nullable
@@ -377,8 +389,8 @@ class SchemaTyperTest extends SchemaTyperTestSuite with MockitoSugar {
   it("can get label information through combined predicates") {
     assertExpr.from("BOOLEAN AND NODE_EMPTY:Person AND BOOLEAN AND NODE_EMPTY:Foo") shouldHaveInferredType CTBoolean
     assertExpr.from("BOOLEAN AND NODE_EMPTY:Person AND BOOLEAN AND NODE_EMPTY:Foo") shouldMake varFor("NODE_EMPTY") haveType CTNode("Person", "Foo")
-    assertExpr.from("NODE_EMPTY.name = STRING AND NODE_EMPTY:Person") shouldMake varFor("NODE_EMPTY") haveType CTNode("Person")
-    assertExpr.from("NODE_EMPTY.name = STRING AND NODE_EMPTY:Person") shouldMake prop("NODE_EMPTY", "name") haveType CTString
+    assertExpr.from("NODE_EMPTY.name = STRING AND NODE_EMPTY:Node") shouldMake varFor("NODE_EMPTY") haveType CTNode("Node")
+    assertExpr.from("NODE_EMPTY.name = STRING AND NODE_EMPTY:Node") shouldMake prop("NODE_EMPTY", "name") haveType CTString
   }
 
   it("should detail entity type from predicate") {
@@ -539,21 +551,27 @@ class SchemaTyperTest extends SchemaTyperTestSuite with MockitoSugar {
   }
 
   it("types STARTS WITH, CONTAINS, ENDS WITH") {
-    assertExpr.from("STRING STARTS WITH STRING") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("STRING ENDS WITH STRING") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("STRING CONTAINS STRING") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("STRING STARTS WITH STRING") shouldHaveInferredType CTBoolean
+    assertExpr.from("STRING ENDS WITH STRING") shouldHaveInferredType CTBoolean
+    assertExpr.from("STRING CONTAINS STRING") shouldHaveInferredType CTBoolean
+    assertExpr.from("STRING_OR_NULL STARTS WITH STRING") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("STRING_OR_NULL ENDS WITH STRING") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("STRING_OR_NULL CONTAINS STRING") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("STRING STARTS WITH STRING_OR_NULL") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("STRING ENDS WITH STRING_OR_NULL") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("STRING CONTAINS STRING_OR_NULL") shouldHaveInferredType CTBoolean.nullable
   }
 
   it("types STARTS WITH, CONTAINS, ENDS WITH with null test") {
-    assertExpr.from("STRING STARTS WITH NULL") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("STRING ENDS WITH NULL") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("STRING CONTAINS NULL") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("STRING STARTS WITH NULL") shouldHaveInferredType CTNull
+    assertExpr.from("STRING ENDS WITH NULL") shouldHaveInferredType CTNull
+    assertExpr.from("STRING CONTAINS NULL") shouldHaveInferredType CTNull
   }
 
   it("types STARTS WITH, CONTAINS, ENDS WITH with null string") {
-    assertExpr.from("NULL STARTS WITH STRING") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("NULL ENDS WITH STRING") shouldHaveInferredType CTBoolean.nullable
-    assertExpr.from("NULL CONTAINS STRING") shouldHaveInferredType CTBoolean.nullable
+    assertExpr.from("NULL STARTS WITH STRING") shouldHaveInferredType CTNull
+    assertExpr.from("NULL ENDS WITH STRING") shouldHaveInferredType CTNull
+    assertExpr.from("NULL CONTAINS STRING") shouldHaveInferredType CTNull
   }
 }
 

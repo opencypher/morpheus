@@ -397,6 +397,8 @@ object SchemaTyper {
     lhsType: CypherType,
     rhsType: CypherType
   ) = (lhsType.material, rhsType.material) match {
+    case (CTVoid, _) => Right(CTNull)
+    case (_, CTVoid) => Right(CTNull)
     case (CTInteger, CTInteger) => Right(CTInteger)
     case (CTFloat, CTInteger) => Right(CTFloat)
     case (CTInteger, CTFloat) => Right(CTFloat)
