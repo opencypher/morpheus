@@ -29,6 +29,7 @@ package org.opencypher.okapi.ir.impl.typer
 import org.opencypher.okapi.api.types._
 import org.opencypher.v9_0.expressions.{TypeSignature, TypeSignatures}
 import org.opencypher.v9_0.util.{symbols => frontend}
+import org.opencypher.okapi.ir.impl.parse.{functions => ext}
 
 import scala.collection.immutable.ListSet
 
@@ -46,6 +47,7 @@ case object fromFrontendType extends (frontend.CypherType => Option[CypherType])
     case frontend.CTLocalDateTime => Some(CTLocalDateTime)
     case frontend.CTDate          => Some(CTDate)
     case frontend.CTDuration      => Some(CTDuration)
+    case ext.CTIdentity           => Some(CTIdentity)
     case frontend.CTMap           => Some(CTMap(Map.empty)) // TODO: this is not very correct
     case frontend.ListType(inner) =>
       fromFrontendType(inner) match {
@@ -131,6 +133,7 @@ object SignatureConverter {
     def expandWithSubstitutions(old: CypherType, rep: CypherType): FunctionSignatures = include(for {
       signature <- sigs
       alternative <- substitutions(signature.input, 1, signature.input.size)(replace(old, rep))
+      if sigs.forall(_.input != alternative)
     } yield FunctionSignature(alternative, signature.output))
 
     def withSubstitutions(old: CypherType, rep: CypherType): FunctionSignatures = FunctionSignatures(for {
