@@ -575,14 +575,14 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
         t2.records.toMaps.keys.map(_.value.head._2.value.asInstanceOf[Long])
     }
 
-    ignore("should return the same value when called multiple times inside the same query") {
+    it("should return the same value when called multiple times inside the same query") {
       val given = initGraph("CREATE (), ()")
 
-      val result = given.cypher("WITH timestamp() AS t1 MATCH (n) RETURN t1, timestamp() AS t2")
+      val result = given.cypher("WITH timestamp() AS t1 MATCH (n) RETURN t1, timestamp() AS t2").records.toMaps
 
-      val expected = result.records.toMaps.head._1("t1")
+      val expected = result.head._1("t1")
 
-      result.records.toMaps should equal(
+      result should equal(
         Bag(
           CypherMap("t1" -> expected, "t2" -> expected),
           CypherMap("t1" -> expected, "t2" -> expected)
