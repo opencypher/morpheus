@@ -30,7 +30,6 @@ import claimant.Claim
 import org.opencypher.okapi.api.value.CypherValue.Format._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, _}
 import org.opencypher.okapi.api.value.GenCypherValue._
-import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.impl.acceptance.ScanGraphInit
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalacheck.Gen.const
@@ -40,25 +39,14 @@ import org.scalatest.prop.Checkers
 class CAPSLiteralTests extends CAPSTestSuite with Checkers with ScanGraphInit {
 
   val supportedLiteral: Gen[CypherValue] = Gen.oneOf(
-    homogeneousScalarListGenerator, map, string, boolean, integer, float, const(CypherNull)
+    homogeneousScalarListGenerator, propertyMap, string, boolean, integer, float, const(CypherNull)
   )
 
-  // TODO: Remove once map bug in test below is fixed
-  it("round trip for scalar literals") {
-    check(Prop.forAll(scalarOrNull) { v: CypherValue =>
-      val query = s"RETURN ${v.toCypherString} AS result"
-      val result = caps.cypher(query).records.toMaps
-      val expected = Bag(CypherMap("result" -> v))
-      Claim(result == expected)
-    }, minSuccessful(100))
-  }
-
-  // TODO: Fix empty map bug
-  ignore("round trip for supported literals") {
+  it("round trip for supported literals") {
     check(Prop.forAll(supportedLiteral) { v: CypherValue =>
       val query = s"RETURN ${v.toCypherString} AS result"
-      val result = caps.cypher(query).records.toMaps
-      val expected = Bag(CypherMap("result" -> v))
+      val result = caps.cypher(query).records.collect.toList
+      val expected = List(CypherMap("result" -> v))
       Claim(result == expected)
     }, minSuccessful(100))
   }
@@ -66,21 +54,20 @@ class CAPSLiteralTests extends CAPSTestSuite with Checkers with ScanGraphInit {
   // TODO: Fix "SchemaException: Labels must be non-empty" bug
   ignore("round trip for nodes") {
     check(Prop.forAll(node) { n: CypherNode[CypherInteger] =>
-      val given = initGraph(s"CREATE ${n.toCypherString}")
+      val graph = initGraph(s"CREATE ${n.toCypherString}")
       val query = s"MATCH (n) RETURN n"
-      val result = TestNode(given.cypher(query).records.collect.head("n").cast[CypherNode[_]])
+      val result = TestNode(graph.cypher(query).records.collect.head("n").cast[CypherNode[_]])
       Claim(result == n)
     }, minSuccessful(100))
   }
-
 
   // TODO: Diagnose error "NotImplementedException was thrown during property evaluation: Mapping of CypherType ANY to Spark type"
   // TODO: Diagnose error "SchemaException was thrown during property evaluation: Labels must be non-empty"
   ignore("round trip for relationships") {
     check(Prop.forAll(nodeRelNodePattern()) { p: NodeRelNodePattern[_] =>
-      val given = initGraph(p.toCreateQuery)
+      val graph = initGraph(p.toCreateQuery)
       val query = s"MATCH ()-[r]->() RETURN r"
-      val result = TestRelationship(given.cypher(query).records.collect.head("r").cast[CypherRelationship[_]])
+      val result = TestRelationship(graph.cypher(query).records.collect.head("r").cast[CypherRelationship[_]])
       Claim(result == p.relationship)
     }, minSuccessful(100))
   }
