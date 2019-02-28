@@ -478,15 +478,15 @@ class SchemaTyperTest extends SchemaTyperTestSuite with MockitoSugar {
   }
 
   it("typing of map indexing") {
-    assertExpr.from("""MAP["INTEGER"]""") shouldHaveInferredType CTInteger
-    assertExpr.from("""MAP["BOOLEAN"]""") shouldHaveInferredType CTBoolean
-    assertExpr.from("""MAP["baz"]""") shouldHaveInferredType CTVoid
+    assertExpr.from("MAP['INTEGER']") shouldHaveInferredType CTInteger
+    assertExpr.from("MAP['BOOLEAN']") shouldHaveInferredType CTBoolean
+    assertExpr.from("MAP['baz']") shouldHaveInferredType CTVoid
 
-    assertExpr.from("""MAP[STRING]""") shouldHaveInferredType CTAny.nullable
-    assertExpr.from("""MAP[INTEGER]""") shouldFailToInferTypeWithErrors InvalidType(Variable("INTEGER")(pos), CTString, CTInteger)
+    assertExpr.from("MAP[STRING]") shouldHaveInferredType CTAny.nullable
+    assertExpr.from("MAP[INTEGER]") shouldFailToInferTypeWithErrors InvalidType(Variable("INTEGER")(pos), CTString, CTInteger)
 
-    assertExpr.from("""MAP[$STRING_BOOLEAN]""") shouldHaveInferredType CTBoolean
-    assertExpr.from("""MAP[$INTEGER_0]""") shouldFailToInferTypeWithErrors InvalidType(Parameter("INTEGER_0", symbols.CTAny)(pos), CTString, CTInteger)
+    assertExpr.from("MAP[$STRING_BOOLEAN]") shouldHaveInferredType CTBoolean
+    assertExpr.from("MAP[$INTEGER_0]") shouldFailToInferTypeWithErrors InvalidType(Parameter("INTEGER_0", symbols.CTAny)(pos), CTString, CTInteger)
   }
 
   it("infer type of node property lookup") {
