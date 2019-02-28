@@ -46,6 +46,7 @@ import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.support.EntityTableCreationSupport
+import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 
 import scala.collection.JavaConverters._
 
@@ -138,7 +139,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with EntityTableCreatio
             }
 
             val newData = accData.zip(nodeData).map { case (l, r) => l ++ r }
-            val newColumns = accColumns ++ Seq(StructField(s"${entity.name}_id", LongType)) ++ propertyFields
+            val newColumns = accColumns ++ Seq(StructField(s"${entity.name}_id".encodeSpecialCharacters, LongType)) ++ propertyFields
 
             newColumns -> newData
 
@@ -156,9 +157,9 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with EntityTableCreatio
             val newData = accData.zip(relData).map { case (l, r) => l ++ r }
             val newColumns = accColumns ++
               Seq(
-                StructField(s"${entity.name}_id", LongType),
-                StructField(s"${entity.name}_source", LongType),
-                StructField(s"${entity.name}_target", LongType)
+                StructField(s"${entity.name}_id".encodeSpecialCharacters, LongType),
+                StructField(s"${entity.name}_source".encodeSpecialCharacters, LongType),
+                StructField(s"${entity.name}_target".encodeSpecialCharacters, LongType)
               ) ++
               propertyFields
 
@@ -178,7 +179,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with EntityTableCreatio
 
   protected def getPropertyStructFields(entity: Entity, propKeys: PropertyKeys): Seq[StructField] = {
     propKeys.foldLeft(Seq.empty[StructField]) {
-      case (fields, key) => fields :+ StructField(s"${entity.name}_${key._1}_property", key._2.getSparkType, key._2.isNullable)
+      case (fields, key) => fields :+ StructField(s"${entity.name}_${key._1}_property".encodeSpecialCharacters, key._2.getSparkType, key._2.isNullable)
     }
   }
 
