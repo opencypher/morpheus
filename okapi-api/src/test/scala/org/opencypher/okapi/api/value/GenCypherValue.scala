@@ -38,7 +38,7 @@ object GenCypherValue {
   val string: Gen[CypherString] = arbitrary[String]
     .map(s => CypherString(s.replace(''', '"')))
 
-  def oneOfSeq[T](gs: Seq[Gen[T]]): Gen[T] = choose(0,gs.size-1).flatMap(gs(_))
+  def oneOfSeq[T](gs: Seq[Gen[T]]): Gen[T] = choose(0, gs.size - 1).flatMap(gs(_))
 
   val boolean: Gen[CypherBoolean] = arbitrary[Boolean].map(CypherBoolean)
   val integer: Gen[CypherInteger] = arbitrary[Long].map(CypherInteger)
@@ -59,7 +59,7 @@ object GenCypherValue {
     id <- idGenerator
     ls <- labels
     ps <- map
-  } yield TestNode(id, ls, ps))
+  } yield TestNode(ls, ps)(id))
 
   def listWithElementGenerator(elementGeneratorGenerator: Gen[CypherValue]): Gen[CypherList] = lzy(for {
     size <- choose(min = 0, max = maxContainerSize)
@@ -87,7 +87,7 @@ object GenCypherValue {
     id <- scalar
     ls <- labels
     ps <- propertyMap
-  } yield TestNode(id, ls, ps)
+  } yield TestNode(ls, ps)(id)
 
   val relationship: Gen[CypherRelationship[CypherValue]] = for {
     id <- scalar
@@ -95,29 +95,41 @@ object GenCypherValue {
     end <- scalar
     relType <- arbitrary[String]
     ps <- propertyMap
-  } yield TestRelationship(id, start, end, relType, ps)
+  } yield TestRelationship(relType, ps)(id, start, end)
 
   // TODO: Add date and datetime generators
 
   case class TestNode[Id](
-    id: Id,
-    labels: Set[String] = Set.empty,
-    properties: CypherMap = CypherMap.empty
+    labels: Set[String],
+    properties: CypherMap
+  )(
+    val id: Id
   ) extends CypherNode[Id] {
     override type I = TestNode[Id]
     override def copy(
       id: Id,
       labels: Set[String],
       properties: CypherMap
-    ): TestNode[Id] = TestNode(id, labels, properties)
+    ): TestNode[Id] = TestNode(labels, properties)(id)
+  }
+
+  object TestNode {
+
+    def apply[Id](
+      id: Id,
+      labels: Set[String] = Set.empty,
+      properties: CypherMap = CypherMap.empty
+    ): TestNode[Id] = TestNode(labels, properties)(id)
+
   }
 
   case class TestRelationship[Id](
-    id: Id,
-    startId: Id,
-    endId: Id,
     relType: String,
-    properties: CypherMap = CypherMap.empty
+    properties: CypherMap
+  )(
+    val id: Id,
+    val startId: Id,
+    val endId: Id
   ) extends CypherRelationship[Id] {
     override type I = TestRelationship[Id]
     override def copy(
@@ -126,7 +138,19 @@ object GenCypherValue {
       endId: Id,
       relType: String,
       properties: CypherMap
-    ): TestRelationship[Id] = TestRelationship(id, startId, endId, relType, properties)
+    ): TestRelationship[Id] = TestRelationship(relType, properties)(id, startId, endId)
+  }
+
+  object TestRelationship {
+
+    def apply[Id](
+      id: Id,
+      startId: Id,
+      endId: Id,
+      relType: String,
+      properties: CypherMap = CypherMap.empty
+    ): TestRelationship[Id] = TestRelationship(relType, properties)(id, startId, endId)
+
   }
 
 }
