@@ -281,20 +281,6 @@ final case class Drop[E <: Expr, T <: Table[T] : TypeTag](
   }
 }
 
-final case class RenameColumns[T <: Table[T] : TypeTag](
-  in: RelationalOperator[T],
-  columnRenamings: Map[String, String]
-) extends RelationalOperator[T] {
-
-  private val actualRenamings: Map[String, String] = columnRenamings.filterNot { case (oldName, newName) => oldName == newName }
-
-  override lazy val header: RecordHeader = actualRenamings.foldLeft(in.header) {
-    case (currentHeader, (oldColumnName, newColumnName)) => currentHeader.withColumnRenamed(oldColumnName, newColumnName)
-  }
-
-  override lazy val _table: T = in.table.withColumnsRenamed(actualRenamings)
-}
-
 final case class Filter[T <: Table[T] : TypeTag](
   in: RelationalOperator[T],
   expr: Expr
