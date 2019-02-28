@@ -28,7 +28,7 @@ package org.opencypher.spark.impl.values
 
 import claimant.Claim
 import org.opencypher.okapi.api.value.CypherValue.Format._
-import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, _}
 import org.opencypher.okapi.api.value.GenCypherValue._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -38,14 +38,21 @@ import org.scalatest.prop.Checkers
 
 class CAPSLiteralTests extends CAPSTestSuite with Checkers {
 
-  implicit val supportedListElementGenerator: Gen[Gen[CypherValue]] = Gen.oneOf(
-    const(string), const(boolean), const(integer), const(float), const(const(CypherNull))
-  )
-
   val supportedLiteral: Gen[CypherValue] = Gen.oneOf(
-    homogeneousList(supportedListElementGenerator), map, string, boolean, integer, float, const(CypherNull)
+    homogeneousScalarListGenerator, map, string, boolean, integer, float, const(CypherNull)
   )
 
+  // TODO: Remove once map bug in test below is fixed
+  it("supports round trip for scalar literals") {
+    check(Prop.forAll(scalarOrNull) { v: CypherValue =>
+      val query = s"RETURN ${v.toCypherString} AS result"
+      val result = caps.cypher(query).records.toMaps
+      val expected = Bag(CypherMap("result" -> v))
+      Claim(result == expected)
+    }, minSuccessful(100))
+  }
+
+  // TODO: Fix empty map bug
   it("supports round trip for supported literals") {
     check(Prop.forAll(supportedLiteral) { v: CypherValue =>
       val query = s"RETURN ${v.toCypherString} AS result"

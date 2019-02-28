@@ -28,108 +28,105 @@ package org.opencypher.okapi.api.value
 
 import org.opencypher.okapi.api.value.CypherValue._
 import org.scalacheck.Arbitrary.arbitrary
-import org.scalacheck.Gen.{choose, const, listOfN, mapOfN, oneOf}
-import org.scalacheck.{Arbitrary, Gen}
+import org.scalacheck.Gen
+import org.scalacheck.Gen.{choose, const, listOfN, lzy, mapOfN, oneOf}
 
 object GenCypherValue {
 
-  case class TestNode(
-    id: CypherValue,
-    labels: Set[String],
-    properties: CypherMap
-  ) extends CypherNode[CypherValue] {
-    override type I = TestNode
-    override def copy(
-      id: CypherValue,
-      labels: Set[String],
-      properties: CypherMap
-    ): TestNode = TestNode(id, labels, properties)
-  }
+  val maxContainerSize: Int = 3
 
-  case class TestRelationship(
-    id: CypherValue, startId: CypherValue,
-    endId: CypherValue,
-    relType: String,
-    properties: CypherMap
-  ) extends CypherRelationship[CypherValue] {
-    override type I = TestRelationship
-    override def copy(
-      id: CypherValue,
-      startId: CypherValue,
-      endId: CypherValue,
-      relType: String,
-      properties: CypherMap
-    ): TestRelationship = TestRelationship(id, startId, endId, relType, properties)
-  }
-
-  val maxContainerSize: Int = 4
-
-  lazy val string: Gen[CypherString] = arbitrary[String]
+  val string: Gen[CypherString] = arbitrary[String]
     .map(s => CypherString(s.replace(''', '"')))
-  lazy implicit val arbString: Arbitrary[CypherString] = Arbitrary(string)
 
-  lazy val boolean: Gen[CypherBoolean] = arbitrary[Boolean].map(CypherBoolean)
-  lazy implicit val arbBoolean: Arbitrary[CypherBoolean] = Arbitrary(boolean)
+  def oneOfSeq[T](gs: Seq[Gen[T]]): Gen[T] = choose(0,gs.size-1).flatMap(gs(_))
 
-  lazy val integer: Gen[CypherInteger] = arbitrary[Long].map(CypherInteger)
-  lazy implicit val arbInteger: Arbitrary[CypherInteger] = Arbitrary(integer)
+  val boolean: Gen[CypherBoolean] = arbitrary[Boolean].map(CypherBoolean)
+  val integer: Gen[CypherInteger] = arbitrary[Long].map(CypherInteger)
+  val float: Gen[CypherFloat] = arbitrary[Double].map(CypherFloat)
+  val number: Gen[CypherNumber[Any]] = oneOf(integer, float)
 
-  lazy val float: Gen[CypherFloat] = arbitrary[Double].map(CypherFloat)
-  lazy implicit val arbFloat: Arbitrary[CypherFloat] = Arbitrary(float)
+  val labels: Gen[Set[String]] = arbitrary[Set[String]]
 
-  lazy val number: Gen[CypherNumber[Any]] = oneOf(integer, float)
-  lazy implicit val arbNumber: Arbitrary[CypherNumber[Any]] = Arbitrary(number)
+  val scalarGenerators: Seq[Gen[CypherValue]] = List(string, boolean, integer, float)
 
-  lazy val map: Gen[CypherMap] = for {
+  val scalar: Gen[CypherValue] = oneOfSeq(scalarGenerators)
+
+  val scalarOrNull: Gen[CypherValue] = oneOfSeq(scalarGenerators :+ const(CypherNull))
+
+  val homogeneousScalarListGenerator: Gen[CypherList] = oneOfSeq(scalarGenerators.map(listWithElementGenerator))
+
+  def nodeWithIdGenerator[Id](idGenerator: Gen[Id]): Gen[CypherNode[Id]] = lzy(for {
+    id <- idGenerator
+    ls <- labels
+    ps <- map
+  } yield TestNode(id, ls, ps))
+
+  def listWithElementGenerator(elementGeneratorGenerator: Gen[CypherValue]): Gen[CypherList] = lzy(for {
+    size <- choose(min = 0, max = maxContainerSize)
+    elementGenerator <- elementGeneratorGenerator
+    listElements <- listOfN(size, elementGenerator)
+  } yield listElements)
+
+  lazy val any: Gen[CypherValue] = lzy(oneOf(scalarOrNull, map, list, node, relationship))
+
+  lazy val list: Gen[CypherList] = lzy(listWithElementGenerator(any))
+
+  lazy val propertyMap: Gen[CypherMap] = mapWithValueGenerator(oneOfSeq(scalarGenerators :+ homogeneousScalarListGenerator))
+
+  lazy val map: Gen[CypherMap] = lzy(mapWithValueGenerator(any))
+
+  def mapWithValueGenerator(valueGenerator: Gen[CypherValue]): Gen[CypherMap] = lzy(for {
     size <- choose(min = 0, max = maxContainerSize)
     keyValuePairs <- mapOfN(size, for {
       key <- arbitrary[String]
-      value <- scalarOrNull
+      value <- valueGenerator
     } yield key -> value)
-  } yield keyValuePairs
-  lazy implicit val arbMap: Arbitrary[CypherMap] = Arbitrary(map)
+  } yield keyValuePairs)
 
-  lazy val labels: Gen[Set[String]] = for {
-    size <- choose(min = 0, max = maxContainerSize)
-    labels <- listOfN(size, arbitrary[String])
-  } yield labels.toSet
-  lazy implicit val arbLabels: Arbitrary[Set[String]] = Arbitrary(labels)
-
-  lazy val scalar: Gen[CypherValue] = oneOf(string, boolean, integer, float)
-
-  lazy val scalarOrNull: Gen[CypherValue] = oneOf(scalar, const(CypherNull))
-
-  lazy val node: Gen[CypherNode[CypherValue]] = for {
+  val node: Gen[CypherNode[CypherValue]] = for {
     id <- scalar
     ls <- labels
-    ps <- map
+    ps <- propertyMap
   } yield TestNode(id, ls, ps)
-  lazy implicit val arbNode: Arbitrary[CypherNode[CypherValue]] = Arbitrary(node)
 
-  lazy val relationship: Gen[CypherRelationship[CypherValue]] = for {
+  val relationship: Gen[CypherRelationship[CypherValue]] = for {
     id <- scalar
     start <- scalar
     end <- scalar
     relType <- arbitrary[String]
-    ps <- map
+    ps <- propertyMap
   } yield TestRelationship(id, start, end, relType, ps)
-  lazy implicit val arbRelationship: Arbitrary[CypherRelationship[CypherValue]] = Arbitrary(relationship)
-
-  def homogeneousList(elementGeneratorGenerator: Gen[Gen[CypherValue]]): Gen[CypherList] = for {
-    size <- choose(min = 0, max = maxContainerSize)
-    elementGenerator <- elementGeneratorGenerator
-    listElements <- listOfN(size, elementGenerator)
-  } yield listElements
-
-  lazy val list: Gen[CypherList] = for {
-    size <- choose(min = 0, max = maxContainerSize)
-    listElements <- listOfN(size, scalarOrNull)
-  } yield listElements
-  lazy implicit val arbList: Arbitrary[CypherList] = Arbitrary(list)
-
-  lazy val any: Gen[CypherValue] = oneOf(scalarOrNull, map, list)
-  lazy implicit val arbAny: Arbitrary[CypherValue.CypherValue] = Arbitrary(any)
 
   // TODO: Add date and datetime generators
+
+  case class TestNode[Id](
+    id: Id,
+    labels: Set[String],
+    properties: CypherMap
+  ) extends CypherNode[Id] {
+    override type I = TestNode[Id]
+    override def copy(
+      id: Id,
+      labels: Set[String],
+      properties: CypherMap
+    ): TestNode[Id] = TestNode(id, labels, properties)
+  }
+
+  case class TestRelationship[Id](
+    id: Id,
+    startId: Id,
+    endId: Id,
+    relType: String,
+    properties: CypherMap
+  ) extends CypherRelationship[Id] {
+    override type I = TestRelationship[Id]
+    override def copy(
+      id: Id,
+      startId: Id,
+      endId: Id,
+      relType: String,
+      properties: CypherMap
+    ): TestRelationship[Id] = TestRelationship(id, startId, endId, relType, properties)
+  }
 
 }
