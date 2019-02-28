@@ -130,7 +130,6 @@ object SchemaTyper {
         nodeType <- process[R](node)
         result <- nodeType.material match {
           case CTVoid =>
-            updateTyping[R](node -> CTNull) >>
             pure[R, CypherType](CTNull)
 
           case CTNode(nodeLabels, qgn) =>
