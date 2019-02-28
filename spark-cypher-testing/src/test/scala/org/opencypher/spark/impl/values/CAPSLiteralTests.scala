@@ -74,4 +74,15 @@ class CAPSLiteralTests extends CAPSTestSuite with Checkers with ScanGraphInit {
     }, minSuccessful(100))
   }
 
+
+  // TODO: Fix "java.lang.IllegalArgumentException: The value (Map()) of the type (scala.collection.immutable.Map.EmptyMap$) cannot be converted to struct<>"
+  ignore("round trip for relationships") {
+    check(Prop.forAll(nodeRelNodePattern) { p: NodeRelNodePattern[_] =>
+      val given = initGraph(p.toCreateQuery)
+      val query = s"MATCH ()-[r]->() RETURN r"
+      val result = TestRelationship(given.cypher(query).records.collect.head("n").cast[CypherRelationship[_]])
+      Claim(result == p.relationship)
+    }, minSuccessful(100))
+  }
+
 }

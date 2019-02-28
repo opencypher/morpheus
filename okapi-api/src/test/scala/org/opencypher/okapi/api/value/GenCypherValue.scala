@@ -27,6 +27,7 @@
 package org.opencypher.okapi.api.value
 
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.api.value.CypherValue.Format.defaultValueFormatter
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
@@ -56,12 +57,6 @@ object GenCypherValue {
 
   val homogeneousScalarListGenerator: Gen[CypherList] = oneOfSeq(scalarGenerators.map(listWithElementGenerator))
 
-  def nodeWithIdGenerator[Id](idGenerator: Gen[Id]): Gen[CypherNode[Id]] = lzy(for {
-    id <- idGenerator
-    ls <- labels
-    ps <- map
-  } yield TestNode(id, ls, ps))
-
   def listWithElementGenerator(elementGeneratorGenerator: Gen[CypherValue]): Gen[CypherList] = lzy(for {
     size <- choose(min = 0, max = maxContainerSize)
     elementGenerator <- elementGeneratorGenerator
@@ -84,21 +79,52 @@ object GenCypherValue {
     } yield key -> value)
   } yield keyValuePairs)
 
-  val node: Gen[CypherNode[CypherInteger]] = for {
-    id <- integer
+  def nodeWithIdGenerator[Id](idGenerator: Gen[Id]): Gen[TestNode[Id]] = lzy(for {
+    id <- idGenerator
     ls <- labels
-    ps <- propertyMap
-  } yield TestNode(id, ls, ps)
+    ps <- map
+  } yield TestNode(id, ls, ps))
 
-  val relationship: Gen[CypherRelationship[CypherInteger]] = for {
-    id <- integer
-    start <- integer
-    end <- integer
-    relType <- arbitrary[String]
-    ps <- propertyMap
-  } yield TestRelationship(id, start, end, relType, ps)
+  val node: Gen[TestNode[CypherInteger]] = nodeWithIdGenerator(integer)
+
+  def relationshipWithIdGenerators[Id](
+    relId: Gen[Id],
+    startNodeId: Gen[Id],
+    endNodeId: Gen[Id]
+  ): Gen[TestRelationship[Id]] = {
+    for {
+      id <- relId
+      start <- startNodeId
+      end <- endNodeId
+      relType <- arbitrary[String]
+      ps <- propertyMap
+    } yield TestRelationship(id, start, end, relType, ps)
+  }
+
+  val relationship: Gen[TestRelationship[CypherInteger]] = relationshipWithIdGenerators(integer, integer, integer)
 
   // TODO: Add date and datetime generators
+
+  case class NodeRelNodePattern[Id](
+    startNode: TestNode[Id],
+    relationship: TestRelationship[Id],
+    endNode: TestNode[Id]
+  ) {
+    def toCreateQuery: String = {
+      s"CREATE ${startNode.toCypherString}-${relationship.toCypherString}->${endNode.toCypherString}"
+    }
+  }
+
+  val nodeRelNodePattern: Gen[NodeRelNodePattern[_]] = {
+    val n1Id = 0L
+    val rId = 0L
+    val n2Id = 1L
+    for {
+      startNode <- nodeWithIdGenerator(const(n1Id))
+      relationship <- relationshipWithIdGenerators(const(rId), const(n1Id), const(n2Id))
+      endNode <- nodeWithIdGenerator(const(n2Id))
+    } yield NodeRelNodePattern(startNode, relationship, endNode)
+  }
 
   case class TestNode[Id](
     id: Id,
