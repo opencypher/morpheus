@@ -400,56 +400,6 @@ case object CTNull extends NullableDefiniteCypherType {
   override def material: CTVoid.type = CTVoid
 }
 
-//case object CTWildcard extends MaterialCypherType with WildcardCypherType {
-//  self =>
-//
-//  override def name = "?"
-//
-//  override def material: CTWildcard.type = self
-//
-//  override def sameTypeAs(other: CypherType): Boolean =
-//    if (!other.isNullable) Maybe else false
-//
-//  override def wildcardErasedSuperType: CTAny.type = CTAny
-//
-//  override def wildcardErasedSubType: CTVoid.type = CTVoid
-//
-//  override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
-//    case CTAny => CTAny
-//    case _ => CTWildcard
-//  }
-//
-//  override def meetMaterially(other: MaterialCypherType): MaterialCypherType = other match {
-//    case CTVoid => CTVoid
-//    case _ => CTWildcard
-//  }
-//
-//  override def superTypeOf(other: CypherType): Boolean = other match {
-//    case CTVoid => true
-//    case _ => if (!other.isNullable) Maybe else false
-//  }
-//
-//  override object nullable extends NullableCypherType with WildcardCypherType with Serializable {
-//    self =>
-//
-//    override def name = "??"
-//
-//    override def nullable: CTWildcard.nullable.type = self
-//
-//    override def material: CTWildcard.type = CTWildcard
-//
-//    override def wildcardErasedSuperType: NullableDefiniteCypherType = CTAny.nullable
-//
-//    override def wildcardErasedSubType: CTNull.type = CTNull
-//
-//    override def sameTypeAs(other: CypherType): Boolean =
-//      if (other.isNullable) Maybe else false
-//
-//    override def superTypeOf(other: CypherType): Boolean = Maybe
-//  }
-//
-//}
-
 sealed trait CypherType extends Serializable {
   self =>
 

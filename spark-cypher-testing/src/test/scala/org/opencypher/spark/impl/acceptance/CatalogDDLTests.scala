@@ -289,8 +289,6 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
     }
 
     it("supports nested CREATE VIEW with two parameters") {
-      PrintLogicalPlan.set()
-      PrintRelationalPlan.set()
       val inputGraphA1 = initGraph(
         """
           |CREATE ({val: 1})
