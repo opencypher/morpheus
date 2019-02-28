@@ -113,7 +113,7 @@ class SchemaTyperTest extends SchemaTyperTestSuite with MockitoSugar {
   it("should type Date") {
     assertExpr.from("date()") shouldHaveInferredType CTDate
     assertExpr.from("date(STRING)") shouldHaveInferredType CTDate
-    assertExpr.from("date({ year: 2018, month: 12, day: 18 })") shouldHaveInferredType CTDate
+    assertExpr.from("date(MAP)") shouldHaveInferredType CTDate
     assertExpr.from("date(NULL)") shouldHaveInferredType CTNull
     assertExpr.from("date(STRING_OR_NULL)") shouldHaveInferredType CTDate.nullable
     assertExpr.from("date(INTEGER_OR_NULL)") shouldHaveInferredType CTNull
