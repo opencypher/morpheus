@@ -342,7 +342,7 @@ object SparkTable {
               actual = structField.dataType)
           }
 
-          if (structFieldType.material.subTypeOf(cypherType.material).isFalse) {
+          if (!structFieldType.material.subTypeOf(cypherType.material)) {
             throw IllegalArgumentException(
               expected = s"Sub-type of $cypherType for column: $column",
               actual = structFieldType)

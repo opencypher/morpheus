@@ -433,7 +433,7 @@ class SchemaTyperTest extends SchemaTyperTestSuite with MockitoSugar {
     assertExpr.from("NODE.STRING = STRING") shouldHaveInferredType CTBoolean
     assertExpr.from("NODE.STRING IN LIST_STRING") shouldHaveInferredType CTBoolean
     assertExpr.from("NODE.STRING IN STRING") shouldFailToInferTypeWithErrors
-      InvalidType(parseExpr("STRING"), CTList(CTWildcard), CTString)
+      InvalidType(parseExpr("STRING"), CTList(CTAny), CTString)
   }
 
   it("typing of unsupported expressions") {

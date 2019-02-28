@@ -66,7 +66,6 @@ object CypherTypeParser extends Logging {
   def ANY[_: P]: P[CTAny.type] = IgnoreCase("ANY").map(_ => CTAny)
   def VOID[_: P]: P[CTVoid.type] = IgnoreCase("VOID").map(_ => CTVoid)
   def NULL[_: P]: P[CTNull.type] = IgnoreCase("NULL").map(_ => CTNull)
-  def WILDCARD[_: P]: P[CTWildcard.type] = IgnoreCase("?").map(_ => CTWildcard)
   def DATE[_: P]: P[CTDate.type] = IgnoreCase("DATE").map(_ => CTDate)
   def LOCALDATETIME[_: P]: P[CTLocalDateTime.type] = IgnoreCase("LOCALDATETIME").map(_ => CTLocalDateTime)
 
@@ -97,7 +96,6 @@ object CypherTypeParser extends Logging {
       ANY |
       VOID |
       NULL |
-      WILDCARD |
       NODE |
       RELATIONSHIP |
       PATH |

@@ -527,7 +527,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
         case CTVoid =>
           pure[R, CypherType](CTNull)
         case x =>
-          error(IRBuilderError(s"unwind expression was not a list: $x"))(CTWildcard: CypherType)
+          error(IRBuilderError(s"unwind expression was not a list: $x"))(CTAny)
       }
       field <- {
         val field = IRField(variable.name)(typ)

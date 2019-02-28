@@ -26,9 +26,10 @@
  */
 package org.opencypher.okapi.relational.impl.planning
 
-import org.opencypher.okapi.api.graph.{Outgoing => _, _}
+import org.opencypher.okapi.api.graph._
+import org.opencypher.okapi.logical.impl.{Incoming, Outgoing}
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{NotImplementedException, SchemaException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.types.CypherTypeUtils._
 import org.opencypher.okapi.ir.api.block.SortItem
@@ -143,7 +144,7 @@ object RelationalPlanner {
             val tempResult = first.join(second, Seq(source -> startNode), InnerJoin)
             tempResult.join(third, Seq(endNode -> target), InnerJoin)
 
-          case Incoming =>
+          case org.opencypher.okapi.logical.impl.Incoming =>
             val tempResult = third.join(second, Seq(target -> endNode), InnerJoin)
             tempResult.join(first, Seq(startNode -> source), InnerJoin)
 
@@ -171,8 +172,8 @@ object RelationalPlanner {
           Map(rel -> relPattern.relEntity)
         )
 
-        val startNode = StartNode(rel)()
-        val endNode = EndNode(rel)()
+        val startNode = StartNode(rel)(CTAny)
+        val endNode = EndNode(rel)(CTAny)
 
         direction match {
           case Outgoing | Incoming =>
@@ -404,7 +405,7 @@ object RelationalPlanner {
     }
 
     def prefixVariableId(v: Var, prefix: GraphIdPrefix): RelationalOperator[T] = {
-      val prefixedIds = op.header.idExpressions(v).map(exprToPrefix => PrefixId(ToId(exprToPrefix)(), prefix)() -> exprToPrefix)
+      val prefixedIds = op.header.idExpressions(v).map(exprToPrefix => PrefixId(ToId(exprToPrefix)(), prefix)(CTIdentity) -> exprToPrefix)
       op.addInto(prefixedIds.toSeq: _*)
     }
 
@@ -579,7 +580,7 @@ object RelationalPlanner {
     def filterRelTypes(targetType: CTRelationship): RelationalOperator[T] = {
       val singleEntity = op.singleEntity
 
-      if (singleEntity.cypherType.subTypeOf(targetType).isTrue) {
+      if (singleEntity.cypherType.subTypeOf(targetType)) {
         op
       } else {
         val relTypes = op.header

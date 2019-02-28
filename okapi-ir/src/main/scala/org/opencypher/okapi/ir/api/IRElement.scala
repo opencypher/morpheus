@@ -41,7 +41,7 @@ object IRField {
   }
 }
 
-final case class IRField(name: String)(val cypherType: CypherType = CTWildcard) {
+final case class IRField(name: String)(val cypherType: CypherType = CTAny) {
   override def toString = s"$name :: $cypherType"
 
   def escapedName: String = name.replaceAll("`", "``")

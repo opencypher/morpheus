@@ -26,16 +26,16 @@
  */
 package org.opencypher.okapi.ir.api.pattern
 
-import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.api.types.{CTAny, CTRelationship}
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.v9_0.expressions.SemanticDirection.OUTGOING
 
 class ConnectionTest extends BaseTestSuite {
 
-  val field_a: IRField = IRField("a")()
-  val field_b: IRField = IRField("b")()
-  val field_c: IRField = IRField("c")()
+  val field_a: IRField = IRField("a")(CTAny)
+  val field_b: IRField = IRField("b")(CTAny)
+  val field_c: IRField = IRField("c")(CTAny)
 
   val relType = CTRelationship("FOO")
 

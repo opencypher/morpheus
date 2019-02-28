@@ -36,7 +36,7 @@ class ExprTest extends BaseTestSuite {
     val r = Var("a")(CTString)
     n should equal(r)
 
-    val a = StartNode(Var("rel")(CTRelationship))(CTWildcard)
+    val a = StartNode(Var("rel")(CTRelationship))(CTAny)
     val b = StartNode(Var("rel")(CTRelationship))(CTNode)
     a should equal(b)
   }
@@ -46,26 +46,26 @@ class ExprTest extends BaseTestSuite {
     val r = Var("a")(CTRelationship("b"))
     n.hashCode should equal(r.hashCode)
 
-    val a = StartNode(Var("rel")(CTRelationship))(CTWildcard)
+    val a = StartNode(Var("rel")(CTRelationship))(CTAny)
     val b = StartNode(Var("rel")(CTRelationship))(CTNode)
     a.hashCode should equal(b.hashCode)
   }
 
   test("different expressions are not equal") {
-    val p = Param("a")()
-    val v = Var("a")()
+    val p = Param("a")(CTAny)
+    val v = Var("a")(CTAny)
     p should not equal v
   }
 
   test("different expressions have different hash codes") {
-    val p = Param("a")()
-    val v = Var("b")()
+    val p = Param("a")(CTAny)
+    val v = Var("b")(CTAny)
     p.hashCode should not equal v.hashCode
   }
 
   test("alias expression has updated type") {
     val n = Var("n")(CTNode)
-    val aliasVar = Var("m")()
+    val aliasVar = Var("m")(CTAny)
     (n as aliasVar).cypherType should equal(aliasVar.cypherType)
   }
 

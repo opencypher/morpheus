@@ -130,8 +130,8 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def idExpressions(): Set[Expr] = {
     exprToColumn.keySet.collect {
-      case n if n.cypherType.subTypeOf(CTNode).isTrue => n
-      case r if r.cypherType.subTypeOf(CTRelationship).isTrue => r
+      case n if n.cypherType.subTypeOf(CTNode) => n
+      case r if r.cypherType.subTypeOf(CTRelationship) => r
     }
   }
 
@@ -189,7 +189,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def nodeEntities: Set[Var] = {
     exprToColumn.keySet.collect {
-      case v: Var if v.cypherType.subTypeOf(CTNode).isTrue => v
+      case v: Var if v.cypherType.subTypeOf(CTNode) => v
     }
   }
 
@@ -201,7 +201,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def relationshipEntities: Set[Var] = {
     exprToColumn.keySet.collect {
-      case v: Var if v.cypherType.subTypeOf(CTRelationship).isTrue => v
+      case v: Var if v.cypherType.subTypeOf(CTRelationship) => v
     }
   }
 
@@ -387,8 +387,8 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
         val resultExpr = (key, leftCT, rightCT) match {
           case (v: Var, l: CTNode, r: CTNode) => Var(v.name)(l.join(r))
           case (v: Var, l: CTRelationship, r: CTRelationship) => Var(v.name)(l.join(r))
-          case (_, l, r) if l.subTypeOf(r).isTrue => other.exprToColumn.keySet.collectFirst { case k if k == key => k }.get
-          case (_, l, r) if r.subTypeOf(l).isTrue => key
+          case (_, l, r) if l.subTypeOf(r) => other.exprToColumn.keySet.collectFirst { case k if k == key => k }.get
+          case (_, l, r) if r.subTypeOf(l) => key
           case _ => throw IllegalArgumentException(
             expected = s"Compatible Cypher types for expression $key",
             actual = s"left type `$leftCT` and right type `$rightCT`"

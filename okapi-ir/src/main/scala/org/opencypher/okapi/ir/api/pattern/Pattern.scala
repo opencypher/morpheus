@@ -52,7 +52,7 @@ final case class Pattern(
   lazy val rels: Set[IRField] = getEntity(CTRelationship)
 
   private def getEntity(t: CypherType) =
-    fields.collect { case e if e.cypherType.subTypeOf(t).maybeTrue => e }
+    fields.collect { case e if e.cypherType.subTypeOf(t) => e }
 
   /**
     * Fuse patterns but fail if they disagree in the definitions of entities or connections

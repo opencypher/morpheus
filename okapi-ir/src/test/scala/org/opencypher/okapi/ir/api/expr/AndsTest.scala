@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.ir.api.expr
 
+import org.opencypher.okapi.api.types.CTAny
 import org.opencypher.okapi.ir.api.Label
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
@@ -33,10 +34,10 @@ import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 class AndsTest extends BaseTestSuite {
 
   test("unnests inner ands") {
-    val x = Var("x")()
-    val args: Set[Expr] = Set(Ands(TrueLit), HasLabel(x, Label("X"))(), Ands(Ands(Ands(FalseLit))))
+    val x = Var("x")(CTAny)
+    val args: Set[Expr] = Set(Ands(TrueLit), HasLabel(x, Label("X"))(CTAny), Ands(Ands(Ands(FalseLit))))
 
-    Ands(args) should equalWithTracing(Ands(Set(TrueLit, HasLabel(x, Label("X"))(), FalseLit)))
+    Ands(args) should equalWithTracing(Ands(Set(TrueLit, HasLabel(x, Label("X"))(CTAny), FalseLit)))
   }
 
 }

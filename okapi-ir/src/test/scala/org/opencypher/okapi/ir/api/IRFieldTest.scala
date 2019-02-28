@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.api
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.{CTAny, CTNode, CTRelationship}
 import org.opencypher.okapi.testing.BaseTestSuite
 
 class IRFieldTest extends BaseTestSuite {
@@ -45,14 +45,14 @@ class IRFieldTest extends BaseTestSuite {
     }
 
     it("can be unequal") {
-      val a = IRField("a")()
-      val b = IRField("b")()
+      val a = IRField("a")(CTAny)
+      val b = IRField("b")(CTAny)
       a should not equal b
     }
 
     it("has different hash codes") {
-      val a = IRField("a")()
-      val b = IRField("b")()
+      val a = IRField("a")(CTAny)
+      val b = IRField("b")(CTAny)
       a.hashCode should not equal b.hashCode
     }
   }

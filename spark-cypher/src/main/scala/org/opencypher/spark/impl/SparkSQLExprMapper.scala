@@ -251,11 +251,11 @@ object SparkSQLExprMapper {
               case (nonListType, CTList(inner)) if inner.material == nonListType || inner.material == CTVoid =>
                 functions.concat(functions.array(lhs.asSparkSQLExpr), rhs.asSparkSQLExpr)
 
-              case (CTString, _) if rhsCT.subTypeOf(CTNumber).maybeTrue =>
-                functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr.cast(StringType))
+            case (CTString, _) if rhsCT.subTypeOf(CTNumber) =>
+              functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr.cast(StringType))
 
-              case (_, CTString) if lhsCT.subTypeOf(CTNumber).maybeTrue =>
-                functions.concat(lhs.asSparkSQLExpr.cast(StringType), rhs.asSparkSQLExpr)
+            case (_, CTString) if lhsCT.subTypeOf(CTNumber) =>
+              functions.concat(lhs.asSparkSQLExpr.cast(StringType), rhs.asSparkSQLExpr)
 
               case (CTString, CTString) =>
                 functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
@@ -268,7 +268,7 @@ object SparkSQLExprMapper {
             }
           }
 
-        case Subtract(lhs, rhs) if lhs.cypherType.material.subTypeOf(CTDate).isTrue && rhs.cypherType.material.subTypeOf(CTDuration).isTrue =>
+        case Subtract(lhs, rhs) if lhs.cypherType.material.subTypeOf(CTDate) && rhs.cypherType.material.subTypeOf(CTDuration) =>
           TemporalUdfs.dateSubtract(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
 
         case Subtract(lhs, rhs) => lhs.asSparkSQLExpr - rhs.asSparkSQLExpr

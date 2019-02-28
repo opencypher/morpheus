@@ -81,7 +81,7 @@ package object typer {
     for {
       tracker <- get[R, TypeTracker]
       cypherType <- tracker.getParameterType(it) match {
-        case None    => error(UnTypedParameter(it)) >> pure[R, CypherType](CTWildcard)
+        case None    => error(UnTypedParameter(it)) >> pure[R, CypherType](CTAny)
         case Some(t) => pure[R, CypherType](t)
       }
     } yield cypherType
@@ -90,7 +90,7 @@ package object typer {
     for {
       tracker <- get[R, TypeTracker]
       cypherType <- tracker.get(it) match {
-        case None    => error(UnTypedExpr(it)) >> pure[R, CypherType](CTWildcard)
+        case None    => error(UnTypedExpr(it)) >> pure[R, CypherType](CTAny)
         case Some(t) => pure[R, CypherType](t)
       }
     } yield cypherType
@@ -115,7 +115,7 @@ package object typer {
   }
 
   def error[R: _keepsErrors](failure: TyperError): Eff[R, CypherType] =
-    wrong[R, TyperError](failure) >> pure(CTWildcard)
+    wrong[R, TyperError](failure) >> pure(CTAny)
 
   implicit val showExpr: Show[Expression] = new Show[Expression] {
     override def show(it: Expression): String = s"$it [${it.position}]"

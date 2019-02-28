@@ -265,7 +265,7 @@ object ConstructGraphPlanner {
   }
 
   def prefixId(id: Expr, maybeCreatedEntityIdPrefix: Option[GraphIdPrefix]): Expr = {
-    maybeCreatedEntityIdPrefix.map(PrefixId(id, _)()).getOrElse(id)
+    maybeCreatedEntityIdPrefix.map(PrefixId(id, _)(CTIdentity)).getOrElse(id)
   }
 
   // TODO: improve documentation and add specific tests
