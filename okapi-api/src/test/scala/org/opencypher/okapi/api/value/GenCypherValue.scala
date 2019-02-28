@@ -79,13 +79,24 @@ object GenCypherValue {
     } yield key -> value)
   } yield keyValuePairs)
 
-  def nodeWithIdGenerator[Id](idGenerator: Gen[Id]): Gen[TestNode[Id]] = lzy(for {
+  def singlePropertyMap(
+    keyGenerator: Gen[String] = const("prop"),
+    valueGenerator: Gen[CypherValue] = oneOfSeq(scalarGenerators :+ homogeneousScalarListGenerator)
+  ): Gen[CypherMap] = lzy(for {
+    key <- keyGenerator
+    value <- valueGenerator
+  } yield Map(key -> value))
+
+  def nodeWithCustomGenerators[Id](
+    idGenerator: Gen[Id],
+    mapGenerator: Gen[CypherMap] = propertyMap
+  ): Gen[TestNode[Id]] = lzy(for {
     id <- idGenerator
     ls <- labels
-    ps <- propertyMap
+    ps <- mapGenerator
   } yield TestNode(id, ls, ps))
 
-  val node: Gen[TestNode[CypherInteger]] = nodeWithIdGenerator(integer)
+  val node: Gen[TestNode[CypherInteger]] = nodeWithCustomGenerators(integer)
 
   def relationshipWithIdGenerators[Id](
     relId: Gen[Id],
@@ -115,14 +126,14 @@ object GenCypherValue {
     }
   }
 
-  val nodeRelNodePattern: Gen[NodeRelNodePattern[_]] = {
+  def nodeRelNodePattern(mapGenerator: Gen[CypherMap] = propertyMap): Gen[NodeRelNodePattern[_]] = {
     val n1Id = 0L
     val rId = 0L
     val n2Id = 1L
     for {
-      startNode <- nodeWithIdGenerator(const(n1Id))
+      startNode <- nodeWithCustomGenerators(const(n1Id), mapGenerator)
       relationship <- relationshipWithIdGenerators(const(rId), const(n1Id), const(n2Id))
-      endNode <- nodeWithIdGenerator(const(n2Id))
+      endNode <- nodeWithCustomGenerators(const(n2Id), mapGenerator)
     } yield NodeRelNodePattern(startNode, relationship, endNode)
   }
 

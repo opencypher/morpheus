@@ -75,8 +75,9 @@ class CAPSLiteralTests extends CAPSTestSuite with Checkers with ScanGraphInit {
 
 
   // TODO: Diagnose error "NotImplementedException was thrown during property evaluation: Mapping of CypherType ANY to Spark type"
+  // TODO: Diagnose error "SchemaException was thrown during property evaluation: Labels must be non-empty"
   ignore("round trip for relationships") {
-    check(Prop.forAll(nodeRelNodePattern) { p: NodeRelNodePattern[_] =>
+    check(Prop.forAll(nodeRelNodePattern()) { p: NodeRelNodePattern[_] =>
       val given = initGraph(p.toCreateQuery)
       val query = s"MATCH ()-[r]->() RETURN r"
       val result = TestRelationship(given.cypher(query).records.collect.head("r").cast[CypherRelationship[_]])
