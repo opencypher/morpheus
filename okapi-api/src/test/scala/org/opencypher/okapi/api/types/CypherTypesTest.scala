@@ -319,18 +319,15 @@ class CypherTypesTest extends ApiBaseTest {
   }
 
   it("type equality between different types") {
-    allTypes.foreach { t1 =>
-      allTypes.foreach { t2 =>
-
-        t1 == t2 should be((t1.isNullable && !t2.isNullable) || (!t1.isNullable && t2.isNullable))
-
-        if (t1 == t2) {
-          (t1 subTypeOf t2) shouldBe true
-          (t2 subTypeOf t1) shouldBe true
-          (t1 superTypeOf t2) shouldBe true
-          (t2 superTypeOf t1) shouldBe true
-        }
-      }
+    for {
+      t1 <- allTypes
+      t2 <- allTypes
+      if t1 == t2
+    } yield {
+      (t1 subTypeOf t2) shouldBe true
+      (t2 subTypeOf t1) shouldBe true
+      (t1 superTypeOf t2) shouldBe true
+      (t2 superTypeOf t1) shouldBe true
     }
   }
 
