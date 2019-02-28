@@ -271,7 +271,11 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     RecordHeader(selectMappings)
   }
 
-  def withColumnsRenamed[T <: Expr](renamings: Map[T, String]): RecordHeader = {
+  def withColumnsReplaced[T <: Expr](replacements: Map[T, String]): RecordHeader = {
+    RecordHeader(exprToColumn ++ replacements)
+  }
+
+  def withColumnsRenamed[T <: Expr](renamings: Seq[(T, String)]): RecordHeader = {
     renamings.foldLeft(this) {
       case (currentHeader, (expr, newColumn)) => currentHeader.withColumnRenamed(expr, newColumn)
     }

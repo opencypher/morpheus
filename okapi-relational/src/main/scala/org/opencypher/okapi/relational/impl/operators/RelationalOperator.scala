@@ -316,14 +316,12 @@ final case class ReturnGraph[T <: Table[T] : TypeTag](in: RelationalOperator[T])
 final case class Select[T <: Table[T] : TypeTag](
   in: RelationalOperator[T],
   expressions: List[Expr],
-  renames: Map[Expr, String] = Map.empty
+  columnRenames: Map[Expr, String] = Map.empty
 ) extends RelationalOperator[T] {
 
   private lazy val selectHeader = in.header.select(expressions: _*)
 
-  override lazy val header: RecordHeader = {
-    RecordHeader(selectHeader.exprToColumn ++ renames)
-  }
+  override lazy val header: RecordHeader = selectHeader.withColumnsReplaced(columnRenames)
 
   private lazy val returnExpressions = expressions.map {
     case AliasExpr(_, alias) => alias
