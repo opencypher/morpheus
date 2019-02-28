@@ -35,6 +35,7 @@ ext {
             scalatest   : '3.0.5',
             scalacheck  : '1.13.5',
             mockito     : '1.10.19',
+            claimant    : '0.0.2',
 
             junit       : [main  : '4.12',
                            runner: '1.0.2'],

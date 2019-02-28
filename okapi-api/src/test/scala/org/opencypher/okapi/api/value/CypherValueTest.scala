@@ -29,6 +29,7 @@ package org.opencypher.okapi.api.value
 import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.value.CypherValue.Format._
 import org.opencypher.okapi.api.value.CypherValue.{CypherBoolean, CypherFloat, CypherInteger, CypherList, CypherMap, CypherNode, CypherRelationship, CypherString}
+import org.opencypher.okapi.api.value.GenCypherValue.{TestNode, TestRelationship}
 
 class CypherValueTest extends ApiBaseTest {
   describe("#toCypherString") {
@@ -85,38 +86,4 @@ class CypherValueTest extends ApiBaseTest {
     }
   }
 
-  private case class TestRelationship(override val id: Long,
-                                      override val startId: Long,
-                                      override val endId: Long,
-                                      override val relType: String,
-                                      override val properties: CypherMap =
-                                        CypherMap.empty)
-      extends CypherRelationship[Long] {
-
-    override type I = TestRelationship
-
-    override def copy(id: Long = id,
-                      startId: Long = startId,
-                      endId: Long = endId,
-                      relType: String = relType,
-                      properties: CypherMap = properties): TestRelationship = {
-      TestRelationship(id, startId, endId, relType, properties)
-        .asInstanceOf[this.type]
-    }
-  }
-
-  case class TestNode(override val id: Long,
-                      override val labels: Set[String] = Set.empty,
-                      override val properties: CypherMap = CypherMap.empty)
-      extends CypherNode[Long] {
-
-    override type I = TestNode
-
-    override def copy(id: Long = id,
-                      labels: Set[String] = labels,
-                      properties: CypherMap = properties): TestNode = {
-      TestNode(id, labels, properties)
-    }
-
-  }
 }

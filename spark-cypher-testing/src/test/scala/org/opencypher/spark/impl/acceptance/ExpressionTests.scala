@@ -26,17 +26,23 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import claimant.Claim
 import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.api.value.CypherValue.Format.defaultValueFormatter
+import org.opencypher.okapi.api.value.CypherValue.{CypherFloat, CypherInteger, CypherMap}
+import org.opencypher.okapi.api.value.GenCypherValue._
 import org.opencypher.okapi.impl.exception.NotImplementedException
+import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
+import org.scalacheck.Prop
 import org.scalatest.junit.JUnitRunner
+import org.scalatest.prop.Checkers
 
 @RunWith(classOf[JUnitRunner])
-class ExpressionTests extends CAPSTestSuite with ScanGraphInit {
+class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
   describe("CASE") {
     it("should evaluate a generic CASE expression with default") {
@@ -373,7 +379,31 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit {
     ))
   }
 
-  it("supports addition") {
+  it("supports integer addition") {
+    check(Prop.forAll(integer, integer) { (i1: CypherInteger, i2: CypherInteger) =>
+      val query = s"RETURN ${i1.toCypherString} + ${i2.toCypherString} AS result"
+      if (BigInt(i1.unwrap) + BigInt(i2.unwrap) != BigInt(i1.unwrap + i2.unwrap)) {
+        // Long over-/underflow
+        val e = the[ParsingException] thrownBy caps.cypher(query).records.toMaps
+        Claim(e.getMessage.contains("SemanticError") && e.getMessage.contains("cannot be represented as an integer"))
+      } else {
+        val result = caps.cypher(query).records.toMaps
+        val expected = Bag(CypherMap("result" -> (i1.unwrap + i2.unwrap)))
+        Claim(result == expected)
+      }
+    }, minSuccessful(100))
+  }
+
+  it("supports float addition") {
+    check(Prop.forAll(float, float) { (f1: CypherFloat, f2: CypherFloat) =>
+      val query = s"RETURN ${f1.toCypherString} + ${f2.toCypherString} AS result"
+      val result = caps.cypher(query).records.toMaps
+      val expected = Bag(CypherMap("result" -> (f1.unwrap + f2.unwrap)))
+      Claim(result == expected)
+    }, minSuccessful(100))
+  }
+
+  it("supports addition after matching a pattern") {
     // Given
     val given = initGraph("CREATE ({val: 4})-[:REL]->({val: 5, other: 3})-[:REL]->()")
 
