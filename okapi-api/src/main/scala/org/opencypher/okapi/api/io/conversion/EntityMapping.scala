@@ -59,11 +59,11 @@ case class EntityMapping(
 
   validate()
 
-  def allSourceIdKeys: Seq[String] = idKeys.values.flatMap(keyMapping => keyMapping.values).toSeq
+  lazy val allSourceIdKeys: Seq[String] = idKeys.values.flatMap(keyMapping => keyMapping.values).toSeq.sorted
 
-  def allSourcePropertyKeys: Seq[String] = properties.values.flatMap(keyMapping => keyMapping.values).toSeq
+  lazy val allSourcePropertyKeys: Seq[String] = properties.values.flatMap(keyMapping => keyMapping.values).toSeq.sorted
 
-  def allSourceKeys: Seq[String] = (allSourceIdKeys ++ allSourcePropertyKeys).sorted
+  lazy val allSourceKeys: Seq[String] = (allSourceIdKeys ++ allSourcePropertyKeys).sorted
 
   protected def validate(): Unit = {
     val sourceKeys = allSourceKeys

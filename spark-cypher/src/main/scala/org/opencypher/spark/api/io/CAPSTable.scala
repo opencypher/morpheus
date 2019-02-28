@@ -64,9 +64,9 @@ case class CAPSEntityTable private[spark](
 
 object CAPSEntityTable {
   def create(mapping: EntityMapping, table: DataFrameTable): CAPSEntityTable = {
-    val sourceIdColumns = mapping.idKeys.values.toSeq.flatten.map(_._2)
+    val sourceIdColumns = mapping.allSourceIdKeys
     val idCols = table.df.encodeIdColumns(sourceIdColumns: _*)
-    val remainingCols = mapping.allSourceKeys.filterNot(sourceIdColumns.contains).map(table.df.col)
+    val remainingCols = mapping.allSourcePropertyKeys.map(table.df.col)
     val colsToSelect = idCols ++ remainingCols
 
     CAPSEntityTable(mapping, table.df.select(colsToSelect: _*))
