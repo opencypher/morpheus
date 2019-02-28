@@ -32,13 +32,28 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Gen.{choose, const, listOfN, lzy, mapOfN, oneOf}
+import org.parboiled.support.Chars._
 
 object GenCypherValue {
 
   val maxContainerSize: Int = 3
 
-  val string: Gen[CypherString] = arbitrary[String]
-    .map(s => CypherString(s.replace(''', '"')))
+  private val reservedParboiledChars = Set(
+    DEL_ERROR,
+    INS_ERROR,
+    RESYNC,
+    RESYNC_START,
+    RESYNC_END,
+    RESYNC_EOI,
+    EOI,
+    INDENT,
+    DEDENT
+  )
+  private val bannedChars = Set("'") ++ reservedParboiledChars
+
+  val string: Gen[CypherString] = arbitrary[String].
+    map(s => s.filterNot(bannedChars.contains)).
+    map(CypherString)
 
   def oneOfSeq[T](gs: Seq[Gen[T]]): Gen[T] = choose(0, gs.size - 1).flatMap(gs(_))
 
