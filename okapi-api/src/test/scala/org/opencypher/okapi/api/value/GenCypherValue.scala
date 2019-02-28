@@ -26,17 +26,18 @@
  */
 package org.opencypher.okapi.api.value
 
-import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value.CypherValue.Format.defaultValueFormatter
+import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.parboiled.support.Chars._
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Gen.{choose, const, listOfN, lzy, mapOfN, oneOf}
-import org.parboiled.support.Chars._
 
 object GenCypherValue {
 
   val maxContainerSize: Int = 3
+  val maxLabelLength = 10
 
   private val reservedParboiledChars = Set(
     DEL_ERROR,
@@ -51,9 +52,10 @@ object GenCypherValue {
   )
   private val bannedChars = Set("'") ++ reservedParboiledChars
 
-  val string: Gen[CypherString] = arbitrary[String].
-    map(s => s.filterNot(bannedChars.contains)).
-    map(CypherString)
+  private val stringWithoutBanned = arbitrary[String].
+    map(s => s.filterNot(bannedChars.contains))
+
+  val string: Gen[CypherString] = stringWithoutBanned.map(CypherString)
 
   def oneOfSeq[T](gs: Seq[Gen[T]]): Gen[T] = choose(0, gs.size - 1).flatMap(gs(_))
 
@@ -62,7 +64,15 @@ object GenCypherValue {
   val float: Gen[CypherFloat] = arbitrary[Double].map(CypherFloat)
   val number: Gen[CypherNumber[Any]] = oneOf(integer, float)
 
-  val labels: Gen[Set[String]] = arbitrary[Set[String]]
+  val label: Gen[String] = for {
+    size <- choose(min = 1, max = maxLabelLength)
+    characters <- listOfN(size, arbitrary[Char])
+  } yield characters.mkString
+
+  val labels: Gen[Set[String]] = for {
+    size <- choose(min = 0, max = maxContainerSize)
+    labelElements <- listOfN(size, label)
+  } yield labelElements.toSet
 
   val scalarGenerators: Seq[Gen[CypherValue]] = List(string, boolean, integer, float)
 
@@ -89,7 +99,7 @@ object GenCypherValue {
   def mapWithValueGenerator(valueGenerator: Gen[CypherValue]): Gen[CypherMap] = lzy(for {
     size <- choose(min = 0, max = maxContainerSize)
     keyValuePairs <- mapOfN(size, for {
-      key <- arbitrary[String]
+      key <- stringWithoutBanned.withFilter(_ != "")
       value <- valueGenerator
     } yield key -> value)
   } yield keyValuePairs)
