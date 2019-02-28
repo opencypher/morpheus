@@ -76,8 +76,6 @@ object CAPSFunctions {
     new Column(Serialize(columns.map(_.expr)))
   }
 
-  def concatUDF[T: TypeTag : ClassTag]: UserDefinedFunction = functions.udf[Seq[T], Seq[T], Seq[T]](_ ++ _)
-
   def get_rel_type(relTypeNames: Seq[String]): UserDefinedFunction = {
     val extractRelTypes = (booleanMask: Seq[Boolean]) => filterWithMask(relTypeNames)(booleanMask)
     functions.udf(extractRelTypes.andThen(_.headOption.orNull), StringType)

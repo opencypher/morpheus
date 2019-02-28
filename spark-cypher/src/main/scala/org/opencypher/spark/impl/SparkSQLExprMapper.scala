@@ -96,7 +96,7 @@ object SparkSQLExprMapper {
         case Param(name) =>
           expr.cypherType match {
             case CTList(inner) => inner.toSparkType match {
-              case None => throw SparkSQLMappingException(s"List paramater with inner type $inner not supported")
+              case None => throw SparkSQLMappingException(s"List parameter with inner type $inner not supported")
               // Solve using pattern matching instead of casting
               case _ => functions.array(parameters(name).asInstanceOf[CypherList].value.unwrap.map(functions.lit): _*)
             }
@@ -222,23 +222,18 @@ object SparkSQLExprMapper {
           val lhsCT = lhs.cypherType
           val rhsCT = rhs.cypherType
           lhsCT.material -> rhsCT.material match {
-            case (l: CTList, _: CTList) =>
-              l.elementType.material match {
-                case CTInteger => concatUDF[Int].apply(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
-                case CTString => concatUDF[String].apply(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
-                case CTBoolean => concatUDF[Boolean].apply(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
-                case CTFloat => concatUDF[Float].apply(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
-                case CTDate => concatUDF[java.sql.Date].apply(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
-                case CTLocalDateTime => concatUDF[java.sql.Timestamp].apply(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
-                // TODO: Handle lists of null literals
-                case other => throw UnsupportedOperationException(s"List concatenation with type $other is not supported")
+            case (CTList(lhInner), CTList(rhInner)) =>
+              if (lhInner.material == rhInner.material) {
+                functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
+              } else {
+                throw SparkSQLMappingException(s"Lists of different inner types are not supported (${lhInner.material}, ${rhInner.material})")
               }
 
-            case (CTList(inner), nonListType) if inner == nonListType =>
-              throw UnsupportedOperationException("List + scalar concatenation is not supported")
+            case (CTList(inner), nonListType) if inner.material == nonListType =>
+              functions.concat(lhs.asSparkSQLExpr, functions.array(rhs.asSparkSQLExpr))
 
-            case (nonListType, CTList(inner)) if inner == nonListType =>
-              throw UnsupportedOperationException("Scalar + list concatenation is not supported")
+            case (nonListType, CTList(inner)) if inner.material == nonListType =>
+              functions.concat(functions.array(lhs.asSparkSQLExpr), rhs.asSparkSQLExpr)
 
             case (CTString, _) if rhsCT.subTypeOf(CTNumber).maybeTrue =>
               functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr.cast(StringType))
