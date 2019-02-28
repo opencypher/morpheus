@@ -111,9 +111,13 @@ object GenCypherValue {
       labels: Set[String],
       properties: CypherMap
     ): TestNode[Id] = TestNode(labels, properties)(id)
+
+    override def toString = s"${getClass.getSimpleName}($labels, $properties)}"
   }
 
   object TestNode {
+
+    def from[Id](n: CypherNode[Id]): TestNode[Id] = TestNode(n.labels, n.properties)(n.id)
 
     def apply[Id](
       id: Id,
@@ -139,6 +143,8 @@ object GenCypherValue {
       relType: String,
       properties: CypherMap
     ): TestRelationship[Id] = TestRelationship(relType, properties)(id, startId, endId)
+
+    override def toString = s"${getClass.getSimpleName}($relType, $properties)}"
   }
 
   object TestRelationship {
