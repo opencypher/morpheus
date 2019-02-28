@@ -66,8 +66,7 @@ class CAPSLiteralTests extends CAPSTestSuite with Checkers with ScanGraphInit {
   // TODO: Fix "SchemaException: Labels must be non-empty" bug
   ignore("round trip for nodes") {
     check(Prop.forAll(node) { n: CypherNode[CypherInteger] =>
-      val given = initGraph(
-        s"CREATE ${n.toCypherString}")
+      val given = initGraph(s"CREATE ${n.toCypherString}")
       val query = s"MATCH (n) RETURN n"
       val result = TestNode(given.cypher(query).records.collect.head("n").cast[CypherNode[_]])
       Claim(result == n)
@@ -75,12 +74,12 @@ class CAPSLiteralTests extends CAPSTestSuite with Checkers with ScanGraphInit {
   }
 
 
-  // TODO: Fix "java.lang.IllegalArgumentException: The value (Map()) of the type (scala.collection.immutable.Map.EmptyMap$) cannot be converted to struct<>"
+  // TODO: Diagnose error "NotImplementedException was thrown during property evaluation: Mapping of CypherType ANY to Spark type"
   ignore("round trip for relationships") {
     check(Prop.forAll(nodeRelNodePattern) { p: NodeRelNodePattern[_] =>
       val given = initGraph(p.toCreateQuery)
       val query = s"MATCH ()-[r]->() RETURN r"
-      val result = TestRelationship(given.cypher(query).records.collect.head("n").cast[CypherRelationship[_]])
+      val result = TestRelationship(given.cypher(query).records.collect.head("r").cast[CypherRelationship[_]])
       Claim(result == p.relationship)
     }, minSuccessful(100))
   }

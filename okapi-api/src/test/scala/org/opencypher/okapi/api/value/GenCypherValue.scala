@@ -82,7 +82,7 @@ object GenCypherValue {
   def nodeWithIdGenerator[Id](idGenerator: Gen[Id]): Gen[TestNode[Id]] = lzy(for {
     id <- idGenerator
     ls <- labels
-    ps <- map
+    ps <- propertyMap
   } yield TestNode(id, ls, ps))
 
   val node: Gen[TestNode[CypherInteger]] = nodeWithIdGenerator(integer)
