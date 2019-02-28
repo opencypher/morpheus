@@ -1,3 +1,4 @@
+apply plugin: 'com.github.johnrengelman.shadow'
 
 description = 'Okapi Relational - Relational Algebra for Cypher'
 
@@ -6,3 +7,16 @@ dependencies {
 
     testCompile project(':okapi-testing')
 }
+
+
+shadowJar {
+    classifier = 'fat'
+
+    dependencies {
+        exclude(dependency('org.scala-lang:'))
+        exclude(dependency('org.scala-lang.modules:'))
+    }
+    exclude "META-INF/versions/**/*"
+}
+
+pub.full.artifacts += 'shadowJar'
