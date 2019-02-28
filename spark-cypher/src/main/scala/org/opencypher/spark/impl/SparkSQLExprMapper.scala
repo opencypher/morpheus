@@ -202,10 +202,20 @@ object SparkSQLExprMapper {
         case Ands(exprs) => exprs.map(_.asSparkSQLExpr).foldLeft(TRUE_LIT)(_ && _)
         case Ors(exprs) => exprs.map(_.asSparkSQLExpr).foldLeft(FALSE_LIT)(_ || _)
 
+        case In(lhs, rhs) if lhs.cypherType == CTNull =>
+          val array = rhs.asSparkSQLExpr
+          functions
+            .when(functions.size(array) === 0, FALSE_LIT)
+            .otherwise(NULL_LIT)
+
         case In(lhs, rhs) =>
           val element = lhs.asSparkSQLExpr
           val array = rhs.asSparkSQLExpr
-          array_contains(array, element)
+          functions
+            .when(functions.size(array) === 0, FALSE_LIT)
+            .when(array.isNull, NULL_LIT)
+            .when(element.isNull, NULL_LIT)
+            .otherwise(array_contains(array, element))
 
         case LessThan(lhs, rhs) => compare(lt, lhs, rhs)
         case LessThanOrEqual(lhs, rhs) => compare(lteq, lhs, rhs)

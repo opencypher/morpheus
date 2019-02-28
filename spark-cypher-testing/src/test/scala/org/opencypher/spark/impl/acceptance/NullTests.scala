@@ -118,6 +118,12 @@ class NullTests extends CAPSTestSuite with ScanGraphInit with TestNameFixture {
     it("calling: null IS NOT NULL")(returnsValue(false))
     it("calling: count(null)")(returnsValue(0))
     it("calling: collect(null)")(returnsValue(List()))
+    it("calling: null IN []")(returnsValue(false))
+    it("calling: null IN [1, 2]")(returnsValue(null))
+    it("calling: null IN [null]")(returnsValue(null))
+    it("calling: null IN [1, null]")(returnsValue(null))
+    it("calling: 1 IN [1, null]")(returnsValue(true))
+    it("calling: 2 IN [1, null]")(returnsValue(null))
   }
 
 }

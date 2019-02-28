@@ -183,11 +183,14 @@ object SchemaTyper {
       for {
         lhsType <- process[R](lhs)
         rhsType <- process[R](rhs)
-        result <- (rhsType, lhsType) match {
-          case (CTNull, _) => pure[R, CypherType](CTNull)
-          case (_, CTNull) => pure[R, CypherType](CTNull)
-          case (_: CTList |  _: CTListOrNull, _)  => pure[R, CypherType](CTBoolean)
-          case (r, _) => error(InvalidType(rhs, CTList(CTWildcard), r))
+        result <- (lhsType, rhsType) match {
+          case (_, CTNull | CTList(CTNull) | CTListOrNull(CTNull)) => pure[R, CypherType](CTNull)
+          case (CTNull, CTList(CTVoid))                            => pure[R, CypherType](CTBoolean)
+          case (CTNull, CTListOrNull(CTVoid))                      => pure[R, CypherType](CTBoolean.nullable)
+          case (CTNull, CTList(_) | CTListOrNull(_))               => pure[R, CypherType](CTNull)
+          case (m, CTList(e))                                      => pure[R, CypherType](CTBoolean.asNullableAs(m join e))
+          case (_, CTListOrNull(_))                                => pure[R, CypherType](CTBoolean.nullable)
+          case (r, _)                                              => error(InvalidType(rhs, CTList(CTWildcard), r))
         }
         _ <- recordTypes(lhs -> lhsType, rhs -> rhsType)
         _ <- recordAndUpdate(expr -> result)
