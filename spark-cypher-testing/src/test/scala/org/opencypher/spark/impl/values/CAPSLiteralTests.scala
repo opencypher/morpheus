@@ -65,14 +65,13 @@ class CAPSLiteralTests extends CAPSTestSuite with Checkers with ScanGraphInit {
 
   // TODO: Fix "SchemaException: Labels must be non-empty" bug
   ignore("round trip for nodes") {
-    check(Prop.forAll(node) { n: CypherNode[CypherValue] =>
+    check(Prop.forAll(node) { n: CypherNode[CypherInteger] =>
       val given = initGraph(
         s"CREATE ${n.toCypherString}")
       val query = s"MATCH (n) RETURN n"
-      val result = TestNode.from(given.cypher(query).records.collect.head("n").cast[CypherNode[Seq[Byte]]])
-      Claim(result.labels == n.labels)
-      Claim(result.properties == n.properties)
-    }, minSuccessful(10))
+      val result = TestNode(given.cypher(query).records.collect.head("n").cast[CypherNode[_]])
+      Claim(result == n)
+    }, minSuccessful(100))
   }
 
 }

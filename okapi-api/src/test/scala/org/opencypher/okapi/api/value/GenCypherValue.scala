@@ -27,6 +27,7 @@
 package org.opencypher.okapi.api.value
 
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Gen.{choose, const, listOfN, lzy, mapOfN, oneOf}
@@ -59,7 +60,7 @@ object GenCypherValue {
     id <- idGenerator
     ls <- labels
     ps <- map
-  } yield TestNode(ls, ps)(id))
+  } yield TestNode(id, ls, ps))
 
   def listWithElementGenerator(elementGeneratorGenerator: Gen[CypherValue]): Gen[CypherList] = lzy(for {
     size <- choose(min = 0, max = maxContainerSize)
@@ -83,57 +84,59 @@ object GenCypherValue {
     } yield key -> value)
   } yield keyValuePairs)
 
-  val node: Gen[CypherNode[CypherValue]] = for {
-    id <- scalar
+  val node: Gen[CypherNode[CypherInteger]] = for {
+    id <- integer
     ls <- labels
     ps <- propertyMap
-  } yield TestNode(ls, ps)(id)
+  } yield TestNode(id, ls, ps)
 
-  val relationship: Gen[CypherRelationship[CypherValue]] = for {
-    id <- scalar
-    start <- scalar
-    end <- scalar
+  val relationship: Gen[CypherRelationship[CypherInteger]] = for {
+    id <- integer
+    start <- integer
+    end <- integer
     relType <- arbitrary[String]
     ps <- propertyMap
-  } yield TestRelationship(relType, ps)(id, start, end)
+  } yield TestRelationship(id, start, end, relType, ps)
 
   // TODO: Add date and datetime generators
 
   case class TestNode[Id](
-    labels: Set[String],
-    properties: CypherMap
-  )(
-    val id: Id
+    id: Id,
+    labels: Set[String] = Set.empty,
+    properties: CypherMap = CypherMap.empty
   ) extends CypherNode[Id] {
     override type I = TestNode[Id]
     override def copy(
       id: Id,
       labels: Set[String],
       properties: CypherMap
-    ): TestNode[Id] = TestNode(labels, properties)(id)
+    ): TestNode[Id] = TestNode(id, labels, properties)
+
+    override def productArity: Int = 2
+
+    override def productElement(n: Int): Any = n match {
+      case 0 => labels
+      case 1 => properties
+      case other => throw IllegalArgumentException("a valid product index", s"$other")
+    }
 
     override def toString = s"${getClass.getSimpleName}($labels, $properties)}"
   }
 
   object TestNode {
 
-    def from[Id](n: CypherNode[Id]): TestNode[Id] = TestNode(n.labels, n.properties)(n.id)
-
-    def apply[Id](
-      id: Id,
-      labels: Set[String] = Set.empty,
-      properties: CypherMap = CypherMap.empty
-    ): TestNode[Id] = TestNode(labels, properties)(id)
+    def apply[Id](n: CypherNode[Id]): TestNode[Id] = {
+      TestNode(n.id, n.labels, n.properties)
+    }
 
   }
 
   case class TestRelationship[Id](
+    id: Id,
+    startId: Id,
+    endId: Id,
     relType: String,
-    properties: CypherMap
-  )(
-    val id: Id,
-    val startId: Id,
-    val endId: Id
+    properties: CypherMap = CypherMap.empty
   ) extends CypherRelationship[Id] {
     override type I = TestRelationship[Id]
     override def copy(
@@ -142,20 +145,24 @@ object GenCypherValue {
       endId: Id,
       relType: String,
       properties: CypherMap
-    ): TestRelationship[Id] = TestRelationship(relType, properties)(id, startId, endId)
+    ): TestRelationship[Id] = TestRelationship(id, startId, endId, relType, properties)
+
+    override def productArity: Int = 2
+
+    override def productElement(n: Int): Any = n match {
+      case 0 => relType
+      case 1 => properties
+      case other => throw IllegalArgumentException("a valid product index", s"$other")
+    }
 
     override def toString = s"${getClass.getSimpleName}($relType, $properties)}"
   }
 
   object TestRelationship {
 
-    def apply[Id](
-      id: Id,
-      startId: Id,
-      endId: Id,
-      relType: String,
-      properties: CypherMap = CypherMap.empty
-    ): TestRelationship[Id] = TestRelationship(relType, properties)(id, startId, endId)
+    def apply[Id](r: CypherRelationship[Id]): TestRelationship[Id] = {
+      TestRelationship(r.id, r.startId, r.endId, r.relType, r.properties)
+    }
 
   }
 
