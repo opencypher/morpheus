@@ -128,7 +128,7 @@ object SchemaTyper {
     case HasLabels(node, labels) =>
       for {
         nodeType <- process[R](node)
-        result<- nodeType.material match {
+        result <- nodeType.material match {
           case CTVoid =>
             updateTyping[R](node -> CTNull) >>
             pure[R, CypherType](CTNull)
