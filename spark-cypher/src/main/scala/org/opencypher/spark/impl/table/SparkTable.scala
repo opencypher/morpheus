@@ -171,6 +171,9 @@ object SparkTable {
               sorted.as(columnName)
             }
 
+            case CountStar(_) =>
+              functions.count(functions.lit(0)).as(columnName)
+
             case f if f.cypherType == CTNull =>
               functions
                 .lit(null)
@@ -182,9 +185,6 @@ object SparkTable {
                   .avg(_)
                   .cast(cypherType.getSparkType)
                   .as(columnName))
-
-            case CountStar(_) =>
-              functions.count(functions.lit(0)).as(columnName)
 
             case Max(expr) =>
               withInnerExpr(expr)(functions.max(_).as(columnName))
