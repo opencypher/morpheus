@@ -101,8 +101,8 @@ object GenCypherValue {
 
   case class TestNode[Id](
     id: Id,
-    labels: Set[String],
-    properties: CypherMap
+    labels: Set[String] = Set.empty,
+    properties: CypherMap = CypherMap.empty
   ) extends CypherNode[Id] {
     override type I = TestNode[Id]
     override def copy(
@@ -117,7 +117,7 @@ object GenCypherValue {
     startId: Id,
     endId: Id,
     relType: String,
-    properties: CypherMap
+    properties: CypherMap = CypherMap.empty
   ) extends CypherRelationship[Id] {
     override type I = TestRelationship[Id]
     override def copy(
