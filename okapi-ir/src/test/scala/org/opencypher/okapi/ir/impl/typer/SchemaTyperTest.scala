@@ -478,15 +478,6 @@ class SchemaTyperTest extends SchemaTyperTestSuite with MockitoSugar {
   }
 
   it("typing of map indexing") {
-    //implicit val context: TypeTracker = TypeTracker.empty
-    //  .updated(Variable("map")(pos), CTMap(Map("foo" -> CTInteger, "bar" -> CTBoolean)))
-    //  .updated(Variable("stringKey")(pos), CTString)
-    //  .updated(Variable("intKey")(pos), CTInteger)
-    //  .withParameters(Map(
-    //    "stringParam" -> CypherValue("bar"),
-    //    "intParam" -> CypherValue(42L)
-    //  ))
-
     assertExpr.from("""MAP["INTEGER"]""") shouldHaveInferredType CTInteger
     assertExpr.from("""MAP["BOOLEAN"]""") shouldHaveInferredType CTBoolean
     assertExpr.from("""MAP["baz"]""") shouldHaveInferredType CTVoid
