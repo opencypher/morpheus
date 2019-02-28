@@ -95,19 +95,20 @@ object SparkSQLExprMapper {
 
         case Param(name) =>
           expr.cypherType match {
-            case CTList(inner) => inner.toSparkType match {
-              case None => throw SparkSQLMappingException(s"List parameter with inner type $inner not supported")
-              // Solve using pattern matching instead of casting
-              case _ => functions.array(parameters(name).asInstanceOf[CypherList].value.unwrap.map(functions.lit): _*)
-            }
+            case CTList(inner) =>
+              if (inner.isSparkCompatible) {
+                functions.array(parameters(name).asInstanceOf[CypherList].value.unwrap.map(functions.lit): _*)
+              } else {
+                throw SparkSQLMappingException(s"List parameter with inner type $inner not supported")
+              }
             case _ => toSparkLiteral(parameters(name).unwrap)
           }
 
         case ListLit(exprs) =>
-          val ct = expr.cypherType
-          ct.toSparkType match {
-            case None => throw SparkSQLMappingException(s"List literal with inner type $ct not supported")
-            case _ => functions.array(exprs.map(_.asSparkSQLExpr): _*)
+          if (expr.cypherType.isSparkCompatible) {
+            functions.array(exprs.map(_.asSparkSQLExpr): _*)
+          } else {
+            throw SparkSQLMappingException(s"List literal with inner type ${expr.cypherType} not supported")
           }
 
         case Property(e, PropertyKey(key)) =>

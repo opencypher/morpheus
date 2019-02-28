@@ -34,9 +34,6 @@ import org.apache.spark.sql.types.{ArrayType, StringType}
 import org.apache.spark.sql.{Column, functions}
 import org.opencypher.spark.impl.expressions.Serialize
 
-import scala.reflect.ClassTag
-import scala.reflect.runtime.universe.TypeTag
-
 object CAPSFunctions {
 
   implicit class RichColumn(column: Column) {

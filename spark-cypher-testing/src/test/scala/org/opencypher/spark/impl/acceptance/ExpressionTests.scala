@@ -916,182 +916,154 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
   describe("list concatenation") {
 
     it("can concat empty lists") {
-      caps.cypher("RETURN [] + [] AS res").records.toMaps should equal(
-        Bag(CypherMap("res" -> CypherList()))
-      )
+      caps.cypher("RETURN [] + [] AS res")
+        .records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList())
+      ))
     }
 
     it("can concat empty list with nonempty list") {
-      caps.cypher("RETURN [] + ['foo'] AS res").records.toMaps should equal(
-        Bag(CypherMap("res" -> CypherList("foo")))
-      )
+      caps.cypher("RETURN [] + ['foo'] AS res")
+        .records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList("foo"))
+      ))
     }
 
     it("can concat list of null with nonnull scalar value") {
-      caps.cypher("RETURN [null] + 'foo' AS res").records.toMaps should equal(
-        Bag(CypherMap("res" -> CypherList(null, "foo")))
-      )
+      caps.cypher("RETURN [null] + 'foo' AS res")
+        .records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList(null, "foo"))
+      ))
     }
 
     it("can concat empty list with scalar value") {
-      caps.cypher("RETURN [] + '' AS res").records.toMaps should equal(
-        Bag(CypherMap("res" -> CypherList("")))
-      )
+      caps.cypher("RETURN [] + '' AS res")
+        .records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList(""))
+      ))
     }
 
     it("can concat empty list with null scalar value") {
-      caps.cypher("RETURN [] + null AS res").records.toMaps should equal(
-        Bag(CypherMap("res" -> null))
-      )
+      caps.cypher("RETURN [] + null AS res")
+        .records.toMaps should equal(Bag(
+        CypherMap("res" -> null)
+      ))
     }
 
     it("can concat two literal lists of Cypher integers") {
-      caps.cypher(
-        """
-          |RETURN [1] + [2] AS res
-        """.stripMargin
-      ).records.toMaps should equal(Bag(
+      caps.cypher("RETURN [1] + [2] AS res")
+        .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(1, 2))
       ))
     }
 
     it("can concat two literal lists of strings") {
-      caps.cypher(
-        """
-          |RETURN ["foo"] + ["bar"] AS res
-        """.stripMargin
-      ).records.toMaps should equal(Bag(
+      caps.cypher("RETURN ['foo'] + ['bar'] AS res")
+        .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList("foo", "bar"))
       ))
     }
 
     it("can concat two literal lists of boolean type") {
-      caps.cypher(
-        """
-          |RETURN [true] + [false] AS res
-        """.stripMargin
-      ).records.toMaps should equal(Bag(
+      caps.cypher("RETURN [true] + [false] AS res")
+        .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(true, false))
       ))
     }
 
     it("can concat two literal lists of float type") {
-      caps.cypher(
-        """
-          |RETURN [0.5] + [1.5] AS res
-        """.stripMargin
-      ).records.toMaps should equal(Bag(
+      caps.cypher("RETURN [0.5] + [1.5] AS res")
+        .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(0.5, 1.5))
       ))
     }
 
     it("can concat two literal lists of date type") {
       val date = "2016-02-17"
-      caps.cypher(
-        """
-          |RETURN [date($date)] + [date($date)] AS res
-        """.stripMargin, CypherMap("date" -> date)
-      ).records.toMaps should equal(Bag(
-        CypherMap("res" -> CypherList(java.sql.Date.valueOf(date), java.sql.Date.valueOf(date)))
-      ))
-    }
-
-    ignore("can concat two literal lists of duration type") {
-      val date = "2016-02-17"
-      caps.cypher(
-        """
-          |RETURN [duration({years: 1000})] + [duration({years: 1000})] AS res
-        """.stripMargin, CypherMap("date" -> date)
-      ).records.toMaps should equal(Bag(
+      caps.cypher("RETURN [date($date)] + [date($date)] AS res", CypherMap("date" -> date))
+        .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(java.sql.Date.valueOf(date), java.sql.Date.valueOf(date)))
       ))
     }
 
     it("can concat two literal lists of localdatetime type") {
       val date = "2016-02-17T06:11:00"
-      caps.cypher(
-        """
-          |RETURN [localdatetime($date)] + [localdatetime($date)] AS res
-        """.stripMargin, CypherMap("date" -> date)
-      ).records.toMaps should equal(Bag(
+      caps.cypher("RETURN [localdatetime($date)] + [localdatetime($date)] AS res", CypherMap("date" -> date))
+        .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(java.time.LocalDateTime.parse(date), java.time.LocalDateTime.parse(date)))
       ))
     }
 
-    // TODO: Handle lists of null literals
-    ignore("can concat two literal lists of null type") {
-      caps.cypher(
-        """
-          |RETURN [null] + [null] AS res
-        """.stripMargin
-      ).records.toMaps should equal(Bag(
+    it("can concat two literal lists of null type") {
+      caps.cypher("RETURN [null] + [null] AS res")
+        .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(null, null))
       ))
     }
 
-    // TODO: Handle lists of null expressions
     it("can concat two lists of nulls from expressions type") {
-      caps.cypher(
-        """
-          |RETURN [acos(null)] + [acos(null)] AS res
-        """.stripMargin
-      ).records.toMaps should equal(Bag(
+      caps.cypher("RETURN [acos(null)] + [acos(null)] AS res")
+        .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(null, null))
       ))
     }
 
-    describe("scalar to list") {
-      it("can add integer literal to list of integer literals") {
-        caps.cypher("RETURN [1] + 1 AS res")
-          .records.toMaps should equal(Bag(
-          CypherMap("res" -> CypherList(1, 1))
-        ))
-      }
+    it("can add integer literal to list of integer literals") {
+      caps.cypher("RETURN [1] + 1 AS res")
+        .records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList(1, 1))
+      ))
+    }
 
-      it("can add string literal to list of string literals") {
-        caps.cypher("RETURN ['hello'] + 'world' AS res")
-          .records.toMaps should equal(Bag(
-          CypherMap("res" -> CypherList("hello", "world"))
-        ))
-      }
+    it("can add string literal to list of string literals") {
+      caps.cypher("RETURN ['hello'] + 'world' AS res")
+        .records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList("hello", "world"))
+      ))
+    }
 
-      it("can add boolean literal to list of boolean literals") {
-        caps.cypher("RETURN [true] + false AS res")
-          .records.toMaps should equal(Bag(
-          CypherMap("res" -> CypherList(true, false))
-        ))
-      }
+    it("can add boolean literal to list of boolean literals") {
+      caps.cypher("RETURN [true] + false AS res")
+        .records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList(true, false))
+      ))
+    }
 
-      it("can add float literal to list of float literals") {
-        caps.cypher("RETURN [0.5] + 0.5 AS res")
-          .records.toMaps should equal(Bag(
-          CypherMap("res" -> CypherList(0.5, 0.5))
-        ))
-      }
+    it("can add float literal to list of float literals") {
+      caps.cypher("RETURN [0.5] + 0.5 AS res")
+        .records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList(0.5, 0.5))
+      ))
+    }
 
-      it("can add date to list of dates") {
-        val date = "2016-02-17"
-        caps.cypher("RETURN [date($date)] + date($date) AS res", CypherMap("date" -> date))
-          .records.toMaps should equal(Bag(
-          CypherMap("res" -> CypherList(java.sql.Date.valueOf(date), java.sql.Date.valueOf(date)))
-        ))
-      }
+    it("can add date to list of dates") {
+      val date = "2016-02-17"
+      caps.cypher("RETURN [date($date)] + date($date) AS res", CypherMap("date" -> date))
+        .records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList(java.sql.Date.valueOf(date), java.sql.Date.valueOf(date)))
+      ))
+    }
 
-      it("can add localdatetime to list of localdatetime") {
-        val date = "2016-02-17T06:11:00"
-        caps.cypher("RETURN [localdatetime($date)] + localdatetime($date) AS res", CypherMap("date" -> date))
-          .records.toMaps should equal(Bag(
-          CypherMap("res" -> CypherList(java.time.LocalDateTime.parse(date), java.time.LocalDateTime.parse(date)))
-        ))
-      }
+    it("can add localdatetime to list of localdatetime") {
+      val date = "2016-02-17T06:11:00"
+      caps.cypher("RETURN [localdatetime($date)] + localdatetime($date) AS res", CypherMap("date" -> date))
+        .records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList(java.time.LocalDateTime.parse(date), java.time.LocalDateTime.parse(date)))
+      ))
+    }
 
-      it("can add null literal to list of null literals") {
-        caps.cypher("RETURN [null] + null AS res")
-          .records.toMaps should equal(Bag(
-          CypherMap("res" -> null)
-        ))
-      }
+    it("can add null literal to list of null literals") {
+      caps.cypher("RETURN [null] + null AS res")
+        .records.toMaps should equal(Bag(
+        CypherMap("res" -> null)
+      ))
+    }
 
+    it("can add empty list to string") {
+      caps.cypher("RETURN 'hello' + [] AS res")
+        .records.toMaps should equal(Bag(
+        CypherMap("res" -> CypherList("hello"))
+      ))
     }
 
   }
@@ -1307,28 +1279,6 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       ))
     }
 
-    ignore("returns null for null literal") {
-      val result = caps.cypher(
-        """
-          |RETURN properties(null) AS res
-        """.stripMargin
-      )
-      result.records.toMaps should equal(Bag(
-        CypherMap("res" -> null)
-      ))
-    }
-
-    ignore("returns null for null node") {
-      val result = caps.cypher(
-        """
-          |OPTIONAL MATCH (foo)
-          |RETURN properties(foo) AS res
-        """.stripMargin
-      )
-      result.records.toMaps should equal(Bag(
-        CypherMap("res" -> null)
-      ))
-    }
   }
 
   describe("map support") {
