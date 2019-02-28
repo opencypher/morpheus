@@ -914,6 +914,37 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
   }
 
   describe("list concatenation") {
+
+    it("can concat empty lists") {
+      caps.cypher("RETURN [] + [] AS res").records.toMaps should equal(
+        Bag(CypherMap("res" -> CypherList()))
+      )
+    }
+
+    it("can concat empty list with nonempty list") {
+      caps.cypher("RETURN [] + ['foo'] AS res").records.toMaps should equal(
+        Bag(CypherMap("res" -> CypherList("foo")))
+      )
+    }
+
+    it("can concat list of null with nonnull scalar value") {
+      caps.cypher("RETURN [null] + 'foo' AS res").records.toMaps should equal(
+        Bag(CypherMap("res" -> CypherList(null, "foo")))
+      )
+    }
+
+    it("can concat empty list with scalar value") {
+      caps.cypher("RETURN [] + '' AS res").records.toMaps should equal(
+        Bag(CypherMap("res" -> CypherList("")))
+      )
+    }
+
+    it("can concat empty list with null scalar value") {
+      caps.cypher("RETURN [] + null AS res").records.toMaps should equal(
+        Bag(CypherMap("res" -> null))
+      )
+    }
+
     it("can concat two literal lists of Cypher integers") {
       caps.cypher(
         """
@@ -965,7 +996,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       ))
     }
 
-    it("can concat two literal lists of duration type") {
+    ignore("can concat two literal lists of duration type") {
       val date = "2016-02-17"
       caps.cypher(
         """
@@ -1057,7 +1088,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       it("can add null literal to list of null literals") {
         caps.cypher("RETURN [null] + null AS res")
           .records.toMaps should equal(Bag(
-          CypherMap("res" -> CypherList(null, null))
+          CypherMap("res" -> null)
         ))
       }
 
@@ -1276,7 +1307,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       ))
     }
 
-    it("returns null for null literal") {
+    ignore("returns null for null literal") {
       val result = caps.cypher(
         """
           |RETURN properties(null) AS res
@@ -1287,7 +1318,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       ))
     }
 
-    it("returns null for null node") {
+    ignore("returns null for null node") {
       val result = caps.cypher(
         """
           |OPTIONAL MATCH (foo)

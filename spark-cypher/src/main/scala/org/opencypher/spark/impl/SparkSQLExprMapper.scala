@@ -221,34 +221,38 @@ object SparkSQLExprMapper {
         case Add(lhs, rhs) =>
           val lhsCT = lhs.cypherType
           val rhsCT = rhs.cypherType
-          lhsCT.material -> rhsCT.material match {
-            case (CTList(lhInner), CTList(rhInner)) =>
-              if (lhInner.material == rhInner.material) {
+          if (rhsCT == CTNull || rhsCT == CTNull) {
+            NULL_LIT
+          } else {
+            lhsCT.material -> rhsCT.material match {
+              case (CTList(lhInner), CTList(rhInner)) =>
+                if (lhInner.material == rhInner.material || lhInner == CTVoid || rhInner == CTVoid) {
+                  functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
+                } else {
+                  throw SparkSQLMappingException(s"Lists of different inner types are not supported (${lhInner.material}, ${rhInner.material})")
+                }
+
+              case (CTList(inner), nonListType) if nonListType == inner.material || inner.material == CTVoid =>
+                functions.concat(lhs.asSparkSQLExpr, functions.array(rhs.asSparkSQLExpr))
+
+              case (nonListType, CTList(inner)) if inner.material == nonListType || inner.material == CTVoid =>
+                functions.concat(functions.array(lhs.asSparkSQLExpr), rhs.asSparkSQLExpr)
+
+              case (CTString, _) if rhsCT.subTypeOf(CTNumber).maybeTrue =>
+                functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr.cast(StringType))
+
+              case (_, CTString) if lhsCT.subTypeOf(CTNumber).maybeTrue =>
+                functions.concat(lhs.asSparkSQLExpr.cast(StringType), rhs.asSparkSQLExpr)
+
+              case (CTString, CTString) =>
                 functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
-              } else {
-                throw SparkSQLMappingException(s"Lists of different inner types are not supported (${lhInner.material}, ${rhInner.material})")
-              }
 
-            case (CTList(inner), nonListType) if inner.material == nonListType =>
-              functions.concat(lhs.asSparkSQLExpr, functions.array(rhs.asSparkSQLExpr))
+              case (CTDate, CTDuration) =>
+                TemporalUdfs.dateAdd(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
 
-            case (nonListType, CTList(inner)) if inner.material == nonListType =>
-              functions.concat(functions.array(lhs.asSparkSQLExpr), rhs.asSparkSQLExpr)
-
-            case (CTString, _) if rhsCT.subTypeOf(CTNumber).maybeTrue =>
-              functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr.cast(StringType))
-
-            case (_, CTString) if lhsCT.subTypeOf(CTNumber).maybeTrue =>
-              functions.concat(lhs.asSparkSQLExpr.cast(StringType), rhs.asSparkSQLExpr)
-
-            case (CTString, CTString) =>
-              functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
-
-            case (CTDate, CTDuration) =>
-              TemporalUdfs.dateAdd(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
-
-            case _ =>
-              lhs.asSparkSQLExpr + rhs.asSparkSQLExpr
+              case _ =>
+                lhs.asSparkSQLExpr + rhs.asSparkSQLExpr
+            }
           }
 
         case Subtract(lhs, rhs) if lhs.cypherType.material.subTypeOf(CTDate).isTrue && rhs.cypherType.material.subTypeOf(CTDuration).isTrue =>
