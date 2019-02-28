@@ -506,7 +506,7 @@ object SchemaTyper {
         function match {
 
           case t: TypeSignatures => pure(
-            FunctionSignatures.from(t.signatures)
+            SignatureConverter.from(t.signatures)
               .expandWithNulls
               .expandWithSubstitutions(CTFloat, CTInteger)
               .signatures
@@ -517,7 +517,7 @@ object SchemaTyper {
         }
 
       case o: OperatorExpression => pure(
-        FunctionSignatures.from(o.signatures)
+        SignatureConverter.from(o.signatures)
           .expandWithNulls
           .expandWithSubstitutions(CTFloat, CTInteger)
           .signatures

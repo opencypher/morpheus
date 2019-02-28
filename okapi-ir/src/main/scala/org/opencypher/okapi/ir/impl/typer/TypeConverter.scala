@@ -33,8 +33,8 @@ import org.opencypher.v9_0.util.{symbols => frontend}
 
 import scala.collection.immutable.ListSet
 
-case object fromFrontendType extends (frontend.CypherType => Option[CypherType]) {
-  override def apply(in: frontend.CypherType): Option[CypherType] = in match {
+object TypeConverter {
+  def convert(in: frontend.CypherType): Option[CypherType] = in match {
     case frontend.CTAny           => Some(CTAny)
     case frontend.CTNumber        => Some(CTNumber)
     case frontend.CTInteger       => Some(CTInteger)
@@ -50,7 +50,7 @@ case object fromFrontendType extends (frontend.CypherType => Option[CypherType])
     case ext.CTIdentity           => Some(CTIdentity)
     case frontend.CTMap           => Some(CTMap(Map.empty)) // TODO: this is not very correct
     case frontend.ListType(inner) =>
-      fromFrontendType(inner) match {
+      TypeConverter.convert(inner) match {
         case None => None
         case Some(t) => Some(CTList(t))
       }
@@ -59,41 +59,43 @@ case object fromFrontendType extends (frontend.CypherType => Option[CypherType])
 }
 
 
-case class FunctionSignature(input: Seq[CypherType], output: CypherType)
+
 
 object SignatureConverter {
 
-  implicit class RichTypeSignature(val frontendSig: TypeSignature) extends AnyVal{
-    def convert: Option[FunctionSignature] = {
-      val inTypes = frontendSig.argumentTypes.map(fromFrontendType)
-      val outType = fromFrontendType(frontendSig.outputType)
-      if (inTypes.contains(None) || outType.isEmpty)
-        None
-      else {
-        val sigInputTypes = inTypes.flatten.map(_.nullable)
-        // we don't know exactly if this is nullable from the frontend, but nullable is a safe superset
-        val sigOutputType = outType.get.nullable
-        Some(FunctionSignature(sigInputTypes, sigOutputType))
-      }
-    }
+  case class FunctionSignature(input: Seq[CypherType], output: CypherType)
 
-    def convertDirect: Option[FunctionSignature] = {
-      val argumentTypes = frontendSig.argumentTypes.map(fromFrontendType)
-      val outputType = fromFrontendType(frontendSig.outputType)
-      (argumentTypes, outputType) match {
-        case (argTypes, Some(outType)) if argTypes.forall(_.isDefined) =>
-          Some(FunctionSignature(argTypes.flatten, outType))
-        case _ =>
-          None
-      }
+  def convert(frontendSig: TypeSignature): Option[FunctionSignature] = {
+    val argumentTypes = frontendSig.argumentTypes.map(TypeConverter.convert)
+    val outputType = TypeConverter.convert(frontendSig.outputType)
+    (argumentTypes, outputType) match {
+      case (argTypes, Some(outType)) if argTypes.forall(_.isDefined) =>
+        Some(FunctionSignature(argTypes.flatten, outType))
+      case _ =>
+        None
     }
   }
 
+  def from(original: Seq[TypeSignature]): FunctionSignatures =
+    FunctionSignatures(original.flatMap(convert))
 
+  case class FunctionSignatures(sigs: Seq[FunctionSignature]) {
 
-  object FunctionSignatures {
-    def from(original: Seq[TypeSignature]): FunctionSignatures =
-      FunctionSignatures(original.flatMap(_.convertDirect))
+    def include(added: Seq[FunctionSignature]): FunctionSignatures =
+      FunctionSignatures(sigs ++ added)
+
+    def expandWithNulls: FunctionSignatures = include(for {
+      signature <- sigs
+      alternative <- substitutions(signature.input, 1, signature.input.size)(_ => CTNull)
+    } yield FunctionSignature(alternative, CTNull))
+
+    def expandWithSubstitutions(old: CypherType, rep: CypherType): FunctionSignatures = include(for {
+      signature <- sigs
+      alternative <- substitutions(signature.input, 1, signature.input.size)(replace(old, rep))
+      if sigs.forall(_.input != alternative)
+    } yield FunctionSignature(alternative, signature.output))
+
+    lazy val signatures: Set[FunctionSignature] = ListSet(sigs: _*)
 
     private def mask(size: Int, hits: Int) =
       Seq.fill(hits)(true) ++ Seq.fill(size - hits)(false)
@@ -112,36 +114,6 @@ object SignatureConverter {
 
     private def replace[T](old: T, rep: T)(t: T) =
       if (t == old) rep else t
-  }
-
-  case class FunctionSignatures(sigs: Seq[FunctionSignature]) {
-    import FunctionSignatures._
-
-    def include(added: Seq[FunctionSignature]): FunctionSignatures =
-      FunctionSignatures(sigs ++ added)
-
-    def expandWithNulls: FunctionSignatures = include(for {
-      signature <- sigs
-      alternative <- substitutions(signature.input, 1, signature.input.size)(_ => CTNull)
-    } yield FunctionSignature(alternative, CTNull))
-
-    def expandWithNullables: FunctionSignatures = include(for {
-      signature <- sigs
-      alternative <- substitutions(signature.input, 1, signature.input.size)(_.nullable)
-    } yield FunctionSignature(alternative, signature.output.nullable))
-
-    def expandWithSubstitutions(old: CypherType, rep: CypherType): FunctionSignatures = include(for {
-      signature <- sigs
-      alternative <- substitutions(signature.input, 1, signature.input.size)(replace(old, rep))
-      if sigs.forall(_.input != alternative)
-    } yield FunctionSignature(alternative, signature.output))
-
-    def withSubstitutions(old: CypherType, rep: CypherType): FunctionSignatures = FunctionSignatures(for {
-      signature <- sigs
-      alternative = signature.input.map(replace(old, rep))
-    } yield FunctionSignature(alternative, signature.output))
-
-    lazy val signatures: Set[FunctionSignature] = ListSet(sigs: _*)
   }
 
 }
