@@ -53,19 +53,19 @@ class ExprTest extends BaseTestSuite {
 
   test("different expressions are not equal") {
     val p = Param("a")(CTAny)
-    val v = Var("a")(CTAny)
+    val v = Var("a")()
     p should not equal v
   }
 
   test("different expressions have different hash codes") {
     val p = Param("a")(CTAny)
-    val v = Var("b")(CTAny)
+    val v = Var("b")()
     p.hashCode should not equal v.hashCode
   }
 
   test("alias expression has updated type") {
     val n = Var("n")(CTNode)
-    val aliasVar = Var("m")(CTAny)
+    val aliasVar = Var("m")()
     (n as aliasVar).cypherType should equal(aliasVar.cypherType)
   }
 

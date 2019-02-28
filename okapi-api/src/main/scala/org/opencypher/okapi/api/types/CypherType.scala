@@ -440,7 +440,6 @@ sealed trait CypherType extends Serializable {
     if (self.isNullable || other.isNullable) joined.nullable else joined
   }
 
-  // TODO remove
   /** meet == intersection type == largest shared sub type */
   final def meet(other: CypherType): CypherType = {
     val met = self.material meetMaterially other.material

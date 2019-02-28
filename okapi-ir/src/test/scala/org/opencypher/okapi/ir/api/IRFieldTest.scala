@@ -45,14 +45,14 @@ class IRFieldTest extends BaseTestSuite {
     }
 
     it("can be unequal") {
-      val a = IRField("a")(CTAny)
-      val b = IRField("b")(CTAny)
+      val a = IRField("a")()
+      val b = IRField("b")()
       a should not equal b
     }
 
     it("has different hash codes") {
-      val a = IRField("a")(CTAny)
-      val b = IRField("b")(CTAny)
+      val a = IRField("a")()
+      val b = IRField("b")()
       a.hashCode should not equal b.hashCode
     }
   }

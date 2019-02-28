@@ -115,7 +115,7 @@ class RecordHeaderTest extends BaseTestSuite {
   }
 
   it("can add entity expressions without column collisions") {
-    val underlineHeader = RecordHeader.empty.withExpr(Var("_")(CTAny)).withExpr(Var(".")(CTAny))
+    val underlineHeader = RecordHeader.empty.withExpr(Var("_")()).withExpr(Var(".")(CTAny))
     underlineHeader.columns.size should be(2)
   }
 

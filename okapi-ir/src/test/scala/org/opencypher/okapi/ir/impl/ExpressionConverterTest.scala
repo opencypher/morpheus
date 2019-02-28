@@ -84,16 +84,16 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   test("can convert type") {
     convert(parseExpr("type(a)")) should equal(
-      Type(Var("a")(CTAny))(CTAny)
+      Type(Var("a")())(CTAny)
     )
   }
 
   it("can convert count") {
     convert(parseExpr("count(a)")) should equal(
-      Count(Var("a")(CTAny), false)(CTAny)
+      Count(Var("a")(), false)(CTAny)
     )
     convert(parseExpr("count(distinct a)")) should equal(
-      Count(Var("a")(CTAny), true)(CTAny)
+      Count(Var("a")(), true)(CTAny)
     )
     convert(parseExpr("count(*)")) should equal(
       CountStar(CTAny)
@@ -132,49 +132,49 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   test("can convert less than") {
     convert(parseExpr("a < b")) should equal(
-      LessThan(Var("a")(CTAny), Var("b")(CTAny))(CTAny)
+      LessThan(Var("a")(), Var("b")())(CTAny)
     )
   }
 
   test("can convert less than or equal") {
     convert(parseExpr("a <= b")) should equal(
-      LessThanOrEqual(Var("a")(CTAny), Var("b")(CTAny))(CTAny)
+      LessThanOrEqual(Var("a")(), Var("b")())(CTAny)
     )
   }
 
   test("can convert greater than") {
     convert(parseExpr("a > b")) should equal(
-      GreaterThan(Var("a")(CTAny), Var("b")(CTAny))(CTAny)
+      GreaterThan(Var("a")(), Var("b")())(CTAny)
     )
   }
 
   test("can convert greater than or equal") {
     convert(parseExpr("a >= b")) should equal(
-      GreaterThanOrEqual(Var("a")(CTAny), Var("b")(CTAny))(CTAny)
+      GreaterThanOrEqual(Var("a")(), Var("b")())(CTAny)
     )
   }
 
   test("can convert add") {
     convert("a + b") should equal(
-      Add(Var("a")(CTAny), Var("b")(CTAny))(CTAny)
+      Add(Var("a")(), Var("b")())(CTAny)
     )
   }
 
   test("can convert subtract") {
     convert("a - b") should equal(
-      Subtract(Var("a")(CTAny), Var("b")(CTAny))(CTAny)
+      Subtract(Var("a")(), Var("b")())(CTAny)
     )
   }
 
   test("can convert multiply") {
     convert("a * b") should equal(
-      Multiply(Var("a")(CTAny), Var("b")(CTAny))(CTAny)
+      Multiply(Var("a")(), Var("b")())(CTAny)
     )
   }
 
   test("can convert divide") {
     convert("a / b") should equal(
-      Divide(Var("a")(CTAny), Var("b")(CTAny))(CTAny)
+      Divide(Var("a")(), Var("b")())(CTAny)
     )
   }
 
@@ -250,7 +250,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   test("can convert id function") {
     convert("id(a)") should equal(
-      Id(Var("a")(CTAny))(CTAny)
+      Id(Var("a")())(CTAny)
     )
   }
 

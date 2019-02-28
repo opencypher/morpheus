@@ -33,9 +33,9 @@ import org.opencypher.v9_0.expressions.SemanticDirection.OUTGOING
 
 class ConnectionTest extends BaseTestSuite {
 
-  val field_a: IRField = IRField("a")(CTAny)
-  val field_b: IRField = IRField("b")(CTAny)
-  val field_c: IRField = IRField("c")(CTAny)
+  val field_a: IRField = IRField("a")()
+  val field_b: IRField = IRField("b")()
+  val field_c: IRField = IRField("c")()
 
   val relType = CTRelationship("FOO")
 

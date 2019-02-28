@@ -533,8 +533,7 @@ final case class Substring(original: Expr, start: Expr, length: Option[Expr]) ex
 
 // Bit operators
 
-final case class ShiftLeft(value: Expr, shiftBits: IntegerLit)
-  (val cypherType: CypherType) extends BinaryExpr {
+final case class ShiftLeft(value: Expr, shiftBits: IntegerLit)(val cypherType: CypherType) extends BinaryExpr {
   require(shiftBits.v < 64)
 
   override def lhs: Expr = value
@@ -542,8 +541,7 @@ final case class ShiftLeft(value: Expr, shiftBits: IntegerLit)
   override def op: String = "<<"
 }
 
-final case class ShiftRightUnsigned(value: Expr, shiftBits: IntegerLit)
-  (val cypherType: CypherType) extends BinaryExpr {
+final case class ShiftRightUnsigned(value: Expr, shiftBits: IntegerLit)(val cypherType: CypherType) extends BinaryExpr {
   require(shiftBits.v < 64)
 
   override def lhs: Expr = value
