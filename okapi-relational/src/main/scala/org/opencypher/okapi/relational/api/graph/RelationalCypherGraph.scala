@@ -39,7 +39,7 @@ import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.api.planning.{RelationalCypherResult, RelationalRuntimeContext}
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.graph.{EmptyGraph, PrefixedGraph, ScanGraph, UnionGraph}
-import org.opencypher.okapi.relational.impl.operators.{AlignColumnsWithReturnItems, RelationalOperator, Select}
+import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, Select}
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
 import scala.reflect.runtime.universe.TypeTag
@@ -109,7 +109,7 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
     val pattern = NodePattern(nodeCypherType)
     val scan = scanOperator(pattern, exactLabelMatch)
     val nodeVar = NodeVar(name)(nodeCypherType)
-    val namedScan = AlignColumnsWithReturnItems(Select(scan.assignScanName(Map(pattern.nodeEntity.toVar -> nodeVar)), List(nodeVar)))
+    val namedScan = Select(scan.assignScanName(Map(pattern.nodeEntity.toVar -> nodeVar)), List(nodeVar)).alignColumnsWithReturnItems
     session.records.from(namedScan.header, namedScan.table)
   }
 
@@ -117,7 +117,7 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
     val pattern = RelationshipPattern(relCypherType)
     val scan = scanOperator(pattern)
     val relVar = RelationshipVar(name)(relCypherType)
-    val namedScan = AlignColumnsWithReturnItems(Select(scan.assignScanName(Map(pattern.relEntity.toVar -> relVar)), List(relVar)))
+    val namedScan = Select(scan.assignScanName(Map(pattern.relEntity.toVar -> relVar)), List(relVar)).alignColumnsWithReturnItems
     session.records.from(namedScan.header, namedScan.table)
   }
 

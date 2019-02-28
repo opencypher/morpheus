@@ -31,7 +31,8 @@ import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.okapi.logical.impl.LogicalOperator
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
-import org.opencypher.okapi.relational.impl.operators.{AlignColumnsWithReturnItems, RelationalOperator, ReturnGraph}
+import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, ReturnGraph}
+import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -64,7 +65,7 @@ case class RelationalCypherResult[T <: Table[T] : TypeTag](
   override def getRecords: Option[Records] = maybeRelational.flatMap {
     case _: ReturnGraph[T] => None
     case relationalOperator =>
-      val alignedResult = AlignColumnsWithReturnItems[T](relationalOperator)
+      val alignedResult = relationalOperator.alignColumnsWithReturnItems
       Some(session.records.from(
         alignedResult.header,
         alignedResult.table,
