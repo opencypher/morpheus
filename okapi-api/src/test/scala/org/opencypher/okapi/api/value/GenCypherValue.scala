@@ -27,6 +27,8 @@
 package org.opencypher.okapi.api.value
 
 import org.opencypher.okapi.api.value.CypherValue._
+import org.scalacheck.Arbitrary.arbitrary
+import org.scalacheck.Gen.{choose, const, listOfN, mapOfN, oneOf}
 import org.scalacheck.{Arbitrary, Gen}
 
 object GenCypherValue {
@@ -60,37 +62,42 @@ object GenCypherValue {
     ): TestRelationship = TestRelationship(id, startId, endId, relType, properties)
   }
 
-  lazy val string: Gen[CypherString] = Arbitrary.arbString.arbitrary
+  val maxContainerSize: Int = 4
+
+  lazy val string: Gen[CypherString] = arbitrary[String]
     .map(s => CypherString(s.replace(''', '"')))
   lazy implicit val arbString: Arbitrary[CypherString] = Arbitrary(string)
 
-  lazy val boolean: Gen[CypherBoolean] = Arbitrary.arbBool.arbitrary.map(CypherBoolean)
+  lazy val boolean: Gen[CypherBoolean] = arbitrary[Boolean].map(CypherBoolean)
   lazy implicit val arbBoolean: Arbitrary[CypherBoolean] = Arbitrary(boolean)
 
-  lazy val integer: Gen[CypherInteger] = Arbitrary.arbLong.arbitrary.map(CypherInteger)
+  lazy val integer: Gen[CypherInteger] = arbitrary[Long].map(CypherInteger)
   lazy implicit val arbInteger: Arbitrary[CypherInteger] = Arbitrary(integer)
 
-  lazy val float: Gen[CypherFloat] = Arbitrary.arbDouble.arbitrary.map(CypherFloat)
+  lazy val float: Gen[CypherFloat] = arbitrary[Double].map(CypherFloat)
   lazy implicit val arbFloat: Arbitrary[CypherFloat] = Arbitrary(float)
 
-  lazy val number: Gen[CypherNumber[Any]] = Gen.oneOf(integer, float)
+  lazy val number: Gen[CypherNumber[Any]] = oneOf(integer, float)
   lazy implicit val arbNumber: Arbitrary[CypherNumber[Any]] = Arbitrary(number)
 
-  lazy val keyValuePair: Gen[(String, CypherValue)] = for {
-    key <- Arbitrary.arbString.arbitrary
-    value <- scalarOrNull
-  } yield key -> value
-  lazy implicit val arbKeyValuePair: Arbitrary[(String, CypherValue)] = Arbitrary(keyValuePair)
-
-  lazy val map: Gen[CypherMap] = Gen.lzy(Gen.listOf(keyValuePair).map(CypherMap(_: _*)))
+  lazy val map: Gen[CypherMap] = for {
+    size <- choose(min = 0, max = maxContainerSize)
+    keyValuePairs <- mapOfN(size, for {
+      key <- arbitrary[String]
+      value <- scalarOrNull
+    } yield key -> value)
+  } yield keyValuePairs
   lazy implicit val arbMap: Arbitrary[CypherMap] = Arbitrary(map)
 
-  lazy val labels: Gen[Set[String]] = Gen.lzy(Gen.listOf(Arbitrary.arbString.arbitrary).map(_.toSet))
+  lazy val labels: Gen[Set[String]] = for {
+    size <- choose(min = 0, max = maxContainerSize)
+    labels <- listOfN(size, arbitrary[String])
+  } yield labels.toSet
   lazy implicit val arbLabels: Arbitrary[Set[String]] = Arbitrary(labels)
 
-  lazy val scalar: Gen[CypherValue] = Gen.oneOf(string, boolean, integer, float)
+  lazy val scalar: Gen[CypherValue] = oneOf(string, boolean, integer, float)
 
-  lazy val scalarOrNull: Gen[CypherValue] = Gen.oneOf(scalar, Gen.const(CypherNull))
+  lazy val scalarOrNull: Gen[CypherValue] = oneOf(scalar, const(CypherNull))
 
   lazy val node: Gen[CypherNode[CypherValue]] = for {
     id <- scalar
@@ -103,17 +110,26 @@ object GenCypherValue {
     id <- scalar
     start <- scalar
     end <- scalar
-    relType <- Arbitrary.arbString.arbitrary
+    relType <- arbitrary[String]
     ps <- map
   } yield TestRelationship(id, start, end, relType, ps)
   lazy implicit val arbRelationship: Arbitrary[CypherRelationship[CypherValue]] = Arbitrary(relationship)
 
-  lazy val list: Gen[CypherList] = Gen.lzy(Gen.listOf(scalarOrNull).map(CypherList))
+  def homogeneousList(elementGeneratorGenerator: Gen[Gen[CypherValue]]): Gen[CypherList] = for {
+    size <- choose(min = 0, max = maxContainerSize)
+    elementGenerator <- elementGeneratorGenerator
+    listElements <- listOfN(size, elementGenerator)
+  } yield listElements
+
+  lazy val list: Gen[CypherList] = for {
+    size <- choose(min = 0, max = maxContainerSize)
+    listElements <- listOfN(size, scalarOrNull)
+  } yield listElements
   lazy implicit val arbList: Arbitrary[CypherList] = Arbitrary(list)
 
-  lazy val any: Gen[CypherValue] = Gen.lzy(Gen.oneOf(scalarOrNull, map, list))
+  lazy val any: Gen[CypherValue] = oneOf(scalarOrNull, map, list)
   lazy implicit val arbAny: Arbitrary[CypherValue.CypherValue] = Arbitrary(any)
 
-  // TODO: Add date/datetime generators
+  // TODO: Add date and datetime generators
 
 }
