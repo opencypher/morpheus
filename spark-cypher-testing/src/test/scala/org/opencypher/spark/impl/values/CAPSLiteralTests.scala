@@ -60,14 +60,14 @@ class CAPSLiteralTests extends CAPSTestSuite with Checkers with ScanGraphInit {
     }, minSuccessful(10))
   }
 
-  // TODO: Diagnose error "NotImplementedException was thrown during property evaluation: Mapping of CypherType ANY to Spark type"
+  // TODO: Diagnose and fix error "AnalysisException: Reference 'node_L __ BOOLEAN' is ambiguous, could be: node_L __ BOOLEAN, node_L __ BOOLEAN.;"
   ignore("round trip for relationships") {
     check(Prop.forAll(nodeRelNodePattern()) { p: NodeRelNodePattern[_] =>
       val graph = initGraph(p.toCreateQuery)
       val query = s"MATCH ()-[r]->() RETURN r"
       val result = TestRelationship(graph.cypher(query).records.collect.head("r").cast[CypherRelationship[_]])
       Claim(result == p.relationship)
-    }, minSuccessful(100))
+    }, minSuccessful(1000))
   }
 
 }

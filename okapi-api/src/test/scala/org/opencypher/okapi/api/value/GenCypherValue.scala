@@ -65,7 +65,7 @@ object GenCypherValue {
 
   val label: Gen[String] = for {
     size <- choose(min = 1, max = maxLabelLength)
-    characters <- listOfN(size, Gen.alphaNumStr)
+    characters <- listOfN(size, Gen.alphaNumChar)
   } yield characters.mkString
 
   val labels: Gen[Set[String]] = for {
