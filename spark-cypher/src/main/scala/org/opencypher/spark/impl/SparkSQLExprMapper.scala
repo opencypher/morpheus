@@ -96,19 +96,19 @@ object SparkSQLExprMapper {
         case Param(name) =>
           expr.cypherType match {
             case CTList(inner) =>
-              if (inner.isSparkCompatible) {
-                functions.array(parameters(name).asInstanceOf[CypherList].value.unwrap.map(functions.lit): _*)
-              } else {
+              if (inner == CTAny) {
                 throw SparkSQLMappingException(s"List parameter with inner type $inner not supported")
+              } else {
+                functions.array(parameters(name).asInstanceOf[CypherList].value.unwrap.map(functions.lit): _*)
               }
             case _ => toSparkLiteral(parameters(name).unwrap)
           }
 
         case ListLit(exprs) =>
-          if (expr.cypherType.isSparkCompatible) {
-            functions.array(exprs.map(_.asSparkSQLExpr): _*)
-          } else {
+          if (expr.cypherType == CTAny) {
             throw SparkSQLMappingException(s"List literal with inner type ${expr.cypherType} not supported")
+          } else {
+            functions.array(exprs.map(_.asSparkSQLExpr): _*)
           }
 
         case Property(e, PropertyKey(key)) =>

@@ -767,12 +767,6 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       ))
     }
 
-    it("throws exception with mixed types") {
-      val e = the[SparkSQLMappingException] thrownBy
-        caps.cypher("RETURN [toInteger(1), toString('string')] AS res")
-          .records.toMaps
-      e.getMessage should(include("List literal with inner type") and include ("not supported"))
-    }
   }
 
   describe("ANDs") {
