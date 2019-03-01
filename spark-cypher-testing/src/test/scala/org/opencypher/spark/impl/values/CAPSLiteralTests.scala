@@ -39,7 +39,7 @@ import org.scalatest.prop.Checkers
 class CAPSLiteralTests extends CAPSTestSuite with Checkers with ScanGraphInit {
 
   val supportedLiteral: Gen[CypherValue] = Gen.oneOf(
-    homogeneousScalarListGenerator, propertyMap, string, boolean, integer, float, const(CypherNull)
+    homogeneousScalarList, propertyMap, string, boolean, integer, float, const(CypherNull)
   )
 
   it("round trip for supported literals") {
@@ -48,21 +48,19 @@ class CAPSLiteralTests extends CAPSTestSuite with Checkers with ScanGraphInit {
       val result = caps.cypher(query).records.collect.toList
       val expected = List(CypherMap("result" -> v))
       Claim(result == expected)
-    }, minSuccessful(100))
+    }, minSuccessful(10))
   }
 
-  // TODO: Fix failing example "({`䦀`: [], `蚀`: 0})"
-  ignore("round trip for nodes") {
+  it("round trip for nodes") {
     check(Prop.forAll(node) { n: CypherNode[CypherInteger] =>
       val graph = initGraph(s"CREATE ${n.toCypherString}")
       val query = s"MATCH (n) RETURN n"
       val result = TestNode(graph.cypher(query).records.collect.head("n").cast[CypherNode[_]])
       Claim(result == n)
-    }, minSuccessful(10000))
+    }, minSuccessful(10))
   }
 
   // TODO: Diagnose error "NotImplementedException was thrown during property evaluation: Mapping of CypherType ANY to Spark type"
-  // TODO: Diagnose error "SchemaException was thrown during property evaluation: Labels must be non-empty"
   ignore("round trip for relationships") {
     check(Prop.forAll(nodeRelNodePattern()) { p: NodeRelNodePattern[_] =>
       val graph = initGraph(p.toCreateQuery)

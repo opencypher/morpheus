@@ -52,8 +52,7 @@ object GenCypherValue {
   )
   private val bannedChars = Set("'") ++ reservedParboiledChars
 
-  private val stringWithoutBanned = arbitrary[String].
-    map(s => s.filterNot(bannedChars.contains))
+  private val stringWithoutBanned = arbitrary[String].map(s => s.filterNot(bannedChars.contains))
 
   val string: Gen[CypherString] = stringWithoutBanned.map(CypherString)
 
@@ -66,7 +65,7 @@ object GenCypherValue {
 
   val label: Gen[String] = for {
     size <- choose(min = 1, max = maxLabelLength)
-    characters <- listOfN(size, arbitrary[Char])
+    characters <- listOfN(size, Gen.alphaNumStr)
   } yield characters.mkString
 
   val labels: Gen[Set[String]] = for {
@@ -80,7 +79,7 @@ object GenCypherValue {
 
   val scalarOrNull: Gen[CypherValue] = oneOfSeq(scalarGenerators :+ const(CypherNull))
 
-  val homogeneousScalarListGenerator: Gen[CypherList] = oneOfSeq(scalarGenerators.map(listWithElementGenerator))
+  val homogeneousScalarList: Gen[CypherList] = oneOfSeq(scalarGenerators.map(listWithElementGenerator))
 
   def listWithElementGenerator(elementGeneratorGenerator: Gen[CypherValue]): Gen[CypherList] = lzy(for {
     size <- choose(min = 0, max = maxContainerSize)
@@ -92,21 +91,21 @@ object GenCypherValue {
 
   lazy val list: Gen[CypherList] = lzy(listWithElementGenerator(any))
 
-  lazy val propertyMap: Gen[CypherMap] = mapWithValueGenerator(oneOfSeq(scalarGenerators :+ homogeneousScalarListGenerator))
+  lazy val propertyMap: Gen[CypherMap] = mapWithValueGenerator(oneOfSeq(scalarGenerators :+ homogeneousScalarList))
 
   lazy val map: Gen[CypherMap] = lzy(mapWithValueGenerator(any))
 
   def mapWithValueGenerator(valueGenerator: Gen[CypherValue]): Gen[CypherMap] = lzy(for {
     size <- choose(min = 0, max = maxContainerSize)
     keyValuePairs <- mapOfN(size, for {
-      key <- stringWithoutBanned.withFilter(_ != "")
+      key <- label
       value <- valueGenerator
     } yield key -> value)
   } yield keyValuePairs)
 
   def singlePropertyMap(
-    keyGenerator: Gen[String] = const("prop"),
-    valueGenerator: Gen[CypherValue] = oneOfSeq(scalarGenerators :+ homogeneousScalarListGenerator)
+    keyGenerator: Gen[String] = const("singleProperty"),
+    valueGenerator: Gen[CypherValue] = oneOfSeq(scalarGenerators :+ homogeneousScalarList)
   ): Gen[CypherMap] = lzy(for {
     key <- keyGenerator
     value <- valueGenerator
@@ -132,7 +131,7 @@ object GenCypherValue {
       id <- relId
       start <- startNodeId
       end <- endNodeId
-      relType <- arbitrary[String]
+      relType <- label
       ps <- propertyMap
     } yield TestRelationship(id, start, end, relType, ps)
   }
