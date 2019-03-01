@@ -102,8 +102,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
       val result = given.cypher("FROM GRAPH foo MATCH (n) RETURN n, n.val")
 
       val dfColumns = result.records.asCaps.df.columns
-      dfColumns.collect { case col if col == "n_val" => col }.length should equal(2)
-      dfColumns.last should equal("n_val")
+      dfColumns.collect { case col if col == "n_val" => col }.length should equal(1)
       dfColumns.toSet should equal(Set("n", "n:L", "n_val"))
     }
   }

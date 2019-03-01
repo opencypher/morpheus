@@ -262,10 +262,6 @@ object SparkTable {
       groupedDf.safeDropColumns(colNames.map(renamings): _*)
     }
 
-    override def withColumnsRenamed(columnRenamings: Map[String, String]): DataFrameTable = {
-      df.safeRenameColumns(columnRenamings)
-    }
-
     override def cache(): DataFrameTable = {
       val planToCache = df.queryExecution.analyzed
       if (df.sparkSession.sharedState.cacheManager.lookupCachedData(planToCache).nonEmpty) {

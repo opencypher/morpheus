@@ -170,14 +170,6 @@ trait Table[T <: Table[T]] extends CypherTable {
   def withColumns(columns: (Expr, String)*)(implicit header: RecordHeader, parameters: CypherMap): T
 
   /**
-    * Returns a table with a renamed column names.
-    *
-    * @param renamings current and new column names
-    * @return table with renamed columns
-    */
-  def withColumnsRenamed(renamings: Map[String, String]): T
-
-  /**
     * Prints the table to the system console.
     *
     * @param rows number of rows to print

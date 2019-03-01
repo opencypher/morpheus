@@ -52,6 +52,7 @@ class RecordHeaderTest extends BaseTestSuite {
   val nLabelA: HasLabel = HasLabel(n, Label("A"))(CTBoolean)
   val nLabelB: HasLabel = HasLabel(n, Label("B"))(CTBoolean)
   val nPropFoo: Property = Property(n, PropertyKey("foo"))(CTString)
+  val mPropFoo: Property = Property(m, PropertyKey("foo"))(CTString)
   val nExprs: Set[Expr] = Set(n, nLabelA, nLabelB, nPropFoo)
   val mExprs: Set[Expr] = nExprs.map(_.withOwner(m))
   val oExprs: Set[Expr] = nExprs.map(_.withOwner(o))
@@ -470,9 +471,17 @@ class RecordHeaderTest extends BaseTestSuite {
   it("renames multiple columns") {
     val newName1 = "foo"
     val newName2 = "lalala"
-    val modifiedHeader = nHeader.withColumnsRenamed(Map(nPropFoo -> newName1, nLabelA -> newName2))
+    val modifiedHeader = nHeader.withColumnsRenamed(Seq(nPropFoo -> newName1, nLabelA -> newName2))
     modifiedHeader.column(nPropFoo) should equal(newName1)
     modifiedHeader.column(nLabelA) should equal(newName2)
+  }
+
+  it("replaces multiple columns") {
+    val aliasHeader = nHeader.withAlias(n as m) // WITH n AS m
+    val replaceHeader = aliasHeader.withColumnsReplaced(Map(nPropFoo -> "nFoo", mPropFoo -> "mFoo"))
+
+    aliasHeader.columns.size should equal(nExprs.size)
+    replaceHeader.columns.size should equal(nExprs.size + 1)
   }
 
   describe("join") {

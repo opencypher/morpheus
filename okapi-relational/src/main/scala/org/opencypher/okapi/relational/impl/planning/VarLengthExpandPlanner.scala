@@ -160,7 +160,7 @@ abstract class VarLengthExpandPlanner[T <: Table[T] : TypeTag] {
       val exprsToRename = nullExpressions.filterNot(expr =>
         expWithNullLits.header.column(expr) == targetHeader.column(expr)
       )
-      val renameTuples = exprsToRename.map(expr => expWithNullLits.header.column(expr) -> targetHeader.column(expr))
+      val renameTuples = exprsToRename.map(expr => expr -> targetHeader.column(expr))
       expWithNullLits.renameColumns(renameTuples.toMap)
     }
 

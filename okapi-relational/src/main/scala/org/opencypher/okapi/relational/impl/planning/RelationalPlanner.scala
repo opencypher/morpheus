@@ -199,7 +199,7 @@ object RelationalPlanner {
         val isExpandInto = sourceOp == targetOp
 
         val planner = direction match {
-            // TODO: verify that var length is able to traverse in different directions
+          // TODO: verify that var length is able to traverse in different directions
           case Outgoing | Incoming => new DirectedVarLengthExpandPlanner[T](
             source, list, edgeScan, target,
             lower, upper,
@@ -282,7 +282,7 @@ object RelationalPlanner {
       }
     }
 
-    if(!validScan) throw SchemaException(s"Expected the scan to include Variables for all entities of ${scanPattern.entities}" +
+    if (!validScan) throw SchemaException(s"Expected the scan to include Variables for all entities of ${scanPattern.entities}" +
       s" but got ${scanOp.header.entityVars}")
 
     scanOp
@@ -340,8 +340,24 @@ object RelationalPlanner {
       }
     }
 
-    def renameColumns(columnRenamings: Map[String, String]): RelationalOperator[T] = {
-      if (columnRenamings.isEmpty) op else relational.RenameColumns(op, columnRenamings)
+    /**
+      * Renames physical columns to given header expression names.
+      * Ensures that there is a physical column for each return item, i.e. aliases lead to duplicate physical columns.
+      */
+    def alignColumnsWithReturnItems: RelationalOperator[T] = {
+      val selectExprs = op.maybeReturnItems.getOrElse(List.empty)
+        .flatMap(op.header.expressionsFor)
+        .toList
+
+      val renames = selectExprs
+        .map(expr => expr -> expr.withoutType.toString.replace('.', '_'))
+        .toMap
+
+      relational.Select(op, selectExprs, renames)
+    }
+
+    def renameColumns(columnRenamings: Map[Expr, String]): RelationalOperator[T] = {
+      if (columnRenamings.isEmpty) op else relational.Select(op, op.header.expressions.toList, columnRenamings)
     }
 
     def join(other: RelationalOperator[T], joinExprs: Seq[(Expr, Expr)], joinType: JoinType): RelationalOperator[T] = {
@@ -416,8 +432,8 @@ object RelationalPlanner {
     /**
       * Aligns a single element within the operator with the given target entity in the target header.
       *
-      * @param inputVar the variable of the element that should be aligned
-      * @param targetVar the variable of the reference element
+      * @param inputVar     the variable of the element that should be aligned
+      * @param targetVar    the variable of the reference element
       * @param targetHeader the header describing the desired state
       * @return operator with aligned element
       */
@@ -505,10 +521,10 @@ object RelationalPlanner {
       if (conflictingExpressions.isEmpty) {
         op
       } else {
-        val renameMapping = conflictingExpressions.foldLeft(Map.empty[String, String]) {
+        val renameMapping = conflictingExpressions.foldLeft(Map.empty[Expr, String]) {
           case (acc, nextRename) =>
             val newColumnName = header.newConflictFreeColumnName(nextRename, otherHeader.columns ++ acc.values)
-            acc + (header.column(nextRename) -> newColumnName)
+            acc + (nextRename -> newColumnName)
         }
         op.renameColumns(renameMapping)
       }
@@ -533,8 +549,8 @@ object RelationalPlanner {
       if (op.header.expressions.forall(expr => op.header.column(expr) == targetHeader.column(expr))) {
         op
       } else {
-        val columnRenamings = op.header.expressions.foldLeft(Map.empty[String, String]) {
-          case (currentMap, expr) => currentMap + (op.header.column(expr) -> targetHeader.column(expr))
+        val columnRenamings = op.header.expressions.foldLeft(Map.empty[Expr, String]) {
+          case (currentMap, expr) => currentMap + (expr -> targetHeader.column(expr))
         }
         op.renameColumns(columnRenamings)
       }

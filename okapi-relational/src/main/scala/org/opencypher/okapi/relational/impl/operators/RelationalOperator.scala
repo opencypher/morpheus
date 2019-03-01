@@ -281,20 +281,6 @@ final case class Drop[E <: Expr, T <: Table[T] : TypeTag](
   }
 }
 
-final case class RenameColumns[T <: Table[T] : TypeTag](
-  in: RelationalOperator[T],
-  columnRenamings: Map[String, String]
-) extends RelationalOperator[T] {
-
-  private val actualRenamings: Map[String, String] = columnRenamings.filterNot { case (oldName, newName) => oldName == newName }
-
-  override lazy val header: RecordHeader = actualRenamings.foldLeft(in.header) {
-    case (currentHeader, (oldColumnName, newColumnName)) => currentHeader.withColumnRenamed(oldColumnName, newColumnName)
-  }
-
-  override lazy val _table: T = in.table.withColumnsRenamed(actualRenamings)
-}
-
 final case class Filter[T <: Table[T] : TypeTag](
   in: RelationalOperator[T],
   expr: Expr
@@ -315,10 +301,13 @@ final case class ReturnGraph[T <: Table[T] : TypeTag](in: RelationalOperator[T])
 
 final case class Select[T <: Table[T] : TypeTag](
   in: RelationalOperator[T],
-  expressions: List[Expr]
+  expressions: List[Expr],
+  columnRenames: Map[Expr, String] = Map.empty
 ) extends RelationalOperator[T] {
 
-  override lazy val header: RecordHeader = in.header.select(expressions: _*)
+  private lazy val selectHeader = in.header.select(expressions: _*)
+
+  override lazy val header: RecordHeader = selectHeader.withColumnsReplaced(columnRenames)
 
   private lazy val returnExpressions = expressions.map {
     case AliasExpr(_, alias) => alias
@@ -327,34 +316,12 @@ final case class Select[T <: Table[T] : TypeTag](
 
   override lazy val _table: T = {
     val selectExpressions = returnExpressions.flatMap(expr => header.expressionsFor(expr).toSeq.sorted)
-    in.table.select(selectExpressions.map(header.column).distinct: _*)
+    val selectColumns = selectExpressions.map { expr => selectHeader.column(expr) -> header.column(expr) }.distinct
+    in.table.select(selectColumns.head, selectColumns.tail: _*)
   }
 
   override lazy val maybeReturnItems: Option[Seq[Var]] =
     Some(returnExpressions.flatMap(_.owner).collect { case e: Var => e }.distinct)
-}
-
-/**
-  * Renames physical columns to given header expression names.
-  * Ensures that there is a physical column for each return item, i.e. aliases lead to duplicate physical columns.
-  */
-final case class AlignColumnsWithReturnItems[T <: Table[T] : TypeTag](
-  in: RelationalOperator[T]
-) extends RelationalOperator[T] {
-
-  private lazy val logicalColumns = in.maybeReturnItems
-    .getOrElse(List.empty)
-    .flatMap(in.header.expressionsFor)
-    .map(expr => expr -> expr.withoutType.toString.replace('.', '_'))
-    .toList
-
-  override lazy val header: RecordHeader = RecordHeader(logicalColumns.toMap)
-
-  override lazy val _table: T = {
-    val columnsWithAliases = logicalColumns.map { case (expr, col) => in.header.column(expr) -> col }
-    in.table.select(columnsWithAliases.head, columnsWithAliases.tail: _*)
-  }
-
 }
 
 final case class Distinct[T <: Table[T] : TypeTag](
