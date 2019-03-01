@@ -35,7 +35,7 @@ import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.Print
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintRelationalPlan
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.v9_0.util.SyntaxException
+import org.neo4j.cypher.internal.v4_0.util.SyntaxException
 import org.scalatest.BeforeAndAfterAll
 import org.scalatest.junit.JUnitRunner
 

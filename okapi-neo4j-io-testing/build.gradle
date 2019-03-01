@@ -1,11 +1,9 @@
-
 description = 'Okapi - Neo4j IO test utils'
 
 dependencies {
     compile project(':okapi-neo4j-io')
     compile project(':okapi-testing')
 
-    compile group: 'org.neo4j.test',   name: 'neo4j-harness',            version: ver.neo4j.main
-    compile group: 'org.neo4j.test',   name: 'neo4j-harness-enterprise', version: ver.neo4j.main
-    compile group: 'org.bouncycastle', name: 'bctls-jdk15on',            version: ver.bctls
+    compile group: 'org.neo4j.test', name: 'neo4j-harness', version: ver.neo4j.main
+    compile group: 'org.bouncycastle', name: 'bctls-jdk15on', version: ver.bctls
 }

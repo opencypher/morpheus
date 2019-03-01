@@ -26,9 +26,9 @@
  */
 package org.opencypher.okapi.ir.impl.parse.rewriter.legacy
 
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.expressions.{Expression, LogicalVariable}
-import org.opencypher.v9_0.util._
+import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, LogicalVariable}
+import org.neo4j.cypher.internal.v4_0.util._
 
 /**
   * This rewriter normalizes the scoping structure of a query, ensuring it is able to

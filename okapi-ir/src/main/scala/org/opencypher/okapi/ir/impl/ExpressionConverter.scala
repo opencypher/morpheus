@@ -26,14 +26,14 @@
  */
 package org.opencypher.okapi.ir.impl
 
+import org.neo4j.cypher.internal.v4_0.expressions.{RegexMatch, functions}
+import org.neo4j.cypher.internal.v4_0.util.Ref
+import org.neo4j.cypher.internal.v4_0.{expressions => ast}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.FunctionUtils._
-import org.opencypher.v9_0.expressions.{RegexMatch, functions}
-import org.opencypher.v9_0.util.Ref
-import org.opencypher.v9_0.{expressions => ast}
 
 import scala.language.implicitConversions
 

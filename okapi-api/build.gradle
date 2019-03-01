@@ -1,20 +1,19 @@
-
 description = 'Okapi - openCypher API'
 
 dependencies {
     compile project(':okapi-trees')
 
-    compile(group: 'org.opencypher', name: 'front-end-9.0', version: ver.cypher.frontend) {
-        exclude group: 'org.scalatest',  module: 'scalatest_2.11'
+    compile(group: 'org.neo4j', name: 'neo4j-front-end-4.0', version: ver.cypher.frontend) {
+        exclude group: 'org.scalatest', module: 'scalatest_2.11'
         exclude group: 'org.scalacheck', module: 'scalacheck_2.11'
     }
 
-    compile group: 'org.typelevel',  name: "cats-core".scala(), version: ver.cats
-    compile(group: 'com.lihaoyi',    name: "upickle".scala(),   version: ver.upickle) {
+    compile group: 'org.typelevel', name: "cats-core".scala(), version: ver.cats
+    compile(group: 'com.lihaoyi', name: "upickle".scala(), version: ver.upickle) {
         exclude group: 'com.lihaoyi', module: 'utest_2.11'
     }
-    compile group: 'com.lihaoyi',    name: "fastparse".scala(), version: ver.fastparse
+    compile group: 'com.lihaoyi', name: "fastparse".scala(), version: ver.fastparse
 
     testCompile group: 'org.mockito', name: 'mockito-all', version: ver.mockito
-    testCompile group: 'junit',       name: 'junit',       version: ver.junit.main
+    testCompile group: 'junit', name: 'junit', version: ver.junit.main
 }

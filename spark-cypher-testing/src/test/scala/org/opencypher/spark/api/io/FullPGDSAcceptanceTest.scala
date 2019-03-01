@@ -35,6 +35,7 @@ import org.opencypher.graphddl
 import org.opencypher.graphddl.{Graph, NodeToViewMapping, NodeViewKey}
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport
@@ -317,6 +318,7 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
         case FileFormat.csv => graphSourceFactory.csv
         case FileFormat.parquet => graphSourceFactory.parquet
         case FileFormat.orc => graphSourceFactory.orc
+        case other => throw IllegalArgumentException("A supported file format", other)
       }
       graphNames.foreach(gn => pgds.store(gn, graph(gn)))
       pgds

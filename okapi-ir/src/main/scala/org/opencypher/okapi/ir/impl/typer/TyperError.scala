@@ -28,7 +28,7 @@ package org.opencypher.okapi.ir.impl.typer
 
 import cats.syntax.show._
 import org.opencypher.okapi.api.types._
-import org.opencypher.v9_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 
 sealed trait TyperError extends Throwable
 

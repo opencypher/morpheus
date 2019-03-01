@@ -26,9 +26,9 @@
  */
 package org.opencypher.okapi.ir.impl.parse.rewriter.legacy
 
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.expressions.Expression
-import org.opencypher.v9_0.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
 
 case object projectFreshSortExpressions extends Rewriter {
   override def apply(that: AnyRef): AnyRef = instance(that)

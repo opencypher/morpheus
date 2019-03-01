@@ -26,11 +26,11 @@
  */
 package org.opencypher.okapi.ir.api.pattern
 
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
 import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.pattern.Orientation.{Cyclic, Directed, Undirected}
-import org.opencypher.v9_0.expressions.SemanticDirection
-import org.opencypher.v9_0.expressions.SemanticDirection.OUTGOING
 
 import scala.language.higherKinds
 

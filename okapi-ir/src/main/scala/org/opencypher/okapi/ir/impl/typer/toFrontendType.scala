@@ -27,7 +27,7 @@
 package org.opencypher.okapi.ir.impl.typer
 
 import org.opencypher.okapi.api.types._
-import org.opencypher.v9_0.util.{symbols => frontend}
+import org.neo4j.cypher.internal.v4_0.util.{symbols => frontend}
 
 case object toFrontendType extends (CypherType => frontend.CypherType) {
   override def apply(in: CypherType): frontend.CypherType = in.material match {

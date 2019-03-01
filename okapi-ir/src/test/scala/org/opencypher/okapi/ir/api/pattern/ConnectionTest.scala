@@ -29,7 +29,7 @@ package org.opencypher.okapi.ir.api.pattern
 import org.opencypher.okapi.api.types.{CTAny, CTRelationship}
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.v9_0.expressions.SemanticDirection.OUTGOING
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.OUTGOING
 
 class ConnectionTest extends BaseTestSuite {
 

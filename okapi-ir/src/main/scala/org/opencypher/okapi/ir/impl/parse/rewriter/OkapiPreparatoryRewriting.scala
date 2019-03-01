@@ -24,13 +24,13 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.v9_0.frontend.phases
+package org.neo4j.cypher.internal.v4_0.frontend.phases
 
 import org.opencypher.okapi.ir.impl.parse.rewriter.legacy
 import org.opencypher.okapi.ir.impl.parse.rewriter.legacy.{normalizeReturnClauses, normalizeWithClauses}
-import org.opencypher.v9_0.rewriting.rewriters._
-import org.opencypher.v9_0.util.inSequence
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters._
+import org.neo4j.cypher.internal.v4_0.util.inSequence
+import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
 
 case object OkapiPreparatoryRewriting extends Phase[BaseContext, BaseState, BaseState] {
 

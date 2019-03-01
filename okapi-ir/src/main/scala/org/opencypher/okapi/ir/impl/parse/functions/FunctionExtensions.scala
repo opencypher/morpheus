@@ -26,10 +26,10 @@
  */
 package org.opencypher.okapi.ir.impl.parse.functions
 
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.{AggregatingFunction, Function}
-import org.opencypher.v9_0.expressions.functions
-import org.opencypher.v9_0.util.symbols._
+import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.functions.{AggregatingFunction, Function}
+import org.neo4j.cypher.internal.v4_0.expressions.functions
+import org.neo4j.cypher.internal.v4_0.util.symbols._
 
 case object FunctionExtensions {
 

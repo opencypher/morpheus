@@ -28,8 +28,8 @@ package org.opencypher.okapi.ir.impl.typer
 
 import org.opencypher.okapi.api.types.{CTBoolean, CTString}
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.v9_0.ast.AstConstructionTestSupport
-import org.opencypher.v9_0.expressions.{False, True}
+import org.neo4j.cypher.internal.v4_0.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.v4_0.expressions.{False, True}
 
 class TypeTrackerTest extends BaseTestSuite with AstConstructionTestSupport {
 

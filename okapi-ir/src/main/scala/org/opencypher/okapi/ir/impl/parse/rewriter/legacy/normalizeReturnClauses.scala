@@ -26,9 +26,9 @@
  */
 package org.opencypher.okapi.ir.impl.parse.rewriter.legacy
 
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.expressions.{Expression, Variable}
-import org.opencypher.v9_0.util._
+import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.v4_0.expressions.{Expression, Variable}
+import org.neo4j.cypher.internal.v4_0.util._
 
 import scala.collection.mutable
 

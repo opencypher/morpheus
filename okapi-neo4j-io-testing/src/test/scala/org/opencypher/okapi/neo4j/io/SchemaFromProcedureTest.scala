@@ -27,7 +27,7 @@
 package org.opencypher.okapi.neo4j.io
 
 import org.neo4j.graphdb.GraphDatabaseService
-import org.neo4j.harness.{EnterpriseTestServerBuilders, ServerControls}
+import org.neo4j.harness.internal.{InProcessNeo4j, TestNeo4jBuilders}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.SchemaException
@@ -218,7 +218,7 @@ class SchemaFromProcedureTest extends BaseTestSuite with BeforeAndAfter with Bef
     testProperty("[localdatetime('2015-06-24T12:50:35.556'), localdatetime('2016-06-24T12:50:35.556')]", CTList(CTLocalDateTime))
   }
 
-  private var neo4j: ServerControls = _
+  private var neo4j: InProcessNeo4j = _
 
   private var neo4jConfig: Neo4jConfig = _
 
@@ -228,10 +228,11 @@ class SchemaFromProcedureTest extends BaseTestSuite with BeforeAndAfter with Bef
     neo4jConfig.cypherWithNewSession("MATCH (n) DETACH DELETE n")
   }
 
+  // TODO: Duplicate of Neo4jServerFixture
   override def beforeAll(): Unit = {
-    neo4j = EnterpriseTestServerBuilders
+    neo4j = TestNeo4jBuilders
       .newInProcessBuilder()
-      .newServer()
+      .build()
     neo4jConfig = Neo4jConfig(neo4j.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
   }
 

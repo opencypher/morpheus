@@ -36,9 +36,9 @@ import org.opencypher.okapi.ir.impl.util.VarConverters.{toVar, _}
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
-import org.opencypher.v9_0.ast.semantics.SemanticState
-import org.opencypher.v9_0.util.{Ref, symbols}
-import org.opencypher.v9_0.{expressions => ast}
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.v4_0.util.{Ref, symbols}
+import org.neo4j.cypher.internal.v4_0.{expressions => ast}
 
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 

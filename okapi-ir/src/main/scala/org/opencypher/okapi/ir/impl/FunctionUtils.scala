@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.types.{CTInteger, CypherType}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.parse.{functions => f}
-import org.opencypher.v9_0.expressions.{FunctionInvocation, functions}
+import org.neo4j.cypher.internal.v4_0.expressions.{FunctionInvocation, functions}
 
 object FunctionUtils {
 

@@ -38,8 +38,8 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.impl.parse.functions.FunctionExtensions
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.{Coalesce, Collect, Exists, Properties}
+import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.functions.{Coalesce, Collect, Exists, Properties}
 
 final case class SchemaTyper(schema: Schema) {
 

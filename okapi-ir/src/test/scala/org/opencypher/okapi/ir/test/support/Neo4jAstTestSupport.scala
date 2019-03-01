@@ -29,14 +29,14 @@ package org.opencypher.okapi.ir.test.support
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.impl.parse.CypherParser
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.ast.semantics.{SemanticCheckResult, SemanticState}
-import org.opencypher.v9_0.expressions.Expression
-import org.opencypher.v9_0.frontend.phases._
-import org.opencypher.v9_0.rewriting.Deprecations.V2
-import org.opencypher.v9_0.rewriting.RewriterStepSequencer
-import org.opencypher.v9_0.rewriting.rewriters.Never
-import org.opencypher.v9_0.util.{CypherException, InputPosition}
+import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticCheckResult, SemanticState}
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.frontend.phases._
+import org.neo4j.cypher.internal.v4_0.rewriting.Deprecations.V2
+import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.Never
+import org.neo4j.cypher.internal.v4_0.util.{CypherException, InputPosition}
 
 import scala.language.implicitConversions
 

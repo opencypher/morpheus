@@ -32,9 +32,9 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.Tail
-import org.opencypher.v9_0.util.{InputPosition, symbols}
+import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.expressions.functions.Tail
+import org.neo4j.cypher.internal.v4_0.util.{InputPosition, symbols}
 import org.scalatest.Assertion
 import org.scalatest.mockito.MockitoSugar
 

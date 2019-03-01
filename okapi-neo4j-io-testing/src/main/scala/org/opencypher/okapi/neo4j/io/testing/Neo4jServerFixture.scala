@@ -26,14 +26,14 @@
  */
 package org.opencypher.okapi.neo4j.io.testing
 
-import org.neo4j.harness.{EnterpriseTestServerBuilders, ServerControls}
+import org.neo4j.harness.internal.{InProcessNeo4j, TestNeo4jBuilders}
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
 
 trait Neo4jServerFixture extends BaseTestFixture {
   self: BaseTestSuite =>
 
-  var neo4jServer: ServerControls = _
+  var neo4jServer: InProcessNeo4j = _
 
   def neo4jConfig =
     Neo4jConfig(neo4jServer.boltURI(), user = "anonymous", password = Some("password"), encrypted = false)
@@ -49,10 +49,9 @@ trait Neo4jServerFixture extends BaseTestFixture {
 
   abstract override def beforeAll(): Unit = {
     super.beforeAll()
-    neo4jServer = EnterpriseTestServerBuilders
-      .newInProcessBuilder()
+    neo4jServer = TestNeo4jBuilders.newInProcessBuilder()
       .withFixture(dataFixture)
-      .newServer()
+      .build()
   }
 
   abstract override def afterAll(): Unit = {

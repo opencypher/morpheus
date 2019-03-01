@@ -27,10 +27,10 @@
 package org.opencypher.okapi.ir.impl.parse.rewriter
 
 import org.opencypher.okapi.ir.impl.parse.rewriter.legacy.projectFreshSortExpressions
-import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
-import org.opencypher.v9_0.frontend.phases._
-import org.opencypher.v9_0.rewriting.rewriters.{Forced, literalReplacement}
-import org.opencypher.v9_0.util.{Rewriter, inSequence}
+import org.neo4j.cypher.internal.v4_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
+import org.neo4j.cypher.internal.v4_0.frontend.phases._
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.{Forced, literalReplacement}
+import org.neo4j.cypher.internal.v4_0.util.{Rewriter, inSequence}
 
 case object OkapiLateRewriting extends Phase[BaseContext, BaseState, BaseState] {
 

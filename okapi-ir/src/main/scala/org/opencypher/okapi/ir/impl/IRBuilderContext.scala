@@ -39,10 +39,10 @@ import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField, IRGraph}
 import org.opencypher.okapi.ir.impl.exception.TypingException
 import org.opencypher.okapi.ir.impl.typer.{SchemaTyper, TypeTracker, UnsupportedExpr}
-import org.opencypher.v9_0.ast.ViewInvocation
-import org.opencypher.v9_0.ast.semantics.SemanticState
-import org.opencypher.v9_0.util.{InputPosition, Ref}
-import org.opencypher.v9_0.{expressions => ast}
+import org.neo4j.cypher.internal.v4_0.ast.ViewInvocation
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.v4_0.util.{InputPosition, Ref}
+import org.neo4j.cypher.internal.v4_0.{expressions => ast}
 
 final case class IRBuilderContext(
   qgnGenerator: QGNGenerator,

@@ -43,9 +43,9 @@ import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.ir.impl.refactor.instances._
 import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
-import org.opencypher.v9_0.ast.QueryPart
-import org.opencypher.v9_0.util.InputPosition
-import org.opencypher.v9_0.{ast, expressions => exp}
+import org.neo4j.cypher.internal.v4_0.ast.QueryPart
+import org.neo4j.cypher.internal.v4_0.util.InputPosition
+import org.neo4j.cypher.internal.v4_0.{ast, expressions => exp}
 
 
 object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuilderContext] {

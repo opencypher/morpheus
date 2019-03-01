@@ -31,10 +31,10 @@ import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
 import org.opencypher.okapi.ir.impl.util.VarConverters.toField
-import org.opencypher.v9_0.parser.{Expressions, Patterns}
-import org.opencypher.v9_0.util.InputPosition.NONE
-import org.opencypher.v9_0.util.{InputPosition, SyntaxException}
-import org.opencypher.v9_0.{expressions => ast}
+import org.neo4j.cypher.internal.v4_0.parser.{Expressions, Patterns}
+import org.neo4j.cypher.internal.v4_0.util.InputPosition.NONE
+import org.neo4j.cypher.internal.v4_0.util.{InputPosition, SyntaxException}
+import org.neo4j.cypher.internal.v4_0.{expressions => ast}
 import org.parboiled.scala.{EOI, Parser, Rule1}
 
 import scala.language.implicitConversions

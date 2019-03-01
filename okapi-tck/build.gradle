@@ -1,10 +1,9 @@
-
 description = 'Okapi TCK - TCK integration for the Okapi pipeline'
 
 dependencies {
     compile project(':okapi-testing')
     compile project(':okapi-ir')
 
-    compile group: 'org.opencypher', name: 'tck',     version: ver.cypher.tck
+    compile group: 'org.opencypher', name: 'tck', version: ver.cypher.tck
     compile group: 'org.opencypher', name: 'tck-api', version: ver.cypher.tck
 }

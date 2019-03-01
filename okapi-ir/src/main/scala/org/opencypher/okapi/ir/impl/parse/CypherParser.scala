@@ -30,12 +30,12 @@ import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.ir.impl.parse.rewriter.OkapiLateRewriting
 import org.opencypher.okapi.ir.impl.typer.toFrontendType
-import org.opencypher.v9_0.ast._
-import org.opencypher.v9_0.ast.semantics.{SemanticErrorDef, SemanticFeature, SemanticState}
-import org.opencypher.v9_0.frontend.phases._
-import org.opencypher.v9_0.rewriting.Deprecations.V2
-import org.opencypher.v9_0.rewriting.RewriterStepSequencer
-import org.opencypher.v9_0.rewriting.rewriters.Forced
+import org.neo4j.cypher.internal.v4_0.ast._
+import org.neo4j.cypher.internal.v4_0.ast.semantics.{SemanticErrorDef, SemanticFeature, SemanticState}
+import org.neo4j.cypher.internal.v4_0.frontend.phases._
+import org.neo4j.cypher.internal.v4_0.rewriting.Deprecations.V2
+import org.neo4j.cypher.internal.v4_0.rewriting.RewriterStepSequencer
+import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.Forced
 
 object CypherParser extends CypherParser {
   implicit object defaultContext extends BlankBaseContext {

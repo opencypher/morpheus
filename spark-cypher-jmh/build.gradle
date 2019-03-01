@@ -5,13 +5,13 @@ description = 'Micro benchmarks for Cypher for Apache Spark'
 dependencies {
     compile project(':spark-cypher')
 
-    compile (group: 'org.apache.spark', name: "spark-core".scala(),     version: ver.spark) {
+    compile(group: 'org.apache.spark', name: "spark-core".scala(), version: ver.spark) {
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     }
-    compile (group: 'org.apache.spark', name: "spark-sql".scala(),      version: ver.spark) {
+    compile(group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark) {
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     }
-    compile (group: 'org.apache.spark', name: "spark-catalyst".scala(), version: ver.spark) {
+    compile(group: 'org.apache.spark', name: "spark-catalyst".scala(), version: ver.spark) {
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     }
 }

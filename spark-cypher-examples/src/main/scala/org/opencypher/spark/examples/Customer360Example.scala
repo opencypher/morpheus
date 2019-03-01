@@ -28,7 +28,7 @@ package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport.entireGraphName
-import org.opencypher.okapi.neo4j.io.testing.Neo4jHarnessUtils._
+import org.opencypher.okapi.neo4j.io.testing.Neo4jUtils._
 import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge
 import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge.Batches
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy

@@ -1,13 +1,12 @@
-
 description = 'Collection of examples for Cypher for Apache Spark'
 
 dependencies {
     compile project(':spark-cypher')
     compile project(':spark-cypher-testing')
 
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core',           version: ver.log4j.main
-    compile group: 'org.apache.spark',         name: "spark-graphx".scala(), version: ver.spark
-    compile group: 'org.neo4j.test',           name: 'neo4j-harness',        version: ver.neo4j.main
-    compile group: 'io.netty',                 name: 'netty-all',            version: ver.netty
-    compile group: 'com.h2database',           name: 'h2',                   version: ver.h2
+    compile group: 'org.apache.logging.log4j', name: 'log4j-core', version: ver.log4j.main
+    compile group: 'org.apache.spark', name: "spark-graphx".scala(), version: ver.spark
+    compile group: 'org.neo4j.test', name: 'neo4j-harness', version: ver.neo4j.main
+    compile group: 'io.netty', name: 'netty-all', version: ver.netty
+    compile group: 'com.h2database', name: 'h2', version: ver.h2
 }

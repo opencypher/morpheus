@@ -28,8 +28,8 @@ package org.opencypher.okapi.ir.impl.typer
 
 import cats.kernel.Semigroup
 import org.opencypher.okapi.api.types.CypherType
-import org.opencypher.v9_0.expressions.Expression
-import org.opencypher.v9_0.util.Ref
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.util.Ref
 
 import scala.annotation.tailrec
 

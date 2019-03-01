@@ -37,7 +37,7 @@ import org.opencypher.okapi.ir.api.{Label, _}
 import org.opencypher.okapi.ir.impl.syntax.ExprSyntax._
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.logical.impl.exception.{InvalidCypherTypeException, InvalidDependencyException, InvalidPatternException}
-import org.opencypher.v9_0.expressions.SemanticDirection.{INCOMING, OUTGOING}
+import org.neo4j.cypher.internal.v4_0.expressions.SemanticDirection.{INCOMING, OUTGOING}
 
 import scala.annotation.tailrec
 

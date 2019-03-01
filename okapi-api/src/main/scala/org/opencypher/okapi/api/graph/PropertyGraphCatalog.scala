@@ -26,9 +26,8 @@
  */
 package org.opencypher.okapi.api.graph
 
+import org.neo4j.cypher.internal.v4_0.ast.ViewInvocation
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.impl.annotations.experimental
-import org.opencypher.v9_0.ast.ViewInvocation
 
 /**
   * The Catalog manages a sessions [[org.opencypher.okapi.api.io.PropertyGraphDataSource]]s.

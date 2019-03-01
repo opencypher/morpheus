@@ -27,9 +27,9 @@
 package org.opencypher.okapi.ir.impl.parse.rewriter
 
 import cats.implicits._
-import org.opencypher.v9_0.ast.{Match, Where}
-import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.util.{Rewriter, bottomUp}
+import org.neo4j.cypher.internal.v4_0.ast.{Match, Where}
+import org.neo4j.cypher.internal.v4_0.expressions._
+import org.neo4j.cypher.internal.v4_0.util.{Rewriter, bottomUp}
 
 case object pushLabelsIntoScans extends Rewriter {
   override def apply(that: AnyRef): AnyRef = {

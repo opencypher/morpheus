@@ -36,7 +36,7 @@ import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.impl.parse.CypherParser
 import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext}
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.v9_0.ast.semantics.SemanticState
+import org.neo4j.cypher.internal.v4_0.ast.semantics.SemanticState
 
 import scala.reflect.ClassTag
 

@@ -34,7 +34,7 @@ import org.atnos.eff.syntax.all._
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.impl.exception.TypingException
-import org.opencypher.v9_0.expressions.Expression
+import org.neo4j.cypher.internal.v4_0.expressions.Expression
 
 package object typer {
 
