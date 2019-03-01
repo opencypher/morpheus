@@ -22,5 +22,5 @@ For SBT:
 libraryDependencies += "org.opencypher" % "spark-cypher" % "%RELEASE_VERSION%"
 ```
 
-### `spark-cypher-%RELEASE_VERSION%-cluster`
-This is a fat jar that does not include the Spark dependencies. It is intended to be used in environments where Spark is already present, for example, a Spark cluster or a notebook. 
+### `spark-cypher-%RELEASE_VERSION%-all`
+This is a fat jar that does not include the Spark dependencies. It is intended to be used in environments where Spark is already present, for example, a Spark cluster or a notebook.
