@@ -318,7 +318,7 @@ class CypherTypesTest extends ApiBaseTest {
     CTRelationship("KNOWS", "LOVES") meet CTRelationship("LOVES") shouldBe CTRelationship("LOVES")
   }
 
-  it("type equality between different types") {
+  it("type equality for all types") {
     for {
       t1 <- allTypes
       t2 <- allTypes
