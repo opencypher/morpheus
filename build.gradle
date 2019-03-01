@@ -31,12 +31,12 @@ subprojects {
         compile group: 'org.scala-lang', name: 'scala-compiler', version: ver.scala.full
 
         compile group: 'org.apache.logging.log4j', name: 'log4j-api',               version: ver.log4j.main
-        compile group: 'org.apache.logging.log4j', name: 'log4j-core',              version: ver.log4j.main
         compile group: 'org.apache.logging.log4j', name: "log4j-api-scala".scala(), version: ver.log4j.scala
 
-        testCompile group: 'org.scalatest',      name: "scalatest".scala(),     version: ver.scalatest
-        testCompile group: 'org.scalacheck',     name: "scalacheck".scala(),    version: ver.scalacheck
-        testCompile group: 'org.junit.platform', name: 'junit-platform-runner', version: ver.junit.runner
+        testCompile group: 'org.apache.logging.log4j', name: 'log4j-core',            version: ver.log4j.main
+        testCompile group: 'org.scalatest',            name: "scalatest".scala(),     version: ver.scalatest
+        testCompile group: 'org.scalacheck',           name: "scalacheck".scala(),    version: ver.scalacheck
+        testCompile group: 'org.junit.platform',       name: 'junit-platform-runner', version: ver.junit.runner
     }
 
     test {

@@ -19,6 +19,7 @@ shadowJar {
 
     dependencies {
         exclude(dependency('org.scala-lang:'))
+        exclude(dependency('org.scala-lang.modules:'))
     }
     exclude "META-INF/versions/**/*"
 }
