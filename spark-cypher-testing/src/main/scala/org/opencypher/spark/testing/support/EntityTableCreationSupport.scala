@@ -30,6 +30,7 @@ import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.conversion.EntityMapping
 import org.opencypher.spark.api.io.CAPSEntityTable
+import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 
 trait EntityTableCreationSupport {
 
@@ -58,7 +59,9 @@ trait EntityTableCreationSupport {
         }.toMap
 
         val propertyMapping: Map[String, String] = entityColumns.collect {
-          case prop if prop.endsWith("_property") => prop.replaceFirst(s"${entity.name}_", "").replaceFirst("_property", "") -> prop
+          case prop if prop.endsWith("_property") =>
+            val encodedKey = prop.replaceFirst(s"${entity.name}_", "").replaceFirst("_property", "")
+            encodedKey.decodeSpecialCharacters -> prop
         }.toMap
 
         acc.copy(
