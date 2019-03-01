@@ -496,7 +496,11 @@ final case class ToBoolean(expr: Expr)(val cypherType: CypherType = CTWildcard) 
 
 final case class Coalesce(exprs: IndexedSeq[Expr])(val cypherType: CypherType = CTWildcard) extends FunctionExpr
 
-final case class Explode(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
+final case class Explode(expr: Expr)(val cypherType: CypherType = CTWildcard) extends Expr {
+
+  override def withoutType: String = s"explode(${expr.withoutType})"
+
+}
 
 final case class Trim(expr: Expr)(val cypherType: CypherType = CTWildcard) extends UnaryFunctionExpr
 

@@ -301,9 +301,6 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
 
     assertExpr.from("[] + 1") shouldHaveInferredType CTList(CTInteger)
     assertExpr.from("[3.14] + 1") shouldHaveInferredType CTList(CTNumber)
-
-    assertExpr.from("['foo'] + null") shouldFailToInferTypeWithErrors
-      UnsupportedExpr(parseExpr("['foo'] + null"))
   }
 
   it("typing subtract") {
@@ -542,7 +539,7 @@ class SchemaTyperTest extends BaseTestSuite with Neo4jAstTestSupport with Mockit
 
   it("types functions") {
     assertExpr.from("toInteger(1.0)") shouldHaveInferredType CTInteger.nullable
-    assertExpr.from("size([0, true, []])") shouldHaveInferredType CTInteger.nullable
+    assertExpr.from("size([0, true, []])") shouldHaveInferredType CTInteger
 
     assertExpr.from("percentileDisc(1, 3.14)") shouldHaveInferredType CTInteger.nullable
     assertExpr.from("percentileDisc(6.67, 3.14)") shouldHaveInferredType CTFloat.nullable

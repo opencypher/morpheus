@@ -30,7 +30,7 @@ import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, InternalException, NotImplementedException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.temporal.TemporalTypesHelper._
 import org.opencypher.okapi.impl.temporal.{Duration => DurationValue}
 import org.opencypher.okapi.ir.api.PropertyKey
@@ -42,6 +42,8 @@ import org.opencypher.spark.impl.expressions.AddPrefix._
 import org.opencypher.spark.impl.expressions.EncodeLong._
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 import org.opencypher.spark.impl.temporal.TemporalUdfs
+
+final case class SparkSQLMappingException(msg: String) extends InternalException(msg)
 
 object SparkSQLExprMapper {
 
@@ -89,14 +91,25 @@ object SparkSQLExprMapper {
 
       expr match {
 
-        // Context based lookups
-        case p@Param(name) if p.cypherType.isInstanceOf[CTList] =>
-          parameters(name) match {
-            case CypherList(l) => functions.array(l.unwrap.map(functions.lit): _*)
-            case notAList => throw IllegalArgumentException("a Cypher list", notAList)
+        case e:UnaryFunctionExpr if e.cypherType == CTNull && e.expr.cypherType == CTNull => NULL_LIT
+
+        case Param(name) =>
+          expr.cypherType match {
+            case CTList(inner) =>
+              if (inner == CTAny) {
+                throw SparkSQLMappingException(s"List parameter with inner type $inner not supported")
+              } else {
+                functions.array(parameters(name).asInstanceOf[CypherList].value.unwrap.map(functions.lit): _*)
+              }
+            case _ => toSparkLiteral(parameters(name).unwrap)
           }
 
-        case Param(name) => toSparkLiteral(parameters(name).unwrap)
+        case ListLit(exprs) =>
+          if (expr.cypherType == CTAny) {
+            throw SparkSQLMappingException(s"List literal with inner type ${expr.cypherType} not supported")
+          } else {
+            functions.array(exprs.map(_.asSparkSQLExpr): _*)
+          }
 
         case Property(e, PropertyKey(key)) =>
           e.cypherType.material match {
@@ -126,8 +139,6 @@ object SparkSQLExprMapper {
 
         case AliasExpr(innerExpr, _) => innerExpr.asSparkSQLExpr
 
-        // Literals
-        case ListLit(exprs) => functions.array(exprs.map(_.asSparkSQLExpr): _*)
         case NullLit(ct) => NULL_LIT.cast(ct.getSparkType)
 
         case LocalDateTime(dateExpr) =>
@@ -179,7 +190,6 @@ object SparkSQLExprMapper {
                 col.isNotNull,
                 functions.size(col).cast(LongType)
               )
-            case CTNull => NULL_LIT
             case other => throw NotImplementedException(s"size() on values of type $other")
           }
 
@@ -212,27 +222,38 @@ object SparkSQLExprMapper {
         case Add(lhs, rhs) =>
           val lhsCT = lhs.cypherType
           val rhsCT = rhs.cypherType
-          lhsCT.material -> rhsCT.material match {
-            case (_: CTList, _) =>
-              throw UnsupportedOperationException("List concatenation is not supported")
+          if (rhsCT == CTNull || rhsCT == CTNull) {
+            NULL_LIT
+          } else {
+            lhsCT.material -> rhsCT.material match {
+              case (CTList(lhInner), CTList(rhInner)) =>
+                if (lhInner.material == rhInner.material || lhInner == CTVoid || rhInner == CTVoid) {
+                  functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
+                } else {
+                  throw SparkSQLMappingException(s"Lists of different inner types are not supported (${lhInner.material}, ${rhInner.material})")
+                }
 
-            case (_, _: CTList) =>
-              throw UnsupportedOperationException("List concatenation is not supported")
+              case (CTList(inner), nonListType) if nonListType == inner.material || inner.material == CTVoid =>
+                functions.concat(lhs.asSparkSQLExpr, functions.array(rhs.asSparkSQLExpr))
 
-            case (CTString, _) if rhsCT.subTypeOf(CTNumber).maybeTrue =>
-              functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr.cast(StringType))
+              case (nonListType, CTList(inner)) if inner.material == nonListType || inner.material == CTVoid =>
+                functions.concat(functions.array(lhs.asSparkSQLExpr), rhs.asSparkSQLExpr)
 
-            case (_, CTString) if lhsCT.subTypeOf(CTNumber).maybeTrue =>
-              functions.concat(lhs.asSparkSQLExpr.cast(StringType), rhs.asSparkSQLExpr)
+              case (CTString, _) if rhsCT.subTypeOf(CTNumber).maybeTrue =>
+                functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr.cast(StringType))
 
-            case (CTString, CTString) =>
-              functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
+              case (_, CTString) if lhsCT.subTypeOf(CTNumber).maybeTrue =>
+                functions.concat(lhs.asSparkSQLExpr.cast(StringType), rhs.asSparkSQLExpr)
 
-            case (CTDate, CTDuration) =>
-              TemporalUdfs.dateAdd(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
+              case (CTString, CTString) =>
+                functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
 
-            case _ =>
-              lhs.asSparkSQLExpr + rhs.asSparkSQLExpr
+              case (CTDate, CTDuration) =>
+                TemporalUdfs.dateAdd(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
+
+              case _ =>
+                lhs.asSparkSQLExpr + rhs.asSparkSQLExpr
+            }
           }
 
         case Subtract(lhs, rhs) if lhs.cypherType.material.subTypeOf(CTDate).isTrue && rhs.cypherType.material.subTypeOf(CTDuration).isTrue =>
@@ -275,7 +296,6 @@ object SparkSQLExprMapper {
                 .unzip
               val booleanLabelFlagColumn = functions.array(labelColumns: _*)
               get_node_labels(labelNames)(booleanLabelFlagColumn)
-            case CTNull => NULL_LIT
             case other => throw IllegalArgumentException("an expression with type CTNode, CTNodeOrNull, or CTNull", other)
           }
 

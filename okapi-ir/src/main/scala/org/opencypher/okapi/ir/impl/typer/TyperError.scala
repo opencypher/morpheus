@@ -30,7 +30,7 @@ import cats.syntax.show._
 import org.opencypher.okapi.api.types._
 import org.opencypher.v9_0.expressions.Expression
 
-sealed trait TyperError
+sealed trait TyperError extends Throwable
 
 case class UnsupportedExpr(expr: Expression) extends TyperError {
   override def toString = s"The expression ${expr.show} is not supported by the system"

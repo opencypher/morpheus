@@ -33,7 +33,7 @@ import org.atnos.eff.all._
 import org.atnos.eff.syntax.all._
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.ir.impl.exception.TyperException
+import org.opencypher.okapi.ir.impl.exception.TypingException
 import org.opencypher.v9_0.expressions.Expression
 
 package object typer {
@@ -55,7 +55,7 @@ package object typer {
     def runOrThrow(schema: Schema): TyperResult[A] =
       run(schema) match {
         case Left(failures) =>
-          throw TyperException(s"Errors during schema-based expression typing: ${failures.toList.mkString(", ")}")
+          throw TypingException(s"Errors during schema-based expression typing: ${failures.toList.mkString(", ")}", Some(failures.head))
 
         case Right(result) =>
           result

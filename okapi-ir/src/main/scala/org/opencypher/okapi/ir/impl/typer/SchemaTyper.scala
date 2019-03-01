@@ -39,7 +39,7 @@ import org.opencypher.okapi.ir.impl.parse.functions.FunctionLookup
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.{Abs, Acos, Asin, Atan, Atan2, Ceil, Coalesce, Collect, Cos, Cot, Degrees, Exists, Exp, Floor, Haversin, Id, Keys, Log, Log10, Max, Min, Properties, Radians, Round, Sign, Sin, Sqrt, Tan, ToBoolean, ToString, UnresolvedFunction}
+import org.opencypher.v9_0.expressions.functions.{Abs, Acos, Asin, Atan, Atan2, Ceil, Coalesce, Collect, Cos, Cot, Degrees, Exists, Exp, Floor, Haversin, Id, Keys, Labels, Log, Log10, Max, Min, Properties, Radians, Round, Sign, Sin, Size, Sqrt, Tan, ToBoolean, ToString, UnresolvedFunction}
 
 final case class SchemaTyper(schema: Schema) {
 
@@ -525,6 +525,24 @@ object SchemaTyper {
       args: Seq[(Expression, CypherType)]
     ): Eff[R, Set[FunctionSignature]] = expr match {
       case f: FunctionInvocation => f.function match {
+
+        case Labels =>
+          pure[R, Set[FunctionSignature]](
+            Set(
+              FunctionSignature(Seq(CTNull), CTNull),
+              FunctionSignature(Seq(CTNode), CTList(CTString))
+            )
+          )
+
+        case Size =>
+          pure[R, Set[FunctionSignature]](
+            Set(
+              FunctionSignature(Seq(CTNull), CTNull),
+              FunctionSignature(Seq(CTList(CTAny)), CTInteger),
+              FunctionSignature(Seq(CTString), CTInteger)
+            )
+          )
+
         case Min | Max =>
           pure[R, Set[FunctionSignature]](
             Set(
@@ -645,11 +663,7 @@ object SchemaTyper {
     private implicit class RichCTList(val left: CTList) extends AnyVal {
       def listConcatJoin(right: CypherType): CypherType = (left, right) match {
         case (CTList(lInner), CTList(rInner)) => CTList(lInner join rInner)
-        case (CTList(CTString), CTString) => left
-        case (CTList(CTInteger), CTInteger) => left
-        case (CTList(CTFloat), CTInteger) => CTList(CTNumber)
-        case (CTList(CTVoid), _) => CTList(right)
-        case _ => CTVoid
+        case (CTList(lInner), _) => CTList(lInner join right)
       }
     }
   }

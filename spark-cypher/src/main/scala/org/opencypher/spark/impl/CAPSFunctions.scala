@@ -26,10 +26,10 @@
  */
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql.catalyst.analysis.{UnresolvedAttribute, UnresolvedExtractValue}
-import org.apache.spark.sql.catalyst.expressions.{ArrayContains, ArrayFilter, IsNotNull, LambdaFunction, StringTranslate, XxHash64}
+import org.apache.spark.sql.catalyst.analysis.UnresolvedExtractValue
+import org.apache.spark.sql.catalyst.expressions.{ArrayContains, StringTranslate, XxHash64}
 import org.apache.spark.sql.expressions.UserDefinedFunction
-import org.apache.spark.sql.functions.{monotonically_increasing_id, udf}
+import org.apache.spark.sql.functions.monotonically_increasing_id
 import org.apache.spark.sql.types.{ArrayType, StringType}
 import org.apache.spark.sql.{Column, functions}
 import org.opencypher.spark.impl.expressions.Serialize
