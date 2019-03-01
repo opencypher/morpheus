@@ -10,7 +10,7 @@ dependencies {
 
 
 shadowJar {
-    classifier = 'fat'
+    classifier = 'all'
 
     dependencies {
         exclude(dependency('org.scala-lang:'))
