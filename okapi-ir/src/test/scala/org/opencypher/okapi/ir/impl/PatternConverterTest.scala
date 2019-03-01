@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.api.types.{CTAny, CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
@@ -56,8 +56,8 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern).properties should equal(
       Map(
-        a -> MapExpression(Map("name" -> StringLit("Hans")()))(),
-        rel -> MapExpression(Map("since" -> IntegerLit(2007)()))()
+        a -> MapExpression(Map("name" -> StringLit("Hans")()))(CTAny),
+        rel -> MapExpression(Map("since" -> IntegerLit(2007)()))(CTAny)
       )
     )
   }

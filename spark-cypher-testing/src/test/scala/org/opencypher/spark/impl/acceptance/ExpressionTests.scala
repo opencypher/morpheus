@@ -593,6 +593,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
           |WITH a, EXISTS((a)-->({name: 'foo'})) AS con
           |RETURN a.id, con""".stripMargin)
 
+
       // Then
       result.records.toMaps should equal(Bag(
         CypherMap("a.id" -> 1L, "con" -> true),

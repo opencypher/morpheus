@@ -460,7 +460,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     implicit context: LogicalPlannerContext): LogicalOperator = {
 
     // find all unsolved nodes from the pattern
-    val nodes = pattern.fields.filter(_.cypherType.subTypeOf(CTNode).isTrue)
+    val nodes = pattern.fields.filter(_.cypherType.subTypeOf(CTNode))
 
     if (pattern.topology.isEmpty) { // there is no connection in the pattern => plan a node scan
       val field = nodes.head

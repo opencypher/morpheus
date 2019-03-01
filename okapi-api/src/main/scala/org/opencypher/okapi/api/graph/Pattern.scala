@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 
 sealed trait Direction
 case object Outgoing extends Direction
-case object Incomming extends Direction
+case object Incoming extends Direction
 case object Both extends Direction
 
 case class Connection(
@@ -139,7 +139,7 @@ case class NodePattern(nodeType: CTNode) extends Pattern {
   override def topology: Map[Entity, Connection] = Map.empty
 
   override def subTypeOf(other: Pattern): Boolean = other match {
-    case NodePattern(otherNodeType) => nodeType.subTypeOf(otherNodeType).isTrue
+    case NodePattern(otherNodeType) => nodeType.subTypeOf(otherNodeType)
     case _ => false
   }
 }
@@ -151,7 +151,7 @@ case class RelationshipPattern(relType: CTRelationship) extends Pattern {
   override def topology: Map[Entity, Connection] = Map.empty
 
   override def subTypeOf(other: Pattern): Boolean = other match {
-    case RelationshipPattern(otherRelType) => relType.subTypeOf(otherRelType).isTrue
+    case RelationshipPattern(otherRelType) => relType.subTypeOf(otherRelType)
     case _ => false
   }
 }
@@ -174,7 +174,7 @@ case class NodeRelPattern(nodeType: CTNode, relType: CTRelationship) extends Pat
 
   override def subTypeOf(other: Pattern): Boolean = other match {
     case NodeRelPattern(otherNodeType, otherRelType) =>
-      nodeType.subTypeOf(otherNodeType).isTrue && relType.subTypeOf(otherRelType).isTrue
+      nodeType.subTypeOf(otherNodeType) && relType.subTypeOf(otherRelType)
     case _ => false
   }
 }
@@ -196,9 +196,9 @@ case class TripletPattern(sourceNodeType: CTNode, relType: CTRelationship, targe
 
   override def subTypeOf(other: Pattern): Boolean = other match {
     case tr: TripletPattern =>
-      sourceNodeType.subTypeOf(tr.sourceNodeType).isTrue &&
-      relType.subTypeOf(tr.relType).isTrue &&
-      targetNodeType.subTypeOf(tr.targetNodeType).isTrue
+      sourceNodeType.subTypeOf(tr.sourceNodeType) &&
+      relType.subTypeOf(tr.relType) &&
+      targetNodeType.subTypeOf(tr.targetNodeType)
     case _ => false
   }
 }

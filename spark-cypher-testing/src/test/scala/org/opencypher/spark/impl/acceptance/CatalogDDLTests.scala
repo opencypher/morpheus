@@ -31,6 +31,8 @@ import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, ViewAlreadyExistsException}
+import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintRelationalPlan
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.v9_0.util.SyntaxException

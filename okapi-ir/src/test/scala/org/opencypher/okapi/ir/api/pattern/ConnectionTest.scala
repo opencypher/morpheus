@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.api.pattern
 
-import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.api.types.{CTAny, CTRelationship}
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.v9_0.expressions.SemanticDirection.OUTGOING
