@@ -453,7 +453,7 @@ sealed trait CypherType extends Serializable {
   final def intersects(other: CypherType): Boolean =
     meet(other) != CTVoid
 
-  final def subTypeOf(other: CypherType): Ternary =
+  final def subTypeOf(other: CypherType): Boolean =
     other superTypeOf self
 
   /**

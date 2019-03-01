@@ -344,7 +344,7 @@ final case class Equals(lhs: Expr, rhs: Expr)(val cypherType: CypherType) extend
 
 }
 
-final case class RegexMatch(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
+final case class RegexMatch(lhs: Expr, rhs: Expr)(val cypherType: CypherType) extends BinaryExpr {
 
   override def op: String = "=~"
 

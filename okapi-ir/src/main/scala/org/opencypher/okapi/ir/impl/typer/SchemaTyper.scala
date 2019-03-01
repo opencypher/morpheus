@@ -189,7 +189,7 @@ object SchemaTyper {
           case (CTNull, CTList(_) | CTListOrNull(_))               => pure[R, CypherType](CTNull)
           case (m, CTList(e))                                      => pure[R, CypherType](CTBoolean.asNullableAs(m join e))
           case (_, CTListOrNull(_))                                => pure[R, CypherType](CTBoolean.nullable)
-          case (r, _)                                              => error(InvalidType(rhs, CTList(CTWildcard), r))
+          case (r, _)                                              => error(InvalidType(rhs, CTList(CTAny), r))
         }
         _ <- recordTypes(lhs -> lhsType, rhs -> rhsType)
         _ <- recordAndUpdate(expr -> result)
