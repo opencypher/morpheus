@@ -15,7 +15,7 @@ dependencies {
 }
 
 shadowJar {
-    classifier = 'cluster'
+    classifier = 'all'
 
     dependencies {
         exclude(dependency('org.scala-lang:'))
