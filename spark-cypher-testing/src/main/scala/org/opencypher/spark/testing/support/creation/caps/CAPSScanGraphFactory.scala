@@ -139,7 +139,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with EntityTableCreatio
             }
 
             val newData = accData.zip(nodeData).map { case (l, r) => l ++ r }
-            val newColumns = accColumns ++ Seq(StructField(s"${entity.name}_id".encodeSpecialCharacters, LongType)) ++ propertyFields
+            val newColumns = accColumns ++ Seq(StructField(s"${entity.name.encodeSpecialCharacters}_id", LongType)) ++ propertyFields
 
             newColumns -> newData
 
@@ -157,9 +157,9 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with EntityTableCreatio
             val newData = accData.zip(relData).map { case (l, r) => l ++ r }
             val newColumns = accColumns ++
               Seq(
-                StructField(s"${entity.name}_id".encodeSpecialCharacters, LongType),
-                StructField(s"${entity.name}_source".encodeSpecialCharacters, LongType),
-                StructField(s"${entity.name}_target".encodeSpecialCharacters, LongType)
+                StructField(s"${entity.name.encodeSpecialCharacters}_id", LongType),
+                StructField(s"${entity.name.encodeSpecialCharacters}_source", LongType),
+                StructField(s"${entity.name.encodeSpecialCharacters}_target", LongType)
               ) ++
               propertyFields
 
@@ -179,7 +179,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with EntityTableCreatio
 
   protected def getPropertyStructFields(entity: Entity, propKeys: PropertyKeys): Seq[StructField] = {
     propKeys.foldLeft(Seq.empty[StructField]) {
-      case (fields, key) => fields :+ StructField(s"${entity.name}_${key._1}_property".encodeSpecialCharacters, key._2.getSparkType, key._2.isNullable)
+      case (fields, key) => fields :+ StructField(s"${entity.name}_${key._1.encodeSpecialCharacters}_property", key._2.getSparkType, key._2.isNullable)
     }
   }
 
