@@ -1,4 +1,4 @@
-apply plugin: 'com.github.johnrengelman.shadow'
+import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 description = 'Cypher for Apache Spark - CAPS'
 
@@ -14,8 +14,11 @@ dependencies {
     compileOnly group: 'org.apache.spark', name: "spark-catalyst".scala(), version: ver.spark
 }
 
-shadowJar {
+task allJar(type: ShadowJar) {
     classifier = 'all'
+
+    from project.sourceSets.main.output
+    configurations = [project.configurations.runtime]
 
     dependencies {
         exclude(dependency('org.scala-lang:'))
@@ -24,4 +27,4 @@ shadowJar {
     exclude "META-INF/versions/**/*"
 }
 
-pub.full.artifacts += 'shadowJar'
+pub.full.artifacts += 'allJar'
