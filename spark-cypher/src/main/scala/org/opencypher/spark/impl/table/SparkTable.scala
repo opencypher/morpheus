@@ -151,15 +151,6 @@ object SparkTable {
       val sparkAggFunctions = aggregations.map {
         case (aggFunc, (columnName, cypherType)) =>
           aggFunc match {
-            case Avg(expr) =>
-              withInnerExpr(expr)(
-                functions
-                  .avg(_)
-                  .cast(cypherType.getSparkType)
-                  .as(columnName))
-
-            case CountStar(_) =>
-              functions.count(functions.lit(0)).as(columnName)
 
             // TODO: Consider not implicitly projecting the aggFunc expr here, but rewriting it into a variable in logical planning or IR construction
             case Count(expr, distinct) => withInnerExpr(expr) { column =>
@@ -170,15 +161,6 @@ object SparkTable {
               count.as(columnName)
             }
 
-            case Max(expr) =>
-              withInnerExpr(expr)(functions.max(_).as(columnName))
-
-            case Min(expr) =>
-              withInnerExpr(expr)(functions.min(_).as(columnName))
-
-            case Sum(expr) =>
-              withInnerExpr(expr)(functions.sum(_).as(columnName))
-
             case Collect(expr, distinct) => withInnerExpr(expr) { column =>
               val list = {
                 if (distinct) functions.collect_set(column)
@@ -188,6 +170,30 @@ object SparkTable {
               val sorted = functions.sort_array(list)
               sorted.as(columnName)
             }
+
+            case CountStar(_) =>
+              functions.count(functions.lit(0)).as(columnName)
+
+            case f if f.cypherType == CTNull =>
+              functions
+                .lit(null)
+                .as(columnName)
+
+            case Avg(expr) =>
+              withInnerExpr(expr)(
+                functions
+                  .avg(_)
+                  .cast(cypherType.getSparkType)
+                  .as(columnName))
+
+            case Max(expr) =>
+              withInnerExpr(expr)(functions.max(_).as(columnName))
+
+            case Min(expr) =>
+              withInnerExpr(expr)(functions.min(_).as(columnName))
+
+            case Sum(expr) =>
+              withInnerExpr(expr)(functions.sum(_).as(columnName))
 
             case x =>
               throw NotImplementedException(s"Aggregation function $x")

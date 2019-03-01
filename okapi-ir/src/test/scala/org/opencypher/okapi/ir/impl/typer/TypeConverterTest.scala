@@ -31,7 +31,7 @@ import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.v9_0.util.{symbols => frontend}
 import org.scalatest.Assertion
 
-class fromFrontendTypeTest extends BaseTestSuite {
+class TypeConverterTest extends BaseTestSuite {
 
   test("should convert basic types") {
     frontend.CTBoolean shouldBeConvertedTo CTBoolean
@@ -55,7 +55,7 @@ class fromFrontendTypeTest extends BaseTestSuite {
 
   implicit class RichType(t: frontend.CypherType) {
     def shouldBeConvertedTo(other: CypherType): Assertion = {
-      fromFrontendType(t) should equal(Some(other))
+      TypeConverter.convert(t) should equal(Some(other))
     }
   }
 }

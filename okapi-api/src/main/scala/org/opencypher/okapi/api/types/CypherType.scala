@@ -548,6 +548,9 @@ sealed trait CypherType extends Serializable {
     self.superTypeOf(other).maybeTrue || self.subTypeOf(other).maybeTrue
   }
 
+  final def intersects(other: CypherType): Boolean =
+    meet(other) != CTVoid
+
   def sameTypeAs(other: CypherType): Ternary =
     if (other.isWildcard)
     // wildcard types override sameTypeAs

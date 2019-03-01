@@ -27,19 +27,25 @@
 package org.opencypher.okapi.ir.impl.parse.functions
 
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.Function
+import org.opencypher.v9_0.expressions.functions.{AggregatingFunction, Function}
+import org.opencypher.v9_0.expressions.functions
 import org.opencypher.v9_0.util.symbols._
 
-case object FunctionLookup {
+case object FunctionExtensions {
 
-  def apply(name: String): Vector[TypeSignature] = name match {
-    case Timestamp.name => Timestamp.signatures
-    case LocalDateTime.name => LocalDateTime.signatures
-    case Date.name => Date.signatures
-    case Duration.name => Duration.signatures
-    case _ => Vector.empty
-  }
+  private val mappings: Map[String, Function with TypeSignatures] = Map(
+    Timestamp.name -> Timestamp,
+    LocalDateTime.name -> LocalDateTime,
+    Date.name -> Date,
+    Duration.name -> Duration,
+    ToBoolean.name -> ToBoolean,
+    Min.name -> Min,
+    Max.name -> Max,
+    Id.name -> Id
+  ).map(p => p._1.toLowerCase -> p._2)
 
+  def get(name: String): Option[Function with TypeSignatures] =
+    mappings.get(name.toLowerCase())
 }
 
 case object Timestamp extends Function with TypeSignatures {
@@ -77,5 +83,46 @@ case object Duration extends Function with TypeSignatures {
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTString), outputType = CTDuration),
     TypeSignature(argumentTypes = Vector(CTMap), outputType = CTDuration)
+  )
+}
+
+case object ToBoolean extends Function with TypeSignatures {
+  override val name = functions.ToBoolean.name
+
+  override val signatures = Vector(
+    TypeSignature(argumentTypes = Vector(CTString), outputType = CTBoolean),
+    TypeSignature(argumentTypes = Vector(CTBoolean), outputType = CTBoolean)
+  )
+}
+
+case object Min extends AggregatingFunction with TypeSignatures {
+  override def name: String = functions.Min.name
+
+  override val signatures: Vector[TypeSignature] = Vector(
+    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat),
+    TypeSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger)
+  )
+}
+
+case object Max extends AggregatingFunction with TypeSignatures {
+  override def name: String = functions.Max.name
+
+  override val signatures: Vector[TypeSignature] = Vector(
+    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat),
+    TypeSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger)
+  )
+}
+
+object CTIdentity extends CypherType {
+  override def parentType: CypherType = CTAny
+  override def toNeoTypeString: String = "IDENTITY"
+}
+
+case object Id extends Function with TypeSignatures {
+  def name: String = functions.Id.name
+
+  override val signatures: Vector[TypeSignature] = Vector(
+    TypeSignature(argumentTypes = Vector(CTNode), outputType = CTIdentity),
+    TypeSignature(argumentTypes = Vector(CTRelationship), outputType = CTIdentity)
   )
 }

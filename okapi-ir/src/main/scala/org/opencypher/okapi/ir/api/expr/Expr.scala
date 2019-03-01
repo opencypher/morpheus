@@ -345,9 +345,10 @@ final case class Equals(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWil
 
 }
 
-final case class RegexMatch(lhs: Expr, rhs: Expr) extends BinaryExpr {
+final case class RegexMatch(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {
+
   override def op: String = "=~"
-  override def cypherType: CypherType = if ((lhs.cypherType join rhs.cypherType).isNullable) CTBoolean.nullable else CTBoolean
+
 }
 
 final case class LessThan(lhs: Expr, rhs: Expr)(val cypherType: CypherType = CTWildcard) extends BinaryExpr {

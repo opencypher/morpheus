@@ -126,6 +126,19 @@ class UnwindTests extends CAPSTestSuite with ScanGraphInit {
       ))
   }
 
+  it("unwind from literal null expression") {
+    val graph = initGraph("CREATE (:A)")
+
+    val query =
+      """
+        |UNWIND null AS item
+        |RETURN item""".stripMargin
+
+    val result = graph.cypher(query)
+
+    result.records.toMapsWithCollectedEntities should be(empty)
+  }
+
   it("unwind from null expression") {
     val graph = initGraph("CREATE (:A)")
 

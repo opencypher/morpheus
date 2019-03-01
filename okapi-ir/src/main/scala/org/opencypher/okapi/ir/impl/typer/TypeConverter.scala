@@ -27,11 +27,14 @@
 package org.opencypher.okapi.ir.impl.typer
 
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.ir.impl.parse.{functions => ext}
 import org.opencypher.v9_0.expressions.TypeSignature
 import org.opencypher.v9_0.util.{symbols => frontend}
 
-case object fromFrontendType extends (frontend.CypherType => Option[CypherType]) {
-  override def apply(in: frontend.CypherType): Option[CypherType] = in match {
+import scala.collection.immutable.ListSet
+
+object TypeConverter {
+  def convert(in: frontend.CypherType): Option[CypherType] = in match {
     case frontend.CTAny           => Some(CTAny)
     case frontend.CTNumber        => Some(CTNumber)
     case frontend.CTInteger       => Some(CTInteger)
@@ -44,9 +47,10 @@ case object fromFrontendType extends (frontend.CypherType => Option[CypherType])
     case frontend.CTLocalDateTime => Some(CTLocalDateTime)
     case frontend.CTDate          => Some(CTDate)
     case frontend.CTDuration      => Some(CTDuration)
+    case ext.CTIdentity           => Some(CTIdentity)
     case frontend.CTMap           => Some(CTMap(Map.empty)) // TODO: this is not very correct
     case frontend.ListType(inner) =>
-      fromFrontendType(inner) match {
+      TypeConverter.convert(inner) match {
         case None => None
         case Some(t) => Some(CTList(t))
       }
@@ -55,22 +59,61 @@ case object fromFrontendType extends (frontend.CypherType => Option[CypherType])
 }
 
 
-case class FunctionSignature(input: Seq[CypherType], output: CypherType)
+
 
 object SignatureConverter {
 
-  implicit class RichTypeSignature(val frontendSig: TypeSignature) extends AnyVal{
-    def convert: Option[FunctionSignature] = {
-      val inTypes = frontendSig.argumentTypes.map(fromFrontendType)
-      val outType = fromFrontendType(frontendSig.outputType)
-      if (inTypes.contains(None) || outType.isEmpty)
+  case class FunctionSignature(input: Seq[CypherType], output: CypherType)
+
+  def convert(frontendSig: TypeSignature): Option[FunctionSignature] = {
+    val argumentTypes = frontendSig.argumentTypes.map(TypeConverter.convert)
+    val outputType = TypeConverter.convert(frontendSig.outputType)
+    (argumentTypes, outputType) match {
+      case (argTypes, Some(outType)) if argTypes.forall(_.isDefined) =>
+        Some(FunctionSignature(argTypes.flatten, outType))
+      case _ =>
         None
-      else {
-        val sigInputTypes = inTypes.flatten.map(_.nullable)
-        // we don't know exactly if this is nullable from the frontend, but nullable is a safe superset
-        val sigOutputType = outType.get.nullable
-        Some(FunctionSignature(sigInputTypes, sigOutputType))
-      }
     }
   }
+
+  def from(original: Seq[TypeSignature]): FunctionSignatures =
+    FunctionSignatures(original.flatMap(convert))
+
+  case class FunctionSignatures(sigs: Seq[FunctionSignature]) {
+
+    def include(added: Seq[FunctionSignature]): FunctionSignatures =
+      FunctionSignatures(sigs ++ added)
+
+    def expandWithNulls: FunctionSignatures = include(for {
+      signature <- sigs
+      alternative <- substitutions(signature.input, 1, signature.input.size)(_ => CTNull)
+    } yield FunctionSignature(alternative, CTNull))
+
+    def expandWithSubstitutions(old: CypherType, rep: CypherType): FunctionSignatures = include(for {
+      signature <- sigs
+      alternative <- substitutions(signature.input, 1, signature.input.size)(replace(old, rep))
+      if sigs.forall(_.input != alternative)
+    } yield FunctionSignature(alternative, signature.output))
+
+    lazy val signatures: Set[FunctionSignature] = ListSet(sigs: _*)
+
+    private def mask(size: Int, hits: Int) =
+      Seq.fill(hits)(true) ++ Seq.fill(size - hits)(false)
+
+    private def masks(size: Int, minHits: Int, maxHits: Int) = for {
+      hits <- Range.inclusive(minHits, maxHits)
+      mask <- mask(size, hits).permutations
+    } yield mask
+
+    private def substituteMasked[T](seq: Seq[T], mask: Int => Boolean)(sub: T => T) = for {
+      (orig, i) <- seq.zipWithIndex
+    } yield if (mask(i)) sub(orig) else orig
+
+    private def substitutions[T](seq: Seq[T], minSubs: Int, maxSubs: Int)(sub: T => T): Seq[Seq[T]] =
+      masks(seq.size, minSubs, maxSubs).map(mask => substituteMasked(seq, mask)(sub))
+
+    private def replace[T](old: T, rep: T)(t: T) =
+      if (t == old) rep else t
+  }
+
 }

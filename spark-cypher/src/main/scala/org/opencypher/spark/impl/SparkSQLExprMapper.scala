@@ -91,7 +91,15 @@ object SparkSQLExprMapper {
 
       expr match {
 
-        case e:UnaryFunctionExpr if e.cypherType == CTNull && e.expr.cypherType == CTNull => NULL_LIT
+        case AliasExpr(innerExpr, _) => innerExpr.asSparkSQLExpr
+
+        case Explode(list) => list.cypherType match {
+          case CTList(_) | CTListOrNull(_) => functions.explode(list.asSparkSQLExpr)
+          case CTNull => functions.explode(functions.lit(null).cast(ArrayType(NullType)))
+          case other => throw IllegalArgumentException("CTList", other)
+        }
+
+        case e if e.cypherType == CTNull => NULL_LIT
 
         case Param(name) =>
           expr.cypherType match {
@@ -136,8 +144,6 @@ object SparkSQLExprMapper {
         case IsNotNull(e) => e.asSparkSQLExpr.isNotNull
 
         case _: Var | _: Param | _: HasLabel | _: HasType | _: StartNode | _: EndNode => columnFor(expr)
-
-        case AliasExpr(innerExpr, _) => innerExpr.asSparkSQLExpr
 
         case NullLit(ct) => NULL_LIT.cast(ct.getSparkType)
 
@@ -196,14 +202,20 @@ object SparkSQLExprMapper {
         case Ands(exprs) => exprs.map(_.asSparkSQLExpr).foldLeft(TRUE_LIT)(_ && _)
         case Ors(exprs) => exprs.map(_.asSparkSQLExpr).foldLeft(FALSE_LIT)(_ || _)
 
+        case In(lhs, rhs) if lhs.cypherType == CTNull =>
+          val array = rhs.asSparkSQLExpr
+          functions
+            .when(functions.size(array) === 0, FALSE_LIT)
+            .otherwise(NULL_LIT)
+
         case In(lhs, rhs) =>
-          if (rhs.cypherType == CTNull || lhs.cypherType == CTNull) {
-            NULL_LIT.cast(BooleanType)
-          } else {
-            val element = lhs.asSparkSQLExpr
-            val array = rhs.asSparkSQLExpr
-            array_contains(array, element)
-          }
+          val element = lhs.asSparkSQLExpr
+          val array = rhs.asSparkSQLExpr
+          functions
+            .when(functions.size(array) === 0, FALSE_LIT)
+            .when(array.isNull, NULL_LIT)
+            .when(element.isNull, NULL_LIT)
+            .otherwise(array_contains(array, element))
 
         case LessThan(lhs, rhs) => compare(lt, lhs, rhs)
         case LessThanOrEqual(lhs, rhs) => compare(lteq, lhs, rhs)
@@ -218,7 +230,7 @@ object SparkSQLExprMapper {
           val regex: String = parameters(name).unwrap.toString
           prop.asSparkSQLExpr.rlike(regex)
 
-        // Arithmetics
+        // Arithmetic
         case Add(lhs, rhs) =>
           val lhsCT = lhs.cypherType
           val rhsCT = rhs.cypherType
@@ -354,12 +366,6 @@ object SparkSQLExprMapper {
         case ToInteger(e) => e.asSparkSQLExpr.cast(IntegerType)
         case ToString(e) => e.asSparkSQLExpr.cast(StringType)
         case ToBoolean(e) => e.asSparkSQLExpr.cast(BooleanType)
-
-        case Explode(list) => list.cypherType match {
-          case CTList(_) | CTListOrNull(_) => functions.explode(list.asSparkSQLExpr)
-          case CTNull => functions.explode(functions.lit(null).cast(ArrayType(NullType)))
-          case other => throw IllegalArgumentException("CTList", other)
-        }
 
         case Trim(str) => functions.trim(str.asSparkSQLExpr)
         case LTrim(str) => functions.ltrim(str.asSparkSQLExpr)

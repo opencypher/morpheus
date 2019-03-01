@@ -108,7 +108,7 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
       ))
     }
 
-    ignore("avg(prop) with only null values in WITH") {
+    it("avg(prop) with only null values in WITH") {
       val graph = initGraph("CREATE ({val:NULL}),(),()")
 
       val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
@@ -118,7 +118,7 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
       ))
     }
 
-    ignore("avg(prop) with only null values in RETURN") {
+    it("avg(prop) with only null values in RETURN") {
       val graph = initGraph("CREATE ({val:NULL}),(),()")
 
       val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
@@ -323,7 +323,7 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
       ))
     }
 
-    ignore("min(prop) with only null values in WITH") {
+    it("min(prop) with only null values in WITH") {
       val graph = initGraph("CREATE ({val:NULL}),(),()")
 
       val result = graph.cypher("MATCH (n) WITH MIN(n.val) AS res RETURN res")
@@ -333,7 +333,7 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
       ))
     }
 
-    ignore("min(prop) with only null values in RETURN") {
+    it("min(prop) with only null values in RETURN") {
       val graph = initGraph("CREATE ({val:NULL}),(),()")
 
       val result = graph.cypher("MATCH (n) RETURN MIN(n.val) AS res")
@@ -396,7 +396,7 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
       ))
     }
 
-    ignore("simple max(prop) with only null values in WITH") {
+    it("simple max(prop) with only null values in WITH") {
       val graph = initGraph("CREATE ({val:NULL}),(),()")
 
       val result = graph.cypher("MATCH (n) WITH MAX(n.val) AS res RETURN res")
@@ -406,7 +406,7 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
       ))
     }
 
-    ignore("simple max(prop) with only null values in RETURN") {
+    it("simple max(prop) with only null values in RETURN") {
       val graph = initGraph("CREATE ({val:NULL}),(),()")
 
       val result = graph.cypher("MATCH (n) RETURN MAX(n.val) AS res")
@@ -490,7 +490,7 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
       ))
     }
 
-    ignore("simple sum(prop) with only null values in WITH") {
+    it("simple sum(prop) with only null values in WITH") {
       val graph = initGraph("CREATE ({val:NULL}),(),()")
 
       val result = graph.cypher("MATCH (n) WITH SUM(n.val) AS res RETURN res")
@@ -500,7 +500,7 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
       ))
     }
 
-    ignore("simple sum(prop) with only null values in RETURN") {
+    it("simple sum(prop) with only null values in RETURN") {
       val graph = initGraph("CREATE ({val:NULL}),(),()")
 
       val result = graph.cypher("MATCH (n) RETURN SUM(n.val) AS res")

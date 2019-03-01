@@ -517,7 +517,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
   }
 
-  ignore("equality") {
+  it("equality") {
     // Given
     val given = initGraph(
       """

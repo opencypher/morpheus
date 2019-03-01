@@ -35,11 +35,11 @@ import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.ir.impl.parse.functions.FunctionLookup
+import org.opencypher.okapi.ir.impl.parse.functions.FunctionExtensions
 import org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter._
 import org.opencypher.v9_0.expressions._
-import org.opencypher.v9_0.expressions.functions.{Abs, Acos, Asin, Atan, Atan2, Ceil, Coalesce, Collect, Cos, Cot, Degrees, Exists, Exp, Floor, Haversin, Id, Keys, Labels, Log, Log10, Max, Min, Properties, Radians, Round, Sign, Sin, Size, Sqrt, Tan, ToBoolean, ToString, UnresolvedFunction}
+import org.opencypher.v9_0.expressions.functions.{Coalesce, Collect, Exists, Properties}
 
 final case class SchemaTyper(schema: Schema) {
 
@@ -84,6 +84,9 @@ object SchemaTyper {
         schema <- ask[R, Schema]
         result <- varTyp.material match {
 
+          case CTVoid =>
+            recordAndUpdate(expr -> CTNull)
+
           // This means that the node can have any possible label combination, as the user did not specify any constraints
           case n: CTNode if n.labels.isEmpty =>
             val propType = schema.allCombinations
@@ -126,15 +129,19 @@ object SchemaTyper {
       for {
         nodeType <- process[R](node)
         result <- nodeType.material match {
+          case CTVoid =>
+            pure[R, CypherType](CTNull)
+
           case CTNode(nodeLabels, qgn) =>
             val detailed = nodeLabels ++ labels.map(_.name).toSet
-            recordType[R](node -> nodeType) >>
-              updateTyping[R](node -> CTNode(detailed, qgn)) >>
-              recordAndUpdate[R](expr -> CTBoolean)
+            updateTyping[R](node -> CTNode(detailed, qgn)) >>
+            pure[R, CypherType](CTBoolean)
 
           case x =>
             error(InvalidType(node, CTNode, x))
         }
+        _ <- recordType[R](node -> nodeType)
+        _ <- recordAndUpdate[R](expr -> result)
       } yield result
 
     case Not(inner) =>
@@ -175,12 +182,17 @@ object SchemaTyper {
       for {
         lhsType <- process[R](lhs)
         rhsType <- process[R](rhs)
-        result <- rhsType match {
-          case _: CTList | _: CTListOrNull | CTNull =>
-            recordTypes(lhs -> lhsType, rhs -> rhsType) >> recordAndUpdate(expr -> CTBoolean)
-          case x =>
-            error(InvalidType(rhs, CTList(CTWildcard), x))
+        result <- (lhsType, rhsType) match {
+          case (_, CTNull | CTList(CTNull) | CTListOrNull(CTNull)) => pure[R, CypherType](CTNull)
+          case (CTNull, CTList(CTVoid))                            => pure[R, CypherType](CTBoolean)
+          case (CTNull, CTListOrNull(CTVoid))                      => pure[R, CypherType](CTBoolean.nullable)
+          case (CTNull, CTList(_) | CTListOrNull(_))               => pure[R, CypherType](CTNull)
+          case (m, CTList(e))                                      => pure[R, CypherType](CTBoolean.asNullableAs(m join e))
+          case (_, CTListOrNull(_))                                => pure[R, CypherType](CTBoolean.nullable)
+          case (r, _)                                              => error(InvalidType(rhs, CTList(CTWildcard), r))
         }
+        _ <- recordTypes(lhs -> lhsType, rhs -> rhsType)
+        _ <- recordAndUpdate(expr -> result)
       } yield result
 
     case IsNull(inner) =>
@@ -220,23 +232,16 @@ object SchemaTyper {
       expr.arguments match {
         case Seq(first: Property) =>
           for {
-            _ <- process[R](first)
-            existsType <- recordAndUpdate(expr -> CTBoolean)
+            argType <- process[R](first)
+            mapType <- process[R](first.map)
+            existsType <- pure((mapType, argType) match {
+              case (CTNull, _) => CTNull
+              case _ => CTBoolean
+            })
+            _ <- recordAndUpdate(expr -> existsType)
           } yield existsType
         case Seq(nonProp) =>
           error(InvalidArgument(expr, nonProp))
-        case seq =>
-          error(WrongNumberOfArguments(expr, 1, seq.size))
-      }
-
-    // TODO: Remove as soon as FunctionInvocationTyper is capable of supporting all Neo4j front end types
-    case expr: FunctionInvocation if expr.function == ToString =>
-      expr.arguments match {
-        case Seq(first) =>
-          for {
-            inner <- process[R](first)
-            existsType <- recordAndUpdate(expr -> CTString.asNullableAs(inner))
-          } yield existsType
         case seq =>
           error(WrongNumberOfArguments(expr, 1, seq.size))
       }
@@ -246,23 +251,27 @@ object SchemaTyper {
         case Seq(first) =>
           for {
             inner <- process[R](first)
-            schema <- ask[R, Schema]
-            properties <- inner.material match {
-              case CTNode(labels, _) =>
-                pure[R, PropertyKeys](schema.nodePropertyKeysForCombinations(schema.combinationsFor(labels)))
-              case CTRelationship(types, _) =>
-                pure[R, PropertyKeys](schema.relationshipPropertyKeysForTypes(types))
-              case CTMap(properties) =>
-                pure[R, PropertyKeys](properties)
-              case _ =>
-                wrong[R, TyperError](InvalidArgument(expr, first)) >> pure[R, PropertyKeys](Map.empty)
+            outType <- inner match {
+              case CTNull =>
+                pure[R, CypherType](CTNull)
+              case _ => for {
+                schema <- ask[R, Schema]
+                properties <- inner.material match {
+                  case CTNode(labels, _) =>
+                    pure[R, PropertyKeys](schema.nodePropertyKeysForCombinations(schema.combinationsFor(labels)))
+                  case CTRelationship(types, _) =>
+                    pure[R, PropertyKeys](schema.relationshipPropertyKeysForTypes(types))
+                  case CTMap(properties) =>
+                    pure[R, PropertyKeys](properties)
+                  case _ =>
+                    wrong[R, TyperError](InvalidArgument(expr, first)) >> pure[R, PropertyKeys](Map.empty)
+                }
+                mapType <- pure[R, CypherType](CTMap(properties).asNullableAs(inner))
+              } yield mapType
             }
-            mapType <- {
-              val mapType = CTMap(properties)
-              val nullableMapType = if (inner.isNullable) mapType.nullable else mapType
-              recordAndUpdate(expr -> nullableMapType)
-            }
-          } yield mapType
+            _ <- recordAndUpdate(expr -> outType)
+          } yield outType
+
         case seq =>
           error(WrongNumberOfArguments(expr, 1, seq.size))
       }
@@ -298,25 +307,6 @@ object SchemaTyper {
         }
         result <- recordAndUpdate(expr -> computedType)
       } yield result
-
-    case expr: FunctionInvocation if expr.function == Keys =>
-      expr.arguments match {
-        case Seq(first) =>
-          for {
-            inner <- process[R](first)
-            returnType <- inner.material match {
-              case _: CTMap | _: CTNode | _: CTRelationship =>
-                val returnType = if (inner.isNullable) CTList(CTString).nullable else CTList(CTString)
-                recordAndUpdate(expr -> returnType)
-              case _ => error(InvalidArgument(expr, first))
-            }
-          } yield returnType
-        case seq =>
-          error(WrongNumberOfArguments(expr, 1, seq.size))
-      }
-
-    case expr: FunctionInvocation if expr.function == UnresolvedFunction =>
-      UnresolvedFunctionSignatureTyper(expr)
 
     case expr: FunctionInvocation =>
       BasicSignatureBasedTyper(expr)
@@ -410,6 +400,8 @@ object SchemaTyper {
     lhsType: CypherType,
     rhsType: CypherType
   ) = (lhsType.material, rhsType.material) match {
+    case (CTVoid, _) => Right(CTNull)
+    case (_, CTVoid) => Right(CTNull)
     case (CTInteger, CTInteger) => Right(CTInteger)
     case (CTFloat, CTInteger) => Right(CTFloat)
     case (CTInteger, CTFloat) => Right(CTFloat)
@@ -467,39 +459,30 @@ object SchemaTyper {
         argExprs <- pure(expr.arguments)
         argTypes <- argExprs.toList.traverse(process[R])
         arguments <- pure(argExprs.zip(argTypes))
-        signatures <- selectSignaturesFor(expr, arguments)
-        computedType <- signatures.map(_._2).reduceLeftOption(_ join _) match {
+        signatures <- generateSignaturesFor(expr, arguments)
+        outTypes <- pure(signatures.flatMap { sig =>
+          val sigInputTypes = sig.input
+          val sigOutputType = sig.output
+          val argTypes = arguments.map(_._2)
+
+          def compatibleArity = sigInputTypes.size == arguments.size
+
+          def compatibleTypes = sigInputTypes.zip(argTypes).forall {
+            case (_: CTMap | _: CTMapOrNull, _: CTMap) => true
+            case (sigType, argType) => sigType intersects argType
+          }
+
+          if (compatibleArity && compatibleTypes) Some(sigOutputType) else None
+        })
+        computedType <- outTypes.reduceLeftOption(_ join _) match {
           case Some(outputType) =>
             pure[R, CypherType](if (argTypes.exists(_.isNullable)) outputType.nullable else outputType)
 
           case None =>
             error(NoSuitableSignatureForExpr(expr, argTypes))
         }
-        resultType <- recordAndUpdate(expr -> computedType)
-      } yield resultType
-
-    protected def selectSignaturesFor[R: _hasSchema : _keepsErrors : _hasTracker : _logsTypes](
-      expr: T,
-      args: Seq[(Expression, CypherType)]
-    ): Eff[R, Set[(Seq[CypherType], CypherType)]] =
-      for {
-        signatures <- generateSignaturesFor(expr, args)
-        eligible <- pure(signatures.flatMap { sig =>
-          val sigInputTypes = sig.input
-          val sigOutputType = sig.output
-
-          def compatibleArity = sigInputTypes.size == args.size
-
-          def sigArgTypes = sigInputTypes.zip(args.map(_._2))
-
-          def compatibleTypes = sigArgTypes.forall {
-            case (_: CTMap | _: CTMapOrNull, _: CTMap) => true
-            case (signatureArg: CypherType, expressionArg: CypherType) => signatureArg couldBeSameTypeAs expressionArg
-          }
-
-          if (compatibleArity && compatibleTypes) Some(sigInputTypes -> sigOutputType) else None
-        })
-      } yield eligible
+        _ <- recordAndUpdate(expr -> computedType)
+      } yield computedType
 
     protected def generateSignaturesFor[R: _hasSchema : _keepsErrors : _hasTracker : _logsTypes](
       expr: T,
@@ -507,123 +490,38 @@ object SchemaTyper {
     ): Eff[R, Set[FunctionSignature]]
   }
 
-  private case object UnresolvedFunctionSignatureTyper extends SignatureBasedInvocationTyper[Expression] {
-    override protected def generateSignaturesFor[R: _hasSchema : _keepsErrors : _hasTracker : _logsTypes](
-      expr: Expression,
-      args: Seq[(Expression, CypherType)]
-    ): Eff[R, Set[FunctionSignature]] = expr match {
-      case f: FunctionInvocation => {
-        val signatures = FunctionLookup(f.name).flatMap(_.convert).toSet
-        pure(signatures)
-      }
-    }
-  }
-
   private case object BasicSignatureBasedTyper extends SignatureBasedInvocationTyper[Expression] {
     override protected def generateSignaturesFor[R: _hasSchema : _keepsErrors : _hasTracker : _logsTypes](
       expr: Expression,
       args: Seq[(Expression, CypherType)]
     ): Eff[R, Set[FunctionSignature]] = expr match {
-      case f: FunctionInvocation => f.function match {
 
-        case Labels =>
-          pure[R, Set[FunctionSignature]](
-            Set(
-              FunctionSignature(Seq(CTNull), CTNull),
-              FunctionSignature(Seq(CTNode), CTList(CTString))
-            )
+      case f: FunctionInvocation =>
+
+        val function =
+          FunctionExtensions
+            .get(f.name)
+            .getOrElse(f.function)
+
+        function match {
+
+          case t: TypeSignatures => pure(
+            SignatureConverter.from(t.signatures)
+              .expandWithNulls
+              .expandWithSubstitutions(CTFloat, CTInteger)
+              .signatures
           )
 
-        case Size =>
-          pure[R, Set[FunctionSignature]](
-            Set(
-              FunctionSignature(Seq(CTNull), CTNull),
-              FunctionSignature(Seq(CTList(CTAny)), CTInteger),
-              FunctionSignature(Seq(CTString), CTInteger)
-            )
-          )
+          case _ =>
+            wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set.empty)
+        }
 
-        case Min | Max =>
-          pure[R, Set[FunctionSignature]](
-            Set(
-              FunctionSignature(Seq(CTInteger), CTInteger),
-              FunctionSignature(Seq(CTFloat), CTFloat)
-            ))
-
-        case Id =>
-          pure[R, Set[FunctionSignature]](
-          Set(
-            FunctionSignature(Seq(CTNull), CTIdentity.nullable),
-            FunctionSignature(Seq(CTNode), CTIdentity),
-            FunctionSignature(Seq(CTRelationship), CTIdentity)
-          ))
-
-        case ToBoolean =>
-          pure[R, Set[FunctionSignature]](
-            Set(
-              FunctionSignature(Seq(CTString), CTBoolean.nullable),
-              FunctionSignature(Seq(CTBoolean), CTBoolean)
-            ))
-
-        // TODO: remove as soon as https://github.com/opencypher/front-end/issues/27 is fixed
-        case Sqrt | Log | Log10 | Exp | Ceil | Floor | Round =>
-          pure[R, Set[FunctionSignature]](
-            Set(
-              FunctionSignature(Seq(CTNull), CTNull),
-              FunctionSignature(Seq(CTFloat), CTFloat),
-              FunctionSignature(Seq(CTInteger), CTFloat)
-            ))
-
-        case Abs =>
-          pure[R, Set[FunctionSignature]](
-            Set(
-              FunctionSignature(Seq(CTNull), CTNull),
-              FunctionSignature(Seq(CTFloat), CTFloat),
-              FunctionSignature(Seq(CTInteger), CTInteger)
-            ))
-
-        case Sign =>
-          pure[R, Set[FunctionSignature]](
-            Set(
-              FunctionSignature(Seq(CTNull), CTNull),
-              FunctionSignature(Seq(CTFloat), CTInteger),
-              FunctionSignature(Seq(CTInteger), CTInteger)
-            ))
-
-        //todo: could also be unioned with the cases above? (also maybe add tests for these cases?)
-        case Acos | Asin | Atan | Cos | Cot | Degrees | Haversin | Radians | Sin | Tan =>
-          pure[R, Set[FunctionSignature]](
-            Set(
-              FunctionSignature(Seq(CTNull), CTNull),
-              FunctionSignature(Seq(CTFloat), CTFloat),
-              FunctionSignature(Seq(CTInteger), CTFloat)
-            ))
-
-        case Atan2 =>
-          pure[R, Set[FunctionSignature]](
-            Set(
-              FunctionSignature(Seq(CTNull, CTNull), CTNull),
-              FunctionSignature(Seq(CTNull, CTFloat), CTNull),
-              FunctionSignature(Seq(CTFloat, CTNull), CTNull),
-              FunctionSignature(Seq(CTFloat, CTFloat), CTFloat),
-              FunctionSignature(Seq(CTFloat, CTInteger), CTFloat),
-              FunctionSignature(Seq(CTInteger, CTFloat), CTFloat),
-              FunctionSignature(Seq(CTInteger, CTInteger), CTFloat),
-              FunctionSignature(Seq(CTNull, CTInteger), CTNull),
-              FunctionSignature(Seq(CTInteger, CTNull), CTNull)
-            ))
-
-        case f: TypeSignatures =>
-          val set = f.signatures.flatMap(_.convert).toSet
-          pure(set)
-
-        case _ =>
-          wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set.empty)
-      }
-
-      case f: OperatorExpression =>
-        val set = f.signatures.flatMap(_.convert).toSet
-        pure(set)
+      case o: OperatorExpression => pure(
+        SignatureConverter.from(o.signatures)
+          .expandWithNulls
+          .expandWithSubstitutions(CTFloat, CTInteger)
+          .signatures
+      )
 
       case _ =>
         wrong[R, TyperError](UnsupportedExpr(expr)) >> pure(Set.empty)
