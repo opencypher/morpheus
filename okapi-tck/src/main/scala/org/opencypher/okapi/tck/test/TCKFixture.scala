@@ -93,7 +93,7 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: CypherTestGraphFactory
         // mapValues is lazy, so we force it for debug purposes
         val result = Try(graph.cypher(query, params.mapValues(tckValueToCypherValue).view.force))
         result match {
-          case Success(r) => this -> convertToTckStrings(r.records)
+          case Success(r) => this -> CypherToTCKConverter.convertToTckStrings(r.records)
           case Failure(e) =>
             val phase = TCKErrorPhases.RUNTIME // We have no way to detect errors during compile time yet
             e match {
@@ -106,13 +106,6 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: CypherTestGraphFactory
     }
   }
 
-  private def convertToTckStrings(records: CypherRecords): StringRecords = {
-    val header = records.logicalColumns.getOrElse(records.physicalColumns).toList
-    val rows: List[Map[String, String]] = records.collect.map { cypherMap: OKAPICypherMap =>
-      cypherMap.keys.map(k => k -> cypherMap(k).toTCKString).toMap
-    }.toList
-    StringRecords(header, rows)
-  }
 
   private def tckValueToCypherValue(cypherValue: TCKCypherValue): OKAPICypherValue = cypherValue match {
     case CypherString(v) => CypherValue(v)
@@ -127,43 +120,7 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: CypherTestGraphFactory
       throw NotImplementedException(s"Converting Cypher value $cypherValue of type `${other.getClass.getSimpleName}`")
   }
 
-  implicit class RichTCKCypherValue(value: OKAPICypherValue) {
 
-    def toTCKString: String = {
-      value match {
-        case OKAPICypherString(s) => s"'${escape(s)}'"
-        case OKAPICypherList(l) => l.map(_.toTCKString).mkString("[", ", ", "]")
-        case OKAPICypherMap(m) =>
-          m.toSeq
-            .sortBy(_._1)
-            .map { case (k, v) => s"$k: ${v.toTCKString}" }
-            .mkString("{", ", ", "}")
-        case OKAPICypherRelationship(_, _, _, relType, props) =>
-          s"[:$relType${
-            if (props.isEmpty) ""
-            else s" ${props.toTCKString}"
-          }]"
-        case OKAPICypherNode(_, labels, props) =>
-          val labelString =
-            if (labels.isEmpty) ""
-            else labels.toSeq.sorted.mkString(":", ":", "")
-          val propertyString = if (props.isEmpty) ""
-          else s"${props.toTCKString}"
-          Seq(labelString, propertyString)
-            .filter(_.nonEmpty)
-            .mkString("(", " ", ")")
-        case OKAPICypherDate(date) =>
-          s"'${DateTimeFormatter.ISO_DATE.format(date)}'"
-        case OKAPICypherLocalDateTime(localDateTime) =>
-          s"'$localDateTime'"
-        case _ => Objects.toString(value)
-      }
-    }
-
-    private def escape(str: String): String = {
-      str.replaceAllLiterally("'", "\\'").replaceAllLiterally("\"", "\\\"")
-    }
-  }
 }
 
 case class ScenariosFor(blacklist: Set[String]) {
@@ -207,4 +164,53 @@ object Tags {
 
   object BlackList extends Tag("BlackList Scenario")
 
+}
+
+object CypherToTCKConverter {
+
+  def convertToTckStrings(records: CypherRecords): StringRecords = {
+    val header = records.logicalColumns.getOrElse(records.physicalColumns).toList
+    val rows: List[Map[String, String]] = records.collect.map { cypherMap: OKAPICypherMap =>
+      cypherMap.keys.map(k => k -> cypherMap(k).toTCKString).toMap
+    }.toList
+    StringRecords(header, rows)
+  }
+
+  implicit class RichTCKCypherValue(value: OKAPICypherValue) {
+
+    def toTCKString: String = {
+      value match {
+        case OKAPICypherString(s) => s"'${escape(s)}'"
+        case OKAPICypherList(l) => l.map(_.toTCKString).mkString("[", ", ", "]")
+        case OKAPICypherMap(m) =>
+          m.toSeq
+            .sortBy(_._1)
+            .map { case (k, v) => s"$k: ${v.toTCKString}" }
+            .mkString("{", ", ", "}")
+        case OKAPICypherRelationship(_, _, _, relType, props) =>
+          s"[:$relType${
+            if (props.isEmpty) ""
+            else s" ${props.toTCKString}"
+          }]"
+        case OKAPICypherNode(_, labels, props) =>
+          val labelString =
+            if (labels.isEmpty) ""
+            else labels.toSeq.sorted.mkString(":", ":", "")
+          val propertyString = if (props.isEmpty) ""
+          else s"${props.toTCKString}"
+          Seq(labelString, propertyString)
+            .filter(_.nonEmpty)
+            .mkString("(", " ", ")")
+        case OKAPICypherDate(date) =>
+          s"'${DateTimeFormatter.ISO_DATE.format(date)}'"
+        case OKAPICypherLocalDateTime(localDateTime) =>
+          s"'$localDateTime'"
+        case _ => Objects.toString(value)
+      }
+    }
+
+    private def escape(str: String): String = {
+      str.replaceAllLiterally("'", "\\'").replaceAllLiterally("\"", "\\\"")
+    }
+  }
 }
