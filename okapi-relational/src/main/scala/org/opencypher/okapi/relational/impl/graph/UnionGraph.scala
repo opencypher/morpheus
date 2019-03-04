@@ -108,7 +108,7 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCyph
           .entities
           .map { e => schema.headerForEntity(e.toVar) }
           .reduce(_ ++ _)
-        Start.fromEmptyGraph(session.records.empty(scanHeader))
+        Start.fromEmptyGraph(session.records.unit(scanHeader))
       case _ =>
         alignedEntityTableOps.reduce(TabularUnionAll(_, _))
     }

@@ -44,8 +44,6 @@ trait RelationalCypherRecordsFactory[T <: Table[T]] {
 
   def unit(initialHeader: RecordHeader = RecordHeader.empty): Records
 
-  def empty(initialHeader: RecordHeader = RecordHeader.empty): Records
-
   def fromEntityTable(entityTable: EntityTable[T]): Records
 
   def from(header: RecordHeader, table: T, returnItems: Option[Seq[String]] = None): Records

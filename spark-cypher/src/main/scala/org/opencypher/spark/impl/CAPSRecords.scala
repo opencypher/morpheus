@@ -54,12 +54,6 @@ case class CAPSRecordsFactory(implicit caps: CAPSSession) extends RelationalCyph
     CAPSRecords(initialHeader, initialDataFrame)
   }
 
-  override def empty(initialHeader: RecordHeader = RecordHeader.empty): CAPSRecords = {
-    val initialSparkStructType = initialHeader.toStructType
-    val initialDataFrame = caps.sparkSession.createDataFrame(Collections.emptyList[Row](), initialSparkStructType)
-    CAPSRecords(initialHeader, initialDataFrame)
-  }
-
   override def fromEntityTable(entityTable: EntityTable[DataFrameTable]): CAPSRecords = {
     val withCypherCompatibleTypes = entityTable.table.df.withCypherCompatibleTypes
     CAPSRecords(entityTable.header, withCypherCompatibleTypes)

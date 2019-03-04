@@ -65,7 +65,7 @@ class RecordHeaderMismatch extends CAPSTestSuite {
 
       // Always return empty records, which does not match what the schema promises
       def scanOperator(searchPattern: Pattern, exactLabelMatch: Boolean): RelationalOperator[DataFrameTable] = {
-        Start.fromEmptyGraph(caps.records.empty())
+        Start.fromEmptyGraph(caps.records.unit())
       }
     }
 

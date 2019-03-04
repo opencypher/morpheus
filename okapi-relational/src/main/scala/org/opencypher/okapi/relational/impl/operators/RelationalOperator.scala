@@ -133,6 +133,14 @@ abstract class RelationalOperator[T <: Table[T] : TypeTag] extends AbstractTreeN
   }
 }
 
+trait NoRecords[T <: Table[T]] {
+  self : RelationalOperator[T] =>
+
+  override lazy val header: RecordHeader = RecordHeader.empty
+
+  override lazy val _table: T = session.records.unit().table
+}
+
 // Leaf
 
 object Start {
@@ -181,11 +189,7 @@ final case class Start[T <: Table[T] : TypeTag](
 final case class PrefixGraph[T <: Table[T] : TypeTag](
   in: RelationalOperator[T],
   prefix: GraphIdPrefix
-) extends RelationalOperator[T] {
-
-  override lazy val header: RecordHeader = RecordHeader.empty
-
-  override lazy val _table: T = session.records.empty().table
+) extends RelationalOperator[T] with NoRecords[T] {
 
   override lazy val graphName: QualifiedGraphName = QualifiedGraphName(s"${in.graphName}_tempPrefixed_$prefix")
 
@@ -292,12 +296,7 @@ final case class Filter[T <: Table[T] : TypeTag](
 }
 
 final case class ReturnGraph[T <: Table[T] : TypeTag](in: RelationalOperator[T])
-  extends RelationalOperator[T] {
-
-  override lazy val header: RecordHeader = RecordHeader.empty
-
-  override lazy val _table: T = session.records.empty().table
-}
+  extends RelationalOperator[T] with NoRecords[T]
 
 final case class Select[T <: Table[T] : TypeTag](
   in: RelationalOperator[T],
@@ -512,11 +511,7 @@ final case class ConstructGraph[T <: Table[T] : TypeTag](
 final case class GraphUnionAll[T <: Table[T] : TypeTag](
   inputs: NonEmptyList[RelationalOperator[T]],
   qgn: QualifiedGraphName
-) extends RelationalOperator[T] {
-
-  override lazy val header: RecordHeader = RecordHeader.empty
-
-  override lazy val _table: T = session.records.empty().table
+) extends RelationalOperator[T] with NoRecords[T] {
 
   override lazy val graphName: QualifiedGraphName = qgn
 
