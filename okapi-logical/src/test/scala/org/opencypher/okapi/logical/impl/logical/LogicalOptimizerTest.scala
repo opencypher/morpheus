@@ -44,7 +44,7 @@ import org.opencypher.okapi.trees.BottomUp
 import scala.collection.Map
 import scala.language.implicitConversions
 
-class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVerificationSupport {
+class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with LogicalConstruction with TreeVerificationSupport {
 
   val emptySqm: SolvedQueryModel = SolvedQueryModel.empty
   val logicalGraph = LogicalCatalogGraph(testQualifiedGraphName, Schema.empty)
@@ -68,14 +68,24 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
     val plan = logicalPlan(query, emptyGraph)
     val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(emptyGraph))
 
+    val aVar = Var("a")(CTNode(Set("Animal")))
+
+    val emptyRecords = EmptyRecords(
+      Set(aVar),
+      Start(logicalGraph, emptySqm),
+      SolvedQueryModel(Set(IRField("a")(CTNode(Set("Animal")))), Set(HasLabel(aVar, Label("Animal"))(CTBoolean)))
+    )
+
+    val filter = Filter(
+      IsNotNull(aVar)(CTBoolean),
+      emptyRecords,
+      SolvedQueryModel(Set(IRField("a")(CTNode(Set("Animal")))), Set(HasLabel(aVar, Label("Animal"))(CTBoolean), IsNotNull(aVar)(CTBoolean)))
+    )
+
     val expected = Select(
-      List(Var("a")(CTNode(Set("Animal")))),
-      EmptyRecords(
-        Set(Var("a")(CTNode(Set("Animal")))),
-        Start(logicalGraph, emptySqm),
-        SolvedQueryModel(Set(IRField("a")(CTNode(Set("Animal")))), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)))
-      ),
-      SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean)))
+      List(aVar),
+      filter,
+      SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean), IsNotNull(aVar)(CTBoolean)))
     )
 
     optimizedLogicalPlan should equalWithTracing(expected)
@@ -91,22 +101,39 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
     val plan = logicalPlan(query, TestGraph(schema))
     val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(TestGraph(schema)))
 
+    val aVar = Var("a")(CTNode(Set("Astronaut", "Animal")))
+    val emptyRecords = EmptyRecords(
+      Set(aVar),
+      Start(logicalGraph, emptySqm),
+      SolvedQueryModel(
+        Set(IRField("a")(CTNode(Set("Astronaut", "Animal")))),
+        Set(
+          HasLabel(aVar, Label("Astronaut"))(CTBoolean),
+          HasLabel(aVar, Label("Animal"))(CTBoolean)
+        )
+      )
+    )
+
+    val filter = Filter(
+      IsNotNull(aVar)(CTBoolean),
+      emptyRecords,
+      SolvedQueryModel(
+        Set(IRField("a")(CTNode(Set("Astronaut", "Animal")))),
+        Set(
+          IsNotNull(aVar)(CTBoolean),
+          HasLabel(aVar, Label("Astronaut"))(CTBoolean),
+          HasLabel(aVar, Label("Animal"))(CTBoolean)
+        )
+      )
+    )
+
     val expected = Select(
       List(Var("a")(CTNode(Set("Animal", "Astronaut")))),
-      EmptyRecords(
-        Set(Var("a")(CTNode(Set("Astronaut", "Animal")))),
-        Start(logicalGraph, emptySqm),
-        SolvedQueryModel(
-          Set(IRField("a")(CTNode(Set("Astronaut", "Animal")))),
-          Set(
-            HasLabel(Var("a")(CTNode(Set("Astronaut", "Animal"))), Label("Astronaut"))(CTBoolean),
-            HasLabel(Var("a")(CTNode(Set("Astronaut", "Animal"))), Label("Animal"))(CTBoolean)
-          )
-        )
-      ),
+      filter,
       SolvedQueryModel(
         Set(IRField("a")(CTNode)),
         Set(
+          IsNotNull(aVar)(CTBoolean),
           HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean),
           HasLabel(Var("a")(CTNode), Label("Astronaut"))(CTBoolean)))
     )
@@ -127,16 +154,16 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       val irFieldA = IRField(varA.name)(varA.cypherType)
       val irFieldB = IRField(varB.name)(varB.cypherType)
 
-      val scanA = PatternScan.nodeScan(varA, startA, SolvedQueryModel(Set(irFieldA)))
-      val scanB = PatternScan.nodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
-      val cartesian = CartesianProduct(scanA, scanB, SolvedQueryModel(Set(irFieldA, irFieldB)))
-      val filter = Filter(equals, cartesian, SolvedQueryModel(Set(irFieldA, irFieldB)))
+      val scanA = planFilters(PatternScan.nodeScan(varA, startA, SolvedQueryModel(Set(irFieldA))), varA)
+      val scanB = planFilters(PatternScan.nodeScan(varB, startB, SolvedQueryModel(Set(irFieldB))), varB)
+      val cartesian = CartesianProduct(scanA, scanB, scanA.solved ++ scanB.solved)
+      val filter = Filter(equals, cartesian, cartesian.solved)
 
       val optimizedPlan = BottomUp[LogicalOperator](LogicalOptimizer.replaceCartesianWithValueJoin).transform(filter)
 
       val projectA = Project(propA -> None, scanA, scanA.solved)
       val projectB = Project(propB -> None, scanB, scanB.solved)
-      val solved = SolvedQueryModel(Set(irFieldA, irFieldB)).withPredicate(equals)
+      val solved = (projectA.solved ++ projectB.solved).withPredicate(equals)
       val valueJoin = ValueJoin(projectA, projectB, Set(equals), solved)
 
       optimizedPlan should equalWithTracing(valueJoin)

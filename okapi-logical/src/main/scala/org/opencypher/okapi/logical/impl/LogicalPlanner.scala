@@ -40,6 +40,7 @@ import org.opencypher.okapi.logical.impl.exception.{InvalidCypherTypeException, 
 import org.opencypher.v9_0.expressions.SemanticDirection.{INCOMING, OUTGOING}
 
 import scala.annotation.tailrec
+import scala.collection.immutable.ListSet
 
 class LogicalPlanner(producer: LogicalOperatorProducer)
   extends DirectCompilationStage[CypherQuery, LogicalOperator, LogicalPlannerContext] {
@@ -132,8 +133,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           producer.planOptional(inputGraphPlan, patternPlan)
         } else {
           // We need to filter out unit records for strict MATCH
-          val fieldsNotNullExprs: Set[Expr] = patternPlan.fields.map(f => IsNotNull(f)(CTBoolean))
-          planFilter(patternPlan, fieldsNotNullExprs)
+          import Expr._
+          val fieldsNotNullExprs = patternPlan.fields.toSeq.sorted.map(f => IsNotNull(f)(CTBoolean))
+          planFilter(patternPlan, ListSet(fieldsNotNullExprs: _*))
         }
 
       case ProjectBlock(_, Fields(fields), where, _, distinct) =>

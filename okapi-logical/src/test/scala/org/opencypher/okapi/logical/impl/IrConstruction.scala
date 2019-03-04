@@ -70,7 +70,7 @@ trait IrConstruction {
   protected def leafBlock: SourceBlock = SourceBlock(testGraph)
 
   protected def matchBlock(pattern: Pattern): Block =
-    MatchBlock(List(leafBlock), pattern, Set.empty, false, testGraph)
+    MatchBlock(List(leafBlock), pattern, Set.empty, optional = false, testGraph)
 
   implicit class RichString(queryText: String) {
     def parseIR[T <: CypherStatement : ClassTag](graphsWithSchema: (GraphName, Schema)*)

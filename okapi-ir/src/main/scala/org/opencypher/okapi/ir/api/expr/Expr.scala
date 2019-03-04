@@ -38,7 +38,7 @@ import scala.reflect.ClassTag
 
 object Expr {
 
-  implicit def alphabeticalOrdering[A <: Expr]: Ordering[Expr] =
+  implicit def alphabeticalOrdering[A <: Expr]: Ordering[A] =
     Ordering.by(e => (e.toString, e.toString))
 }
 

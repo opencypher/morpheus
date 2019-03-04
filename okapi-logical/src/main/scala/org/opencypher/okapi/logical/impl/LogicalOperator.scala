@@ -223,7 +223,13 @@ final case class ExpandInto(
   extends StackingLogicalOperator
     with ExpandOperator {
 
-  override val fields: Set[Var] = lhs.fields ++ rhs.fields
+  override val fields: Set[Var] = {
+    val lhsRhs = lhs.fields ++ rhs.fields
+    rel match {
+      case v: Var => lhsRhs + v
+      case _ => lhsRhs
+    }
+  }
 
   def lhs: LogicalOperator = in
 

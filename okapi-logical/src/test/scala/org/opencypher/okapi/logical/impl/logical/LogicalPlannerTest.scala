@@ -44,7 +44,7 @@ import org.scalatest.matchers._
 
 import scala.language.implicitConversions
 
-class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
+class LogicalPlannerTest extends BaseTestSuite with IrConstruction with LogicalConstruction {
 
   val irFieldA: IRField = IRField("a")(CTNode("Administrator"))
   val irFieldB: IRField = IRField("b")(CTNode)
@@ -76,13 +76,14 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
 
     val block = matchBlock(pattern)
 
-
     val scan1 = PatternScan.nodeScan(irFieldA, leafPlan, emptySqm.withField(irFieldA).withPredicate(aLabelPredicate))
     val scan2 = PatternScan.nodeScan(irFieldB, leafPlan, emptySqm.withField(irFieldB))
     val ir = irFor(block)
     val result = plan(ir)
 
-    val expected = Expand(irFieldA, irFieldR, irFieldB, Outgoing, scan1, scan2, SolvedQueryModel(Set(irFieldA, irFieldB, irFieldR), Set(aLabelPredicate)))
+    val expected = planFilters(
+      Expand(irFieldA, irFieldR, irFieldB, Outgoing, scan1, scan2, (scan1.solved ++ scan2.solved).withField(irFieldR)),
+      irFieldA, irFieldB, irFieldR)
 
     result should equalWithoutResult(expected)
   }
@@ -95,12 +96,14 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
       .withConnection(irFieldR, CyclicRelationship(irFieldA))
 
     val block = matchBlock(pattern)
-    val ir = irFor(block)
+    val result = plan(irFor(block))
 
     val scan = PatternScan.nodeScan(irFieldA, leafPlan, emptySqm.withField(irFieldA).withPredicate(aLabelPredicate))
-    val expandInto = ExpandInto(irFieldA, irFieldR, irFieldA, Outgoing, scan, SolvedQueryModel(Set(irFieldA, irFieldR), Set(aLabelPredicate)))
+    val expandInto = planFilters(
+      ExpandInto(irFieldA, irFieldR, irFieldA, Outgoing, scan, SolvedQueryModel(Set(irFieldA, irFieldR), Set(aLabelPredicate))),
+      irFieldA, irFieldR)
 
-    plan(ir) should equalWithoutResult(expandInto)
+    result should equalWithoutResult(expandInto)
   }
 
   it("converts project block") {
@@ -123,7 +126,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
 
     val expected = Project(
       Property(varA, PropertyKey("name"))(CTNull) -> Some(Var("a.name")(CTNull)),
-      Filter(
+      planFilters(Filter(
         Equals(Property(varG, PropertyKey("name"))(CTNull), Param("foo")(CTString))(CTBoolean),
         Expand(
           varA,
@@ -157,10 +160,13 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
               CTBoolean)
           )
         )
-      ),
+      ), varA, varG, varR),
       SolvedQueryModel(
         Set(irFieldA, irFieldG, irFieldR, IRField("a.name")(CTNull)),
         Set(
+          IsNotNull(varA)(CTBoolean),
+          IsNotNull(varG)(CTBoolean),
+          IsNotNull(varR)(CTBoolean),
           HasLabel(varA, Label("Administrator"))(CTBoolean),
           HasLabel(varG, Label("Group"))(CTBoolean),
           Equals(Property(varG, PropertyKey("name"))(CTNull), Param("foo")(CTString))(CTBoolean)
@@ -182,7 +188,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
 
     val expected = Project(
       Property(Var("a")(CTNode(Set("Administrator"))), PropertyKey("name"))(CTFloat) -> Some(Var("a.name")(CTFloat)),
-      Filter(
+      planFilters(Filter(
         Equals(Property(varG, PropertyKey("name"))(CTString), Param("foo")(CTString))(CTBoolean),
         Expand(
           varA,
@@ -225,10 +231,13 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
               CTBoolean)
           )
         )
-      ),
+      ), irFieldA, irFieldG, irFieldR),
       SolvedQueryModel(
         Set(irFieldA, irFieldG, irFieldR, IRField("a.name")(CTFloat)),
         Set(
+          IsNotNull(varA)(CTBoolean),
+          IsNotNull(varG)(CTBoolean),
+          IsNotNull(varR)(CTBoolean),
           HasLabel(varA, Label("Administrator"))(CTBoolean),
           HasLabel(varG, Label("Group"))(CTBoolean),
           Equals(Property(varG, PropertyKey("name"))(CTString), Param("foo")(CTString))(
@@ -250,7 +259,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
 
     val expected = Project(
       Property(varA2, PropertyKey("prop"))(CTNull) -> Some(Var("a.prop")(CTNull)),
-      Filter(
+      planFilters(Filter(
         Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean),
         PatternScan.nodeScan(
           varA2,
@@ -260,10 +269,10 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
         SolvedQueryModel(
           Set(irFieldA),
           Set(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean)))
-      ),
+      ), irFieldA),
       SolvedQueryModel(
         Set(irFieldA, IRField("a.prop")(CTNull)),
-        Set(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean)))
+        Set(IsNotNull(irFieldA)(CTBoolean), Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))(CTBoolean))(CTBoolean)))
     )
     result should equalWithoutResult(expected)
   }
