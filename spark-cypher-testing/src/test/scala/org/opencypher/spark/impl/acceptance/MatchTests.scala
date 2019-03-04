@@ -27,8 +27,10 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.junit.runner.RunWith
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.relational.impl.graph.ScanGraph
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -36,6 +38,41 @@ import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class MatchTests extends CAPSTestSuite with ScanGraphInit {
+
+  describe("match on empty graphs / table") {
+
+    it("return empty result on empty graph") {
+      val result = caps.cypher(
+        """
+          |MATCH (n)
+          |RETURN n
+        """.stripMargin
+      )
+      result.records.toMaps should equal(Bag())
+    }
+
+    it("return empty result on non-existing labels") {
+      val g = initGraph("CREATE (:A)")
+      val result = g.cypher(
+        """
+          |MATCH (n:B)
+          |RETURN n
+        """.stripMargin
+      )
+      result.records.toMaps should equal(Bag())
+    }
+
+    it("return empty result on empty scan graph") {
+      val g = new ScanGraph(Seq.empty, Schema.empty)
+      val result = g.cypher(
+        """
+          |MATCH (n)
+          |RETURN n
+        """.stripMargin
+      )
+      result.records.toMaps should equal(Bag())
+    }
+  }
 
   describe("match single node") {
 
