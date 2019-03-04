@@ -108,7 +108,6 @@ Feature "OptionalMatchAcceptance": Scenario "Variable length optional relationsh
 Feature "OptionalMatchAcceptance": Scenario "Variable length optional relationships with length predicates"
 Feature "OptionalMatchAcceptance": Scenario "Variable length optional relationships with bound nodes"
 Feature "OptionalMatchAcceptance": Scenario "Variable length optional relationships with bound nodes, no matches"
-Feature "OptionalMatchAcceptance": Scenario "Handling optional matches between optionally matched entities"
 Feature "MatchAcceptance2": Scenario "Aggregation with named paths"
 Feature "MatchAcceptance2": Scenario "Simple variable length pattern"
 Feature "MatchAcceptance2": Scenario "Variable length relationship without lower bound"

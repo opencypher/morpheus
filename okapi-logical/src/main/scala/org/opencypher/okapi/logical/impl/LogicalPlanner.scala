@@ -134,7 +134,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         } else {
           // We need to filter out unit records for strict MATCH
           import Expr._
-          val fieldsNotNullExprs = patternPlan.fields.toSeq.sorted.map(f => IsNotNull(f)(CTBoolean))
+          val fields = patternPlan.fields intersect pattern.fields.map(toVar)
+          val fieldsNotNullExprs = fields.toSeq.sorted.map(f => IsNotNull(f)(CTBoolean))
           planFilter(patternPlan, ListSet(fieldsNotNullExprs: _*))
         }
 
