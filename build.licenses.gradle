@@ -87,6 +87,10 @@ subprojects {
     // License header checking and insertion
     license {
         header = rootProject.file("etc/licenses/headers/NOTICE-header.txt")
+        // what comment style to use
+        mapping {
+            scala = 'SLASHSTAR_STYLE'
+        }
         // https://github.com/hierynomus/license-gradle-plugin/issues/145
         // exclude 'test/resources/**'
         // exclude 'main/resources/**'
