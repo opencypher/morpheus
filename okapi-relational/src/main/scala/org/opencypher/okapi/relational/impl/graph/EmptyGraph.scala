@@ -56,7 +56,7 @@ sealed case class EmptyGraph[T <: Table[T] : TypeTag](implicit val session: Rela
       .map { e => RecordHeader.from(e.toVar)}
       .reduce(_ ++ _)
 
-    val records = session.records.empty(scanHeader)
+    val records = session.records.unit(scanHeader)
     Start.fromEmptyGraph(records)
   }
 }

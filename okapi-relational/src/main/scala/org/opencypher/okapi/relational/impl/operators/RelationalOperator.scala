@@ -406,7 +406,7 @@ final case class EmptyRecords[T <: Table[T] : TypeTag](
 
   override lazy val header: RecordHeader = RecordHeader.from(fields)
 
-  override lazy val _table: T = session.records.empty(header).table
+  override lazy val _table: T = session.records.unit(header).table
 }
 
 final case class FromCatalogGraph[T <: Table[T] : TypeTag](

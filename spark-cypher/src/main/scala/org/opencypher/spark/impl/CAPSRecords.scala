@@ -29,6 +29,7 @@ package org.opencypher.spark.impl
 import java.util.Collections
 
 import org.apache.spark.sql._
+import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.relational.api.io.EntityTable
@@ -45,9 +46,12 @@ case class CAPSRecordsFactory(implicit caps: CAPSSession) extends RelationalCyph
 
   override type Records = CAPSRecords
 
-  override def unit(): CAPSRecords = {
-    val initialDataFrame = caps.sparkSession.createDataFrame(Seq(EmptyRow()))
-    CAPSRecords(RecordHeader.empty, initialDataFrame)
+  override def unit(initialHeader: RecordHeader = RecordHeader.empty): CAPSRecords = {
+    val initialStructType = initialHeader.toStructType
+    val nullableStructType = StructType(initialStructType.fields.map(_.copy(nullable = true)))
+    val nullRow = Row.fromSeq(initialStructType.fields.map(_ => null).toSeq)
+    val initialDataFrame = caps.sparkSession.createDataFrame(Collections.singletonList(nullRow), nullableStructType)
+    CAPSRecords(initialHeader, initialDataFrame)
   }
 
   override def empty(initialHeader: RecordHeader = RecordHeader.empty): CAPSRecords = {
@@ -84,8 +88,6 @@ case class CAPSRecordsFactory(implicit caps: CAPSSession) extends RelationalCyph
     val compatibleDf = df.withCypherCompatibleTypes
     CAPSRecords(compatibleDf.schema.toRecordHeader, compatibleDf)
   }
-
-  private case class EmptyRow()
 }
 
 case class CAPSRecords(

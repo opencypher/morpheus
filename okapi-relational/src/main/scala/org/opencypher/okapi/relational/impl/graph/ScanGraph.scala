@@ -77,7 +77,7 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[EntityTable[T]], val sch
           .map { e => schema.headerForEntity(e.toVar) }
           .reduce(_ ++ _)
 
-        Start.fromEmptyGraph(session.records.empty(scanHeader))
+        Start.fromEmptyGraph(session.records.unit(scanHeader))
 
       case singleOp :: Nil => singleOp
 

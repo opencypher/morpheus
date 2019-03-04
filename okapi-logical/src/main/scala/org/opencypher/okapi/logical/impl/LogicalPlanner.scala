@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
 import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr._
@@ -128,7 +128,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         }
         // this plans both pattern and filter for convenience -- TODO: split up
         val patternPlan = planMatchPattern(inputGraphPlan, pattern, where, graph)
-        if (optional) producer.planOptional(inputGraphPlan, patternPlan) else patternPlan
+        if (optional) producer.planOptional(inputGraphPlan, patternPlan) else planFilter(patternPlan, patternPlan.fields.map(f => IsNotNull(f)(CTBoolean)))
 
       case ProjectBlock(_, Fields(fields), where, _, distinct) =>
         val withFields = planFieldProjections(plan, fields)
