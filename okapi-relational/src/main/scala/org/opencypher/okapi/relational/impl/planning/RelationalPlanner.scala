@@ -565,48 +565,6 @@ object RelationalPlanner {
       }
     }
 
-    def filterNodeLabels(targetType: CTNode, exactLabelMatch: Boolean = false): RelationalOperator[T] = {
-      val entityVar = op.singleEntity
-
-      val labels = targetType.labels
-
-      val labelExpressions: Iterable[HasLabel] = op.header.labelsFor(entityVar)
-
-      val hasColumnForMandatoryLabels = labels.forall { label =>
-        labelExpressions.exists {
-          case HasLabel(_, Label(l)) if l == label => true
-          case _ => false
-        }
-      }
-
-      if (!hasColumnForMandatoryLabels) {
-        implicit val context: RelationalRuntimeContext[T] = op.context
-        relational.Start.fromEmptyGraph(op.session.records.empty(op.header))
-      } else {
-        val filterExpressions = labelExpressions.flatMap {
-          case hl@HasLabel(_, label) if labels.contains(label.name) => Some(Equals(hl, TrueLit)(CTBoolean))
-          case other if exactLabelMatch => Some(Equals(other, FalseLit)(CTBoolean))
-          case _ => None
-        }.toSet
-
-        op.filter(Ands(filterExpressions))
-      }
-    }
-
-    def filterRelTypes(targetType: CTRelationship): RelationalOperator[T] = {
-      val singleEntity = op.singleEntity
-
-      if (singleEntity.cypherType.subTypeOf(targetType)) {
-        op
-      } else {
-        val relTypes = op.header
-          .typesFor(singleEntity)
-          .filter(hasType => targetType.types.contains(hasType.relType.name))
-        val filterExpr = Ors(relTypes.map(Equals(_, TrueLit)(CTBoolean)).toSeq: _*)
-        op.filter(filterExpr)
-      }
-    }
-
     def entityTable: EntityTable[T] = {
       val entity = op.singleEntity
 
