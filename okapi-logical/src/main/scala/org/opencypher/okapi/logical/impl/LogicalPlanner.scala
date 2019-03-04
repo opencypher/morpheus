@@ -128,7 +128,13 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         }
         // this plans both pattern and filter for convenience -- TODO: split up
         val patternPlan = planMatchPattern(inputGraphPlan, pattern, where, graph)
-        if (optional) producer.planOptional(inputGraphPlan, patternPlan) else planFilter(patternPlan, patternPlan.fields.map(f => IsNotNull(f)(CTBoolean)))
+        if (optional) {
+          producer.planOptional(inputGraphPlan, patternPlan)
+        } else {
+          // We need to filter out unit records for strict MATCH
+          val fieldsNotNullExprs: Set[Expr] = patternPlan.fields.map(f => IsNotNull(f)(CTBoolean))
+          planFilter(patternPlan, fieldsNotNullExprs)
+        }
 
       case ProjectBlock(_, Fields(fields), where, _, distinct) =>
         val withFields = planFieldProjections(plan, fields)
