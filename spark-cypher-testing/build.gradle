@@ -12,7 +12,6 @@ dependencies {
     compile group: 'ch.cern.sparkmeasure', name: "spark-measure".scala(), version: ver.sparkmeasure
 
     testCompile project(':okapi-api').sourceSets.test.output
-    testCompile group: 'org.neo4j', name: 'neo4j-cypher-util-3.4', version: ver.neo4j.main
     testCompile group: 'com.h2database', name: 'h2', version: ver.h2
     testCompile group: 'org.spire-math', name: 'claimant'.scala(), version: ver.claimant
 }
