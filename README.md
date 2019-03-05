@@ -21,18 +21,21 @@ integration with GraphX. To learn more about this, please see our [examples](htt
 ## Current status: Pre-release
 
 The functionality and APIs are stabilizing but surface changes (e.g. to the Cypher syntax and semantics for multiple graph processing and graph projections/construction) are still likely to occur. 
-We invite you to try out the project, and we welcome feedback and contributions 
+We invite you to try out the project, and we welcome feedback and contributions.
 
 If you are interested in contributing to the project we would love to hear from you; email us at `opencypher@neo4j.org` or just raise a PR. 
 Please note that this is an openCypher project and contributions can only be accepted if you’ve agreed to the  [openCypher Contributors Agreement (oCCA)](CONTRIBUTING.adoc).
 
+## Documentation
+
+A preview of the documentation for Morpheus, which is a commercially supported version of CAPS, is [available from Neo4j](https://neo4j.com/docs/morpheus-user-guide/preview/).
 
 ## CAPS Features
 
 CAPS is built on top of the Spark DataFrame API and uses features such as the Catalyst optimizer.
 The Spark representations are accessible and can be converted to representations that integrate with other Spark libraries.
 
-CAPS supports a subset of Cypher <!-- TODO: link to User Guide --> and is the first implementation of [multiple graphs](https://github.com/boggle/openCypher/blob/CIP2017-06-18-multiple-graphs/cip/1.accepted/CIP2017-06-18-multiple-graphs.adoc) and graph query compositionality.
+CAPS supports [a subset of Cypher](https://github.com/opencypher/cypher-for-apache-spark/blob/master/documentation/asciidoc/cypher-cypher9-features.adoc) and is the first implementation of [multiple graphs](https://github.com/boggle/openCypher/blob/CIP2017-06-18-multiple-graphs/cip/1.accepted/CIP2017-06-18-multiple-graphs.adoc) and graph query compositionality.
 
 CAPS currently supports importing graphs from both Neo4j and from custom [CSV format](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-core/src/test/resources/csv/sn) in HDFS and local file system.
 CAPS has a data source API that allows you to plug in custom data importers for external graphs.
