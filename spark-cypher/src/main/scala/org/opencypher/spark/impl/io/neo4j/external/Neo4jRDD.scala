@@ -43,7 +43,9 @@ private class Neo4jRDD(
 
     val neo4jPartition: Neo4jPartition = partition.asInstanceOf[Neo4jPartition]
 
-    Executor.execute(neo4jConfig, query, parameters ++ neo4jPartition.window).sparkRows
+    val pageQuery = s"$query SKIP $$_skip LIMIT $$_limit"
+
+    Executor.execute(neo4jConfig, pageQuery, parameters ++ neo4jPartition.window).sparkRows
   }
 
   override protected def getPartitions: Array[Partition] = {

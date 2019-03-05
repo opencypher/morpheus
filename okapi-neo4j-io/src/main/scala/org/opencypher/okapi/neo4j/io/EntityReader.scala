@@ -42,6 +42,16 @@ object EntityReader {
         |RETURN id($entityVarName) AS $idPropertyKey$props""".stripMargin
   }
 
+  def countingQuery(labels: Set[String], maybeMetaLabel: Option[String] = None): String = {
+    val allLabels = labels ++ maybeMetaLabel
+    val labelCount = allLabels.size
+
+    s"""|MATCH ($entityVarName:${allLabels.mkString(":")})
+        |WHERE length(labels($entityVarName)) = $labelCount
+        |RETURN count(*) AS c""".stripMargin
+
+  }
+
   def flatRelTypeQuery(relType: String, schema: Schema, maybeMetaLabel: Option[String] = None): String ={
     val props = schema.relationshipPropertyKeys(relType).propertyExtractorString
     val metaLabel = maybeMetaLabel.map(m => s":$m").getOrElse("")

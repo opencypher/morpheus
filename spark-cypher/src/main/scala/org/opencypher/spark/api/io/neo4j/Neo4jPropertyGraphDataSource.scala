@@ -35,7 +35,7 @@ import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.LabelPropertyMap._
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.api.value.CypherValue.CypherList
+import org.opencypher.okapi.api.value.CypherValue.{CypherInteger, CypherList}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.impl.schema.SchemaImpl
 import org.opencypher.okapi.ir.api.expr.{EndNode, Property, StartNode}
@@ -113,7 +113,19 @@ case class Neo4jPropertyGraphDataSource(
     val flatQuery = EntityReader.flatExactLabelQuery(labels, graphSchema, graphName.metaLabel)
 
     val neo4jConnection = Neo4j(config, caps.sparkSession)
-    val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
+    // partition into 10 similar-sized batches
+    val numPartitions = 10
+
+    val howManyQ = EntityReader.countingQuery(labels, graphName.metaLabel)
+    val thisMany = config.cypherWithNewSession(howManyQ).head("c") match {
+      case CypherInteger(l) => l
+      case _ => throw new IllegalStateException("this can not happen")
+    }
+
+    val rdd = neo4jConnection.cypher(flatQuery)
+      .partitions(numPartitions)
+      .rows(thisMany)
+      .loadRowRdd
 
     // encode Neo4j identifiers to BinaryType
     caps.sparkSession
