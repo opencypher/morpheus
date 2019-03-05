@@ -28,7 +28,7 @@ Please note that this is an openCypher project and contributions can only be acc
 
 ## Documentation
 
-A preview of the documentation for Morpheus, which is a commercially supported version of CAPS, is [available from Neo4j](https://neo4j.com/docs/morpheus-user-guide/preview/).
+A preview of the documentation for Morpheus, which is a commercially supported version of CAPS, is [available from Neo4j](https://neo4j.com/docs/morpheus-user-guide/1.0-preview/).
 
 ## CAPS Features
 
