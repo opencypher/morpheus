@@ -104,61 +104,54 @@ If you have existing data frames which you would like to treat as a graph, have 
 Once the property graph is constructed, it supports Cypher queries via its `cypher` method.
 
 ```scala
+import org.apache.spark.sql.DataFrame
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.{Node, Relationship, RelationshipType}
+import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.util.ConsoleApp
 
 /**
-  * Demonstrates basic usage of the CAPS API by loading an example network via Scala case classes and running a Cypher
-  * query on it.
+  * Demonstrates basic usage of the CAPS API by loading an example graph from [[DataFrame]]s.
   */
-object CaseClassExample extends ConsoleApp {
-
-  // 1) Create CAPS session
+object DataFrameInputExample extends App {
+  // 1) Create CAPS session and retrieve Spark session
   implicit val session: CAPSSession = CAPSSession.local()
+  val spark = session.sparkSession
 
-  // 2) Load social network data via case class instances
-  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  import spark.sqlContext.implicits._
 
-  // 3) Query graph with Cypher
-  val results = socialNetwork.cypher(
-    """|MATCH (a:Person)-[r:FRIEND_OF]->(b)
-       |RETURN a.name, b.name, r.since
-       |ORDER BY a.name""".stripMargin
-  )
+  // 2) Generate some DataFrames that we'd like to interpret as a property graph.
+  val nodesDF = spark.createDataset(Seq(
+    (0L, "Alice", 42L),
+    (1L, "Bob", 23L),
+    (2L, "Eve", 84L)
+  )).toDF("id", "name", "age")
+  val relsDF = spark.createDataset(Seq(
+    (0L, 0L, 1L, "23/01/1987"),
+    (1L, 1L, 2L, "12/12/2009")
+  )).toDF("id", "source", "target", "since")
 
-  // 4) Print result to console
-  results.show
-}
+  // 3) Generate node- and relationship tables that wrap the DataFrames. The mapping between graph entities and columns
+  //    is derived using naming conventions for identifier columns.
+  val personTable = CAPSNodeTable(Set("Person"), nodesDF)
+  val friendsTable = CAPSRelationshipTable("KNOWS", relsDF)
 
-/**
-  * Specify schema and data with case classes.
-  */
-object SocialNetworkData {
+  // 4) Create property graph from graph scans
+  val graph = session.readFrom(personTable, friendsTable)
 
-  case class Person(id: Long, name: String, age: Int) extends Node
+  // 5) Execute Cypher query and print results
+  val result = graph.cypher("MATCH (n:Person) RETURN n.name")
 
-  @RelationshipType("FRIEND_OF")
-  case class Friend(id: Long, source: Long, target: Long, since: String) extends Relationship
+  // 6) Collect results into string by selecting a specific column.
+  //    This operation may be very expensive as it materializes results locally.
+  val names: Set[String] = result.records.table.df.collect().map(_.getAs[String]("n_name")).toSet
 
-  val alice = Person(0, "Alice", 10)
-  val bob = Person(1, "Bob", 20)
-  val carol = Person(2, "Carol", 15)
-
-  val persons = List(alice, bob, carol)
-  val friendships = List(Friend(0, alice.id, bob.id, "23/01/1987"), Friend(1, bob.id, carol.id, "12/12/2009"))
+  println(names)
 }
 ```
 
 The above program prints:
 ```
-╔═════════╤═════════╤══════════════╗
-║ a.name  │ b.name  │ r.since      ║
-╠═════════╪═════════╪══════════════╣
-║ 'Alice' │ 'Bob'   │ '23/01/1987' ║
-║ 'Bob'   │ 'Carol' │ '12/12/2009' ║
-╚═════════╧═════════╧══════════════╝
-(2 rows)
+Set(Alice, Bob, Eve)
 ```
 
 More examples, including [multiple graph features](spark-cypher-examples/src/main/scala/org/opencypher/spark/examples/MultipleGraphExample.scala), can be found [in the examples module](spark-cypher-examples).
