@@ -63,11 +63,6 @@ import scala.reflect.runtime.universe.TypeTag
 abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSession {
 
   /**
-    * Back end specific graph type
-    */
-  type Graph <: RelationalCypherGraph[T]
-
-  /**
     * Back end specific records type
     */
   type Records <: RelationalCypherRecords[T]
@@ -83,7 +78,7 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
     * @param entityTables sequence of node and relationship tables defining the graph
     * @return property graph
     */
-  def readFrom(nodeTable: EntityTable[T], entityTables: EntityTable[T]*): PropertyGraph = {
+  def readFrom(nodeTable: EntityTable[T], entityTables: EntityTable[T]*): RelationalCypherGraph[T] = {
     graphs.create(nodeTable, entityTables: _ *)
   }
 

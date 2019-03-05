@@ -27,26 +27,31 @@
 // tag::full-example[]
 package org.opencypher.spark.examples
 
-import org.apache.spark.sql.types._
-import org.apache.spark.sql.{DataFrame, Row, SparkSession}
+import org.apache.spark.sql.DataFrame
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 import org.opencypher.spark.util.ConsoleApp
 
-import scala.collection.JavaConverters._
-
 /**
-  * Demonstrates basic usage of the CAPS API by loading an example network from existing [[DataFrame]]s and
-  * running a Cypher query on it.
+  * Demonstrates basic usage of the CAPS API by loading an example graph from [[DataFrame]]s.
   */
 object DataFrameInputExample extends ConsoleApp {
   // 1) Create CAPS session and retrieve Spark session
   implicit val session: CAPSSession = CAPSSession.local()
   val spark = session.sparkSession
 
+  import spark.sqlContext.implicits._
+
   // 2) Generate some DataFrames that we'd like to interpret as a property graph.
-  val nodesDF = SocialNetworkDataFrames.nodes(spark)
-  val relsDF = SocialNetworkDataFrames.rels(spark)
+  val nodesDF = spark.createDataset(Seq(
+    (0L, "Alice", 42L),
+    (1L, "Bob", 23L),
+    (2L, "Eve", 84L)
+  )).toDF("id", "name", "age")
+  val relsDF = spark.createDataset(Seq(
+    (0L, 0L, 1L, "23/01/1987"),
+    (1L, 1L, 2L, "12/12/2009")
+  )).toDF("id", "source", "target", "since")
 
   // 3) Generate node- and relationship tables that wrap the DataFrames. The mapping between graph entities and columns
   //    is derived using naming conventions for identifier columns.
@@ -61,41 +66,9 @@ object DataFrameInputExample extends ConsoleApp {
 
   // 6) Collect results into string by selecting a specific column.
   //    This operation may be very expensive as it materializes results locally.
-  // 6a) type safe version, discards values with wrong type
-  val safeNames: Set[String] = result.records.collect.flatMap(_ ("n.name").as[String]).toSet
-  // 6b) unsafe version, throws an exception when value cannot be cast
-  val unsafeNames: Set[String] = result.records.collect.map(_ ("n.name").cast[String]).toSet
+  val names: Set[String] = result.records.table.df.collect().map(_.getAs[String]("n_name")).toSet
 
-  println(safeNames)
+  println(names)
 }
 
-object SocialNetworkDataFrames {
-  def nodes(session: SparkSession): DataFrame = {
-    val nodes = List(
-      Row(0L, "Alice", 42L),
-      Row(1L, "Bob", 23L),
-      Row(2L, "Eve", 84L)
-    ).asJava
-    val nodeSchema = StructType(List(
-      StructField("id", LongType, false),
-      StructField("name", StringType, false),
-      StructField("age", LongType, false))
-    )
-    session.createDataFrame(nodes, nodeSchema)
-  }
-
-  def rels(session: SparkSession): DataFrame = {
-    val rels = List(
-      Row(0L, 0L, 1L, "23/01/1987"),
-      Row(1L, 1L, 2L, "12/12/2009")
-    ).asJava
-    val relSchema = StructType(List(
-      StructField("id", LongType, false),
-      StructField("source", LongType, false),
-      StructField("target", LongType, false),
-      StructField("since", StringType, false))
-    )
-    session.createDataFrame(rels, relSchema)
-  }
-}
 // end::full-example[]
