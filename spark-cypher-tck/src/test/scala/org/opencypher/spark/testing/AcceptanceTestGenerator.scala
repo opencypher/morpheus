@@ -29,14 +29,14 @@ object AcceptanceTestGenerator extends App {
           |import org.opencypher.spark.impl.acceptance.ScanGraphInit
           |${if (black) "import scala.util.{Failure, Success, Try}" else ""}
           |
-       |@RunWith(classOf[JUnitRunner])
+          |@RunWith(classOf[JUnitRunner])
           |class $className extends CAPSTestSuite with ScanGraphInit {""".stripMargin
 
-    //todo: find out why "Finding strings starting with newline" f.i has 2 initQueries here but not in feature file
+
     val testCases = "\n" + scenarios.map(scenario =>
-      if(scenario.name.equals("Failing on incorrect unicode literal")) ""
+      if(scenario.name.equals("Failing on incorrect unicode literal")) "" //this fails at compilation
       else
-      generateScenarioToTest(scenario, black)).mkString("\n")
+      generateTest(scenario, black)).mkString("\n")
 
     val file = new File(s"$path/$packageName/$className.scala")
     val fileString = classHeader + testCases + "}"
@@ -47,14 +47,14 @@ object AcceptanceTestGenerator extends App {
   }
 
 
-  private def generateScenarioToTest(scenario: Scenario, black: Boolean): String = {
+  private def generateTest(scenario: Scenario, black: Boolean): String = {
     val steps = scenario.steps.map {
       case Execute(query, querytype, _) =>
-        //todo: represent query strings over multiple lines
-        val escapedQuery = "\"\"\"" + query.replace("\n       ", " ") + "\"\"\""
+        val alignedQuery = query.replace("\n", "\n\t\t\t\t\t")
+        val escapedQuery = "\"\"\"" + alignedQuery+ "\"\"\""
         querytype match {
-          case InitQuery => s"""val graph = initGraph($escapedQuery)"""
-          case ExecQuery => s"val result = graph.cypher($escapedQuery) " //todo: handle control query like in "Should store duration"
+          case InitQuery => "init" -> alignedQuery
+          case ExecQuery => "exec" -> s"val result = graph.cypher($escapedQuery)" //todo: handle control query like in "Should store duration" (possible via foldLeft? (needs changes of context steps))
           case SideEffectQuery =>
             //currently no TCK-Tests with side effect queries
             throw NotImplementedException("Side Effect Queries not supported yet")
@@ -62,30 +62,44 @@ object AcceptanceTestGenerator extends App {
       case ExpectResult(expectedResult, _, sorted) =>
         //todo: maybe just compare strings?
         if (sorted)
-          s"""CypherToTCKConverter.convertToTckStrings(result.records) should equal("${expectedResult.rows}") """
+          "result_sorted" -> s"""CypherToTCKConverter.convertToTckStrings(result.records) should equal("${StringEscapeUtils.escapeJava(expectedResult.rows.toString())}") """
         else
         //todo: test for unordered things using Bag? (difficult with check via string?)
-          s"""result.records.toMapsWithCollectedEntities should equal("${StringEscapeUtils.escapeJava(expectedResult.rows.toSet.toString())}")"""
+          "result_unsorted" -> s"""result.records.toMapsWithCollectedEntities should equal("${StringEscapeUtils.escapeJava(expectedResult.rows.toSet.toString())}")"""
 
       case ExpectError(errorType, phase, detail, _) =>
-        "//TODO: expected errors" //todo: think about better string generator as error string needs to encapsulate execQuery String
+        "error" -> errorType //todo: think about better string generator as error string needs to encapsulate execQuery String
       case SideEffects(expected, _) =>
         //check if relevant Side-Effects exist
         if (expected.v.exists(_._2 > 0))
-          s"//TODO: side effects"
-        //Todo: calculate via before and after State? (can result graph return nodes/relationships/properties/labels as set of cyphervalues?)
+          "sideeffect" -> s"//TODO: handle side effects"
+        /*Todo: calculate via before and after State? (can result graph return nodes/relationships/properties/labels as a set of cyphervalues?)
+          todo: maybe also possible via Cypher-Queries (may take too long?) */
         else
-          ""
-      case _ => ""
-    }.filter(_.nonEmpty)
+          "" -> ""
+      case _ => "" -> ""
+    }.filter(_._2.nonEmpty)
 
-    //handle case with no initQuery
-    val stepsWithInit = if (!steps.exists(_.startsWith("val graph = initGraph"))) "val graph = initGraph(\"\")" :: steps else steps
+
+    val initQuery = "\"\"\"" + steps.filter(_._1.equals("init")).foldLeft("")((combined,x) => combined + "\n\t\t\t\t\t" + x._2) + "\"\"\""
+
+    val executionQueries = steps.filter(_._1.equals("exec")) //handle control query?
+    val expectedResultSteps = steps.filter(_._1.startsWith("result"))
+    val expectedError = steps.filter(_._1.equals("error")) //only one error can be expected
+    val sideEffects = steps.filter(_._1.eq("sideeffect"))
+
+    //todo start from here (and build strings via map from here)
+    val excQueries = executionQueries.zipAll(expectedResultSteps,"","").zipAll(expectedError,"","").zipAll(sideEffects,"","").map{ case (((a,x),y), z) => (a, x, y, z) }
+
+    //todo refactor in extra stepString
+    val modsteps = steps.filterNot(_._1.equals("init")).map(_._2)
+
 
     val result = if (black)
       s"""  it("${scenario.name}") {
          |      Try({
-         |        ${stepsWithInit.mkString("\n        ")}
+         |        val graph = initGraph($initQuery)
+         |        ${modsteps.mkString("\n        ")}
          |      }) match{
          |        case Success(_) =>
          |          throw new RuntimeException(s"A blacklisted scenario actually worked")
@@ -96,7 +110,8 @@ object AcceptanceTestGenerator extends App {
       """.stripMargin
     else
       s"""  it("${scenario.name}") {
-         |    ${stepsWithInit.mkString("\n    ")}
+         |    val graph = initGraph("$initQuery")
+         |    ${modsteps.mkString("\n    ")}
          |  }
       """.stripMargin
 
