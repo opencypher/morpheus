@@ -29,6 +29,8 @@ package org.opencypher.spark.api.io.neo4j
 import org.apache.spark.SparkException
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
+import org.mockito.Mockito
+import org.mockito.Mockito._
 import org.opencypher.okapi.api.graph.{CypherResult, GraphName, Namespace}
 import org.opencypher.okapi.api.io.conversion.NodeMappingBuilder
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
@@ -40,7 +42,7 @@ import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.CypherGraphSources
-import org.opencypher.spark.api.io.CAPSEntityTable
+import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, CAPSEntityTable}
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -51,6 +53,32 @@ class Neo4jPropertyGraphDataSourceTest
   extends CAPSTestSuite
     with Neo4jServerFixture
     with TeamDataFixture {
+
+  it("should cache the schema during and between queries") {
+    val spiedPGDS = spy(CypherGraphSources.neo4j(neo4jConfig))
+
+    caps.registerSource(Namespace("pgds"), spiedPGDS)
+
+    caps.cypher(
+      s"""
+         |FROM pgds.$entireGraphName
+         |MATCH (n)
+         |RETURN 1
+      """.stripMargin
+    ).records.size
+
+    caps.cypher(
+      s"""
+         |FROM pgds.$entireGraphName
+         |MATCH (n)
+         |RETURN 1
+      """.stripMargin
+    ).records.size
+
+    // we will request schema many times but should only compute it once
+    verify(spiedPGDS, Mockito.atLeast(2)).schema(entireGraphName)
+    verify(spiedPGDS.asInstanceOf[AbstractPropertyGraphDataSource], times(1)).readSchema(entireGraphName)
+  }
 
   it("can read lists from Neo4j") {
     val graph = CypherGraphSources.neo4j(neo4jConfig).graph(entireGraphName).asCaps

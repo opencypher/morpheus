@@ -84,7 +84,7 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
 
   protected def deleteGraph(graphName: GraphName): Unit
 
-  protected def readSchema(graphName: GraphName): CAPSSchema
+  protected[io] def readSchema(graphName: GraphName): CAPSSchema
 
   protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit
 
