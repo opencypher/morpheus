@@ -41,7 +41,7 @@ abstract class AbstractNeo4jDataSource extends AbstractPropertyGraphDataSource {
 
   override def tableStorageFormat: StorageFormat = Neo4jFormat
 
-  override protected def readSchema(graphName: GraphName): CAPSSchema = {
+  override protected[io] def readSchema(graphName: GraphName): CAPSSchema = {
     SchemaFromProcedure(config, omitIncompatibleProperties).asCaps
   }
 
