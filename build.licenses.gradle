@@ -1,10 +1,5 @@
 // All licenses that we accept, and their aliases
 def whitelist = [
-        [name: 'BSD-2-Clause', url: 'http://opensource.org/licenses/BSD-2-Clause', aliases: [
-                [name: 'BSD License', url: 'http://javolution.org/LICENSE.txt'],
-                [name: 'BSD-style', url: 'http://www.opensource.org/licenses/bsd-license.php'],
-                [name: 'The BSD License', url: 'http://www.opensource.org/licenses/bsd-license.php'],
-        ]],
         [name: 'BSD-3-Clause', url: 'http://opensource.org/licenses/BSD-3-Clause', aliases: [
                 [name: 'The BSD 3-Clause License'],
                 [name: 'The 3-Clause BSD License'],
@@ -41,42 +36,13 @@ def whitelist = [
                 [name: 'the Apache License, ASL Version 2.0'],
                 [name: '', url: 'http://www.apache.org/licenses/LICENSE-2.0.txt'],
         ]],
-        [name: 'EPL-1.0', url: 'https://opensource.org/licenses/EPL-1.0', aliases: [
-                [name: 'Eclipse Public License 1.0'],
-                [name: 'Eclipse Public License - Version 1.0'],
-        ]],
-        [name: 'EPL-2.0', url: 'https://opensource.org/licenses/EPL-2.0', aliases: [
-                [name: 'Eclipse Public License v2.0'],
-        ]],
         [name: 'MIT', url: 'https://opensource.org/licenses/MIT', aliases: [
                 [name: 'MIT'],
                 [name: 'MIT license'],
                 [name: 'MIT License'],
                 [name: 'The MIT License'],
                 [name: 'Bouncy Castle Licence'],
-        ]],
-        [name: 'MPL-2.0', url: 'https://opensource.org/licenses/MPL-2.0', aliases: [
-                [name: 'Mozilla Public License, Version 2.0'],
-                [name: 'MPL 2.0 or EPL 1.0'],
-                [name: 'MPL', url: 'http://www.mozilla.org/MPL/2.0/index.txt'],
-                [name: 'Mozilla Public License, v. 2.0', url: 'http://mozilla.org/MPL/2.0/']
-        ]],
-        [name: 'CDDL-1.1+GPL-2.0+CPE', url: 'https://javaee.github.io/glassfish/LICENSE', aliases: [
-                [name: 'CDDL + GPLv2 with classpath exception'],
-                [name: 'CDDL 1.1', url: 'https://glassfish.java.net/public/CDDL+GPL_1_1.html'],
-                [name: 'CDDL 1.1', url: 'https://glassfish.dev.java.net/public/CDDL+GPL_1_1.html'],
-                [name: 'CDDL 1.1', url: 'http://glassfish.java.net/public/CDDL+GPL_1_1.html'],
-                [name: 'CDDL+GPL License', url: 'http://glassfish.java.net/public/CDDL+GPL_1_1.html'],
-                [name: 'GPL2 w/ CPE', url: 'http://glassfish.java.net/public/CDDL+GPL_1_1.html'],
-                [name: 'GPL2 w/ CPE', url: 'https://glassfish.dev.java.net/public/CDDL+GPL_1_1.html'],
-                [name: 'GPL2 w/ CPE', url: 'https://glassfish.java.net/public/CDDL+GPL_1_1.html'],
-                [name: 'GPLv2+CE', url: 'https://glassfish.java.net/public/CDDL+GPL_1_1.html'],
-        ]],
-        [name: 'Public-domain', url: 'https://wiki.creativecommons.org/wiki/Public_domain', aliases: [
-                [name: 'Public domain'],
-                [name: 'Public Domain'],
-
-        ]],
+        ]]
 ]
 
 
