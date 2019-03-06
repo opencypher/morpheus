@@ -191,28 +191,10 @@ object GraphDdl {
 
       GraphType(
         parent = Some(this),
-
         elementTypes = local.elementTypes,
-
-        nodeTypes = Set(
-          parts.nodeTypes.map(local.resolveNodeLabels),
-          parts.relTypes.map(relType => local.resolveNodeLabels(relType.sourceNodeType)),
-          parts.relTypes.map(relType => local.resolveNodeLabels(relType.targetNodeType))
-        ).flatten.map(labels => labels -> tryWithNode(labels)(
-          mergeProperties(labels.flatMap(local.resolveElementTypes))
-        )).toMap,
-
-        edgeTypes = Set(
-          parts.relTypes.map(local.resolveRelType)
-        ).flatten.map(label => label -> tryWithRel(label)(
-          mergeProperties(local.resolveElementTypes(label))
-        )).toMap,
-
-        patterns = parts.relTypes.map(relType => SchemaPattern(
-          local.resolveNodeLabels(relType.sourceNodeType),
-          local.resolveRelType(relType),
-          local.resolveNodeLabels(relType.targetNodeType)
-        )).toSet
+        nodeTypes = resolveNodeTypes(parts, local),
+        edgeTypes = resolveRelationshipTypes(parts, local),
+        patterns = resolvePatterns(parts, local)
       )
     }
 
@@ -222,13 +204,41 @@ object GraphDdl {
     def toRelType(relationshipTypeDefinition: RelationshipTypeDefinition): RelationshipType =
       RelationshipType(
         startNodeType = toNodeType(relationshipTypeDefinition.sourceNodeType),
-        elementType = resolveRelType(relationshipTypeDefinition),
+        elementType = resolveRelationshipLabel(relationshipTypeDefinition),
         endNodeType = toNodeType(relationshipTypeDefinition.targetNodeType))
+
+    private def resolveNodeTypes(parts: GraphTypeParts, local: GraphType): Map[Set[String], PropertyKeys] = {
+      val explicitNodeTypes = parts.nodeTypes
+        .map(local.resolveNodeLabels)
+        .validateDistinctBy(identity, "Duplicate node type")
+
+      val sourceNodeTypes = parts.relTypes.map(relType => local.resolveNodeLabels(relType.sourceNodeType))
+      val targetNodeTypes = parts.relTypes.map(relType => local.resolveNodeLabels(relType.targetNodeType))
+
+      (explicitNodeTypes ++ sourceNodeTypes ++ targetNodeTypes)
+        .map(labels => labels -> tryWithNode(labels)(mergeProperties(labels.flatMap(local.resolveElementTypes))))
+        .toMap
+    }
+
+    private def resolveRelationshipTypes(parts: GraphTypeParts, local: GraphType): Map[String, PropertyKeys] = {
+      parts.relTypes.map(local.resolveRelationshipLabel)
+        .distinct
+        .map(label => label -> tryWithRel(label)(mergeProperties(local.resolveElementTypes(label))))
+        .toMap
+    }
+
+    private def resolvePatterns(parts: GraphTypeParts, local: GraphType): Set[SchemaPattern] = {
+      parts.relTypes.map(relType => SchemaPattern(
+        local.resolveNodeLabels(relType.sourceNodeType),
+        local.resolveRelationshipLabel(relType),
+        local.resolveNodeLabels(relType.targetNodeType)
+      )).toSet
+    }
 
     private def resolveNodeLabels(nodeType: NodeTypeDefinition): Set[String] =
       tryWithNode(nodeType.elementTypes)(nodeType.elementTypes.flatMap(resolveElementTypes).map(_.name))
 
-    private def resolveRelType(relType: RelationshipTypeDefinition): String = {
+    private def resolveRelationshipLabel(relType: RelationshipTypeDefinition): String = {
       val resolved = tryWithRel(relType.elementType)(resolveElementTypes(relType.elementType))
 
       if (resolved.size > 1) {
@@ -270,6 +280,7 @@ object GraphDdl {
           traverse(parentElementType, path :+ parentElementType)
         }
       }
+
       traverse(node, List(node))
     }
   }
