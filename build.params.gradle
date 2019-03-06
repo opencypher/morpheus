@@ -13,7 +13,7 @@ ext {
                            full : '2.11.12'],
 
             cypher      : [frontend: '9.0.20181030',
-                           tck     : '1.0.0-M11'],
+                           tck     : '1.0.0-M12'],
 
             neo4j       : [main  : '3.4.10',
                            driver: '1.7.2'],
