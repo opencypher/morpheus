@@ -171,13 +171,7 @@ final case class Expand(
   extends BinaryLogicalOperator
     with ExpandOperator {
 
-  override val fields: Set[Var] = {
-    val lhsRhs = lhs.fields ++ rhs.fields
-    rel match {
-      case v: Var => lhsRhs + v
-      case _ => lhsRhs
-    }
-  }
+  override val fields: Set[Var] = lhs.fields ++ rhs.fields + rel
 }
 
 final case class BoundedVarLengthExpand(
@@ -223,13 +217,7 @@ final case class ExpandInto(
   extends StackingLogicalOperator
     with ExpandOperator {
 
-  override val fields: Set[Var] = {
-    val lhsRhs = lhs.fields ++ rhs.fields
-    rel match {
-      case v: Var => lhsRhs + v
-      case _ => lhsRhs
-    }
-  }
+  override val fields: Set[Var] = lhs.fields ++ rhs.fields + rel
 
   def lhs: LogicalOperator = in
 
