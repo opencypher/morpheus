@@ -91,6 +91,7 @@ object RelationshipTypeDefinition {
 
 case class RelationshipTypeDefinition(
   sourceNodeType: NodeTypeDefinition,
+  // TODO: needs to be a set in DDL
   elementType: String,
   targetNodeType: NodeTypeDefinition
 ) extends GraphDdlAst with GraphTypeStatement
