@@ -45,7 +45,7 @@ trait JsonSerialization {
 
   protected def writeJsonCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: String): Unit
 
-  override protected def readSchema(graphName: GraphName): CAPSSchema = {
+  override protected[io] def readSchema(graphName: GraphName): CAPSSchema = {
     Schema.fromJson(readJsonSchema(graphName)).asCaps
   }
 
