@@ -152,14 +152,14 @@ object GraphDdl {
   private[graphddl] case class GraphType(
     parent: Option[GraphType] = None,
     elementTypes: Map[String, ElementTypeDefinition] = Map.empty,
-    nodeTypes: Map[Set[String], PropertyKeys] = Map.empty,
+    nodeTypes: Map[NodeTypeDefinition, PropertyKeys] = Map.empty,
     edgeTypes: Map[String, PropertyKeys] = Map.empty,
     patterns: Set[SchemaPattern] = Set.empty
   ) {
     lazy val allElementTypes: Map[String, ElementTypeDefinition] =
       parent.map(_.allElementTypes).getOrElse(Map.empty) ++ elementTypes
 
-    lazy val allNodeTypes: Map[Set[String], PropertyKeys] =
+    lazy val allNodeTypes: Map[NodeTypeDefinition, PropertyKeys] =
       parent.map(_.allNodeTypes).getOrElse(Map.empty) ++ nodeTypes
 
     lazy val allEdgeTypes: Map[String, PropertyKeys] =
@@ -169,10 +169,10 @@ object GraphDdl {
       parent.map(_.allPatterns).getOrElse(Set.empty) ++ patterns
 
     lazy val asOkapiSchema: Schema = Schema.empty
-      .foldLeftOver(allNodeTypes) { case (schema, (labels, properties)) =>
-        schema.withNodePropertyKeys(labels, properties)
+      .foldLeftOver(allNodeTypes) { case (schema, (nodeTypeDefinition, properties)) =>
+        schema.withNodePropertyKeys(nodeTypeDefinition.elementTypes, properties)
       }
-      .foldLeftOver(allNodeTypes.keySet.flatten.flatMap(resolveElementTypes)) { case (schema, eType) =>
+      .foldLeftOver(allNodeTypes.keySet.flatMap(_.elementTypes).flatMap(resolveElementTypes)) { case (schema, eType) =>
         eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
       }
       .foldLeftOver(allEdgeTypes) { case (schema, (label, properties)) =>
@@ -207,7 +207,7 @@ object GraphDdl {
         elementType = resolveRelationshipLabel(relationshipTypeDefinition),
         endNodeType = toNodeType(relationshipTypeDefinition.targetNodeType))
 
-    private def resolveNodeTypes(parts: GraphTypeParts, local: GraphType): Map[Set[String], PropertyKeys] = {
+    private def resolveNodeTypes(parts: GraphTypeParts, local: GraphType): Map[NodeTypeDefinition, PropertyKeys] = {
       val explicitNodeTypes = parts.nodeTypes
         .map(local.resolveNodeLabels)
         .validateDistinctBy(identity, "Duplicate node type")
@@ -216,7 +216,8 @@ object GraphDdl {
       val targetNodeTypes = parts.relTypes.map(relType => local.resolveNodeLabels(relType.targetNodeType))
 
       (explicitNodeTypes ++ sourceNodeTypes ++ targetNodeTypes)
-        .map(labels => labels -> tryWithNode(labels)(mergeProperties(labels.flatMap(local.resolveElementTypes))))
+        .map(labels =>
+          NodeTypeDefinition(labels) -> tryWithNode(labels)(mergeProperties(labels.flatMap(local.resolveElementTypes))))
         .toMap
     }
 
@@ -450,9 +451,7 @@ object GraphDdl {
 
 // Result types
 
-case class GraphDdl(
-  graphs: Map[GraphName, Graph]
-) {
+case class GraphDdl(graphs: Map[GraphName, Graph]) {
   def ++(other: GraphDdl): GraphDdl = GraphDdl(graphs ++ other.graphs)
 }
 
