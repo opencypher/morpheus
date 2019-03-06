@@ -45,7 +45,10 @@ object AcceptanceTestGenerator extends App {
         generateTest(scenario, black)).mkString("\n")
 
     val file = new File(s"$path/$packageName/$className.scala")
-    val fileString = classHeader + testCases + "}"
+    val fileString =
+      s"""$classHeader
+         |$testCases
+         |}""".stripMargin
     val out = new PrintWriter(file)
     out.print(fileString)
     out.close()
@@ -64,17 +67,18 @@ object AcceptanceTestGenerator extends App {
             throw NotImplementedException("Side Effect Queries not supported yet")
         }
       case ExpectResult(expectedResult: CypherValueRecords, _, sorted) =>
-        //escapeJava in Order to escape result-strings
-        if (sorted)
-          "result_sorted" -> s"""StringEscapeUtils.escapeJava(CypherToTCKConverter.convertToTckStrings(result.records).asValueRecords.toString) should equal("${StringEscapeUtils.escapeJava(expectedResult.toString())}") """
+        //result -> expected
+        val resultRows = if (sorted)
+          "resultValueRecords.rows" -> expectedResult.rows
         else
-          "result_unsorted" ->
-            //equal "equalsUnordered" Method of CypherValueRecords (own version here as only strings can be compared)
-            s"""
-               |${lineIndention}val resultValueRecords = CypherToTCKConverter.convertToTckStrings(result.records).asValueRecords
-               |${lineIndention}StringEscapeUtils.escapeJava(resultValueRecords.header.toString()) should equal("${StringEscapeUtils.escapeJava(expectedResult.header.toString())}")
-               |${lineIndention}StringEscapeUtils.escapeJava(resultValueRecords.rows.sortBy(_.hashCode()).toString()) should equal("${StringEscapeUtils.escapeJava(expectedResult.rows.sortBy(_.hashCode()).toString())}")""".stripMargin
+          "resultValueRecords.rows.sortBy(_.hashCode())" -> expectedResult.rows.sortBy(_.hashCode())
 
+        "result" ->
+          s"""
+             |${lineIndention}val resultValueRecords = CypherToTCKConverter.convertToTckStrings(result.records).asValueRecords
+             |${lineIndention}StringEscapeUtils.escapeJava(resultValueRecords.header.toString()) should equal("${StringEscapeUtils.escapeJava(expectedResult.header.toString)}")
+             |${lineIndention}StringEscapeUtils.escapeJava(${resultRows._1}.toString()) should equal("${StringEscapeUtils.escapeJava(resultRows._2.toString)}")
+           """.stripMargin
       case ExpectError(errorType, TCKErrorPhases.RUNTIME, detail, _) =>
         "error" -> errorType //todo: also return detail
       case SideEffects(expected, _) =>
@@ -123,7 +127,7 @@ object AcceptanceTestGenerator extends App {
     val result = if (black)
       s"""  it("${scenario.name}") {
          |      Try({
-         |        val graph = ${if(initSteps.nonEmpty) s"initGraph($initQuery)" else "CAPSGraphFactory.apply().empty"}
+         |        val graph = ${if (initSteps.nonEmpty) s"initGraph($initQuery)" else "CAPSGraphFactory.apply().empty"}
          |        ${testStrings.mkString("\n        ")}
          |      }) match{
          |        case Success(_) =>
@@ -135,7 +139,7 @@ object AcceptanceTestGenerator extends App {
       """.stripMargin
     else
       s"""  it("${scenario.name}") {
-         |    val graph = ${if(initSteps.nonEmpty) s"initGraph($initQuery)" else "CAPSGraphFactory.apply().empty"}
+         |    val graph = ${if (initSteps.nonEmpty) s"initGraph($initQuery)" else "CAPSGraphFactory.apply().empty"}
          |    ${testStrings.mkString("\n    ")}
          |  }
       """.stripMargin
