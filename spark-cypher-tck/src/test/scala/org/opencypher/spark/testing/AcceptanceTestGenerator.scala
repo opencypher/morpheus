@@ -7,7 +7,7 @@ import org.opencypher.okapi.tck.test.ScenariosFor
 import org.opencypher.tools.tck.api._
 import org.scalatest.prop.TableFor1
 import org.apache.commons.lang.StringEscapeUtils
-import org.opencypher.tools.tck.constants.TCKErrorPhases
+import org.opencypher.tools.tck.values.CypherValue
 
 
 object AcceptanceTestGenerator extends App {
@@ -33,7 +33,7 @@ object AcceptanceTestGenerator extends App {
           |import org.opencypher.spark.impl.acceptance.ScanGraphInit
           |import org.apache.commons.lang.StringEscapeUtils
           |import org.opencypher.spark.impl.graph.CAPSGraphFactory
-          |${if (black) "import scala.util.{Failure, Success, Try}" else ""}
+          |import scala.util.{Failure, Success, Try}
           |
           |@RunWith(classOf[JUnitRunner])
           |class $className extends CAPSTestSuite with ScanGraphInit {""".stripMargin
@@ -54,6 +54,11 @@ object AcceptanceTestGenerator extends App {
     out.close()
     file.createNewFile()
   }
+
+  private def stringEscape(s : String):String = {
+    s.replace("\n","\\n").replace("\t","\\t")
+  }
+
   //result consists of (step-type, step-string)
   private def stepToStringTuple(step: Step): (String, String) = {
     step match {
@@ -61,7 +66,7 @@ object AcceptanceTestGenerator extends App {
         val alignedQuery = query.replace("\n", s"\n$lineIndention\t")
         querytype match {
           case InitQuery => "init" -> alignedQuery
-          case ExecQuery => "exec" -> alignedQuery //todo: handle control query like in "Should store duration" (possible via foldLeft? (needs changes of context steps))
+          case ExecQuery => "exec" -> alignedQuery
           case SideEffectQuery =>
             //currently no TCK-Tests with side effect queries
             throw NotImplementedException("Side Effect Queries not supported yet")
@@ -76,15 +81,15 @@ object AcceptanceTestGenerator extends App {
         "result" ->
           s"""
              |${lineIndention}val resultValueRecords = CypherToTCKConverter.convertToTckStrings(result.records).asValueRecords
-             |${lineIndention}StringEscapeUtils.escapeJava(resultValueRecords.header.toString()) should equal("${StringEscapeUtils.escapeJava(expectedResult.header.toString)}")
-             |${lineIndention}StringEscapeUtils.escapeJava(${resultRows._1}.toString()) should equal("${StringEscapeUtils.escapeJava(resultRows._2.toString)}")
+             |${lineIndention}StringEscapeUtils.escapeJava(resultValueRecords.header.toString()) should equal("${StringEscapeUtils.escapeJava(stringEscape(expectedResult.header.toString))}")
+             |${lineIndention}StringEscapeUtils.escapeJava(${resultRows._1}.toString()) should equal("${StringEscapeUtils.escapeJava(stringEscape(resultRows._2.toString))}")
            """.stripMargin
-      case ExpectError(errorType, TCKErrorPhases.RUNTIME, detail, _) =>
-        "error" -> errorType //todo: also return detail
+      case ExpectError(errorType, errorPhase, detail, _) =>
+        "error" -> errorType //todo: also return detail here
       case SideEffects(expected, _) =>
         val relevantEffects = expected.v.filter(_._2 > 0) //check if relevant Side-Effects exist
         if (relevantEffects.nonEmpty)
-          "sideeffect" -> s"//TODO: handle side effects"
+          "sideeffect" -> s"fail() //TODO: handle side effects"
         /*Todo: calculate via before and after State? (can result graph return nodes/relationships/properties/labels as a set of cyphervalues?)
         todo: maybe also possible via Cypher-Queries (may take too long?) */
         else
@@ -93,6 +98,7 @@ object AcceptanceTestGenerator extends App {
     }
   }
 
+
   private def generateTest(scenario: Scenario, black: Boolean): String = {
 
     val escapeStringMarks = "\"\"\""
@@ -100,8 +106,9 @@ object AcceptanceTestGenerator extends App {
       stepToStringTuple
     }.filter(_._2.nonEmpty)
 
-    val initSteps = steps.filter(_._1.equals("init"))
-    val initQuery = escapeStringMarks + initSteps.foldLeft("")((combined, x) => combined + s"\n$lineIndention\t" + x._2) + escapeStringMarks
+    val initSteps = scenario.steps.filter{ case Execute(_, InitQuery, _) => true
+        case _=> false }
+    val initQuery = escapeStringMarks + initSteps.foldLeft("")((combined, x) => combined + s"\n$lineIndention\t" + stepToStringTuple(x)._2) + escapeStringMarks
 
 
     val executionQuerySteps = steps.filter(_._1.equals("exec")).map(_._2) //handle control query?
@@ -123,12 +130,16 @@ object AcceptanceTestGenerator extends App {
         """.stripMargin
     }
 
+    val testString =
+      s"""
+         |    val graph = ${if (initSteps.nonEmpty) s"initGraph($initQuery)" else "CAPSGraphFactory.apply().empty"}
+         |    ${testResultStrings.mkString("\n        ")}
+       """.stripMargin
 
-    val result = if (black)
+   if (black)
       s"""  it("${scenario.name}") {
          |      Try({
-         |        val graph = ${if (initSteps.nonEmpty) s"initGraph($initQuery)" else "CAPSGraphFactory.apply().empty"}
-         |        ${testStrings.mkString("\n        ")}
+         |        $testString
          |      }) match{
          |        case Success(_) =>
          |          throw new RuntimeException(s"A blacklisted scenario actually worked")
@@ -139,12 +150,9 @@ object AcceptanceTestGenerator extends App {
       """.stripMargin
     else
       s"""  it("${scenario.name}") {
-         |    val graph = ${if (initSteps.nonEmpty) s"initGraph($initQuery)" else "CAPSGraphFactory.apply().empty"}
-         |    ${testStrings.mkString("\n    ")}
+         |    $testString
          |  }
       """.stripMargin
-
-    result
   }
 
   //todo: clear directories before first write?
