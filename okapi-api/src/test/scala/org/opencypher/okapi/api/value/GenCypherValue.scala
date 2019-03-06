@@ -26,17 +26,18 @@
  */
 package org.opencypher.okapi.api.value
 
-import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.api.value.CypherValue.Format.defaultValueFormatter
+import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.parboiled.support.Chars._
 import org.scalacheck.Arbitrary.arbitrary
 import org.scalacheck.Gen
 import org.scalacheck.Gen.{choose, const, listOfN, lzy, mapOfN, oneOf}
-import org.parboiled.support.Chars._
 
 object GenCypherValue {
 
   val maxContainerSize: Int = 3
+  val maxLabelLength = 10
 
   private val reservedParboiledChars = Set(
     DEL_ERROR,
@@ -51,9 +52,9 @@ object GenCypherValue {
   )
   private val bannedChars = Set("'") ++ reservedParboiledChars
 
-  val string: Gen[CypherString] = arbitrary[String].
-    map(s => s.filterNot(bannedChars.contains)).
-    map(CypherString)
+  private val stringWithoutBanned = arbitrary[String].map(s => s.filterNot(bannedChars.contains))
+
+  val string: Gen[CypherString] = stringWithoutBanned.map(CypherString)
 
   def oneOfSeq[T](gs: Seq[Gen[T]]): Gen[T] = choose(0, gs.size - 1).flatMap(gs(_))
 
@@ -62,7 +63,15 @@ object GenCypherValue {
   val float: Gen[CypherFloat] = arbitrary[Double].map(CypherFloat)
   val number: Gen[CypherNumber[Any]] = oneOf(integer, float)
 
-  val labels: Gen[Set[String]] = arbitrary[Set[String]]
+  val label: Gen[String] = for {
+    size <- choose(min = 1, max = maxLabelLength)
+    characters <- listOfN(size, Gen.alphaNumChar)
+  } yield characters.mkString
+
+  val labels: Gen[Set[String]] = for {
+    size <- choose(min = 0, max = maxContainerSize)
+    labelElements <- listOfN(size, label)
+  } yield labelElements.toSet
 
   val scalarGenerators: Seq[Gen[CypherValue]] = List(string, boolean, integer, float)
 
@@ -70,7 +79,7 @@ object GenCypherValue {
 
   val scalarOrNull: Gen[CypherValue] = oneOfSeq(scalarGenerators :+ const(CypherNull))
 
-  val homogeneousScalarListGenerator: Gen[CypherList] = oneOfSeq(scalarGenerators.map(listWithElementGenerator))
+  val homogeneousScalarList: Gen[CypherList] = oneOfSeq(scalarGenerators.map(listWithElementGenerator))
 
   def listWithElementGenerator(elementGeneratorGenerator: Gen[CypherValue]): Gen[CypherList] = lzy(for {
     size <- choose(min = 0, max = maxContainerSize)
@@ -82,21 +91,21 @@ object GenCypherValue {
 
   lazy val list: Gen[CypherList] = lzy(listWithElementGenerator(any))
 
-  lazy val propertyMap: Gen[CypherMap] = mapWithValueGenerator(oneOfSeq(scalarGenerators :+ homogeneousScalarListGenerator))
+  lazy val propertyMap: Gen[CypherMap] = mapWithValueGenerator(oneOfSeq(scalarGenerators :+ homogeneousScalarList))
 
   lazy val map: Gen[CypherMap] = lzy(mapWithValueGenerator(any))
 
   def mapWithValueGenerator(valueGenerator: Gen[CypherValue]): Gen[CypherMap] = lzy(for {
     size <- choose(min = 0, max = maxContainerSize)
     keyValuePairs <- mapOfN(size, for {
-      key <- arbitrary[String]
+      key <- label
       value <- valueGenerator
     } yield key -> value)
   } yield keyValuePairs)
 
   def singlePropertyMap(
-    keyGenerator: Gen[String] = const("prop"),
-    valueGenerator: Gen[CypherValue] = oneOfSeq(scalarGenerators :+ homogeneousScalarListGenerator)
+    keyGenerator: Gen[String] = const("singleProperty"),
+    valueGenerator: Gen[CypherValue] = oneOfSeq(scalarGenerators :+ homogeneousScalarList)
   ): Gen[CypherMap] = lzy(for {
     key <- keyGenerator
     value <- valueGenerator
@@ -122,7 +131,7 @@ object GenCypherValue {
       id <- relId
       start <- startNodeId
       end <- endNodeId
-      relType <- arbitrary[String]
+      relType <- label
       ps <- propertyMap
     } yield TestRelationship(id, start, end, relType, ps)
   }

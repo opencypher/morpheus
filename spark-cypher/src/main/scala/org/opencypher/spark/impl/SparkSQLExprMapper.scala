@@ -459,11 +459,9 @@ object SparkSQLExprMapper {
           }
 
         case MapExpression(items) => expr.cypherType.material match {
-          case CTMap(inner) =>
+          case CTMap(_) =>
             val innerColumns = items.map {
-              case (key, innerExpr) =>
-                val targetType = inner(key).toSparkType.get
-                innerExpr.asSparkSQLExpr.cast(targetType).as(key)
+              case (key, innerExpr) => innerExpr.asSparkSQLExpr.as(key)
             }.toSeq
             createStructColumn(innerColumns)
           case other => throw IllegalArgumentException("an expression of type CTMap", other)
