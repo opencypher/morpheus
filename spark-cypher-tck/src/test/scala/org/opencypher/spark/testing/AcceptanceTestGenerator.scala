@@ -94,6 +94,9 @@ object AcceptanceTestGenerator extends App {
         todo: maybe also possible via Cypher-Queries (may take too long?) */
         else
           "" -> ""
+      case Parameters(v,_) => "param" -> v.foldLeft(""){(acc,x) =>
+        val value: CypherValue = x._2 //Todo: write unwrap for CypherValue?
+        acc + s"val ${x._1} = ${x._2} \n"}
       case _ => "" -> ""
     }
   }
@@ -117,15 +120,23 @@ object AcceptanceTestGenerator extends App {
     val sideEffectSteps = steps.filter(_._1.eq("sideeffect")).map(_._2)
 
     //todo allow f.i. expected error only for 2nd executionQuery
-    val tests = executionQuerySteps.zipWithIndex.zipAll(expectedResultSteps, "", "").zipAll(expectedErrorSteps, "", "").zipAll(sideEffectSteps, "", "").map { case ((((v, w), x), y), z) => (v, w, x, y, z) }
+    val tests = executionQuerySteps.zipWithIndex.zipAll(expectedResultSteps, "", "").zipAll(expectedErrorSteps, "", "").zipAll(sideEffectSteps, "", "")
+      .map { case ((((v, w), x), y), z) => (v, w, x, y, z) }
 
-    val testStrings = tests.map {
+    val testResultStrings = tests.map {
       case (exec: String, num: Integer, result: String, expectedError: String, sideEffect: String) =>
         //todo: !! how to check for expectedErrorType?
+        val errorString = if(expectedError.nonEmpty)
+          s"""
+             |    val result$num = an[Exception] shouldBe thrownBy{graph.cypher($escapeStringMarks$exec$escapeStringMarks)}
+             |
+           """.stripMargin
+        else
+          s"val result$num = graph.cypher($escapeStringMarks$exec$escapeStringMarks)"
+        //todo: improve replacement as some are wrong
         s"""
-           |    val result$num = graph.cypher($escapeStringMarks$exec$escapeStringMarks)
+           |    $errorString
            |    ${result.replace("result", s"result$num")}
-           |    ${if (expectedError.nonEmpty) "fail() //todo: check expected Error" else ""}
            |    ${if (sideEffect.nonEmpty) "fail() //todo: check side effects" else ""}
         """.stripMargin
     }
