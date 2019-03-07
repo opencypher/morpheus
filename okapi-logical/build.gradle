@@ -1,4 +1,3 @@
-
 description = 'Okapi Logical - Logical representation of Cypher queries'
 
 dependencies {

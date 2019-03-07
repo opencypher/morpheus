@@ -39,7 +39,7 @@ import org.opencypher.okapi.relational.impl.{operators => relational}
 
 import scala.reflect.runtime.universe.TypeTag
 
-trait ExpandDirection
+sealed trait ExpandDirection
 case object Outbound extends ExpandDirection
 case object Inbound extends ExpandDirection
 

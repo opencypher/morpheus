@@ -174,7 +174,7 @@ object ConstructGraphPlanner {
         (nextColumnPartitionId + 1) -> (nodeProjections ++ computeNodeProjections(inOp, maybeCreatedEntityIdPrefix, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
     }
 
-    val createdNodesOp = inOp.addInto(nodesToCreate.map { case (into, value) => value -> into }: _*)
+    val createdNodesOp = inOp.addInto(nodesToCreate.map(_.swap): _*)
 
     val (_, relsToCreate) = rels.foldLeft(0 -> Seq.empty[(Expr, Expr)]) {
       case ((nextColumnPartitionId, relProjections), nextRelToConstruct) =>
@@ -259,9 +259,9 @@ object ConstructGraphPlanner {
 
   def copyExpressions[E <: Expr, T <: Table[T]](inOp: RelationalOperator[T], targetVar: Var)
     (extractor: RecordHeader => Set[E]): Map[Expr, Expr] = {
-    val origExprs = extractor(inOp.header)
-    val copyExprs = origExprs.map(_.withOwner(targetVar))
-    copyExprs.zip(origExprs).toMap
+      extractor(inOp.header)
+        .map(o => o.withOwner(targetVar) -> o)
+        .toMap
   }
 
   def prefixId(id: Expr, maybeCreatedEntityIdPrefix: Option[GraphIdPrefix]): Expr = {

@@ -35,7 +35,7 @@ import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.{CypherEntity, CypherValue}
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException}
 import org.opencypher.okapi.impl.temporal.Duration
 import org.opencypher.okapi.relational.impl.graph.ScanGraph
 import org.opencypher.okapi.testing.propertygraph.{InMemoryTestGraph, InMemoryTestNode, InMemoryTestRelationship}
@@ -111,6 +111,8 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with EntityTableCreatio
             val rel = row(relEntity).asInstanceOf[InMemoryTestRelationship]
             row(sourceNode).id == rel.startId && row(targetEntity).id == rel.endId
           }
+
+          case Connection(None, None, _) => throw IllegalStateException("Connection without source or target node")
         }
     }
   }

@@ -9,8 +9,8 @@ dependencies {
 
     compile group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: ver.neo4j.driver
 
-    compileOnly group: 'org.apache.spark', name: "spark-core".scala(),     version: ver.spark
-    compileOnly group: 'org.apache.spark', name: "spark-sql".scala(),      version: ver.spark
+    compileOnly group: 'org.apache.spark', name: "spark-core".scala(), version: ver.spark
+    compileOnly group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark
     compileOnly group: 'org.apache.spark', name: "spark-catalyst".scala(), version: ver.spark
 }
 

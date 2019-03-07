@@ -9,7 +9,6 @@ dependencies {
     compile group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark
     compile group: 'org.apache.spark', name: "spark-hive".scala(), version: ver.spark
     compile group: 'org.apache.hadoop', name: 'hadoop-minicluster', version: ver.hadoop
-    compile group: 'ch.cern.sparkmeasure', name: "spark-measure".scala(), version: ver.sparkmeasure
 
     testCompile project(':okapi-api').sourceSets.test.output
     testCompile group: 'com.h2database', name: 'h2', version: ver.h2
