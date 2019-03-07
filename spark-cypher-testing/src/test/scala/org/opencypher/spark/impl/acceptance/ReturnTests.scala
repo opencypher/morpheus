@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import org.apache.spark.sql.Row
 import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue._
@@ -323,6 +324,24 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
       result.records.toMaps should equal(Bag(
         CypherMap("val" -> 4L)
       ))
+    }
+  }
+
+  describe("MAPS") {
+    it("returns maps") {
+      val res = caps.cypher("RETURN { foo : 123, bar : '456'} AS m")
+      res.records.collect.toBag should equal(Bag(CypherMap("m" -> CypherMap("foo" -> 123, "bar" -> "456"))))
+    }
+
+    it("returns maps and support df struct access") {
+      val res = caps.cypher("RETURN { foo : 123, bar : '456'} AS m")
+      val df = res.records.asCaps.df
+      df.select("m.foo", "m.bar").collect() should equal(Array(Row(123, "456")))
+    }
+
+    it("returns map elements") {
+      val res = caps.cypher("WITH { foo : 123, bar : '456'} AS m RETURN m.foo AS foo, m.bar AS bar")
+      res.records.collect.toBag should equal(Bag(CypherMap("foo" -> 123, "bar" -> "456")))
     }
   }
 }
