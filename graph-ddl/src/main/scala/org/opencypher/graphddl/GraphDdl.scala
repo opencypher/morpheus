@@ -203,9 +203,9 @@ object GraphDdl {
 
     def toRelType(relationshipTypeDefinition: RelationshipTypeDefinition): RelationshipType =
       RelationshipType(
-        startNodeType = toNodeType(relationshipTypeDefinition.sourceNodeType),
+        startNodeType = toNodeType(relationshipTypeDefinition.startNodeType),
         elementType = resolveRelationshipLabel(relationshipTypeDefinition),
-        endNodeType = toNodeType(relationshipTypeDefinition.targetNodeType))
+        endNodeType = toNodeType(relationshipTypeDefinition.endNodeType))
 
     private def resolveNodeTypes(
       parts: GraphTypeParts,
@@ -215,8 +215,8 @@ object GraphDdl {
         .map(local.resolveNodeLabels)
         .validateDistinctBy(identity, "Duplicate node type")
 
-      val sourceNodeTypes = parts.relTypes.map(relType => local.resolveNodeLabels(relType.sourceNodeType))
-      val targetNodeTypes = parts.relTypes.map(relType => local.resolveNodeLabels(relType.targetNodeType))
+      val sourceNodeTypes = parts.relTypes.map(relType => local.resolveNodeLabels(relType.startNodeType))
+      val targetNodeTypes = parts.relTypes.map(relType => local.resolveNodeLabels(relType.endNodeType))
 
       (explicitNodeTypes ++ sourceNodeTypes ++ targetNodeTypes)
         .map(labels =>
@@ -238,9 +238,9 @@ object GraphDdl {
 
     private def resolvePatterns(parts: GraphTypeParts, local: GraphType): Set[SchemaPattern] = {
       parts.relTypes.map(relType => SchemaPattern(
-        local.resolveNodeLabels(relType.sourceNodeType),
+        local.resolveNodeLabels(relType.startNodeType),
         local.resolveRelationshipLabel(relType),
-        local.resolveNodeLabels(relType.targetNodeType)
+        local.resolveNodeLabels(relType.endNodeType)
       )).toSet
     }
 
@@ -540,7 +540,7 @@ object NodeType {
 }
 
 case class NodeType(elementTypes: Set[String]) {
-  override def toString: String = s"(${elementTypes.mkString(", ")})"
+  override def toString: String = s"(${elementTypes.mkString(",")})"
 }
 
 object RelationshipType {

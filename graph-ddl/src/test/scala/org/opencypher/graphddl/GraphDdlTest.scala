@@ -449,6 +449,20 @@ class GraphDdlTest extends FunSpec with Matchers {
       e.getFullMessage should (include("fooSchema") and include("node type") and include("(A, B, X)"))
     }
 
+    it("fails on duplicate relationship types") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |CREATE GRAPH TYPE fooSchema (
+          |  A (),
+          |  B (),
+          |  (A)-[B]->(A),
+          |  (A)-[B]->(A)
+          |)
+        """.stripMargin
+      )
+      e.getFullMessage should (include("fooSchema") and include("relationship type") and include("(A)-[B]->(A)"))
+    }
+
     it("fails on duplicate node mappings") {
       val e = the[GraphDdlException] thrownBy GraphDdl(
         """
