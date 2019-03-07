@@ -1,5 +1,8 @@
 // All licenses that we accept, and their aliases
 def whitelist = [
+        [name: 'BSD-2-Clause', url: 'http://opensource.org/licenses/BSD-2-Clause', aliases: [
+                [name: 'BSD-style', url:'http://www.opensource.org/licenses/bsd-license.php'],
+        ]],
         [name: 'BSD-3-Clause', url: 'http://opensource.org/licenses/BSD-3-Clause', aliases: [
                 [name: 'The BSD 3-Clause License'],
                 [name: 'The 3-Clause BSD License'],
