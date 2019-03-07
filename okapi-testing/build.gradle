@@ -3,7 +3,6 @@ description = 'Okapi Test Utilities'
 dependencies {
     compile project(':okapi-api')
 
-    compile group: 'org.neo4j', name: 'neo4j-front-end-4.0', version: ver.cypher.frontend
     compile group: 'junit', name: 'junit', version: ver.junit.main
     compile group: 'org.mockito', name: 'mockito-all', version: ver.mockito
     compile group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest

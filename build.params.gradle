@@ -12,7 +12,7 @@ ext {
             scala       : [major: '2.12',
                            full : '2.12.8'],
 
-            cypher      : [frontend: '4.0.0-SNAPSHOT',
+            cypher      : [frontend: '9.0.20190305',
                            tck     : '1.0.0-M13'],
 
             neo4j       : [main  : '4.0.0-SNAPSHOT',

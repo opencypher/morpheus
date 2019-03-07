@@ -3,7 +3,7 @@ description = 'Okapi - openCypher API'
 dependencies {
     compile project(':okapi-trees')
 
-    compile(group: 'org.neo4j', name: 'neo4j-front-end-4.0', version: ver.cypher.frontend) {
+    compile(group: 'org.opencypher', name: 'front-end-9.0', version: ver.cypher.frontend) {
         exclude group: 'org.scalatest', module: 'scalatest_2.11'
         exclude group: 'org.scalacheck', module: 'scalacheck_2.11'
     }
