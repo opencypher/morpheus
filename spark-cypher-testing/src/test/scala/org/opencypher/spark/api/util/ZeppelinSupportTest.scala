@@ -144,7 +144,21 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture with ScanGr
          |  "directed": true
          |}""".stripMargin
 
-    asGraph should equal(expected)
+    val act = sorted(ujson.read(asGraph))
+    val exp = sorted(ujson.read(expected))
+    act shouldEqual exp
+  }
+
+  def sorted(v: ujson.Value): ujson.Value = v match {
+    case ujson.Obj(x) =>
+      val res = ujson.Obj()
+      x.mapValues(sorted(_)).toSeq.sortBy(_._1).foreach(e => res.value.put(e._1, e._2))
+      res
+    case ujson.Arr(x) =>
+      val res = ujson.Arr()
+      x.map(sorted(_)).sortBy(_.toString).foreach(e => res.value.append(e))
+      res
+    case _ => v
   }
 
   it("supports Zeppelin network representation") {

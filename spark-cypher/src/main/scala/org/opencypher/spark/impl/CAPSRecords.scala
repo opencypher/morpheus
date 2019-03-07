@@ -41,7 +41,7 @@ import org.opencypher.spark.impl.table.SparkTable._
 
 import scala.collection.JavaConverters._
 
-case class CAPSRecordsFactory(implicit caps: CAPSSession) extends RelationalCypherRecordsFactory[DataFrameTable] {
+case class CAPSRecordsFactory()(implicit caps: CAPSSession) extends RelationalCypherRecordsFactory[DataFrameTable] {
 
   override type Records = CAPSRecords
 

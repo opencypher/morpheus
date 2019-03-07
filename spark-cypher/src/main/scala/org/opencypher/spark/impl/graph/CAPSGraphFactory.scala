@@ -30,6 +30,6 @@ import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, Relatio
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
-case class CAPSGraphFactory(implicit val session: CAPSSession) extends RelationalCypherGraphFactory[DataFrameTable] {
+case class CAPSGraphFactory()(implicit val session: CAPSSession) extends RelationalCypherGraphFactory[DataFrameTable] {
   override type Graph = RelationalCypherGraph[DataFrameTable]
 }

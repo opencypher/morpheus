@@ -37,7 +37,7 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 import scala.reflect.runtime.universe.TypeTag
 
-sealed case class EmptyGraph[T <: Table[T] : TypeTag](implicit val session: RelationalCypherSession[T]) extends RelationalCypherGraph[T] {
+sealed case class EmptyGraph[T <: Table[T] : TypeTag]()(implicit val session: RelationalCypherSession[T]) extends RelationalCypherGraph[T] {
 
   override type Session = RelationalCypherSession[T]
 

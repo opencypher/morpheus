@@ -1,5 +1,5 @@
 subprojects {
-    apply plugin: 'com.github.alisiikh.scalastyle_2.11'
+    apply plugin: 'com.github.alisiikh.scalastyle'.scala()
 
     scalaStyle {
         config = rootProject.file("etc/scalastyle_config.xml")

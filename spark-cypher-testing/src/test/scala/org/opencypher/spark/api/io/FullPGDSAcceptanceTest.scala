@@ -35,18 +35,17 @@ import org.opencypher.graphddl
 import org.opencypher.graphddl.{Graph, NodeToViewMapping, NodeViewKey}
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
-import org.opencypher.okapi.neo4j.io.MetaLabelSupport
-import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
 import org.opencypher.spark.api.FSGraphSources.FSGraphSourceFactory
+import org.opencypher.spark.api.GraphSources
 import org.opencypher.spark.api.io.FileFormat._
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy._
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Hive
 import org.opencypher.spark.api.io.sql.util.DdlUtils._
 import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlPropertyGraphDataSource}
 import org.opencypher.spark.api.io.util.CAPSGraphExport._
-import org.opencypher.spark.api.{CypherGraphSources, GraphSources}
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.api.io.CAPSPGDSAcceptanceTest
@@ -54,11 +53,9 @@ import org.opencypher.spark.testing.fixture.{H2Fixture, HiveFixture, MiniDFSClus
 import org.opencypher.spark.testing.utils.H2Utils._
 
 class FullPGDSAcceptanceTest extends CAPSTestSuite
-  with CAPSPGDSAcceptanceTest with MiniDFSClusterFixture with Neo4jServerFixture with H2Fixture with HiveFixture {
+  with CAPSPGDSAcceptanceTest with MiniDFSClusterFixture with H2Fixture with HiveFixture {
 
   // === Run scenarios with all factories
-
-  executeScenariosWithContext(cypher10Scenarios, Neo4jContextFactory)
 
   executeScenariosWithContext(allScenarios, SessionContextFactory)
 
@@ -240,23 +237,6 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
     }
   }
 
-  case object Neo4jContextFactory extends CAPSTestContextFactory {
-
-    override def toString: String = s"NEO4J-PGDS"
-
-    override def initPgds(graphNames: List[GraphName]): PropertyGraphDataSource = {
-      val pgds = CypherGraphSources.neo4j(neo4jConfig)
-      // Neo4j caches meta labels, even if their node are no longer present.
-      pgds.graphNames.filter(_ != MetaLabelSupport.entireGraphName).foreach(pgds.delete)
-      graphNames.foreach(gn => pgds.store(gn, graph(gn)))
-      pgds
-    }
-
-    override def releasePgds(implicit ctx: TestContext): Unit = {
-      pgds.graphNames.filter(_ != MetaLabelSupport.entireGraphName).foreach(pgds.delete)
-    }
-  }
-
   class HDFSFileSystemContextFactory(
     val fileFormat: FileFormat,
     val filesPerTable: Int
@@ -317,6 +297,7 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
         case FileFormat.csv => graphSourceFactory.csv
         case FileFormat.parquet => graphSourceFactory.parquet
         case FileFormat.orc => graphSourceFactory.orc
+        case other => throw IllegalArgumentException("A supported file format", other)
       }
       graphNames.foreach(gn => pgds.store(gn, graph(gn)))
       pgds
