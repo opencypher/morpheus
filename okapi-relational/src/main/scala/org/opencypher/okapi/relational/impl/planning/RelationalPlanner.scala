@@ -151,7 +151,7 @@ object RelationalPlanner {
             val tempOutgoing = first.join(second, Seq(source -> startNode), InnerJoin)
             val outgoing = tempOutgoing.join(third, Seq(endNode -> target), InnerJoin)
 
-            val filterExpression = Not(Equals(startNode, endNode)(CTBoolean))(CTBoolean)
+            val filterExpression = Not(Equals(startNode, endNode))
             val relsWithoutLoops = second.filter(filterExpression)
 
             val tempIncoming = first.join(relsWithoutLoops, Seq(source -> endNode), InnerJoin)
@@ -239,7 +239,7 @@ object RelationalPlanner {
         val joinedData = leftResult.join(distinctRhsData, renameExprs.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
         // 5. If at least one rhs join column is not null, the sub-query exists and true is projected to the target expression
         val targetExpr = renameExprs.head.alias
-        joinedData.addInto(IsNotNull(targetExpr)(CTBoolean) -> predicateField.targetField)
+        joinedData.addInto(IsNotNull(targetExpr) -> predicateField.targetField)
 
       case logical.OrderBy(sortItems: Seq[SortItem], in, _) =>
         relational.OrderBy(process[T](in), sortItems)
@@ -458,7 +458,7 @@ object RelationalPlanner {
         case _ => Set.empty
       }
       val withTrueLabels = withDroppedExpressions.addInto(
-        trueLabels.map(label => TrueLit -> HasLabel(targetVar, Label(label))(CTBoolean)).toSeq: _*
+        trueLabels.map(label => TrueLit -> HasLabel(targetVar, Label(label))).toSeq: _*
       )
 
       // Fill in missing false label columns
@@ -467,7 +467,7 @@ object RelationalPlanner {
         case _ => Set.empty
       }
       val withFalseLabels = withTrueLabels.addInto(
-        falseLabels.map(label => FalseLit -> HasLabel(targetVar, Label(label))(CTBoolean)).toSeq: _*
+        falseLabels.map(label => FalseLit -> HasLabel(targetVar, Label(label))).toSeq: _*
       )
 
       // Fill in missing true relType columns
@@ -476,7 +476,7 @@ object RelationalPlanner {
         case _ => Set.empty
       }
       val withTrueRelTypes = withFalseLabels.addInto(
-        trueRelTypes.map(relType => TrueLit -> HasType(targetVar, RelType(relType))(CTBoolean)).toSeq: _*
+        trueRelTypes.map(relType => TrueLit -> HasType(targetVar, RelType(relType))).toSeq: _*
       )
 
       // Fill in missing false relType columns
@@ -485,13 +485,13 @@ object RelationalPlanner {
         case _ => Set.empty
       }
       val withFalseRelTypes = withTrueRelTypes.addInto(
-        falseRelTypes.map(relType => FalseLit -> HasType(targetVar, RelType(relType))(CTBoolean)).toSeq: _*
+        falseRelTypes.map(relType => FalseLit -> HasType(targetVar, RelType(relType))).toSeq: _*
       )
 
       // Fill in missing properties
       val missingProperties = targetHeader.propertiesFor(targetVar) -- withFalseRelTypes.header.propertiesFor(targetVar)
       val withProperties = withFalseRelTypes.addInto(
-        missingProperties.map(propertyExpr => NullLit(propertyExpr.cypherType) -> propertyExpr).toSeq: _*
+        missingProperties.map(propertyExpr => NullLit -> propertyExpr).toSeq: _*
       )
 
       import Expr._

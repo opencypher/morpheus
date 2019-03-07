@@ -48,12 +48,12 @@ object RecordHeader {
     case n: CTNode =>
       from(
         v,
-        n.labels.map(l => HasLabel(v, Label(l))(CTBoolean)).toSeq: _*
+        n.labels.map(l => HasLabel(v, Label(l))).toSeq: _*
       )
     case r: CTRelationship => from(
       v,
       Seq(StartNode(v)(CTIdentity), EndNode(v)(CTIdentity))
-        ++ r.types.map(t => HasType(v, RelType(t))(CTBoolean)): _*
+        ++ r.types.map(t => HasType(v, RelType(t))): _*
     )
     case other => throw IllegalArgumentException("A node or relationship variable", other)
   }

@@ -56,8 +56,8 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern).properties should equal(
       Map(
-        a -> MapExpression(Map("name" -> StringLit("Hans")()))(CTAny),
-        rel -> MapExpression(Map("since" -> IntegerLit(2007)()))(CTAny)
+        a -> MapExpression(Map("name" -> StringLit("Hans")))(CTAny),
+        rel -> MapExpression(Map("since" -> IntegerLit(2007)))(CTAny)
       )
     )
   }

@@ -51,10 +51,10 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   it("should convert CASE") {
     convert(parseExpr("CASE WHEN a > b THEN c ELSE d END")) should equal(
-      CaseExpr(IndexedSeq((GreaterThan('a, 'b)(CTBoolean), 'c)), Some('d))(CTAny)
+      CaseExpr(IndexedSeq((GreaterThan('a, 'b), 'c)), Some('d))(CTAny)
     )
     convert(parseExpr("CASE WHEN a > b THEN c END")) should equal(
-      CaseExpr(IndexedSeq((GreaterThan('a, 'b)(CTBoolean), 'c)), None)(CTAny)
+      CaseExpr(IndexedSeq((GreaterThan('a, 'b), 'c)), None)(CTAny)
     )
   }
 
@@ -66,37 +66,37 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   test("exists") {
     convert(parseExpr("exists(n.key)")) should equalWithTracing(
-      Exists(Property(toNodeVar('n), PropertyKey("key"))(CTAny))(CTAny)
+      Exists(Property(toNodeVar('n), PropertyKey("key"))(CTAny))
     )
   }
 
   test("converting in predicate and literal list") {
     convert(parseExpr("a IN [a, b, c]")) should equal(
-      In('a, ListLit('a, 'b, 'c))(CTAny)
+      In('a, ListLit('a, 'b, 'c))
     )
   }
 
   test("converting or predicate") {
     convert(parseExpr("n = a OR n > b")) should equalWithTracing(
-      Ors(Equals(toNodeVar('n), 'a)(CTAny), GreaterThan(toNodeVar('n), 'b)(CTAny))
+      Ors(Equals(toNodeVar('n), 'a), GreaterThan(toNodeVar('n), 'b))
     )
   }
 
   test("can convert type") {
     convert(parseExpr("type(a)")) should equal(
-      Type(Var("a")())(CTAny)
+      Type(Var("a")())
     )
   }
 
   it("can convert count") {
     convert(parseExpr("count(a)")) should equal(
-      Count(Var("a")(), false)(CTAny)
+      Count(Var("a")(), false)
     )
     convert(parseExpr("count(distinct a)")) should equal(
-      Count(Var("a")(), true)(CTAny)
+      Count(Var("a")(), true)
     )
     convert(parseExpr("count(*)")) should equal(
-      CountStar(CTAny)
+      CountStar
     )
   }
 
@@ -104,13 +104,13 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
     it("can convert range") {
       convert(parseExpr("range(0, 10, 2)")) should equal(
-        Range(IntegerLit(0)(CTAny), IntegerLit(10)(CTAny), Some(IntegerLit(2)(CTAny)))
+        Range(IntegerLit(0), IntegerLit(10), Some(IntegerLit(2)))
       )
     }
 
     it("can convert range with missing step size") {
       convert(parseExpr("range(0, 10)")) should equal(
-        Range(IntegerLit(0)(CTAny), IntegerLit(10)(CTAny), None)
+        Range(IntegerLit(0), IntegerLit(10), None)
       )
     }
   }
@@ -119,38 +119,38 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
     it("can convert substring") {
       convert(parseExpr("substring('foobar', 0, 3)")) should equal(
-        Substring(StringLit("foobar")(CTAny), IntegerLit(0)(CTAny), Some(IntegerLit(3)(CTAny)))
+        Substring(StringLit("foobar"), IntegerLit(0), Some(IntegerLit(3)))
       )
     }
 
     it("can convert substring with missing length") {
       convert(parseExpr("substring('foobar', 0)")) should equal(
-        Substring(StringLit("foobar")(CTAny), IntegerLit(0)(CTAny), None)
+        Substring(StringLit("foobar"), IntegerLit(0), None)
       )
     }
   }
 
   test("can convert less than") {
     convert(parseExpr("a < b")) should equal(
-      LessThan(Var("a")(), Var("b")())(CTAny)
+      LessThan(Var("a")(), Var("b")())
     )
   }
 
   test("can convert less than or equal") {
     convert(parseExpr("a <= b")) should equal(
-      LessThanOrEqual(Var("a")(), Var("b")())(CTAny)
+      LessThanOrEqual(Var("a")(), Var("b")())
     )
   }
 
   test("can convert greater than") {
     convert(parseExpr("a > b")) should equal(
-      GreaterThan(Var("a")(), Var("b")())(CTAny)
+      GreaterThan(Var("a")(), Var("b")())
     )
   }
 
   test("can convert greater than or equal") {
     convert(parseExpr("a >= b")) should equal(
-      GreaterThanOrEqual(Var("a")(), Var("b")())(CTAny)
+      GreaterThanOrEqual(Var("a")(), Var("b")())
     )
   }
 
@@ -180,7 +180,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   test("can convert type function calls used as predicates") {
     convert(parseExpr("type(r) = 'REL_TYPE'")) should equal(
-      HasType(Var("r")(CTRelationship), RelType("REL_TYPE"))(CTBoolean)
+      HasType(Var("r")(CTRelationship), RelType("REL_TYPE"))
     )
   }
 
@@ -189,8 +189,8 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   test("can convert literals") {
-    convert(literalInt(1)) should equal(IntegerLit(1L)(CTAny))
-    convert(ast.StringLiteral("Hello") _) should equal(StringLit("Hello")(CTAny))
+    convert(literalInt(1)) should equal(IntegerLit(1L))
+    convert(ast.StringLiteral("Hello") _) should equal(StringLit("Hello"))
     convert(parseExpr("false")) should equal(FalseLit)
     convert(parseExpr("true")) should equal(TrueLit)
   }
@@ -200,12 +200,12 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   test("can convert equals") {
-    convert(ast.Equals(varFor("a"), varFor("b")) _) should equal(Equals('a, 'b)(CTBoolean))
+    convert(ast.Equals(varFor("a"), varFor("b")) _) should equal(Equals('a, 'b))
   }
 
   test("can convert IN for single-element lists") {
     val in = ast.In(varFor("x"), ast.ListLiteral(Seq(ast.StringLiteral("foo") _)) _) _
-    convert(in) should equal(Equals('x, StringLit("foo")(CTAny))(CTAny))
+    convert(in) should equal(Equals('x, StringLit("foo")))
   }
 
   test("can convert parameters") {
@@ -215,12 +215,12 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   test("can convert has-labels") {
     val given = convert(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _, ast.LabelName("Duck") _)) _)
-    given should equal(Ands(HasLabel('x, Label("Person"))(CTBoolean), HasLabel('x, Label("Duck"))(CTBoolean)))
+    given should equal(Ands(HasLabel('x, Label("Person")), HasLabel('x, Label("Duck"))))
   }
 
   test("can convert single has-labels") {
     val given = ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _
-    convert(given) should equal(HasLabel('x, Label("Person"))(CTBoolean))
+    convert(given) should equal(HasLabel('x, Label("Person")))
   }
 
   test("can convert conjunctions") {
@@ -231,26 +231,26 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
     convert(given) should equal(
       Ands(
-        HasLabel('x, Label("Person"))(CTBoolean),
-        Equals(Property('x, PropertyKey("name"))(CTAny), StringLit("Mats")(CTAny))(CTBoolean)))
+        HasLabel('x, Label("Person")),
+        Equals(Property('x, PropertyKey("name"))(CTAny), StringLit("Mats"))))
   }
 
   test("can convert negation") {
     val given = ast.Not(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _) _
 
-    convert(given) should equal(Not(HasLabel('x, Label("Person"))(CTBoolean))(CTBoolean))
+    convert(given) should equal(Not(HasLabel('x, Label("Person"))))
   }
 
   it("can convert retyping predicate") {
     val given = parseExpr("$p1 AND n:Foo AND $p2 AND m:Bar")
 
     convert(given).asInstanceOf[Ands].exprs should equalWithTracing(
-      Set(HasLabel(toNodeVar('n), Label("Foo"))(CTAny), HasLabel(toNodeVar('m), Label("Bar"))(CTAny), Param("p1")(CTAny), Param("p2")(CTAny)))
+      Set(HasLabel(toNodeVar('n), Label("Foo")), HasLabel(toNodeVar('m), Label("Bar")), Param("p1")(CTAny), Param("p2")(CTAny)))
   }
 
   test("can convert id function") {
     convert("id(a)") should equal(
-      Id(Var("a")())(CTAny)
+      Id(Var("a")())
     )
   }
 
@@ -264,5 +264,5 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     _ => ???
   )
   private def convert(e: ast.Expression): Expr =
-    new ExpressionConverter()(testContext).convert(e)(testTypes)
+    new ExpressionConverter()(testContext).convert(e)
 }

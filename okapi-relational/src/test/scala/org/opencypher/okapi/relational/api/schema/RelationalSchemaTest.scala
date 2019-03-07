@@ -44,8 +44,8 @@ class RelationalSchemaTest extends BaseTestSuite {
 
     schema.headerForNode(n) should equal(RecordHeader.empty
       .withExpr(n)
-      .withExpr(HasLabel(n, Label("A"))(CTBoolean))
-      .withExpr(HasLabel(n, Label("B"))(CTBoolean))
+      .withExpr(HasLabel(n, Label("A")))
+      .withExpr(HasLabel(n, Label("B")))
       .withExpr(Property(n, PropertyKey("foo"))(CTBoolean)))
   }
 
@@ -58,9 +58,9 @@ class RelationalSchemaTest extends BaseTestSuite {
 
     schema.headerForNode(n) should equal(RecordHeader.empty
       .withExpr(n)
-      .withExpr(HasLabel(n, Label("A"))(CTBoolean))
-      .withExpr(HasLabel(n, Label("B"))(CTBoolean))
-      .withExpr(HasLabel(n, Label("C"))(CTBoolean))
+      .withExpr(HasLabel(n, Label("A")))
+      .withExpr(HasLabel(n, Label("B")))
+      .withExpr(HasLabel(n, Label("C")))
       .withExpr(Property(n, PropertyKey("foo"))(CTString.nullable)))
   }
 
@@ -73,8 +73,8 @@ class RelationalSchemaTest extends BaseTestSuite {
 
     schema.headerForNode(n) should equal(RecordHeader.empty
       .withExpr(n)
-      .withExpr(HasLabel(n, Label("A"))(CTBoolean))
-      .withExpr(HasLabel(n, Label("B"))(CTBoolean))
+      .withExpr(HasLabel(n, Label("A")))
+      .withExpr(HasLabel(n, Label("B")))
       .withExpr(Property(n, PropertyKey("foo"))(CTBoolean.nullable))
       .withExpr(Property(n, PropertyKey("bar"))(CTBoolean.nullable)))
   }
@@ -89,7 +89,7 @@ class RelationalSchemaTest extends BaseTestSuite {
       .withExpr(r)
       .withExpr(StartNode(r)(CTNode))
       .withExpr(EndNode(r)(CTNode))
-      .withExpr(HasType(r, RelType("A"))(CTBoolean))
+      .withExpr(HasType(r, RelType("A")))
       .withExpr(Property(r, PropertyKey("foo"))(CTBoolean)))
   }
 }

@@ -57,9 +57,9 @@ class SolvedQueryModelTest extends BaseTestSuite with IrConstruction {
   test("contains several blocks") {
     val block1 = matchBlock(Pattern.empty.withEntity('a -> CTNode))
     val block2 = matchBlock(Pattern.empty.withEntity('b -> CTNode))
-    val binds: Fields = Fields(Map(toField('c) -> Equals('a, 'b)(CTBoolean)))
+    val binds: Fields = Fields(Map(toField('c) -> Equals('a, 'b)))
     val block3 = project(binds)
-    val block4 = project(ProjectedFieldsOf(toField('d) -> Equals('c, 'b)(CTBoolean)))
+    val block4 = project(ProjectedFieldsOf(toField('d) -> Equals('c, 'b)))
 
     val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c)
 
@@ -88,15 +88,15 @@ class SolvedQueryModelTest extends BaseTestSuite with IrConstruction {
     s.solveRelationship('r -> CTRelationship("KNOWS")) should equal(
       SolvedQueryModel.empty
         .withField('r -> CTRelationship)
-        .withPredicate(HasType(Var("r")(CTRelationship("KNOWS")), RelType("KNOWS"))(CTBoolean))
+        .withPredicate(HasType(Var("r")(CTRelationship("KNOWS")), RelType("KNOWS")))
     )
     s.solveRelationship('r -> CTRelationship("KNOWS", "LOVES", "HATES")) should equal(
       SolvedQueryModel.empty
         .withField('r -> CTRelationship)
         .withPredicate(Ors(
-          HasType(RelationshipVar("r")(), RelType("KNOWS"))(CTBoolean),
-          HasType(RelationshipVar("r")(), RelType("LOVES"))(CTBoolean),
-          HasType(RelationshipVar("r")(), RelType("HATES"))(CTBoolean)))
+          HasType(RelationshipVar("r")(), RelType("KNOWS")),
+          HasType(RelationshipVar("r")(), RelType("LOVES")),
+          HasType(RelationshipVar("r")(), RelType("HATES"))))
     )
   }
 }

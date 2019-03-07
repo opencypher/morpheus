@@ -31,17 +31,14 @@ import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.impl.graph.QGNGenerator
 import org.opencypher.okapi.ir.api.block.SourceBlock
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField, IRGraph}
-import org.opencypher.okapi.ir.impl.exception.TypingException
-import org.opencypher.okapi.ir.impl.typer.{SchemaTyper, TypeTracker, UnsupportedExpr}
 import org.opencypher.v9_0.ast.ViewInvocation
 import org.opencypher.v9_0.ast.semantics.SemanticState
-import org.opencypher.v9_0.util.{InputPosition, Ref}
+import org.opencypher.v9_0.util.InputPosition
 import org.opencypher.v9_0.{expressions => ast}
 
 final case class IRBuilderContext(
@@ -57,36 +54,16 @@ final case class IRBuilderContext(
   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
   self =>
 
-  private lazy val exprConverter = new ExpressionConverter()(self)
+  private implicit def context: IRBuilderContext = self
+
+  private lazy val exprConverter = new ExpressionConverter
   private lazy val patternConverter = new PatternConverter()(self)
 
   def convertPattern(p: ast.Pattern, qgn: Option[QualifiedGraphName] = None): Pattern = {
     patternConverter.convert(p, knownTypes, qgn.getOrElse(workingGraph.qualifiedGraphName))
   }
 
-  def convertExpression(e: ast.Expression): Expr = {
-    val inferred = infer(e)
-    val convert = exprConverter.convert(e)(inferred)
-    convert
-  }
-
-  // TODO: Fuse monads
-  def infer(expr: ast.Expression): Map[Ref[ast.Expression], CypherType] = {
-    typer.infer(expr, TypeTracker(knownTypes, parameters.value)) match {
-      case Right(result) =>
-        result.recorder.toMap
-
-      case Left(errors) =>
-        errors.collect { case u: UnsupportedExpr => u } match {
-          case Nil =>
-            throw TypingException(s"Type inference errors: ${errors.toList.mkString(", ")}", Some(errors.head))
-          case List(u) =>
-            throw NotImplementedException(u.toString, Some(u))
-        }
-    }
-  }
-
-  private def typer = SchemaTyper(workingGraph.schema)
+  def convertExpression(e: ast.Expression): Expr = exprConverter.convert(e)
 
   def schemaFor(qgn: QualifiedGraphName): Schema = queryLocalCatalog.schema(qgn)
 

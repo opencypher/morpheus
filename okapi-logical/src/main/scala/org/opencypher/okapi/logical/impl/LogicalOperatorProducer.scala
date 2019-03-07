@@ -89,7 +89,7 @@ class LogicalOperatorProducer {
     val nodeType = node.cypherType.toCTNode
 
     val solvedWithPredicates = node.cypherType match {
-      case CTNode(labels, _) => solvedWithField.withPredicates(labels.map(l => HasLabel(node, Label(l))(CTBoolean)).toSeq:_*)
+      case CTNode(labels, _) => solvedWithField.withPredicates(labels.map(l => HasLabel(node, Label(l))).toSeq:_*)
       case _ => solvedWithField
     }
     val pattern = NodePattern(nodeType)

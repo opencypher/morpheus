@@ -476,15 +476,15 @@ class ScanGraphTest extends CAPSGraphTest with EntityTableCreationSupport {
       val relVar = pattern.relEntity.toVar
       val cols = Seq(
         sourceVar,
-        HasLabel(sourceVar, Label("Person"))(CTBoolean),
+        HasLabel(sourceVar, Label("Person")),
         Property(sourceVar, PropertyKey("name"))(CTString),
         relVar,
-        HasType(relVar, RelType("KNOWS"))(CTBoolean),
+        HasType(relVar, RelType("KNOWS")),
         StartNode(relVar)(CTAny),
         EndNode(relVar)(CTAny),
         Property(relVar, PropertyKey("since"))(CTInteger),
         targetVar,
-        HasLabel(targetVar, Label("Person"))(CTBoolean),
+        HasLabel(targetVar, Label("Person")),
         Property(targetVar, PropertyKey("name"))(CTString)
       )
 
@@ -519,16 +519,16 @@ class ScanGraphTest extends CAPSGraphTest with EntityTableCreationSupport {
       val relVar = scanPattern.relEntity.toVar
       val cols = Seq(
         sourceVar,
-        HasLabel(sourceVar, Label("Person"))(CTBoolean),
+        HasLabel(sourceVar, Label("Person")),
         Property(sourceVar, PropertyKey("name"))(CTString),
         relVar,
-        HasType(relVar, RelType("KNOWS"))(CTBoolean),
+        HasType(relVar, RelType("KNOWS")),
         StartNode(relVar)(CTAny),
         EndNode(relVar)(CTAny),
         Property(relVar, PropertyKey("since"))(CTInteger.nullable),
         targetVar,
-        HasLabel(targetVar, Label("Person"))(CTBoolean),
-        HasLabel(targetVar, Label("Animal"))(CTBoolean),
+        HasLabel(targetVar, Label("Person")),
+        HasLabel(targetVar, Label("Animal")),
         Property(targetVar, PropertyKey("name"))(CTString)
       )
 

@@ -129,7 +129,7 @@ object SparkSQLExprMapper {
               temporalAccessor[Date](e.asSparkSQLExpr, key)
 
             case CTLocalDateTime =>
-              temporalAccessor[Timestamp](e.asSparkSQLExpr, key)
+              temporalAccessor[java.sql.Timestamp](e.asSparkSQLExpr, key)
 
             case CTDuration =>
               TemporalUdfs.durationAccessor(key.toLowerCase).apply(e.asSparkSQLExpr)
@@ -146,7 +146,7 @@ object SparkSQLExprMapper {
 
         case _: Var | _: Param | _: HasLabel | _: HasType | _: StartNode | _: EndNode => columnFor(expr)
 
-        case NullLit(ct) => NULL_LIT.cast(ct.getSparkType)
+        case NullLit => NULL_LIT
 
         case LocalDateTime(dateExpr) =>
           dateExpr match {
@@ -389,8 +389,8 @@ object SparkSQLExprMapper {
 
         // Mathematical functions
 
-        case _: E => E
-        case _: Pi => PI
+        case E => E
+        case Pi => PI
 
         case Sqrt(e) => functions.sqrt(e.asSparkSQLExpr)
         case Log(e) => functions.log(e.asSparkSQLExpr)
@@ -399,7 +399,7 @@ object SparkSQLExprMapper {
         case Abs(e) => functions.abs(e.asSparkSQLExpr)
         case Ceil(e) => functions.ceil(e.asSparkSQLExpr).cast(DoubleType)
         case Floor(e) => functions.floor(e.asSparkSQLExpr).cast(DoubleType)
-        case _: Rand => functions.rand()
+        case Rand => functions.rand()
         case Round(e) => functions.round(e.asSparkSQLExpr).cast(DoubleType)
         case Sign(e) => functions.signum(e.asSparkSQLExpr).cast(IntegerType)
 
@@ -408,16 +408,16 @@ object SparkSQLExprMapper {
         case Atan(e) => functions.atan(e.asSparkSQLExpr)
         case Atan2(e1, e2) => functions.atan2(e1.asSparkSQLExpr, e2.asSparkSQLExpr)
         case Cos(e) => functions.cos(e.asSparkSQLExpr)
-        case Cot(e) => Divide(IntegerLit(1)(CTInteger), Tan(e)(CTFloat))(CTFloat).asSparkSQLExpr
+        case Cot(e) => Divide(IntegerLit(1), Tan(e))(CTFloat).asSparkSQLExpr
         case Degrees(e) => functions.degrees(e.asSparkSQLExpr)
-        case Haversin(e) => Divide(Subtract(IntegerLit(1)(CTInteger), Cos(e)(CTFloat))(CTFloat), IntegerLit(2)(CTInteger))(CTFloat).asSparkSQLExpr
+        case Haversin(e) => Divide(Subtract(IntegerLit(1), Cos(e))(CTFloat), IntegerLit(2))(CTFloat).asSparkSQLExpr
         case Radians(e) => functions.radians(e.asSparkSQLExpr)
         case Sin(e) => functions.sin(e.asSparkSQLExpr)
         case Tan(e) => functions.tan(e.asSparkSQLExpr)
 
         // Time functions
 
-        case Timestamp() => functions.current_timestamp().cast(LongType)
+        case Timestamp => functions.current_timestamp().cast(LongType)
 
         // Bit operations
 

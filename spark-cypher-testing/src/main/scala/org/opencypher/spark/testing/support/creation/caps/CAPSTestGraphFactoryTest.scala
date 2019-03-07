@@ -161,11 +161,11 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
 
       val cols = Seq(
         nodeVar,
-        HasLabel(nodeVar, Label("Person"))(CTBoolean),
-        HasLabel(nodeVar, Label("Martian"))(CTBoolean),
+        HasLabel(nodeVar, Label("Person")),
+        HasLabel(nodeVar, Label("Martian")),
         Property(nodeVar, PropertyKey("name"))(CTString),
         relVar,
-        HasType(relVar, RelType("SPEAKS"))(CTBoolean),
+        HasType(relVar, RelType("SPEAKS")),
         StartNode(relVar)(CTAny),
         EndNode(relVar)(CTAny)
       )
@@ -187,15 +187,15 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
 
       val cols = Seq(
         sourceVar,
-        HasLabel(sourceVar, Label("Person"))(CTBoolean),
-        HasLabel(sourceVar, Label("Martian"))(CTBoolean),
+        HasLabel(sourceVar, Label("Person")),
+        HasLabel(sourceVar, Label("Martian")),
         Property(sourceVar, PropertyKey("name"))(CTString),
         relVar,
-        HasType(relVar, RelType("SPEAKS"))(CTBoolean),
+        HasType(relVar, RelType("SPEAKS")),
         StartNode(relVar)(CTAny),
         EndNode(relVar)(CTAny),
         targetVar,
-        HasLabel(targetVar, Label("Language"))(CTBoolean),
+        HasLabel(targetVar, Label("Language")),
         Property(targetVar, PropertyKey("title"))(CTString)
       )
 

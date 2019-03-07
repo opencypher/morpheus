@@ -171,7 +171,7 @@ object SparkTable {
               sorted.as(columnName)
             }
 
-            case CountStar(_) =>
+            case CountStar =>
               functions.count(functions.lit(0)).as(columnName)
 
             case f if f.cypherType == CTNull =>

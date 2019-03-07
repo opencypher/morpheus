@@ -66,7 +66,7 @@ object RelationalSchema {
       }
 
       val labelExpressions: Set[Expr] = labelCombos.flatten.map { label =>
-        HasLabel(node, Label(label))(CTBoolean)
+        HasLabel(node, Label(label))
       }
 
       val propertyExpressions = schema.nodePropertyKeysForCombinations(labelCombos).map {
@@ -105,7 +105,7 @@ object RelationalSchema {
       }.toSet
 
       val startNodeExpr = StartNode(rel)(CTNode)
-      val hasTypeExprs = relTypes.map(relType => HasType(rel, RelType(relType))(CTBoolean))
+      val hasTypeExprs = relTypes.map(relType => HasType(rel, RelType(relType)))
       val endNodeExpr = EndNode(rel)(CTNode)
 
       val relationshipExpressions = hasTypeExprs ++ propertyExpressions + rel + startNodeExpr + endNodeExpr

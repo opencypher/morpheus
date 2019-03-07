@@ -138,7 +138,7 @@ object ConstructGraphPlanner {
           case SetLabelItem(v, labels) =>
             labels.toList.map { label =>
               v.cypherType.material match {
-                case _: CTNode => TrueLit -> expr.HasLabel(v, Label(label))(CTBoolean)
+                case _: CTNode => TrueLit -> expr.HasLabel(v, Label(label))
                 case other => throw UnsupportedOperationException(s"Cannot set a label on $other")
               }
             }
@@ -202,7 +202,7 @@ object ConstructGraphPlanner {
     }
 
     val createdLabelTuples = node.labels.map {
-      label => HasLabel(node.v, label)(CTBoolean) -> TrueLit
+      label => HasLabel(node.v, label) -> TrueLit
     }.toMap
 
     val propertyTuples = node.baseEntity match {
@@ -241,7 +241,7 @@ object ConstructGraphPlanner {
       typOpt match {
         // type is set
         case Some(t) =>
-          Map(HasType(rel, RelType(t))(CTBoolean) -> TrueLit)
+          Map(HasType(rel, RelType(t)) -> TrueLit)
         case None =>
           // When no type is present, it needs to be a copy of a base relationship
           copyExpressions(inOp, rel)(_.typesFor(baseRelOpt.get))
@@ -279,7 +279,7 @@ object ConstructGraphPlanner {
     // The first half of the id space is protected
     val columnPartitionOffset = columnIdPartition.toLong << columnIdShift
 
-    ToId(Add(MonotonicallyIncreasingId(), IntegerLit(columnPartitionOffset)(CTInteger))(CTInteger))()
+    ToId(Add(MonotonicallyIncreasingId(), IntegerLit(columnPartitionOffset))(CTInteger))()
   }
 
   /**
@@ -458,16 +458,16 @@ object ConstructGraphPlanner {
     val labelOrTypePredicate = entityType match {
       case CTNode(labels, _) =>
         val labelFilters = op.header.labelsFor(extractionVar).map {
-          case expr@HasLabel(_, Label(label)) if labels.contains(label) => Equals(expr, TrueLit)(CTBoolean)
-          case expr: HasLabel => Equals(expr, FalseLit)(CTBoolean)
+          case expr@HasLabel(_, Label(label)) if labels.contains(label) => Equals(expr, TrueLit)
+          case expr: HasLabel => Equals(expr, FalseLit)
         }
 
         Ands(labelFilters)
 
       case CTRelationship(relTypes, _) =>
-        val relTypeExprs: Set[Expr] = relTypes.map(relType => HasType(extractionVar, RelType(relType))(CTBoolean))
+        val relTypeExprs: Set[Expr] = relTypes.map(relType => HasType(extractionVar, RelType(relType)))
         val physicalExprs = relTypeExprs intersect op.header.expressionsFor(extractionVar)
-        Ors(physicalExprs.map(expr => Equals(expr, TrueLit)(CTBoolean)))
+        Ors(physicalExprs.map(expr => Equals(expr, TrueLit)))
 
       case other => throw IllegalArgumentException("CTNode or CTRelationship", other)
     }
@@ -475,7 +475,7 @@ object ConstructGraphPlanner {
     val selected = op.select(extractionVar)
     val idExprs = op.header.idExpressions(extractionVar).toSeq
 
-    val validEntityPredicate = Ands(idExprs.map(idExpr => IsNotNull(idExpr)(CTBoolean)) :+ labelOrTypePredicate: _*)
+    val validEntityPredicate = Ands(idExprs.map(idExpr => IsNotNull(idExpr)) :+ labelOrTypePredicate: _*)
     val filtered = relational.Filter(selected, validEntityPredicate)
 
     val inputEntity = filtered.singleEntity

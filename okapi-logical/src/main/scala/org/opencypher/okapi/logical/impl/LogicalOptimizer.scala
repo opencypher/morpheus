@@ -55,7 +55,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
       val (newChild, rewritten) = BottomUpWithContext[LogicalOperator, Boolean] {
         case (CartesianProduct(lhs, rhs, solved), false) if solved.solves(leftField) && solved.solves(rightField) =>
           val (leftExpr, rightExpr) = if (lhs.solved.solves(leftField)) e.lhs -> e.rhs else e.rhs -> e.lhs
-          val joinExpr = Equals(leftExpr, rightExpr)(CTBoolean)
+          val joinExpr = Equals(leftExpr, rightExpr)
           val leftProject = Project(leftExpr -> None, lhs, lhs.solved)
           val rightProject = Project(rightExpr -> None, rhs, rhs.solved)
           ValueJoin(leftProject, rightProject, Set(joinExpr), solved.withPredicate(joinExpr)) -> true
@@ -104,7 +104,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
             PatternScan(pattern, map, parent, parent.solved.withFields(map.keySet.map(_.toField.get).toList:_ *))
           }
 
-          val joinExpr = Equals(EndNode(exp.rel)(CTNode), exp.target)(CTBoolean)
+          val joinExpr = Equals(EndNode(exp.rel)(CTNode), exp.target)
           ValueJoin(withPatternScan, exp.rhs, Set(joinExpr), exp.solved)
 
         } else {
@@ -125,7 +125,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
         val toSelect = replaceOp.fields - varToReplace + renamedVarToReplace
         val selectOp = Select(toSelect.toList, withAliasedVar, replaceOp.solved.withFields(renamedVarToReplace.toField.get))
 
-        val joinExpr = Equals(varToReplace, renamedVarToReplace)(CTBoolean)
+        val joinExpr = Equals(varToReplace, renamedVarToReplace)
         val joinOp = ValueJoin(pScan, selectOp, Set(joinExpr), pScan.solved ++ selectOp.solved)
         Select((pScan.mapping.keySet ++ selectOp.fields).toList, joinOp, joinOp.solved)
     }
