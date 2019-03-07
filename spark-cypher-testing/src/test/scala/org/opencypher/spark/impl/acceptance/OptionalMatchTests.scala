@@ -72,6 +72,54 @@ class OptionalMatchTests extends CAPSTestSuite with ScanGraphInit {
       )
       result.records.toMaps should equal(Bag(CypherMap("n" -> null)))
     }
+
+    it("supports stacked optional matches") {
+      val g = initGraph(
+        """
+          |CREATE (:DoesExist {property: 42})
+          |CREATE (:DoesExist {property: 43})
+          |CREATE (:DoesExist {property: 44})
+        """.stripMargin)
+
+      val res = g.cypher(
+        """
+          |OPTIONAL MATCH (f:DoesExist)
+          |OPTIONAL MATCH (n:DoesNotExist)
+          |RETURN collect(DISTINCT n.property) AS a, collect(DISTINCT f.property) AS b
+        """.stripMargin)
+
+      res.records.collect.toBag should equal(Bag(
+        CypherMap("a" -> List.empty, "b" -> List(42, 43, 44))
+      ))
+    }
+
+    it("throws if spark.sql.crossJoin.enabled=false") {
+      caps.sparkSession.conf.set("spark.sql.crossJoin.enabled", "false")
+      val e = the[org.opencypher.okapi.impl.exception.UnsupportedOperationException] thrownBy {
+        try {
+          val g = initGraph(
+            """
+              |CREATE (:DoesExist {property: 42})
+              |CREATE (:DoesExist {property: 43})
+              |CREATE (:DoesExist {property: 44})
+            """.stripMargin)
+
+          val res = g.cypher(
+            """
+              |OPTIONAL MATCH (f:DoesExist)
+              |OPTIONAL MATCH (n:DoesNotExist)
+              |RETURN collect(DISTINCT n.property) AS a, collect(DISTINCT f.property) AS b
+            """.stripMargin)
+
+          res.records.collect.toBag should equal(Bag(
+            CypherMap("a" -> List.empty, "b" -> List(42, 43, 44))
+          ))
+        } finally {
+          caps.sparkSession.conf.set("spark.sql.crossJoin.enabled", "true")
+        }
+      }
+      e.getMessage should (include("OPTIONAL MATCH") and include("spark.sql.crossJoin.enabled"))
+    }
   }
 
   it("optionally match") {

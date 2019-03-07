@@ -34,7 +34,7 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.Measurement.printTiming
 import org.opencypher.okapi.ir.api.expr.{Expr, _}
 import org.opencypher.okapi.relational.api.table.Table
@@ -233,6 +233,10 @@ object SparkTable {
       joinType match {
         case CrossJoin =>
           df.crossJoin(other.df)
+
+        case LeftOuterJoin
+          if joinCols.isEmpty && df.sparkSession.conf.get("spark.sql.crossJoin.enabled", "false") == "false" =>
+          throw UnsupportedOperationException("OPTIONAL MATCH support requires spark.sql.crossJoin.enabled=true")
 
         case _ =>
           df.safeJoin(other.df, joinCols, joinTypeString)

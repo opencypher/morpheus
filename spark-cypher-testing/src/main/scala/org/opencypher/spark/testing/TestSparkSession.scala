@@ -54,6 +54,8 @@ object TestSparkSession {
 
     conf.set("spark.sql.codegen.wholeStage", "true")
     conf.set("spark.sql.shuffle.partitions", "5")
+    // Required for left outer join without join expressions in OPTIONAL MATCH (leads to cartesian product)
+    conf.set("spark.sql.crossJoin.enabled", "true")
 
     //    setting for debug
     //    conf.set("spark.sql.shuffle.partitions", "1")
