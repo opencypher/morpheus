@@ -425,12 +425,13 @@ class GraphDdlTest extends FunSpec with Matchers {
         """
           |CREATE GRAPH TYPE fooSchema (
           |  A (),
-          |  (A),
-          |  (A)
+          |  B (),
+          |  (A, B),
+          |  (A, B)
           |)
         """.stripMargin
       )
-      e.getFullMessage should (include("fooSchema") and include("node type") and include("(A)"))
+      e.getFullMessage should (include("fooSchema") and include("node type") and include("(A,B)"))
     }
 
     it("fails on duplicate anonymous node types") {

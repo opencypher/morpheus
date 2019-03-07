@@ -219,8 +219,10 @@ object GraphDdl {
       val targetNodeTypes = parts.relTypes.map(relType => local.resolveNodeLabels(relType.endNodeType))
 
       (explicitNodeTypes ++ sourceNodeTypes ++ targetNodeTypes)
-        .map(labels =>
-          NodeTypeDefinition(labels) -> tryWithNode(labels)(mergeProperties(labels.flatMap(local.resolveElementTypes))))
+        .map(labels => {
+          val nodeTypeDefinition = NodeTypeDefinition(labels)
+          nodeTypeDefinition -> tryWithNode(nodeTypeDefinition)(mergeProperties(labels.flatMap(local.resolveElementTypes)))
+        })
         .toMap
     }
 
@@ -232,7 +234,7 @@ object GraphDdl {
         .map(relType => relType -> local.resolveRelationshipLabel(relType))
         .distinct
         .map { case (relTypeDefinition, label) =>
-          relTypeDefinition -> tryWithRel(label)(mergeProperties(local.resolveElementTypes(label)))
+          relTypeDefinition -> tryWithRel(relTypeDefinition)(mergeProperties(local.resolveElementTypes(label)))
         }.toMap
     }
 
@@ -244,14 +246,15 @@ object GraphDdl {
       )).toSet
     }
 
-    private def resolveNodeLabels(nodeType: NodeTypeDefinition): Set[String] =
-      tryWithNode(nodeType.elementTypes)(nodeType.elementTypes.flatMap(resolveElementTypes).map(_.name))
+    private def resolveNodeLabels(nodeTypeDefinition: NodeTypeDefinition): Set[String] =
+      tryWithNode(nodeTypeDefinition)(nodeTypeDefinition.elementTypes.flatMap(resolveElementTypes).map(_.name))
 
-    private def resolveRelationshipLabel(relType: RelationshipTypeDefinition): String = {
-      val resolved = tryWithRel(relType.elementType)(resolveElementTypes(relType.elementType))
+    private def resolveRelationshipLabel(relTypeDefinition: RelationshipTypeDefinition): String = {
+      val resolved = tryWithRel(relTypeDefinition)(resolveElementTypes(relTypeDefinition.elementType))
 
+      // TODO: move out of DDL
       if (resolved.size > 1) {
-        illegalInheritance("Inheritance not allowed for relationship types ", relType.elementType)
+        illegalInheritance("Inheritance not allowed for relationship  element type ", relTypeDefinition.elementType)
       }
       resolved.head.name
     }
@@ -433,11 +436,11 @@ object GraphDdl {
   private def tryWithGraph[T](name: String)(block: => T): T =
     tryWithContext(s"Error in graph: $name")(block)
 
-  private def tryWithNode[T](labels: Set[String])(block: => T): T =
-    tryWithContext(s"Error in node type: (${labels.mkString(",")})")(block)
+  private def tryWithNode[T](nodeTypeDefinition: NodeTypeDefinition)(block: => T): T =
+    tryWithContext(s"Error in node type: $nodeTypeDefinition")(block)
 
-  private def tryWithRel[T](label: String)(block: => T): T =
-    tryWithContext(s"Error in relationship type: [$label]")(block)
+  private def tryWithRel[T](relationshipTypeDefinition: RelationshipTypeDefinition)(block: => T): T =
+    tryWithContext(s"Error in relationship type: $relationshipTypeDefinition")(block)
 
   private implicit class TraversableOps[T, C[X] <: Traversable[X]](elems: C[T]) {
     def keyBy[K](key: T => K): Map[K, T] =
