@@ -2,12 +2,12 @@ package org.opencypher.spark.testing
 
 import java.io.{File, PrintWriter}
 
+import scala.collection.mutable.{Stack,ListBuffer}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.tck.test.ScenariosFor
 import org.opencypher.tools.tck.api._
 import org.scalatest.prop.TableFor1
 import org.apache.commons.lang.StringEscapeUtils
-import org.opencypher.tools.tck.values.CypherValue
 
 
 object AcceptanceTestGenerator extends App {
@@ -17,6 +17,7 @@ object AcceptanceTestGenerator extends App {
   private val failureReportingBlacklistFile = getClass.getResource("/failure_reporting_blacklist").getFile
   private val scenarios: ScenariosFor = ScenariosFor(failingBlacklist, temporalBlacklist, wontFixBlacklistFile, failureReportingBlacklistFile)
   private val lineIndention = "\t\t"
+  private val escapeStringMarks = "\"\"\""
 
 
   private def generateClassFiles(featureName: String, scenarios: TableFor1[Scenario], black: Boolean) = {
@@ -55,99 +56,96 @@ object AcceptanceTestGenerator extends App {
     file.createNewFile()
   }
 
-  private def stringEscape(s : String):String = {
-    s.replace("\n","\\n").replace("\t","\\t")
+  private def stringEscape(s: String): String = {
+    s.replace("\n", "\\n").replace("\t", "\\t")
   }
 
-  //result consists of (step-type, step-string)
-  private def stepToStringTuple(step: Step): (String, String) = {
-    step match {
-      case Execute(query, querytype, _) =>
-        val alignedQuery = query.replace("\n", s"\n$lineIndention\t")
+  private def alignQuery(query: String): String = {
+    query.replace("\n", s"\n$lineIndention\t")
+  }
+
+
+  private def stepsToString(steps: List[(Step, Int)]): String = {
+    //todo: don't use immutable object
+    val contextStack = Stack[(Execute, Int)]()
+    val paremeters = ListBuffer.empty[String]
+
+    //as parameter sometimes have invalid variable identifier
+    def renameParameter(query: String) : String = {
+      paremeters.fold(query)((acc, par) => acc.replace("$" + par,"$p" + par).replace("$`" + par + "`","$p" + par))
+    }
+
+    steps.map {
+      case (Parameters(p, _), _) => p.foldLeft("") { (acc, x) =>
+        paremeters += x._1
+        acc +
+          s"""
+             |$lineIndention val p${x._1} = "${x._2}"
+             |""".stripMargin
+      }
+      case (ex@Execute(_, querytype, _), nr) =>
         querytype match {
-          case InitQuery => "init" -> alignedQuery
-          case ExecQuery => "exec" -> alignedQuery
-          case SideEffectQuery =>
+          case ExecQuery =>
+            contextStack.push((ex, nr))
+            ""
+          case _ =>
             //currently no TCK-Tests with side effect queries
             throw NotImplementedException("Side Effect Queries not supported yet")
         }
-      case ExpectResult(expectedResult: CypherValueRecords, _, sorted) =>
+      case (ExpectResult(expectedResult, _, sorted), _) =>
+        val (contextQuery, stepNumber) = contextStack.pop()
         //result -> expected
         val resultRows = if (sorted)
-          "resultValueRecords.rows" -> expectedResult.rows
+          s"result${stepNumber}ValueRecords.rows" -> expectedResult.rows
         else
-          "resultValueRecords.rows.sortBy(_.hashCode())" -> expectedResult.rows.sortBy(_.hashCode())
+          s"result${stepNumber}ValueRecords.rows.sortBy(_.hashCode())" -> expectedResult.rows.sortBy(_.hashCode())
 
-        "result" ->
-          s"""
-             |${lineIndention}val resultValueRecords = CypherToTCKConverter.convertToTckStrings(result.records).asValueRecords
-             |${lineIndention}StringEscapeUtils.escapeJava(resultValueRecords.header.toString()) should equal("${StringEscapeUtils.escapeJava(stringEscape(expectedResult.header.toString))}")
-             |${lineIndention}StringEscapeUtils.escapeJava(${resultRows._1}.toString()) should equal("${StringEscapeUtils.escapeJava(stringEscape(resultRows._2.toString))}")
+        s"""
+           |val result${stepNumber} = graph.cypher(s$escapeStringMarks${alignQuery(renameParameter(contextQuery.query))}$escapeStringMarks)
+           |
+               |${lineIndention}val result${stepNumber}ValueRecords = CypherToTCKConverter.convertToTckStrings(result${stepNumber}.records).asValueRecords
+           |${lineIndention}StringEscapeUtils.escapeJava(result${stepNumber}ValueRecords.header.toString()) should equal("${StringEscapeUtils.escapeJava(stringEscape(expectedResult.header.toString))}")
+           |${lineIndention}StringEscapeUtils.escapeJava(${resultRows._1}.toString()) should equal("${StringEscapeUtils.escapeJava(stringEscape(resultRows._2.toString))}")
            """.stripMargin
-      case ExpectError(errorType, errorPhase, detail, _) =>
-        "error" -> errorType //todo: also return detail here
-      case SideEffects(expected, _) =>
+      case (ExpectError(errorType, errorPhase, detail, _), _) =>
+        val (contextQuery, stepNumber) = contextStack.pop()
+        s"""
+           |${lineIndention}val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{graph.cypher(s$escapeStringMarks${alignQuery(renameParameter(contextQuery.query))}$escapeStringMarks)}
+           """.stripMargin
+      case (SideEffects(expected, _), _) =>
         val relevantEffects = expected.v.filter(_._2 > 0) //check if relevant Side-Effects exist
         if (relevantEffects.nonEmpty)
-          "sideeffect" -> s"fail() //TODO: handle side effects"
-        /*Todo: calculate via before and after State? (can result graph return nodes/relationships/properties/labels as a set of cyphervalues?)
-        todo: maybe also possible via Cypher-Queries (may take too long?) */
+          s"${lineIndention}fail() //TODO: side effects not handled yet"
         else
-          "" -> ""
-      case Parameters(v,_) => "param" -> v.foldLeft(""){(acc,x) =>
-        val value: CypherValue = x._2 //Todo: write unwrap for CypherValue?
-        acc + s"val ${x._1} = ${x._2} \n"}
-      case _ => "" -> ""
-    }
+          ""
+      case _ => ""
+    }.filter(_.nonEmpty).mkString(s"\n ${lineIndention}")
   }
 
 
   private def generateTest(scenario: Scenario, black: Boolean): String = {
-
-    val escapeStringMarks = "\"\"\""
-    val steps = scenario.steps.map {
-      stepToStringTuple
-    }.filter(_._2.nonEmpty)
-
-    val initSteps = scenario.steps.filter{ case Execute(_, InitQuery, _) => true
-        case _=> false }
-    val initQuery = escapeStringMarks + initSteps.foldLeft("")((combined, x) => combined + s"\n$lineIndention\t" + stepToStringTuple(x)._2) + escapeStringMarks
-
-
-    val executionQuerySteps = steps.filter(_._1.equals("exec")).map(_._2) //handle control query?
-    val expectedResultSteps = steps.filter(_._1.startsWith("result")).map(_._2)
-    val expectedErrorSteps = steps.filter(_._1.equals("error")).map(_._2) //only one error can be expected
-    val sideEffectSteps = steps.filter(_._1.eq("sideeffect")).map(_._2)
-
-    //todo allow f.i. expected error only for 2nd executionQuery
-    val tests = executionQuerySteps.zipWithIndex.zipAll(expectedResultSteps, "", "").zipAll(expectedErrorSteps, "", "").zipAll(sideEffectSteps, "", "")
-      .map { case ((((v, w), x), y), z) => (v, w, x, y, z) }
-
-    val testResultStrings = tests.map {
-      case (exec: String, num: Integer, result: String, expectedError: String, sideEffect: String) =>
-        //todo: !! how to check for expectedErrorType?
-        val errorString = if(expectedError.nonEmpty)
-          s"""
-             |    val result$num = an[Exception] shouldBe thrownBy{graph.cypher($escapeStringMarks$exec$escapeStringMarks)}
-             |
-           """.stripMargin
-        else
-          s"val result$num = graph.cypher($escapeStringMarks$exec$escapeStringMarks)"
-        //todo: improve replacement as some are wrong
-        s"""
-           |    $errorString
-           |    ${result.replace("result", s"result$num")}
-           |    ${if (sideEffect.nonEmpty) "fail() //todo: check side effects" else ""}
-        """.stripMargin
+    val (initSteps, execSteps) = scenario.steps.partition {
+      case Execute(_, InitQuery, _) => true
+      case _ => false
     }
+
+    val initQuery = escapeStringMarks + initSteps.foldLeft("")((combined, x) => x match {
+      case Execute(query, InitQuery, _) => combined + s"\n$lineIndention\t" + alignQuery(query)
+      case _ => combined
+    }) + escapeStringMarks
+
+    val xyz = stepsToString(scenario.steps.filter { case Execute(_, InitQuery, _) => false
+    case _ => true
+    }.zipWithIndex)
+
 
     val testString =
       s"""
          |    val graph = ${if (initSteps.nonEmpty) s"initGraph($initQuery)" else "CAPSGraphFactory.apply().empty"}
-         |    ${testResultStrings.mkString("\n        ")}
+         |    $xyz
        """.stripMargin
 
-   if (black)
+    if (black)
       s"""  it("${scenario.name}") {
          |      Try({
          |        $testString
