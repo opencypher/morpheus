@@ -33,14 +33,14 @@ import cats.data.State
 import cats.data.State._
 import cats.instances.list._
 import cats.syntax.all._
-import org.neo4j.cypher.internal.v4_0.ast._
-import org.neo4j.cypher.internal.v4_0.ast.semantics._
-import org.neo4j.cypher.internal.v4_0.expressions._
-import org.neo4j.cypher.internal.v4_0.frontend.phases._
-import org.neo4j.cypher.internal.v4_0.rewriting.Deprecations.V2
-import org.neo4j.cypher.internal.v4_0.rewriting._
-import org.neo4j.cypher.internal.v4_0.rewriting.rewriters.Never
-import org.neo4j.cypher.internal.v4_0.util.{ASTNode, CypherException, InputPosition}
+import org.opencypher.v9_0.ast._
+import org.opencypher.v9_0.ast.semantics._
+import org.opencypher.v9_0.expressions._
+import org.opencypher.v9_0.frontend.phases._
+import org.opencypher.v9_0.rewriting.Deprecations.V2
+import org.opencypher.v9_0.rewriting._
+import org.opencypher.v9_0.rewriting.rewriters.Never
+import org.opencypher.v9_0.util.{ASTNode, CypherException, InputPosition}
 import org.opencypher.okapi.api.value.CypherValue.{CypherEntity, CypherMap, CypherNode, CypherRelationship}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.temporal.TemporalTypesHelper.parseDate

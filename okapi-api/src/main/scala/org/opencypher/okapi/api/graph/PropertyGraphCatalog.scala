@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.api.graph
 
-import org.neo4j.cypher.internal.v4_0.ast.ViewInvocation
+import org.opencypher.v9_0.ast.ViewInvocation
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 
 /**

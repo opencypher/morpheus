@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.impl.graph
 
-import org.neo4j.cypher.internal.v4_0.ast._
+import org.opencypher.v9_0.ast._
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.value.CypherValue.CypherString
