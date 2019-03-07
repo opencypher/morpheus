@@ -70,7 +70,7 @@ object SparkTable {
         df
       } else {
         // Spark interprets dots in column names as struct accessors. Hence, we need to escape column names by default.
-        df.select(columns.map{ case (colName, alias) => df.col(s"`$colName`").as(alias) }: _*)
+        df.select(columns.map { case (colName, alias) => df.col(s"`$colName`").as(alias) }: _*)
       }
     }
 
@@ -398,10 +398,13 @@ object SparkTable {
       require(joinCols.map(_._1).forall(col => !other.columns.contains(col)))
       require(joinCols.map(_._2).forall(col => !df.columns.contains(col)))
 
-      val joinExpr = joinCols.map {
-        case (l, r) => df.col(l) === other.col(r)
-      }.reduce((acc, expr) => acc && expr)
-
+      val joinExpr = if (joinCols.nonEmpty) {
+        joinCols.map {
+          case (l, r) => df.col(l) === other.col(r)
+        }.reduce((acc, expr) => acc && expr)
+      } else {
+        functions.lit(true)
+      }
       df.join(other, joinExpr, joinType)
     }
 

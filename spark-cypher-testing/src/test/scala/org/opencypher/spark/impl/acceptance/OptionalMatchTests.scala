@@ -32,6 +32,7 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.relational.impl.graph.ScanGraph
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
+import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
@@ -375,10 +376,11 @@ class OptionalMatchTests extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("can start with an optional match") {
-    val g = initGraph("""
-      |CREATE (p1:Person {name: "Alice"})
-      |CREATE (p2:Person {name: "Bob"})
-    """.stripMargin)
+    val g = initGraph(
+      """
+        |CREATE (p1:Person {name: "Alice"})
+        |CREATE (p2:Person {name: "Bob"})
+      """.stripMargin)
 
     // When
     val result = g.cypher(
@@ -390,7 +392,10 @@ class OptionalMatchTests extends CAPSTestSuite with ScanGraphInit {
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag())
+    result.records.collect.toBag should equal(Bag(
+      CypherMap("a" -> CypherNull, "b" -> CAPSNode(0L, Set("Person"), CypherMap("name" -> "Alice"))),
+      CypherMap("a" -> CypherNull, "b" -> CAPSNode(1L, Set("Person"), CypherMap("name" -> "Bob")))
+    ))
   }
 
   it("returns null IDs") {

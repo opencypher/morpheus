@@ -428,7 +428,6 @@ final case class Join[T <: Table[T] : TypeTag](
   joinExprs: Seq[(Expr, Expr)] = Seq.empty,
   joinType: JoinType
 ) extends RelationalOperator[T] {
-  require(joinExprs.nonEmpty || joinType == CrossJoin, "Join type must either be 'CrossJoin' or join expressions may not be empty")
   require((lhs.header.expressions intersect rhs.header.expressions).isEmpty, "Join cannot join operators with overlapping expressions")
   require((lhs.header.columns intersect rhs.header.columns).isEmpty, "Join cannot join tables with column name collisions")
 
