@@ -58,6 +58,11 @@ case class SqlPropertyGraphDataSource(
   idGenerationStrategy: IdGenerationStrategy = SerializedId
 )(implicit val caps: CAPSSession) extends CAPSPropertyGraphDataSource {
 
+  require(
+    sqlDataSourceConfigs.forall {case (_, config) => config.format != FileFormat.csv},
+    "CSV files are not supported by the SqlPropertyGraphDataSource"
+  )
+
   override def hasGraph(graphName: GraphName): Boolean = graphDdl.graphs.contains(graphName)
 
   override def graph(graphName: GraphName): PropertyGraph = {
@@ -163,10 +168,6 @@ case class SqlPropertyGraphDataSource(
   private def readFile(viewId: ViewId, dataSourceConfig: File): DataFrame = {
     val spark = caps.sparkSession
 
-    val optionsByFormat: Map[StorageFormat, Map[String, String]] = Map(
-      FileFormat.csv -> Map("header" -> "true", "inferSchema" -> "true")
-    )
-
     val viewPath = viewId.parts.lastOption.getOrElse(
       malformed("File names must be defined with the data source", viewId.parts.mkString(".")))
 
@@ -181,7 +182,6 @@ case class SqlPropertyGraphDataSource(
 
     spark.read
       .format(dataSourceConfig.format.name)
-      .options(optionsByFormat.getOrElse(dataSourceConfig.format, Map.empty))
       .options(dataSourceConfig.options)
       .load(filePath.toString)
   }
