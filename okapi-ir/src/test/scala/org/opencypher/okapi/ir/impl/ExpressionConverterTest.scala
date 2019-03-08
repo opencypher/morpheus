@@ -29,14 +29,12 @@ package org.opencypher.okapi.ir.impl
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.v9_0.ast.semantics.SemanticState
-import org.opencypher.v9_0.util.symbols
 import org.opencypher.v9_0.{expressions => ast}
 import org.scalatest.Assertion
 
@@ -94,7 +92,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   val testContext: IRBuilderContext = IRBuilderContext.initial(
     "",
-    CypherMap.empty,
+    CypherMap("p" -> CypherString("myParam")),
     SemanticState.clean,
     IRCatalogGraph(QualifiedGraphName(Namespace(""), GraphName("")), schema),
     qgnGenerator,
@@ -145,10 +143,18 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     }
   }
 
-  it("can convert in predicate and literal list") {
-    convert(parseExpr("INTEGER IN [INTEGER, INTEGER_OR_NULL, FLOAT]")) shouldEqual(
-      In('INTEGER, ListLit('INTEGER, 'INTEGER_OR_NULL, 'FLOAT)), CTBoolean
-    )
+  describe("IN") {
+    it("can convert in predicate and literal list") {
+      convert(parseExpr("INTEGER IN [INTEGER, INTEGER_OR_NULL, FLOAT]")) shouldEqual(
+        In('INTEGER, ListLit('INTEGER, 'INTEGER_OR_NULL, 'FLOAT)), CTBoolean
+      )
+    }
+
+    it("can convert IN for single-element lists") {
+      convert(parseExpr("STRING IN ['foo']")) shouldEqual(
+        Equals('STRING, StringLit("foo")), CTBoolean
+      )
+    }
   }
 
   it("can convert or predicate") {
@@ -229,115 +235,104 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     )
   }
 
-  test("can convert greater than") {
-    convert(parseExpr("a > b")) should equal(
-      GreaterThan(Var("a")(), Var("b")())
+  it("can convert greater than") {
+    convert(parseExpr("INTEGER > FLOAT_OR_NULL")) shouldEqual(
+      GreaterThan('INTEGER, 'FLOAT_OR_NULL), CTBoolean.nullable
     )
   }
 
-  test("can convert greater than or equal") {
-    convert(parseExpr("a >= b")) should equal(
-      GreaterThanOrEqual(Var("a")(), Var("b")())
+  it("can convert greater than or equal") {
+    convert(parseExpr("INTEGER >= INTEGER")) shouldEqual(
+      GreaterThanOrEqual('INTEGER, 'INTEGER), CTBoolean
     )
   }
 
-  test("can convert add") {
-    convert("a + b") should equal(
-      Add(Var("a")(), Var("b")())(CTAny)
+  it("can convert add") {
+    convert("INTEGER + INTEGER") shouldEqual
+      Add('INTEGER, 'INTEGER)(CTInteger)
+  }
+
+  it("can convert subtract") {
+    convert("INTEGER - INTEGER") shouldEqual
+      Subtract('INTEGER, 'INTEGER)(CTInteger)
+  }
+
+  it("can convert multiply") {
+    convert("FLOAT * INTEGER_OR_NULL") shouldEqual
+      Multiply('FLOAT, 'INTEGER_OR_NULL)(CTFloat.nullable)
+  }
+
+  it("can convert divide") {
+    convert("FLOAT / FLOAT") shouldEqual
+      Divide('FLOAT, 'FLOAT)(CTFloat)
+  }
+
+  it("can convert type function calls used as predicates") {
+    convert(parseExpr("type(REL) = 'REL_TYPE'")) shouldEqual(
+      HasType('REL, RelType("REL_TYPE")), CTBoolean
     )
   }
 
-  test("can convert subtract") {
-    convert("a - b") should equal(
-      Subtract(Var("a")(), Var("b")())(CTAny)
-    )
+  it("can convert variables") {
+    convert(varFor("BOOLEAN")) shouldEqual toVar('BOOLEAN)
   }
 
-  test("can convert multiply") {
-    convert("a * b") should equal(
-      Multiply(Var("a")(), Var("b")())(CTAny)
-    )
-  }
-
-  test("can convert divide") {
-    convert("a / b") should equal(
-      Divide(Var("a")(), Var("b")())(CTAny)
-    )
-  }
-
-  test("can convert type function calls used as predicates") {
-    convert(parseExpr("type(r) = 'REL_TYPE'")) should equal(
-      HasType(Var("r")(CTRelationship), RelType("REL_TYPE"))
-    )
-  }
-
-  test("can convert variables") {
-    convert(varFor("n")) should equal(('n))
-  }
-
-  test("can convert literals") {
+  it("can convert literals") {
     convert(literalInt(1)) should equal(IntegerLit(1L))
     convert(ast.StringLiteral("Hello") _) should equal(StringLit("Hello"))
     convert(parseExpr("false")) should equal(FalseLit)
     convert(parseExpr("true")) should equal(TrueLit)
   }
 
-  test("can convert property access") {
-    convert(prop("n", "key")) should equal(Property(('n), PropertyKey("key"))(CTAny))
+  it("can convert property access") {
+    convert(prop("NODE", "age")) shouldEqual
+      Property('NODE, PropertyKey("age"))(CTInteger)
   }
 
-  test("can convert equals") {
-    convert(ast.Equals(varFor("a"), varFor("b")) _) should equal(Equals('a, 'b))
+  it("can convert equals") {
+    convert(ast.Equals(varFor("STRING"), varFor("STRING_OR_NULL")) _) shouldEqual(
+      Equals('STRING, 'STRING_OR_NULL), CTBoolean.nullable
+    )
   }
 
-  test("can convert IN for single-element lists") {
-    val in = ast.In(varFor("x"), ast.ListLiteral(Seq(ast.StringLiteral("foo") _)) _) _
-    convert(in) should equal(Equals('x, StringLit("foo")))
+  it("can convert parameters") {
+    convert(parseExpr("$p")) shouldEqual Param("p")(CTString)
   }
 
-  test("can convert parameters") {
-    val given = ast.Parameter("p", symbols.CTString) _
-    convert(given) should equal(Param("p")(CTAny))
+  describe("has labels") {
+    it("can convert has-labels") {
+      convert(parseExpr("NODE:Person:Duck")) shouldEqual
+        Ands(HasLabel('NODE, Label("Person")), HasLabel('NODE, Label("Duck")))
+    }
+
+    it("can convert single has-labels") {
+      val given = ast.HasLabels(varFor("NODE"), Seq(ast.LabelName("Person") _)) _
+      convert(given) shouldEqual(HasLabel('NODE, Label("Person")))
+    }
   }
 
-  test("can convert has-labels") {
-    val given = convert(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _, ast.LabelName("Duck") _)) _)
-    given should equal(Ands(HasLabel('x, Label("Person")), HasLabel('x, Label("Duck"))))
-  }
-
-  test("can convert single has-labels") {
-    val given = ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _
-    convert(given) should equal(HasLabel('x, Label("Person")))
-  }
-
-  test("can convert conjunctions") {
+  it("can convert conjunctions") {
     val given = ast.Ands(
       Set(
-        ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _,
-        ast.Equals(prop("x", "name"), ast.StringLiteral("Mats") _) _)) _
+        ast.HasLabels(varFor("NODE"), Seq(ast.LabelName("Person") _)) _,
+        ast.Equals(prop("NODE", "name"), ast.StringLiteral("Mats") _) _)) _
 
-    convert(given) should equal(
+    convert(given) shouldEqual(
       Ands(
-        HasLabel('x, Label("Person")),
-        Equals(Property('x, PropertyKey("name"))(CTAny), StringLit("Mats"))))
+        HasLabel('NODE, Label("Person")),
+        Equals(Property('NODE, PropertyKey("name"))(CTAny), StringLit("Mats"))), CTBoolean
+    )
   }
 
-  test("can convert negation") {
-    val given = ast.Not(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _) _
+  it("can convert negation") {
+    val given = ast.Not(ast.HasLabels(varFor("NODE"), Seq(ast.LabelName("Person") _)) _) _
 
-    convert(given) should equal(Not(HasLabel('x, Label("Person"))))
+    convert(given) shouldEqual(Not(HasLabel('NODE, Label("Person"))))
   }
 
-  it("can convert retyping predicate") {
-    val given = parseExpr("$p1 AND n:Foo AND $p2 AND m:Bar")
-
-    convert(given).asInstanceOf[Ands].exprs should equalWithTracing(
-      Set(HasLabel(('n), Label("Foo")), HasLabel(('m), Label("Bar")), Param("p1")(CTAny), Param("p2")(CTAny)))
-  }
-
-  test("can convert id function") {
-    convert("id(a)") should equal(
-      Id(Var("a")())
+  it("can convert id function") {
+    convert("id(REL_OR_NULL)") shouldEqual(
+      Id('REL_OR_NULL), CTIdentity.nullable
     )
   }
 

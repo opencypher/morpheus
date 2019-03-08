@@ -79,12 +79,19 @@ final class ExpressionConverter(context: IRBuilderContext) {
 
   private def schema = context.workingGraph.schema
 
-  private def knownType(e: ast.Expression): CypherType = context.knownTypes.getOrElse(e, throw UnTypedExpr(e))
-  private def parameterType(p: ast.Parameter): CypherType = context.parameters.getOrElse(p.name, throw MissingParameter(p.name)).cypherType
+  private def knownType(e: ast.Expression): CypherType =
+    context.knownTypes.getOrElse(e, throw UnTypedExpr(e))
+
+  private def parameterType(p: ast.Parameter): CypherType = {
+    context.parameters.get(p.name) match {
+      case None => throw MissingParameter(p.name)
+      case Some(param) => param.cypherType
+    }
+  }
 
   def convert(e: ast.Expression): Expr = e match {
     case ast.Variable(name) => Var(name)(knownType(e))
-    case ast.Parameter(name, _) => Param(name)(knownType(e))
+    case p@ast.Parameter(name, _) => Param(name)(parameterType(p))
 
     // Literals
     case astExpr: ast.IntegerLiteral => IntegerLit(astExpr.value)
