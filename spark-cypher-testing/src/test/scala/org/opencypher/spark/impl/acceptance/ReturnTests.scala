@@ -343,5 +343,19 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
       val res = caps.cypher("WITH { foo : 123, bar : '456'} AS m RETURN m.foo AS foo, m.bar AS bar")
       res.records.collect.toBag should equal(Bag(CypherMap("foo" -> 123, "bar" -> "456")))
     }
+
+    it("returns lists of maps") {
+      val res = caps.cypher(
+        """
+          |RETURN [
+          | {foo: "bar"},
+          | {foo: "baz"}
+          |] as maps
+        """.stripMargin)
+      res.records.collect.toBag should equal(Bag(
+        CypherMap("maps" -> CypherList(Map("foo" -> "bar"), Map("foo" -> "baz")))
+      ))
+    }
+
   }
 }

@@ -45,43 +45,56 @@ object CypherValue {
   /**
     * Converts a Scala/Java value to a compatible Cypher value, fails if the conversion is not supported.
     *
-    * @param v value to convert
+    * @param v               value to convert
+    * @param customConverter additional conversion rules
     * @return compatible CypherValue
     */
-  def apply(v: Any): CypherValue = {
+  def apply(v: Any)(implicit customConverter: CypherValueConverter = NoopCypherValueConverter): CypherValue = {
+
     def seqToCypherList(s: Seq[_]): CypherList = s.map(CypherValue(_)).toList
 
-    v match {
-      case cv: CypherValue => cv
-      case null => CypherNull
-      case jb: java.lang.Byte => jb.toLong
-      case js: java.lang.Short => js.toLong
-      case ji: java.lang.Integer => ji.toLong
-      case jl: java.lang.Long => jl.toLong
-      case jf: java.lang.Float => jf.toDouble
-      case jd: java.lang.Double => jd.toDouble
-      case js: java.lang.String => js.toString
-      case jb: java.lang.Boolean => jb.booleanValue
-      case jl: java.util.List[_] => seqToCypherList(jl.toArray)
-      case dt: java.sql.Date => dt.toLocalDate
-      case ts: java.sql.Timestamp => ts.toLocalDateTime
-      case ld: java.time.LocalDate => ld
-      case ldt: java.time.LocalDateTime => ldt
-      case du: Duration => du
-      case a: Array[_] => seqToCypherList(a)
-      case s: Seq[_] => seqToCypherList(s)
-      case m: Map[_, _] => m.map { case (k, cv) => k.toString -> CypherValue(cv) }
-      case b: Byte => b.toLong
-      case s: Short => s.toLong
-      case i: Int => i.toLong
-      case l: Long => l
-      case f: Float => f.toDouble
-      case d: Double => d
-      case b: Boolean => b
-      case invalid =>
-        throw IllegalArgumentException(
-          "a value that can be converted to a Cypher value", s"$invalid of type ${invalid.getClass.getName}")
-    }
+    customConverter.convert(v).getOrElse(
+      v match {
+        case cv: CypherValue => cv
+        case null => CypherNull
+        case jb: java.lang.Byte => jb.toLong
+        case js: java.lang.Short => js.toLong
+        case ji: java.lang.Integer => ji.toLong
+        case jl: java.lang.Long => jl.toLong
+        case jf: java.lang.Float => jf.toDouble
+        case jd: java.lang.Double => jd.toDouble
+        case js: java.lang.String => js.toString
+        case jb: java.lang.Boolean => jb.booleanValue
+        case jl: java.util.List[_] => seqToCypherList(jl.toArray)
+        case dt: java.sql.Date => dt.toLocalDate
+        case ts: java.sql.Timestamp => ts.toLocalDateTime
+        case ld: java.time.LocalDate => ld
+        case ldt: java.time.LocalDateTime => ldt
+        case du: Duration => du
+        case a: Array[_] => seqToCypherList(a)
+        case s: Seq[_] => seqToCypherList(s)
+        case m: Map[_, _] => m.map { case (k, cv) => k.toString -> CypherValue(cv) }
+        case b: Byte => b.toLong
+        case s: Short => s.toLong
+        case i: Int => i.toLong
+        case l: Long => l
+        case f: Float => f.toDouble
+        case d: Double => d
+        case b: Boolean => b
+        case invalid =>
+          throw IllegalArgumentException(
+            "a value that can be converted to a Cypher value", s"$invalid of type ${invalid.getClass.getName}")
+      })
+  }
+
+  /**
+    * Trait to inject additional CypherValue conversion rules
+    */
+  trait CypherValueConverter {
+    def convert(v: Any): Option[CypherValue]
+  }
+  object NoopCypherValueConverter extends CypherValueConverter {
+    override def convert(v: Any): Option[CypherValue] = None
   }
 
   /**

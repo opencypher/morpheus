@@ -33,6 +33,7 @@ import org.opencypher.okapi.api.value.CypherValue.Format.defaultValueFormatter
 import org.opencypher.okapi.api.value.CypherValue.{CypherFloat, CypherInteger, CypherList, CypherMap}
 import org.opencypher.okapi.api.value.GenCypherValue._
 import org.opencypher.okapi.impl.exception.NotImplementedException
+import org.opencypher.okapi.impl.temporal.Duration
 import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
@@ -767,7 +768,6 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
         CypherMap("p" -> List(1, null))
       ))
     }
-
   }
 
   describe("ANDs") {
@@ -986,6 +986,14 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       caps.cypher("RETURN [localdatetime($date)] + [localdatetime($date)] AS res", CypherMap("date" -> date))
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(java.time.LocalDateTime.parse(date), java.time.LocalDateTime.parse(date)))
+      ))
+    }
+
+    it("can concat two literal lists of duration type") {
+      val duration = "P1WT2H"
+      caps.cypher("RETURN [duration($duration)] + [duration($duration)] AS res", CypherMap("duration" -> duration))
+        .records.toMapsWithCollectedEntities should equal(Bag(
+        CypherMap("res" -> CypherList(Duration.parse(duration), Duration.parse(duration)))
       ))
     }
 
