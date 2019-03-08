@@ -35,6 +35,8 @@ import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure.{concatDire
 import org.opencypher.spark.api.io.{GraphEntity, Relationship}
 import org.opencypher.spark.impl.CAPSConverters._
 
+import GraphDdlOps._
+
 object DdlUtils {
   private val startLabelComboName = "startLabelComboName"
   private val endLabelComboName = "endLabelCombo"
@@ -110,7 +112,7 @@ object DdlUtils {
 
       GraphDdl(Map(graphName -> Graph(
         graphName,
-        schema,
+        schema.asGraphType,
         nodeToViewMappings,
         edgeToViewMappings
       )))

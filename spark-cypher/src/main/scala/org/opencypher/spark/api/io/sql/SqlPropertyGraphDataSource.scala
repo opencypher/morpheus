@@ -48,6 +48,7 @@ import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
+import GraphDdlOps._
 
 import scala.reflect.io.Path
 
@@ -67,7 +68,7 @@ case class SqlPropertyGraphDataSource(
   override def graph(graphName: GraphName): PropertyGraph = {
 
     val ddlGraph = graphDdl.graphs.getOrElse(graphName, throw GraphNotFoundException(s"Graph $graphName not found"))
-    val schema = ddlGraph.graphType
+    val schema = ddlGraph.graphType.asOkapiSchema
 
     // Build CAPS node tables
     val nodeDataFrames = ddlGraph.nodeToViewMappings.mapValues(nvm => readTable(nvm.view))
@@ -314,7 +315,7 @@ case class SqlPropertyGraphDataSource(
     }
   }
 
-  override def schema(name: GraphName): Option[CAPSSchema] = graphDdl.graphs.get(name).map(_.graphType.asCaps)
+  override def schema(name: GraphName): Option[CAPSSchema] = graphDdl.graphs.get(name).map(_.graphType.asOkapiSchema.asCaps)
 
   override def store(name: GraphName, graph: PropertyGraph): Unit = unsupported("storing a graph")
 

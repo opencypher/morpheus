@@ -27,12 +27,12 @@
 package org.opencypher.graphddl
 
 import org.opencypher.graphddl.GraphDdl._
-import org.opencypher.graphddl.GraphDdlAst.{ColumnIdentifier, PropertyToColumnMappingDefinition}
+import org.opencypher.graphddl.GraphDdlAst.{ColumnIdentifier, KeyDefinition, PropertyToColumnMappingDefinition}
 import org.opencypher.graphddl.GraphDdlException._
 import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.schema.PropertyKeys
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.okapi.api.schema.{PropertyKeys, Schema, SchemaPattern}
-import org.opencypher.okapi.impl.util.ScalaUtils._
+import org.opencypher.okapi.api.types.CypherType
 
 import scala.language.higherKinds
 
@@ -47,13 +47,13 @@ object GraphDdl {
 
     val ddlParts = DdlParts(ddl.statements)
 
-    val global = GraphType.empty.push(ddlParts.elementTypes)
+    val global = PartialGraphType.empty.push(name = "global", statements = ddlParts.elementTypes)
 
     val graphTypes = ddlParts.graphTypes
       .keyBy(_.name)
       .mapValues { graphType =>
         tryWithGraphType(graphType.name) {
-          global.push(graphType.statements)
+          global.push(graphType.name, graphType.statements)
         }
       }
       .view.force
@@ -143,12 +143,13 @@ object GraphDdl {
     maybeSetSchema: Option[SetSchemaDefinition] = None
   )
 
-  object GraphType {
-    val empty: GraphType = GraphType()
+  object PartialGraphType {
+    val empty: PartialGraphType = PartialGraphType(name = "empty")
   }
 
-  private[graphddl] case class GraphType(
-    parent: Option[GraphType] = None,
+  private[graphddl] case class PartialGraphType(
+    parent: Option[PartialGraphType] = None,
+    name: String,
     elementTypes: Map[String, ElementTypeDefinition] = Map.empty,
     nodeTypes: Map[NodeTypeDefinition, PropertyKeys] = Map.empty,
     edgeTypes: Map[RelationshipTypeDefinition, PropertyKeys] = Map.empty
@@ -162,45 +163,29 @@ object GraphDdl {
     lazy val allEdgeTypes: Map[RelationshipTypeDefinition, PropertyKeys] =
       parent.map(_.allEdgeTypes).getOrElse(Map.empty) ++ edgeTypes
 
-    // TODO move out of Graph DDL (maybe to CAPSSchema)
-    lazy val allPatterns: Set[SchemaPattern] =
-      parent.map(_.allPatterns).getOrElse(Set.empty) ++ allEdgeTypes.keys.map(edgeType => SchemaPattern(
-        sourceLabelCombination = edgeType.startNodeType.elementTypes,
-        // TODO: validate there is only one rel type
-        relType = edgeType.elementTypes.head,
-        targetLabelCombination = edgeType.endNodeType.elementTypes
-      ))
-
-    // TODO move out of Graph DDL (maybe to CAPSSchema)
-    lazy val asOkapiSchema: Schema = Schema.empty
-      .foldLeftOver(allNodeTypes) { case (schema, (nodeTypeDefinition, properties)) =>
-        schema.withNodePropertyKeys(nodeTypeDefinition.elementTypes, properties)
-      }
-      .foldLeftOver(allNodeTypes.keySet.flatMap(_.elementTypes).flatMap(resolveElementTypes)) { case (schema, eType) =>
-        eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
-      }
-      // TODO: validate there is only one rel type
-      .foldLeftOver(allEdgeTypes) { case (schema, (relTypeDefinition, properties)) =>
-        schema.withRelationshipPropertyKeys(relTypeDefinition.elementTypes.head, properties)
-      }
-      // TODO: validate there is only one rel type
-      .foldLeftOver(allEdgeTypes.keySet.map(_.elementTypes.head).flatMap(resolveElementTypes)) { case (schema, eType) =>
-        eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
-      }
-      .withSchemaPatterns(allPatterns.toSeq: _*)
-
     /** Validates, resolves and pushes the statements to form a child GraphType */
-    def push(statements: List[GraphTypeStatement]): GraphType = {
+    def push(name: String, statements: List[GraphTypeStatement]): PartialGraphType = {
       val parts = GraphTypeParts(statements)
 
-      val local = GraphType(Some(this), parts.elementTypes.keyBy(_.name))
+      val local = PartialGraphType(Some(this), name, parts.elementTypes.keyBy(_.name))
 
-      GraphType(
+      PartialGraphType(
         parent = Some(this),
+        name,
         elementTypes = local.elementTypes,
         nodeTypes = resolveNodeTypes(parts, local),
         edgeTypes = resolveRelationshipTypes(parts, local)
       )
+    }
+
+    def toGraphType: GraphType = GraphType(name,
+      allElementTypes.values.toSet.map { elementTypeDef: ElementTypeDefinition => toElementType(elementTypeDef) },
+      allNodeTypes.map { case (nodeTypeDef, props) => toNodeType(nodeTypeDef) -> props },
+      allEdgeTypes.map { case (relTypeDef, props) => toRelType(relTypeDef) -> props })
+
+    def toElementType(elementTypeDefinition: ElementTypeDefinition): ElementType = {
+      val parentTypes = elementTypeDefinition.parents.map(resolveElementType).map(toElementType)
+      ElementType(elementTypeDefinition.name, parentTypes, elementTypeDefinition.properties, elementTypeDefinition.maybeKey)
     }
 
     def toNodeType(nodeTypeDefinition: NodeTypeDefinition): NodeType =
@@ -214,7 +199,7 @@ object GraphDdl {
 
     private def resolveNodeTypes(
       parts: GraphTypeParts,
-      local: GraphType
+      local: PartialGraphType
     ): Map[NodeTypeDefinition, PropertyKeys] = {
       parts.nodeTypes
         .map(nodeType => nodeType.copy(elementTypes = local.resolveNodeLabels(nodeType)))
@@ -225,7 +210,7 @@ object GraphDdl {
 
     private def resolveRelationshipTypes(
       parts: GraphTypeParts,
-      local: GraphType
+      local: PartialGraphType
     ): Map[RelationshipTypeDefinition, PropertyKeys] = {
       parts.relTypes
         .map(relType => relType.copy(
@@ -282,32 +267,32 @@ object GraphDdl {
   }
 
   private def toGraph(
-    parent: GraphType,
+    parent: PartialGraphType,
     graph: GraphDefinitionWithContext
   ): Graph = {
     val parts = GraphParts(graph.definition.statements)
-    val graphType = parent
-      .push(parts.graphTypeStatements)
-      .push(parts.nodeMappings.map(_.nodeType) ++ parts.relMappings.map(_.relType))
-
-    val okapiSchema = graphType.asOkapiSchema
+    val graphTypeName = graph.definition.maybeGraphTypeName.getOrElse(graph.definition.name)
+    val partialGraphType = parent
+      .push(graphTypeName, parts.graphTypeStatements)
+      .push(graphTypeName, parts.nodeMappings.map(_.nodeType) ++ parts.relMappings.map(_.relType))
+    val graphType = partialGraphType.toGraphType
 
     Graph(
       name = GraphName(graph.definition.name),
-      graphType = okapiSchema,
+      graphType = graphType,
       nodeToViewMappings = parts.nodeMappings
-        .flatMap(nmd => toNodeToViewMappings(graphType.toNodeType(nmd.nodeType), okapiSchema, graph.maybeSetSchema, nmd))
+        .flatMap(nmd => toNodeToViewMappings(partialGraphType.toNodeType(nmd.nodeType), graphType, graph.maybeSetSchema, nmd))
         .validateDistinctBy(_.key, "Duplicate node mapping")
         .keyBy(_.key),
       edgeToViewMappings = parts.relMappings
-        .flatMap(rmd => toEdgeToViewMappings(graphType.toRelType(rmd.relType), okapiSchema, graph.maybeSetSchema, rmd))
+        .flatMap(rmd => toEdgeToViewMappings(partialGraphType.toRelType(rmd.relType), graphType, graph.maybeSetSchema, rmd))
         .validateDistinctBy(_.key, "Duplicate relationship mapping")
     )
   }
 
   private def toNodeToViewMappings(
     nodeType: NodeType,
-    okapiSchema: Schema,
+    graphType: GraphType,
     maybeSetSchema: Option[SetSchemaDefinition],
     nmd: NodeMappingDefinition
   ): Seq[NodeToViewMapping] = {
@@ -322,7 +307,7 @@ object GraphDdl {
             view = toViewId(maybeSetSchema, nvd.viewId),
             propertyMappings = toPropertyMappings(
               elementTypes = nodeKey.nodeType.elementTypes,
-              graphTypePropertyKeys = okapiSchema.nodePropertyKeys(nodeKey.nodeType.elementTypes).keySet,
+              graphTypePropertyKeys = graphType.nodeTypes(nodeKey.nodeType).keySet,
               maybePropertyMapping = nvd.maybePropertyMapping
             )
           )
@@ -333,7 +318,7 @@ object GraphDdl {
 
   private def toEdgeToViewMappings(
     relType: RelationshipType,
-    okapiSchema: Schema,
+    graphType: GraphType,
     maybeSetSchema: Option[SetSchemaDefinition],
     rmd: RelationshipMappingDefinition
   ): Seq[EdgeToViewMapping] = {
@@ -367,9 +352,8 @@ object GraphDdl {
               ))
             ),
             propertyMappings = toPropertyMappings(
-              elementTypes = rmd.relType.elementTypes,
-              // TODO: remove dependency to OKAPI schema
-              graphTypePropertyKeys = okapiSchema.relationshipPropertyKeys(rmd.relType.elementTypes.head).keySet,
+              elementTypes = edgeKey.relType.elementTypes,
+              graphTypePropertyKeys = graphType.relTypes(edgeKey.relType).keySet,
               maybePropertyMapping = rvd.maybePropertyMapping
             )
           )
@@ -453,7 +437,7 @@ case class GraphDdl(graphs: Map[GraphName, Graph]) {
 
 case class Graph(
   name: GraphName,
-  graphType: Schema,
+  graphType: GraphType,
   nodeToViewMappings: Map[NodeViewKey, NodeToViewMapping],
   edgeToViewMappings: List[EdgeToViewMapping]
 ) {
@@ -466,6 +450,20 @@ case class Graph(
     case evm: EdgeToViewMapping if evm.endNode.nodeViewKey == nodeViewKey =>
       evm.endNode.joinPredicates.map(_.nodeColumn)
   }
+}
+
+case class GraphType(
+  name: String,
+  elementTypes: Set[ElementType] = Set.empty,
+  nodeTypes: Map[NodeType, PropertyKeys] = Map.empty,
+  relTypes: Map[RelationshipType, PropertyKeys] = Map.empty
+) {
+
+  private lazy val elementTypesByName = elementTypes.map(et => et.name -> et).toMap
+
+  def nodeElementTypes: Set[ElementType] = nodeTypes.keySet.flatMap(_.elementTypes).map(elementTypesByName)
+
+  def relElementTypes: Set[ElementType] = relTypes.keySet.flatMap(_.elementTypes).map(elementTypesByName)
 }
 
 case class ViewId(maybeSetSchema: Option[SetSchemaDefinition], parts: List[String]) {
@@ -521,6 +519,13 @@ case class EndNode(
 case class Join(
   nodeColumn: String,
   edgeColumn: String
+)
+
+case class ElementType(
+  name: String,
+  parents: Set[ElementType] = Set.empty,
+  properties: Map[String, CypherType] = Map.empty,
+  maybeKey: Option[KeyDefinition] = None
 )
 
 object NodeType {

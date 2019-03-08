@@ -1,42 +1,18 @@
-/*
- * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
- *
- * Licensed under the Apache License, Version 2.0 (the "License");
- * you may not use this file except in compliance with the License.
- * You may obtain a copy of the License at
- *
- *     http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing, software
- * distributed under the License is distributed on an "AS IS" BASIS,
- * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- * See the License for the specific language governing permissions and
- * limitations under the License.
- *
- * Attribution Notice under the terms of the Apache License 2.0
- *
- * This work was created by the collective efforts of the openCypher community.
- * Without limiting the terms of Section 6, any Derivative Work that is not
- * approved by the public consensus process of the openCypher Implementers Group
- * should not be described as “Cypher” (and Cypher® is a registered trademark of
- * Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
- * proposals for change that have been documented or implemented should only be
- * described as "implementation extensions to Cypher" or as "proposed changes to
- * Cypher that are not yet approved by the openCypher community".
- */
 package org.opencypher.graphddl
 
-import org.opencypher.graphddl.GraphDdlParser._
+import org.opencypher.graphddl.GraphDdlParser.parseDdl
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
 import org.opencypher.okapi.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
+import GraphDdlOps._
 
-class GraphDdlAcceptanceTest extends BaseTestSuite {
+class GraphDdlOpsTest extends BaseTestSuite {
 
   val typeName = "myType"
   val graphName = GraphName("myGraph")
+
   describe("DDL to OKAPI schema") {
     it("can construct schema with node label") {
 
@@ -49,7 +25,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE GRAPH $graphName OF $typeName ()
           """.stripMargin
 
-      GraphDdl(ddl).graphs(graphName).graphType should equal(
+      GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
         Schema.empty
           .withNodePropertyKeys("A")("name" -> CTString)
       )
@@ -67,7 +43,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
            |CREATE GRAPH $graphName OF $typeName ()
            |""".stripMargin
 
-      GraphDdl(ddl).graphs(graphName).graphType should equal(
+      GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
         Schema.empty
           .withNodePropertyKeys("A")("name" -> CTString)
           .withRelationshipPropertyKeys("A")("name" -> CTString)
@@ -90,7 +66,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |""".stripMargin
 
 
-      GraphDdl(ddl).graphs(graphName).graphType shouldEqual
+      GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema shouldEqual
         Schema.empty
           .withNodePropertyKeys("Node1")("val" -> CTString)
           .withNodePropertyKeys("Node2")("val" -> CTString)
@@ -112,7 +88,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |""".stripMargin
 
 
-      GraphDdl(ddl).graphs(graphName).graphType should equal(
+      GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
         Schema.empty.withNodePropertyKeys("Node")("foo" -> CTInteger)
       )
     }
@@ -127,7 +103,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE GRAPH $graphName OF $typeName ()
             |""".stripMargin
 
-      GraphDdl(ddl).graphs(graphName).graphType should equal(
+      GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
         Schema.empty
           .withNodePropertyKeys("Node")("val" -> CTString, "another" -> CTString)
           .withNodeKey("Node", Set("val"))
@@ -146,7 +122,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE GRAPH $graphName OF $typeName ()
             |""".stripMargin
 
-      GraphDdl(ddl).graphs(graphName).graphType should equal(
+      GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
         Schema.empty
           .withNodePropertyKeys("Node")("val" -> CTString)
           .withRelationshipPropertyKeys("REL")("name" -> CTString)
@@ -166,7 +142,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE GRAPH $graphName OF $typeName ()
             |""".stripMargin
 
-      GraphDdl(ddl).graphs(graphName).graphType should equal(
+      GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
         Schema.empty
           .withNodePropertyKeys("Node")("val" -> CTString)
           .withRelationshipPropertyKeys("REL")("name" -> CTString)
@@ -198,7 +174,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE GRAPH $graphName OF $typeName ()
             |""".stripMargin
 
-      GraphDdl(ddl).graphs(graphName).graphType should equal(
+      GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
         Schema.empty
           .withNodePropertyKeys("MyLabel")("property" -> CTString, "data" -> CTInteger.nullable)
           .withNodePropertyKeys("LocalLabel1")("property" -> CTString)
@@ -223,7 +199,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE GRAPH $graphName OF $typeName ()
             |""".stripMargin
 
-      GraphDdl(ddl).graphs(graphName).graphType should equal(
+      GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
         Schema.empty
           .withNodePropertyKeys("A")("foo" -> CTString)
           .withNodePropertyKeys("A", "B")("foo" -> CTString, "bar" -> CTString)
@@ -243,7 +219,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE GRAPH $graphName OF $typeName ()
             |""".stripMargin
 
-      GraphDdl(ddl).graphs(graphName).graphType should equal(
+      GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
         Schema.empty
           .withNodePropertyKeys("A")("foo" -> CTString)
           .withNodePropertyKeys("A", "B")("foo" -> CTString, "bar" -> CTString)
@@ -270,7 +246,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE GRAPH $graphName OF $typeName ()
             |""".stripMargin
 
-      GraphDdl(ddl).graphs(graphName).graphType should equal(
+      GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
         Schema.empty
           .withNodePropertyKeys("A")("a" -> CTString)
           .withNodePropertyKeys("A", "B")("a" -> CTString, "b" -> CTString)
@@ -294,7 +270,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE GRAPH $graphName OF $typeName ()
             |""".stripMargin
 
-      GraphDdl(ddl).graphs(graphName).graphType should equal(
+      GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
         Schema.empty
           .withNodePropertyKeys("A")("foo" -> CTString)
           .withNodePropertyKeys("A", "B")("foo" -> CTString)
@@ -373,10 +349,10 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
                     NodeTypeDefinition("B"),
                     ViewDefinition(List("bar"), "alias_bar"),
                     JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
-          )))))
+                )))))
         ))
       )
-      GraphDdl(ddlDefinition).graphs(graphName).graphType shouldEqual Schema.empty
+      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual Schema.empty
         .withNodePropertyKeys("A")("foo" -> CTInteger)
         .withNodePropertyKeys("B")("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
         .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
@@ -409,7 +385,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |)
             |""".stripMargin
       )
-      GraphDdl(ddlDefinition).graphs(graphName).graphType shouldEqual Schema.empty
+      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual Schema.empty
         .withNodePropertyKeys("A")("foo" -> CTInteger)
         .withNodePropertyKeys("B")()
         .withNodePropertyKeys("A", "B")("foo" -> CTInteger)
@@ -441,7 +417,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |)
             |""".stripMargin
       )
-      GraphDdl(ddlDefinition).graphs(graphName).graphType shouldEqual Schema.empty
+      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual Schema.empty
         .withNodePropertyKeys("A")("foo" -> CTInteger)
         .withNodePropertyKeys("B")()
         .withNodePropertyKeys("A", "B")("foo" -> CTInteger)
@@ -475,7 +451,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |)
             |""".stripMargin
       )
-      GraphDdl(ddlDefinition).graphs(graphName).graphType shouldEqual Schema.empty
+      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual Schema.empty
         .withNodePropertyKeys("A")("bar" -> CTString)
         .withNodePropertyKeys("B")()
         .withNodePropertyKeys("A", "B")("bar" -> CTString)
@@ -500,97 +476,10 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |)
             |""".stripMargin
       )
-      GraphDdl(ddlDefinition).graphs(graphName).graphType shouldEqual Schema.empty
+      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual Schema.empty
         .withNodePropertyKeys("X")("c" -> CTString)
     }
 
   }
 
-  describe("Exception cases") {
-
-    it("throws when merging identical property keys with conflicting types") {
-      // Given
-      val ddl =
-        s"""|CREATE ELEMENT TYPE A ( foo STRING )
-            |CREATE ELEMENT TYPE B ( foo INTEGER )
-            |
-            |CREATE GRAPH TYPE $typeName (
-            |  (A),
-            |  (A, B)
-            |)
-            |CREATE GRAPH $graphName OF $typeName ()
-            |""".stripMargin
-
-      an[GraphDdlException] shouldBe thrownBy {
-        GraphDdl(ddl).graphs(graphName)
-      }
-    }
-
-
-    it("throws if a label is not defined") {
-      val ddlDefinition = parseDdl(
-        s"""|CREATE ELEMENT TYPE A
-            |
-            |CREATE GRAPH TYPE $typeName (
-            |
-            |  B,
-            |
-            |  -- (illegal) node definition
-            |  (C)
-            |)
-            |CREATE GRAPH $graphName OF $typeName ()
-            |""".stripMargin)
-
-      an[GraphDdlException] shouldBe thrownBy {
-        GraphDdl(ddlDefinition).graphs(graphName).graphType
-      }
-    }
-
-    it("throws if a relationship type is not defined") {
-      val ddlDefinition = parseDdl(
-        s"""|CREATE ELEMENT TYPE A
-            |
-            |CREATE GRAPH TYPE $typeName (
-            |
-            |  B,
-            |
-            |  -- (illegal) relationship type definition
-            |  (B)-[C]->(B)
-            |)
-            |CREATE GRAPH $graphName OF $typeName ()
-            |""".stripMargin)
-      an[GraphDdlException] shouldBe thrownBy {
-        GraphDdl(ddlDefinition).graphs(graphName).graphType
-      }
-    }
-
-    it("throws if a undefined label is used") {
-      val ddlString =
-        s"""|CREATE GRAPH TYPE $typeName (
-            |  (A)-[T]->(A)
-            |)
-            |CREATE GRAPH $graphName OF $typeName ()
-            |""".stripMargin
-
-      an[GraphDdlException] shouldBe thrownBy {
-        GraphDdl(parseDdl(ddlString)).graphs(graphName).graphType
-      }
-    }
-
-    it("throws if an unknown property key is mapped to a column") {
-      val ddlString =
-        s"""|CREATE GRAPH TYPE $typeName (
-            |  A ( foo STRING ),
-            |  (A)
-            |)
-            |CREATE GRAPH $graphName OF $typeName (
-            |  (A) FROM view_A ( column AS bar )
-            |)
-            |""".stripMargin
-
-      an[GraphDdlException] shouldBe thrownBy {
-        GraphDdl(parseDdl(ddlString)).graphs(graphName).graphType
-      }
-    }
-  }
 }

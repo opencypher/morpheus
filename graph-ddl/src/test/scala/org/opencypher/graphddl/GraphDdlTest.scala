@@ -27,8 +27,8 @@
 package org.opencypher.graphddl
 
 import org.junit.runner.RunWith
+import org.opencypher.graphddl.GraphDdlParser.parseDdl
 import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
 import org.opencypher.okapi.api.types.{CTFloat, CTInteger, CTString}
 import org.scalatest.junit.JUnitRunner
 import org.scalatest.{FunSpec, Matchers}
@@ -77,11 +77,21 @@ class GraphDdlTest extends FunSpec with Matchers {
     val expected = GraphDdl(
       Map(
         GraphName("fooGraph") -> Graph(GraphName("fooGraph"),
-          Schema.empty
-            .withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger)
-            .withNodePropertyKeys("Book")("title" -> CTString)
-            .withRelationshipPropertyKeys("READS")("rating" -> CTFloat)
-            .withSchemaPatterns(SchemaPattern("Person", "READS", "Book")),
+          GraphType(
+            name = "fooSchema",
+            elementTypes = Set(
+              ElementType("Person", Set.empty, Map("name" -> CTString, "age" -> CTInteger)),
+              ElementType("Book", Set.empty, Map("title" -> CTString)),
+              ElementType("READS", Set.empty, Map("rating" -> CTFloat))
+            ),
+            nodeTypes = Map(
+              NodeType("Person") -> Map("name" -> CTString, "age" -> CTInteger),
+              NodeType("Book") -> Map("title" -> CTString)
+            ),
+            relTypes = Map(
+              RelationshipType("Person", "READS", "Book") -> Map("rating" -> CTFloat)
+            )
+          ),
           Map(
             personKey1 -> NodeToViewMapping(
               nodeType = NodeType("Person"),
@@ -180,10 +190,19 @@ class GraphDdlTest extends FunSpec with Matchers {
 
     ddl.graphs(GraphName("myGraph")) shouldEqual Graph(
       name = GraphName("myGraph"),
-      graphType = Schema.empty
-        .withNodePropertyKeys("A")("x" -> CTString)
-        .withRelationshipPropertyKeys("B")("y" -> CTString)
-        .withSchemaPatterns(SchemaPattern("A", "B", "A")),
+      graphType = GraphType(
+        name = "myGraph",
+        elementTypes = Set(
+          ElementType("A", Set.empty, Map("x" -> CTString)),
+          ElementType("B", Set.empty, Map("y" -> CTString))
+        ),
+        nodeTypes = Map(
+          NodeType("A") -> Map("x" -> CTString)
+        ),
+        relTypes = Map(
+          RelationshipType("A", "B", "A") -> Map("y" -> CTString)
+        )
+      ),
       nodeToViewMappings = Map(
         A_a -> NodeToViewMapping(NodeType("A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")), Map("x" -> "x"))
       ),
@@ -201,32 +220,6 @@ class GraphDdlTest extends FunSpec with Matchers {
 
     val A_a = NodeViewKey(NodeType("A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")))
     val A_ab = NodeViewKey(NodeType("A", "B"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a_b")))
-
-    val expectedGraph = Graph(
-      name = GraphName("myGraph"),
-      graphType = Schema.empty
-        .withNodePropertyKeys("A")("x" -> CTString)
-        .withNodePropertyKeys("A", "B")("x" -> CTString, "y" -> CTString)
-        .withRelationshipPropertyKeys("R")("y" -> CTString)
-        .withSchemaPatterns(SchemaPattern("A", "R", "A"))
-        .withSchemaPatterns(SchemaPattern(Set("A", "B"), "R", Set("A"))),
-      nodeToViewMappings = Map(
-        A_a -> NodeToViewMapping(NodeType("A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")), Map("x" -> "x")),
-        A_ab -> NodeToViewMapping(NodeType("A", "B"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a_b")), Map("x" -> "x", "y" -> "y"))
-      ),
-      edgeToViewMappings = List(
-        EdgeToViewMapping(RelationshipType("A", "R", "A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
-          StartNode(A_a, List(Join("id", "id"))),
-          EndNode(A_a, List(Join("id", "id"))),
-          Map("y" -> "y")
-        ),
-        EdgeToViewMapping(RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A")), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
-          StartNode(A_ab, List(Join("id", "id"))),
-          EndNode(A_a, List(Join("id", "id"))),
-          Map("y" -> "y")
-        )
-      )
-    )
 
     it("allows compact inline graph definition with complex node type") {
       val ddl = GraphDdl(
@@ -251,7 +244,41 @@ class GraphDdlTest extends FunSpec with Matchers {
           |)
         """.stripMargin)
 
-      ddl.graphs(GraphName("myGraph")) shouldEqual expectedGraph
+      ddl.graphs(GraphName("myGraph")) shouldEqual Graph(
+        name = GraphName("myGraph"),
+        graphType = GraphType(
+          name = "myGraph",
+          elementTypes = Set(
+            ElementType("A", Set.empty, Map("x" -> CTString)),
+            ElementType("B", Set.empty, Map("y" -> CTString)),
+            ElementType("R", Set.empty, Map("y" -> CTString))
+          ),
+          nodeTypes = Map(
+            NodeType("A") -> Map("x" -> CTString),
+            NodeType("A", "B") -> Map("x" -> CTString, "y" -> CTString)
+          ),
+          relTypes = Map(
+            RelationshipType("A", "R", "A") -> Map("y" -> CTString),
+            RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A")) -> Map("y" -> CTString)
+          )
+        ),
+        nodeToViewMappings = Map(
+          A_a -> NodeToViewMapping(NodeType("A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")), Map("x" -> "x")),
+          A_ab -> NodeToViewMapping(NodeType("A", "B"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a_b")), Map("x" -> "x", "y" -> "y"))
+        ),
+        edgeToViewMappings = List(
+          EdgeToViewMapping(RelationshipType("A", "R", "A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
+            StartNode(A_a, List(Join("id", "id"))),
+            EndNode(A_a, List(Join("id", "id"))),
+            Map("y" -> "y")
+          ),
+          EdgeToViewMapping(RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A")), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
+            StartNode(A_ab, List(Join("id", "id"))),
+            EndNode(A_a, List(Join("id", "id"))),
+            Map("y" -> "y")
+          )
+        )
+      )
     }
 
     it("allows compact inline graph definition with complex node type based on inheritance") {
@@ -277,9 +304,42 @@ class GraphDdlTest extends FunSpec with Matchers {
           |)
         """.stripMargin)
 
-      ddl.graphs(GraphName("myGraph")) shouldEqual expectedGraph
+      ddl.graphs(GraphName("myGraph")) shouldEqual Graph(
+        name = GraphName("myGraph"),
+        graphType = GraphType(
+          name = "myGraph",
+          elementTypes = Set(
+            ElementType("A", Set.empty, Map("x" -> CTString)),
+            ElementType("B", Set(ElementType("A", Set.empty, Map("x" -> CTString))), Map("y" -> CTString)),
+            ElementType("R", Set.empty, Map("y" -> CTString))
+          ),
+          nodeTypes = Map(
+            NodeType("A") -> Map("x" -> CTString),
+            NodeType("A", "B") -> Map("x" -> CTString, "y" -> CTString)
+          ),
+          relTypes = Map(
+            RelationshipType("A", "R", "A") -> Map("y" -> CTString),
+            RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A")) -> Map("y" -> CTString)
+          )
+        ),
+        nodeToViewMappings = Map(
+          A_a -> NodeToViewMapping(NodeType("A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")), Map("x" -> "x")),
+          A_ab -> NodeToViewMapping(NodeType("A", "B"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a_b")), Map("x" -> "x", "y" -> "y"))
+        ),
+        edgeToViewMappings = List(
+          EdgeToViewMapping(RelationshipType("A", "R", "A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
+            StartNode(A_a, List(Join("id", "id"))),
+            EndNode(A_a, List(Join("id", "id"))),
+            Map("y" -> "y")
+          ),
+          EdgeToViewMapping(RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A")), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
+            StartNode(A_ab, List(Join("id", "id"))),
+            EndNode(A_a, List(Join("id", "id"))),
+            Map("y" -> "y")
+          )
+        )
+      )
     }
-
   }
 
 
@@ -363,12 +423,13 @@ class GraphDdlTest extends FunSpec with Matchers {
           |)
         """.stripMargin)
     )
-
+    // implicit graph type
     ddls(1) shouldEqual ddls.head
     ddls(2) shouldEqual ddls.head
-    ddls(3) shouldEqual ddls.head
-    ddls(4) shouldEqual ddls.head
-    ddls(5) shouldEqual ddls.head
+
+    // explicit graph type
+    ddls(4) shouldEqual ddls(3)
+    ddls(5) shouldEqual ddls(3)
   }
 
   it("allows these equivalent graph type definitions") {
@@ -657,6 +718,22 @@ class GraphDdlTest extends FunSpec with Matchers {
           |)
         """.stripMargin)
       e.getFullMessage should (include("(A,B,C)") and include("x") and include("INTEGER") and include("STRING"))
+    }
+
+    it("throws if an unknown property key is mapped to a column") {
+      val ddlString =
+        s"""|CREATE GRAPH TYPE myType (
+            |  A ( foo STRING ),
+            |  (A)
+            |)
+            |CREATE GRAPH myGraph OF myType (
+            |  (A) FROM view_A ( column AS bar )
+            |)
+            |""".stripMargin
+
+      an[GraphDdlException] shouldBe thrownBy {
+        GraphDdl(parseDdl(ddlString)).graphs(GraphName("myGraph")).graphType
+      }
     }
   }
 }
