@@ -32,13 +32,14 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.impl.util.VarConverters.{toVar, _}
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.v9_0.ast.semantics.SemanticState
 import org.opencypher.v9_0.util.{Ref, symbols}
 import org.opencypher.v9_0.{expressions => ast}
+
+import scala.language.implicitConversions
 
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
@@ -90,6 +91,8 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     .withNodePropertyKeys("Node2")(properties2 : _*)
     .withRelationshipPropertyKeys("REL2")(properties2: _*)
 
+  implicit def toVar(s: Symbol): Var = all.find(_.name == s.name).get
+
   it("should convert CASE") {
     convert(parseExpr("CASE WHEN INTEGER > INTEGER THEN INTEGER ELSE FLOAT END")) should equal(
       CaseExpr(IndexedSeq((GreaterThan('INTEGER, 'INTEGER), 'INTEGER)), Some('FLOAT))(CTNumber)
@@ -99,15 +102,35 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     )
   }
 
-  it("should convert coalesce") {
-    convert(parseExpr("coalesce(a, b, c)")) should equal(
-      Coalesce(IndexedSeq('a, 'b, 'c))(CTAny)
-    )
+  describe("coalesce") {
+    it("should convert coalesce") {
+      convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE)")) should equal(
+        Coalesce(IndexedSeq('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE))(CTAny)
+      )
+    }
+
+    it("should become nullable if nothing is non-null") {
+      convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE_OR_NULL)")) should equal(
+        Coalesce(IndexedSeq('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE_OR_NULL))(CTAny.nullable)
+      )
+    }
+
+    it("should not consider arguments past the first non-nullable coalesce") {
+      convert(parseExpr("coalesce(INTEGER_OR_NULL, FLOAT, NODE, STRING)")) should equal(
+        Coalesce(IndexedSeq('INTEGER_OR_NULL, 'FLOAT))(CTNumber)
+      )
+    }
+
+    it("should remove coalesce if the first arg is non-nullable") {
+      val expr = convert(parseExpr("coalesce(INTEGER, STRING_OR_NULL, NODE)"))
+      expr should equal(toVar('INTEGER))
+      expr.cypherType should equal(CTInteger)
+    }
   }
 
   test("exists") {
     convert(parseExpr("exists(n.key)")) should equalWithTracing(
-      Exists(Property(toNodeVar('n), PropertyKey("key"))(CTAny))
+      Exists(Property('NODE, PropertyKey("key"))(CTAny))
     )
   }
 
@@ -119,7 +142,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   test("converting or predicate") {
     convert(parseExpr("n = a OR n > b")) should equalWithTracing(
-      Ors(Equals(toNodeVar('n), 'a), GreaterThan(toNodeVar('n), 'b))
+      Ors(Equals('n, 'a), GreaterThan('n, 'b))
     )
   }
 
@@ -226,7 +249,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   test("can convert variables") {
-    convert(varFor("n")) should equal(toNodeVar('n))
+    convert(varFor("n")) should equal(('n))
   }
 
   test("can convert literals") {
@@ -237,7 +260,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   test("can convert property access") {
-    convert(prop("n", "key")) should equal(Property(toNodeVar('n), PropertyKey("key"))(CTAny))
+    convert(prop("n", "key")) should equal(Property(('n), PropertyKey("key"))(CTAny))
   }
 
   test("can convert equals") {
@@ -286,7 +309,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     val given = parseExpr("$p1 AND n:Foo AND $p2 AND m:Bar")
 
     convert(given).asInstanceOf[Ands].exprs should equalWithTracing(
-      Set(HasLabel(toNodeVar('n), Label("Foo")), HasLabel(toNodeVar('m), Label("Bar")), Param("p1")(CTAny), Param("p2")(CTAny)))
+      Set(HasLabel(('n), Label("Foo")), HasLabel(('m), Label("Bar")), Param("p1")(CTAny), Param("p2")(CTAny)))
   }
 
   test("can convert id function") {

@@ -79,6 +79,7 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
   private def schema = context.workingGraph.schema
 
   private def knownType(e: ast.Expression): CypherType = context.knownTypes.getOrElse(e, throw UnTypedExpr(e))
+  private def parameterType(p: ast.Parameter): CypherType = context.parameters.getOrElse(p.name, throw MissingParameter(p.name)).cypherType
 
   def convert(e: ast.Expression): Expr = e match {
     case ast.Variable(name) => Var(name)(knownType(e))
@@ -201,7 +202,22 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
         case functions.ToInteger => ToInteger(arg0)
         case functions.ToString => ToString(arg0)
         case functions.ToBoolean => ToBoolean(arg0)
-        case functions.Coalesce => Coalesce(convertedArgs)(returnType)
+        case functions.Coalesce =>
+          // Special optimisation for coalesce using short-circuit logic
+          convertedArgs.map(_.cypherType).indexWhere(!_.isNullable) match {
+            case 0 =>
+              // first argument is non-nullable; just use it directly without coalesce
+              convertedArgs.head
+            case -1 =>
+              // nothing was non-nullable; keep all args
+              val outType = convertedArgs.map(_.cypherType).reduceLeft(_ join _)
+              Coalesce(convertedArgs)(outType)
+            case other =>
+              // keep only the args up until the first non-nullable (inclusive)
+              val relevantArgs = convertedArgs.slice(0, other + 1)
+              val outType = relevantArgs.map(_.cypherType).reduceLeft(_ join _)
+              Coalesce(relevantArgs)(outType)
+          }
         case functions.Range => Range(arg0, arg1, convertedArgs.lift(2))
         case functions.Substring => Substring(arg0, arg1, convertedArgs.lift(2))
         case functions.Left => Substring(arg0, IntegerLit(0), convertedArgs.lift(1))
