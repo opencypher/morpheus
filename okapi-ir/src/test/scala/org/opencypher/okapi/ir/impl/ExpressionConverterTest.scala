@@ -29,14 +29,14 @@ package org.opencypher.okapi.ir.impl
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.v9_0.ast.semantics.SemanticState
-import org.opencypher.v9_0.util.{Ref, symbols}
+import org.opencypher.v9_0.util.symbols
 import org.opencypher.v9_0.{expressions => ast}
 
 import scala.language.implicitConversions
@@ -91,7 +91,16 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     .withNodePropertyKeys("Node2")(properties2 : _*)
     .withRelationshipPropertyKeys("REL2")(properties2: _*)
 
-  implicit def toVar(s: Symbol): Var = all.find(_.name == s.name).get
+  val testContext: IRBuilderContext = IRBuilderContext.initial(
+    "",
+    CypherMap.empty,
+    SemanticState.clean,
+    IRCatalogGraph(QualifiedGraphName(Namespace(""), GraphName("")), schema),
+    qgnGenerator,
+    Map.empty,
+    _ => ???,
+    all
+  )
 
   it("should convert CASE") {
     convert(parseExpr("CASE WHEN INTEGER > INTEGER THEN INTEGER ELSE FLOAT END")) should equal(
@@ -128,10 +137,14 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     }
   }
 
-  test("exists") {
-    convert(parseExpr("exists(n.key)")) should equalWithTracing(
-      Exists(Property('NODE, PropertyKey("key"))(CTAny))
-    )
+  describe("exists") {
+    // NOTE: pattern version of exists((:A)-->(:B)) is rewritten before IR building
+
+    it("can convert") {
+      convert(parseExpr("exists(NODE.key)")) should equal(
+        Exists(Property('NODE, PropertyKey("key"))(CTAny))
+      )
+    }
   }
 
   test("converting in predicate and literal list") {
@@ -318,16 +331,8 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     )
   }
 
-  lazy val testContext: IRBuilderContext = IRBuilderContext.initial(
-    "",
-    CypherMap.empty,
-    SemanticState.clean,
-    IRCatalogGraph(QualifiedGraphName(Namespace(""), GraphName("")), Schema.empty),
-    qgnGenerator,
-    Map.empty,
-    _ => ???,
-    all
-  )
+  implicit def toVar(s: Symbol): Var = all.find(_.name == s.name).get
+
   private def convert(e: ast.Expression): Expr =
-    new ExpressionConverter()(testContext).convert(e)
+    new ExpressionConverter(testContext).convert(e)
 }

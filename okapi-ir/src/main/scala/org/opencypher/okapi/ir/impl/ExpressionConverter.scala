@@ -74,7 +74,7 @@ object AddType {
 
 }
 
-final class ExpressionConverter(implicit context: IRBuilderContext) {
+final class ExpressionConverter(context: IRBuilderContext) {
 
   private def schema = context.workingGraph.schema
 

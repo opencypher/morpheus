@@ -54,10 +54,8 @@ final case class IRBuilderContext(
   knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
   self =>
 
-  private implicit def context: IRBuilderContext = self
-
-  private lazy val exprConverter = new ExpressionConverter
-  private lazy val patternConverter = new PatternConverter()(self)
+  private lazy val exprConverter = new ExpressionConverter(self)
+  private lazy val patternConverter = new PatternConverter(self)
 
   def convertPattern(p: ast.Pattern, qgn: Option[QualifiedGraphName] = None): Pattern = {
     patternConverter.convert(p, knownTypes, qgn.getOrElse(workingGraph.qualifiedGraphName))

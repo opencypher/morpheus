@@ -253,7 +253,7 @@ class PatternConverterTest extends IrTestSuite {
       )
     }
   }
-  val converter = new PatternConverter()(IRBuilderHelper.emptyIRBuilderContext)
+  val converter = new PatternConverter(IRBuilderHelper.emptyIRBuilderContext)
 
   def convert(p: ast.Pattern, knownTypes: Map[ast.Expression, CypherType] = Map.empty): Pattern =
     converter.convert(p, knownTypes, testQualifiedGraphName)
