@@ -34,7 +34,7 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.Measurement.printTiming
 import org.opencypher.okapi.ir.api.expr.{Expr, _}
 import org.opencypher.okapi.relational.api.table.Table
@@ -70,7 +70,7 @@ object SparkTable {
         df
       } else {
         // Spark interprets dots in column names as struct accessors. Hence, we need to escape column names by default.
-        df.select(columns.map{ case (colName, alias) => df.col(s"`$colName`").as(alias) }: _*)
+        df.select(columns.map { case (colName, alias) => df.col(s"`$colName`").as(alias) }: _*)
       }
     }
 
@@ -233,6 +233,10 @@ object SparkTable {
       joinType match {
         case CrossJoin =>
           df.crossJoin(other.df)
+
+        case LeftOuterJoin
+          if joinCols.isEmpty && df.sparkSession.conf.get("spark.sql.crossJoin.enabled", "false") == "false" =>
+          throw UnsupportedOperationException("OPTIONAL MATCH support requires spark.sql.crossJoin.enabled=true")
 
         case _ =>
           df.safeJoin(other.df, joinCols, joinTypeString)
@@ -398,10 +402,13 @@ object SparkTable {
       require(joinCols.map(_._1).forall(col => !other.columns.contains(col)))
       require(joinCols.map(_._2).forall(col => !df.columns.contains(col)))
 
-      val joinExpr = joinCols.map {
-        case (l, r) => df.col(l) === other.col(r)
-      }.reduce((acc, expr) => acc && expr)
-
+      val joinExpr = if (joinCols.nonEmpty) {
+        joinCols.map {
+          case (l, r) => df.col(l) === other.col(r)
+        }.reduce((acc, expr) => acc && expr)
+      } else {
+        functions.lit(true)
+      }
       df.join(other, joinExpr, joinType)
     }
 

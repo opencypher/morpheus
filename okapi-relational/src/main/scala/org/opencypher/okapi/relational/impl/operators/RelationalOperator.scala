@@ -45,14 +45,6 @@ import org.opencypher.okapi.trees.AbstractTreeNode
 
 import scala.reflect.runtime.universe.TypeTag
 
-object TagStrategy {
-
-  type TagStrategy = Map[QualifiedGraphName, GraphIdPrefix]
-
-  def empty = Map.empty[QualifiedGraphName, Map[Int, Int]]
-
-}
-
 abstract class RelationalOperator[T <: Table[T] : TypeTag] extends AbstractTreeNode[RelationalOperator[T]] {
 
   def header: RecordHeader = children.head.header
@@ -133,6 +125,22 @@ abstract class RelationalOperator[T <: Table[T] : TypeTag] extends AbstractTreeN
   }
 }
 
+trait EmptyTable[T <: Table[T]] {
+  self: RelationalOperator[T] =>
+
+  override lazy val header: RecordHeader = RecordHeader.empty
+
+  override lazy val _table: T = session.records.empty().table
+}
+
+trait UnitTable[T <: Table[T]] {
+  self: RelationalOperator[T] =>
+
+  override lazy val header: RecordHeader = RecordHeader.empty
+
+  override lazy val _table: T = session.records.unit().table
+}
+
 // Leaf
 
 object Start {
@@ -157,9 +165,7 @@ final case class Start[T <: Table[T] : TypeTag](
 
   override lazy val header: RecordHeader = maybeRecords.map(_.header).getOrElse(RecordHeader.empty)
 
-  override lazy val _table: T = maybeRecords.map(_.table).getOrElse {
-    session.records.unit().table
-  }
+  override lazy val _table: T = maybeRecords.map(_.table).getOrElse(session.records.unit().table)
 
   override lazy val graph: RelationalCypherGraph[T] = resolve(qgn)
 
@@ -181,11 +187,7 @@ final case class Start[T <: Table[T] : TypeTag](
 final case class PrefixGraph[T <: Table[T] : TypeTag](
   in: RelationalOperator[T],
   prefix: GraphIdPrefix
-) extends RelationalOperator[T] {
-
-  override lazy val header: RecordHeader = RecordHeader.empty
-
-  override lazy val _table: T = session.records.empty().table
+) extends RelationalOperator[T] with EmptyTable[T] {
 
   override lazy val graphName: QualifiedGraphName = QualifiedGraphName(s"${in.graphName}_tempPrefixed_$prefix")
 
@@ -428,7 +430,6 @@ final case class Join[T <: Table[T] : TypeTag](
   joinExprs: Seq[(Expr, Expr)] = Seq.empty,
   joinType: JoinType
 ) extends RelationalOperator[T] {
-  require(joinExprs.nonEmpty || joinType == CrossJoin, "Join type must either be 'CrossJoin' or join expressions may not be empty")
   require((lhs.header.expressions intersect rhs.header.expressions).isEmpty, "Join cannot join operators with overlapping expressions")
   require((lhs.header.columns intersect rhs.header.columns).isEmpty, "Join cannot join tables with column name collisions")
 
@@ -489,17 +490,13 @@ final case class ConstructGraph[T <: Table[T] : TypeTag](
   constructedGraph: RelationalCypherGraph[T],
   construct: LogicalPatternGraph,
   override val context: RelationalRuntimeContext[T]
-) extends RelationalOperator[T] {
-
-  override lazy val header: RecordHeader = RecordHeader.empty
-
-  override lazy val _table: T = session.records.unit().table
+) extends RelationalOperator[T] with UnitTable[T] {
 
   override def maybeReturnItems: Option[Seq[Var]] = None
 
   override lazy val graph: RelationalCypherGraph[T] = constructedGraph
 
-  override def graphName = construct.qualifiedGraphName
+  override def graphName: QualifiedGraphName = construct.qualifiedGraphName
 
   override def toString: String = {
     val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)
@@ -512,11 +509,7 @@ final case class ConstructGraph[T <: Table[T] : TypeTag](
 final case class GraphUnionAll[T <: Table[T] : TypeTag](
   inputs: NonEmptyList[RelationalOperator[T]],
   qgn: QualifiedGraphName
-) extends RelationalOperator[T] {
-
-  override lazy val header: RecordHeader = RecordHeader.empty
-
-  override lazy val _table: T = session.records.empty().table
+) extends RelationalOperator[T] with EmptyTable[T]  {
 
   override lazy val graphName: QualifiedGraphName = qgn
 

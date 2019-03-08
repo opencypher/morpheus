@@ -27,7 +27,6 @@
 package org.opencypher.okapi.relational.impl.planning
 
 import org.opencypher.okapi.api.graph._
-import org.opencypher.okapi.logical.impl.{Incoming, Outgoing}
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{NotImplementedException, SchemaException, UnsupportedOperationException}
@@ -37,7 +36,7 @@ import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.impl.util.VarConverters._
-import org.opencypher.okapi.logical.impl._
+import org.opencypher.okapi.logical.impl.{Incoming, Outgoing, _}
 import org.opencypher.okapi.logical.{impl => logical}
 import org.opencypher.okapi.relational.api.io.EntityTable
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
@@ -297,36 +296,32 @@ object RelationalPlanner {
     val lhsOp = process[T](lhs)
     val rhsOp = process[T](rhs)
 
-    if (lhs.fields.isEmpty) {
-      rhsOp
-    } else {
-      val lhsHeader = lhsOp.header
-      val rhsHeader = rhsOp.header
+    val lhsHeader = lhsOp.header
+    val rhsHeader = rhsOp.header
 
-      def generateUniqueName = s"tmp${System.nanoTime}"
+    def generateUniqueName = s"tmp${System.nanoTime}"
 
-      // 1. Compute expressions between left and right side
-      val commonExpressions = lhsHeader.expressions.intersect(rhsHeader.expressions)
-      val joinExprs = commonExpressions.collect { case v: Var => v }
-      val otherExpressions = commonExpressions -- joinExprs
+    // 1. Compute expressions between left and right side
+    val commonExpressions = lhsHeader.expressions.intersect(rhsHeader.expressions)
+    val joinExprs = commonExpressions.collect { case v: Var => v }
+    val otherExpressions = commonExpressions -- joinExprs
 
-      // 2. Remove siblings of the join expressions and other common fields
-      val expressionsToRemove = joinExprs
-        .flatMap(v => rhsHeader.ownedBy(v) - v)
-        .union(otherExpressions)
-      val rhsWithDropped = relational.Drop(rhsOp, expressionsToRemove)
+    // 2. Remove siblings of the join expressions and other common fields
+    val expressionsToRemove = joinExprs
+      .flatMap(v => rhsHeader.ownedBy(v) - v)
+      .union(otherExpressions)
+    val rhsWithDropped = relational.Drop(rhsOp, expressionsToRemove)
 
-      // 3. Rename the join expressions on the right hand side, in order to make them distinguishable after the join
-      val joinExprRenames = joinExprs.map(e => e as Var(generateUniqueName)(e.cypherType))
-      val rhsWithAlias = relational.Alias(rhsWithDropped, joinExprRenames.toSeq)
-      val rhsJoinReady = relational.Drop(rhsWithAlias, joinExprs.collect { case e: Expr => e })
+    // 3. Rename the join expressions on the right hand side, in order to make them distinguishable after the join
+    val joinExprRenames = joinExprs.map(e => e as Var(generateUniqueName)(e.cypherType))
+    val rhsWithAlias = relational.Alias(rhsWithDropped, joinExprRenames.toSeq)
+    val rhsJoinReady = relational.Drop(rhsWithAlias, joinExprs.collect { case e: Expr => e })
 
-      // 4. Left outer join the left side and the processed right side
-      val joined = lhsOp.join(rhsJoinReady, joinExprRenames.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
+    // 4. Left outer join the left side and the processed right side
+    val joined = lhsOp.join(rhsJoinReady, joinExprRenames.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
 
-      // 5. Select the resulting header expressions
-      relational.Select(joined, joined.header.expressions.toList)
-    }
+    // 5. Select the resulting header expressions
+    relational.Select(joined, joined.header.expressions.toList)
   }
 
   implicit class RelationalOperatorOps[T <: Table[T] : TypeTag](op: RelationalOperator[T]) {
@@ -562,48 +557,6 @@ object RelationalPlanner {
         case entity :: Nil => entity
         case Nil => throw SchemaException(s"Operation requires single entity table, input contains no entities")
         case other => throw SchemaException(s"Operation requires single entity table, found ${other.mkString("[", ", ", "]")}")
-      }
-    }
-
-    def filterNodeLabels(targetType: CTNode, exactLabelMatch: Boolean = false): RelationalOperator[T] = {
-      val entityVar = op.singleEntity
-
-      val labels = targetType.labels
-
-      val labelExpressions: Iterable[HasLabel] = op.header.labelsFor(entityVar)
-
-      val hasColumnForMandatoryLabels = labels.forall { label =>
-        labelExpressions.exists {
-          case HasLabel(_, Label(l)) if l == label => true
-          case _ => false
-        }
-      }
-
-      if (!hasColumnForMandatoryLabels) {
-        implicit val context: RelationalRuntimeContext[T] = op.context
-        relational.Start.fromEmptyGraph(op.session.records.empty(op.header))
-      } else {
-        val filterExpressions = labelExpressions.flatMap {
-          case hl@HasLabel(_, label) if labels.contains(label.name) => Some(Equals(hl, TrueLit)(CTBoolean))
-          case other if exactLabelMatch => Some(Equals(other, FalseLit)(CTBoolean))
-          case _ => None
-        }.toSet
-
-        op.filter(Ands(filterExpressions))
-      }
-    }
-
-    def filterRelTypes(targetType: CTRelationship): RelationalOperator[T] = {
-      val singleEntity = op.singleEntity
-
-      if (singleEntity.cypherType.subTypeOf(targetType)) {
-        op
-      } else {
-        val relTypes = op.header
-          .typesFor(singleEntity)
-          .filter(hasType => targetType.types.contains(hasType.relType.name))
-        val filterExpr = Ors(relTypes.map(Equals(_, TrueLit)(CTBoolean)).toSeq: _*)
-        op.filter(filterExpr)
       }
     }
 

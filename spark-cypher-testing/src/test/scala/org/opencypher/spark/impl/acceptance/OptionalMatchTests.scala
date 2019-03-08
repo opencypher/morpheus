@@ -27,14 +27,100 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.junit.runner.RunWith
+import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.relational.impl.graph.ScanGraph
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
+import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class OptionalMatchTests extends CAPSTestSuite with ScanGraphInit {
+
+  describe("match on empty graph / table") {
+
+    it("return null row") {
+      val result = caps.cypher(
+        """
+          |OPTIONAL MATCH (n)
+          |RETURN n
+        """.stripMargin
+      )
+      result.records.toMaps should equal(Bag(CypherMap("n" -> null)))
+    }
+
+    it("return empty result on non-existing labels") {
+      val g = initGraph("CREATE (:A)")
+      val result = g.cypher(
+        """
+          |OPTIONAL MATCH (n:B)
+          |RETURN n
+        """.stripMargin
+      )
+      result.records.toMaps should equal(Bag(CypherMap("n" -> null)))
+    }
+
+    it("return empty result on empty scan graph") {
+      val g = new ScanGraph(Seq.empty, Schema.empty)
+      val result = g.cypher(
+        """
+          |OPTIONAL MATCH (n)
+          |RETURN n
+        """.stripMargin
+      )
+      result.records.toMaps should equal(Bag(CypherMap("n" -> null)))
+    }
+
+    it("supports stacked optional matches") {
+      val g = initGraph(
+        """
+          |CREATE (:DoesExist {property: 42})
+          |CREATE (:DoesExist {property: 43})
+          |CREATE (:DoesExist {property: 44})
+        """.stripMargin)
+
+      val res = g.cypher(
+        """
+          |OPTIONAL MATCH (f:DoesExist)
+          |OPTIONAL MATCH (n:DoesNotExist)
+          |RETURN collect(DISTINCT n.property) AS a, collect(DISTINCT f.property) AS b
+        """.stripMargin)
+
+      res.records.collect.toBag should equal(Bag(
+        CypherMap("a" -> List.empty, "b" -> List(42, 43, 44))
+      ))
+    }
+
+    it("throws if spark.sql.crossJoin.enabled=false") {
+      caps.sparkSession.conf.set("spark.sql.crossJoin.enabled", "false")
+      val e = the[org.opencypher.okapi.impl.exception.UnsupportedOperationException] thrownBy {
+        try {
+          val g = initGraph(
+            """
+              |CREATE (:DoesExist {property: 42})
+              |CREATE (:DoesExist {property: 43})
+              |CREATE (:DoesExist {property: 44})
+            """.stripMargin)
+
+          val res = g.cypher(
+            """
+              |OPTIONAL MATCH (f:DoesExist)
+              |OPTIONAL MATCH (n:DoesNotExist)
+              |RETURN collect(DISTINCT n.property) AS a, collect(DISTINCT f.property) AS b
+            """.stripMargin)
+
+          res.records.collect.toBag should equal(Bag(
+            CypherMap("a" -> List.empty, "b" -> List(42, 43, 44))
+          ))
+        } finally {
+          caps.sparkSession.conf.set("spark.sql.crossJoin.enabled", "true")
+        }
+      }
+      e.getMessage should (include("OPTIONAL MATCH") and include("spark.sql.crossJoin.enabled"))
+    }
+  }
 
   it("optionally match") {
     // Given
@@ -338,10 +424,11 @@ class OptionalMatchTests extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("can start with an optional match") {
-    val g = initGraph("""
-      |CREATE (p1:Person {name: "Alice"})
-      |CREATE (p2:Person {name: "Bob"})
-    """.stripMargin)
+    val g = initGraph(
+      """
+        |CREATE (p1:Person {name: "Alice"})
+        |CREATE (p2:Person {name: "Bob"})
+      """.stripMargin)
 
     // When
     val result = g.cypher(
@@ -353,7 +440,10 @@ class OptionalMatchTests extends CAPSTestSuite with ScanGraphInit {
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag())
+    result.records.collect.toBag should equal(Bag(
+      CypherMap("a" -> CypherNull, "b" -> CAPSNode(0L, Set("Person"), CypherMap("name" -> "Alice"))),
+      CypherMap("a" -> CypherNull, "b" -> CAPSNode(1L, Set("Person"), CypherMap("name" -> "Bob")))
+    ))
   }
 
   it("returns null IDs") {
