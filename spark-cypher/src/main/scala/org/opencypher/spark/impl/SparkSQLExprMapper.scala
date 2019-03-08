@@ -146,8 +146,6 @@ object SparkSQLExprMapper {
 
         case _: Var | _: Param | _: HasLabel | _: HasType | _: StartNode | _: EndNode => columnFor(expr)
 
-        case NullLit => NULL_LIT
-
         case LocalDateTime(dateExpr) =>
           dateExpr match {
             case Some(e) =>
