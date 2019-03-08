@@ -627,7 +627,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       result.records.toMaps should equal(
         Bag(
-          CypherMap("exists" -> null)
+          CypherMap("exists" -> false)
         ))
     }
   }
