@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.impl
 
+import org.apache.spark.sql.catalyst.expressions.CaseWhen
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
@@ -187,15 +188,13 @@ object SparkSQLExprMapper {
         case Equals(e1, e2) => e1.asSparkSQLExpr === e2.asSparkSQLExpr
         case Not(e) => !e.asSparkSQLExpr
         case Size(e) =>
-          val col = e.asSparkSQLExpr
-          e.cypherType match {
-            case CTString => functions.length(col).cast(LongType)
-            case _: CTList | _: CTListOrNull =>
-              functions.when(
-                col.isNotNull,
+          nullSafeUnary(e) { col =>
+            e.cypherType match {
+              case CTString =>
+                functions.length(col).cast(LongType)
+              case _ => // it's a list
                 functions.size(col).cast(LongType)
-              )
-            case other => throw NotImplementedException(s"size() on values of type $other")
+            }
           }
 
         case Ands(exprs) => exprs.map(_.asSparkSQLExpr).foldLeft(TRUE_LIT)(_ && _)
@@ -296,18 +295,21 @@ object SparkSQLExprMapper {
         case _: MonotonicallyIncreasingId => functions.monotonically_increasing_id()
         case Exists(e) => e.asSparkSQLExpr.isNotNull
         case Labels(e) =>
-          e.cypherType match {
-            case _: CTNode | _: CTNodeOrNull =>
-              val node = e.owner.get
-              val labelExprs = header.labelsFor(node)
-              val (labelNames, labelColumns) = labelExprs
-                .toSeq
-                .map(e => e.label.name -> e.asSparkSQLExpr)
-                .sortBy(_._1)
-                .unzip
-              val booleanLabelFlagColumn = functions.array(labelColumns: _*)
-              get_node_labels(labelNames)(booleanLabelFlagColumn)
-            case other => throw IllegalArgumentException("an expression with type CTNode, CTNodeOrNull, or CTNull", other)
+          nullSafeUnary(e) { convertedNode =>
+            e.cypherType match {
+              case _: CTNode | _: CTNodeOrNull =>
+                val node = e.owner.get
+                val labelExprs = header.labelsFor(node)
+                val (labelNames, labelColumns) = labelExprs
+                  .toSeq
+                  // TODO: Putting `convertedNode` here instead of e.asSparkSQLExpr should be equivalent but fails in a weird way
+                  .map(e => e.label.name -> e.asSparkSQLExpr)
+                  .sortBy(_._1)
+                  .unzip
+                val booleanLabelFlagColumn = functions.array(labelColumns: _*)
+                get_node_labels(labelNames)(booleanLabelFlagColumn)
+              case other => throw IllegalArgumentException("an expression with type CTNode, CTNodeOrNull, or CTNull", other)
+            }
           }
 
         case Keys(e) => e.cypherType.material match {
@@ -501,6 +503,11 @@ object SparkSQLExprMapper {
     } else {
       functions.struct(structColumns: _*)
     }
+  }
+
+  private def nullSafeUnary(arg0: Expr)(ifNotNull: Column => Column)(implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
+    val convertedArg = arg0.asSparkSQLExpr
+    new Column(CaseWhen(Seq(convertedArg.isNull.expr -> NULL_LIT.expr), ifNotNull(convertedArg).expr))
   }
 
 }
