@@ -151,8 +151,7 @@ object GraphDdl {
     parent: Option[GraphType] = None,
     elementTypes: Map[String, ElementTypeDefinition] = Map.empty,
     nodeTypes: Map[NodeTypeDefinition, PropertyKeys] = Map.empty,
-    edgeTypes: Map[RelationshipTypeDefinition, PropertyKeys] = Map.empty,
-    patterns: Set[SchemaPattern] = Set.empty
+    edgeTypes: Map[RelationshipTypeDefinition, PropertyKeys] = Map.empty
   ) {
     lazy val allElementTypes: Map[String, ElementTypeDefinition] =
       parent.map(_.allElementTypes).getOrElse(Map.empty) ++ elementTypes
@@ -164,7 +163,11 @@ object GraphDdl {
       parent.map(_.allEdgeTypes).getOrElse(Map.empty) ++ edgeTypes
 
     lazy val allPatterns: Set[SchemaPattern] =
-      parent.map(_.allPatterns).getOrElse(Set.empty) ++ patterns
+      parent.map(_.allPatterns).getOrElse(Set.empty) ++ allEdgeTypes.keys.map(edgeType => SchemaPattern(
+        sourceLabelCombination = edgeType.startNodeType.elementTypes,
+        relType = edgeType.elementType,
+        targetLabelCombination = edgeType.endNodeType.elementTypes
+      ))
 
     lazy val asOkapiSchema: Schema = Schema.empty
       .foldLeftOver(allNodeTypes) { case (schema, (nodeTypeDefinition, properties)) =>
@@ -191,8 +194,7 @@ object GraphDdl {
         parent = Some(this),
         elementTypes = local.elementTypes,
         nodeTypes = resolveNodeTypes(parts, local),
-        edgeTypes = resolveRelationshipTypes(parts, local),
-        patterns = resolvePatterns(parts, local)
+        edgeTypes = resolveRelationshipTypes(parts, local)
       )
     }
 
@@ -228,14 +230,6 @@ object GraphDdl {
         .validateDistinctBy(identity, "Duplicate relationship type")
         .map(relType => relType -> tryWithRel(relType)(mergeProperties(local.resolveElementTypes(relType.elementType))))
         .toMap
-    }
-
-    private def resolvePatterns(parts: GraphTypeParts, local: GraphType): Set[SchemaPattern] = {
-      parts.relTypes.map(relType => SchemaPattern(
-        local.resolveNodeLabels(relType.startNodeType),
-        local.resolveRelationshipLabel(relType),
-        local.resolveNodeLabels(relType.endNodeType)
-      )).toSet
     }
 
     private def resolveNodeLabels(nodeTypeDefinition: NodeTypeDefinition): Set[String] =
