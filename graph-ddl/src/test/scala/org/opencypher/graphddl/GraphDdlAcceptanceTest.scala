@@ -61,6 +61,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
         s"""CREATE ELEMENT TYPE A ( name STRING )
            |
            |CREATE GRAPH TYPE $typeName (
+           |  (A),
            |  (A)-[A]->(A)
            |)
            |CREATE GRAPH $graphName OF $typeName ()
@@ -81,7 +82,9 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE ELEMENT TYPE REL ( name STRING )
             |
             |CREATE GRAPH TYPE $typeName (
-            |  (Node1), (Node1)-[REL]->(Node2)
+            |  (Node1),
+            |  (Node2),
+            |  (Node1)-[REL]->(Node2)
             |)
             |CREATE GRAPH $graphName OF $typeName ()
             |""".stripMargin
@@ -137,6 +140,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE ELEMENT TYPE REL ( name STRING )
             |
             |CREATE GRAPH TYPE $typeName (
+            |  (Node),
             |  (Node)-[REL]->(Node)
             |)
             |CREATE GRAPH $graphName OF $typeName ()
@@ -156,7 +160,8 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE ELEMENT TYPE REL ( name STRING )
             |
             |CREATE GRAPH TYPE $typeName (
-            | (Node)-[REL]->(Node)
+            |  (Node),
+            |  (Node)-[REL]->(Node)
             |)
             |CREATE GRAPH $graphName OF $typeName ()
             |""".stripMargin
@@ -394,6 +399,7 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |
             |  -- node types with mappings
             |  (A) FROM foo,
+            |  (B) FROM baz,
             |  (A, B) FROM bar,
             |
             |  -- edge types with mappings
@@ -425,12 +431,13 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |CREATE GRAPH $graphName OF $typeName (
             |  -- node types with mappings
             |  (A) FROM foo,
+            |  (B) FROM baz,
             |  (A, B) FROM bar,
             |
             |  -- edge types with mappings
             |  (A)-[TYPE_1]->(B) FROM baz edge
             |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-            |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+            |    END NODES   (B) FROM baz alias_baz JOIN ON alias_baz.COLUMN_A = edge.COLUMN_A
             |)
             |""".stripMargin
       )
@@ -458,12 +465,13 @@ class GraphDdlAcceptanceTest extends BaseTestSuite {
             |  A ( bar STRING ),
             |  -- node types with mappings
             |  (A) FROM foo,
+            |  (B) FROM baz,
             |  (A, B) FROM bar,
             |
             |  -- edge types with mappings
             |  (A)-[TYPE_1]->(B) FROM baz edge
             |    START NODES (A) FROM foo alias_foo JOIN ON alias_foo.COLUMN_A = edge.COLUMN_A
-            |    END NODES   (B) FROM bar alias_bar JOIN ON alias_bar.COLUMN_A = edge.COLUMN_A
+            |    END NODES   (B) FROM bar alias_baz JOIN ON alias_baz.COLUMN_A = edge.COLUMN_A
             |)
             |""".stripMargin
       )

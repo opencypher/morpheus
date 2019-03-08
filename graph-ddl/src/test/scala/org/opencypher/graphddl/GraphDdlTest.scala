@@ -376,15 +376,6 @@ class GraphDdlTest extends FunSpec with Matchers {
 
   it("allows these equivalent graph type definitions") {
     val ddls = List(
-      // most compact form
-      GraphDdl(
-        """
-          |CREATE GRAPH TYPE myType (
-          |  A (x STRING), B (y STRING), C (z STRING),
-          |  (A)-[B]->(C)
-          |)
-          |CREATE GRAPH myGraph OF myType ()
-        """.stripMargin),
       // explicit node and rel type definitions
       GraphDdl(
         """CREATE GRAPH TYPE myType (
@@ -394,19 +385,12 @@ class GraphDdlTest extends FunSpec with Matchers {
           |)
           |CREATE GRAPH myGraph OF myType ()
         """.stripMargin),
-      // implicit node type definitions
-      GraphDdl(
-        """CREATE GRAPH TYPE myType (
-          |  A (x STRING), B (y STRING), C (z STRING),
-          |  (A)-[B]->(C)
-          |)
-          |CREATE GRAPH myGraph OF myType ()
-        """.stripMargin),
       // shadowing
       GraphDdl(
         """CREATE ELEMENT TYPE A (foo STRING)
           |CREATE GRAPH TYPE myType (
           |  A (x STRING), B (y STRING), C (z STRING),
+          |  (A), (C),
           |  (A)-[B]->(C)
           |)
           |CREATE GRAPH myGraph OF myType ()
@@ -414,8 +398,6 @@ class GraphDdlTest extends FunSpec with Matchers {
     )
 
     ddls(1) shouldEqual ddls.head
-    ddls(2) shouldEqual ddls.head
-    ddls(3) shouldEqual ddls.head
   }
 
   describe("failure handling") {
@@ -447,7 +429,7 @@ class GraphDdlTest extends FunSpec with Matchers {
           |)
         """.stripMargin
       )
-      e.getFullMessage should (include("fooSchema") and include("node type") and include("(A, B, X)"))
+      e.getFullMessage should (include("fooSchema") and include("node type") and include("(A,B,X)"))
     }
 
     it("fails on duplicate relationship types") {
@@ -462,6 +444,22 @@ class GraphDdlTest extends FunSpec with Matchers {
         """.stripMargin
       )
       e.getFullMessage should (include("fooSchema") and include("relationship type") and include("(A)-[B]->(A)"))
+    }
+
+    it("fails on duplicate relationship types using anonymous node types") {
+      val e = the[GraphDdlException] thrownBy GraphDdl(
+        """
+          |CREATE GRAPH TYPE fooSchema (
+          |  A,
+          |  B EXTENDS A (),
+          |  X,
+          |  FOO,
+          |  (A, B)-[FOO]->(X),
+          |  (B)-[FOO]->(X)
+          |)
+        """.stripMargin
+      )
+      e.getFullMessage should (include("fooSchema") and include("relationship type") and include("(A,B)-[FOO]->(X)"))
     }
 
     it("fails on duplicate node mappings") {
@@ -489,6 +487,7 @@ class GraphDdlTest extends FunSpec with Matchers {
           |CREATE GRAPH TYPE fooSchema (
           | Person,
           | KNOWS,
+          | (Person),
           | (Person)-[KNOWS]->(Person)
           |)
           |CREATE GRAPH fooGraph OF fooSchema (

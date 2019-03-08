@@ -110,8 +110,6 @@ object GraphDdl {
         case (parts, s: RelationshipTypeDefinition) => parts.copy(relTypes = parts.relTypes :+ s)
       }
       result.elementTypes.validateDistinctBy(_.name, "Duplicate element type")
-      result.nodeTypes.validateDistinctBy(identity, "Duplicate node type")
-      result.relTypes.validateDistinctBy(identity, "Duplicate relationship type")
       result
     }
   }
@@ -211,18 +209,10 @@ object GraphDdl {
       parts: GraphTypeParts,
       local: GraphType
     ): Map[NodeTypeDefinition, PropertyKeys] = {
-      val explicitNodeTypes = parts.nodeTypes
-        .map(local.resolveNodeLabels)
+      parts.nodeTypes
+        .map(nodeType => nodeType.copy(elementTypes = local.resolveNodeLabels(nodeType)))
         .validateDistinctBy(identity, "Duplicate node type")
-
-      val sourceNodeTypes = parts.relTypes.map(relType => local.resolveNodeLabels(relType.startNodeType))
-      val targetNodeTypes = parts.relTypes.map(relType => local.resolveNodeLabels(relType.endNodeType))
-
-      (explicitNodeTypes ++ sourceNodeTypes ++ targetNodeTypes)
-        .map(labels => {
-          val nodeTypeDefinition = NodeTypeDefinition(labels)
-          nodeTypeDefinition -> tryWithNode(nodeTypeDefinition)(mergeProperties(labels.flatMap(local.resolveElementTypes)))
-        })
+        .map(nodeType => nodeType -> tryWithNode(nodeType)(mergeProperties(nodeType.elementTypes.flatMap(local.resolveElementTypes))))
         .toMap
     }
 
@@ -231,11 +221,13 @@ object GraphDdl {
       local: GraphType
     ): Map[RelationshipTypeDefinition, PropertyKeys] = {
       parts.relTypes
-        .map(relType => relType -> local.resolveRelationshipLabel(relType))
-        .distinct
-        .map { case (relTypeDefinition, label) =>
-          relTypeDefinition -> tryWithRel(relTypeDefinition)(mergeProperties(local.resolveElementTypes(label)))
-        }.toMap
+        .map(relType => relType.copy(
+          startNodeType = relType.startNodeType.copy(elementTypes = local.resolveNodeLabels(relType.startNodeType)),
+          elementType = local.resolveRelationshipLabel(relType),
+          endNodeType = relType.endNodeType.copy(elementTypes = local.resolveNodeLabels(relType.endNodeType))))
+        .validateDistinctBy(identity, "Duplicate relationship type")
+        .map(relType => relType -> tryWithRel(relType)(mergeProperties(local.resolveElementTypes(relType.elementType))))
+        .toMap
     }
 
     private def resolvePatterns(parts: GraphTypeParts, local: GraphType): Set[SchemaPattern] = {
