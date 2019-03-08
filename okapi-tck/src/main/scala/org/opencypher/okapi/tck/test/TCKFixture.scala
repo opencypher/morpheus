@@ -84,14 +84,14 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: CypherTestGraphFactory
   override def execute(query: String, params: Map[String, TCKCypherValue], queryType: QueryType): (Graph, Result) = {
     queryType match {
       case InitQuery =>
-        val propertyGraph = testGraphFactory(CreateGraphFactory(query, params.mapValues(tckValueToCypherValue)))
+        val propertyGraph = testGraphFactory(CreateGraphFactory(query, params.mapValues(TckToCypherConverter.tckValueToCypherValue)))
         copy(graph = propertyGraph) -> CypherValueRecords.empty
       case SideEffectQuery =>
         // this one is tricky, not sure how can do it without Cypher
         this -> CypherValueRecords.empty
       case ExecQuery =>
         // mapValues is lazy, so we force it for debug purposes
-        val result = Try(graph.cypher(query, params.mapValues(tckValueToCypherValue).view.force))
+        val result = Try(graph.cypher(query, params.mapValues(TckToCypherConverter.tckValueToCypherValue).view.force))
         result match {
           case Success(r) => this -> CypherToTCKConverter.convertToTckStrings(r.records)
           case Failure(e) =>
@@ -105,22 +105,6 @@ case class TCKGraph[C <: CypherSession](testGraphFactory: CypherTestGraphFactory
         }
     }
   }
-
-
-  private def tckValueToCypherValue(cypherValue: TCKCypherValue): OKAPICypherValue = cypherValue match {
-    case CypherString(v) => CypherValue(v)
-    case CypherInteger(v) => CypherValue(v)
-    case CypherFloat(v) => CypherValue(v)
-    case CypherBoolean(v) => CypherValue(v)
-    case CypherProperty(key, value) => OKAPICypherMap(key -> tckValueToCypherValue(value))
-    case CypherPropertyMap(properties) => OKAPICypherMap(properties.mapValues(tckValueToCypherValue))
-    case l: CypherList => OKAPICypherList(l.elements.map(tckValueToCypherValue))
-    case CypherNull => CypherValue(null)
-    case other =>
-      throw NotImplementedException(s"Converting Cypher value $cypherValue of type `${other.getClass.getSimpleName}`")
-  }
-
-
 }
 
 case class ScenariosFor(blacklist: Set[String]) {
@@ -164,6 +148,21 @@ object Tags {
 
   object BlackList extends Tag("BlackList Scenario")
 
+}
+
+object TckToCypherConverter {
+  def tckValueToCypherValue(cypherValue: TCKCypherValue): OKAPICypherValue = cypherValue match {
+    case CypherString(v) => CypherValue(v)
+    case CypherInteger(v) => CypherValue(v)
+    case CypherFloat(v) => CypherValue(v)
+    case CypherBoolean(v) => CypherValue(v)
+    case CypherProperty(key, value) => OKAPICypherMap(key -> tckValueToCypherValue(value))
+    case CypherPropertyMap(properties) => OKAPICypherMap(properties.mapValues(tckValueToCypherValue))
+    case l: CypherList => OKAPICypherList(l.elements.map(tckValueToCypherValue))
+    case CypherNull => CypherValue(null)
+    case other =>
+      throw NotImplementedException(s"Converting Cypher value $cypherValue of type `${other.getClass.getSimpleName}`")
+  }
 }
 
 object CypherToTCKConverter {

@@ -2,12 +2,16 @@ package org.opencypher.spark.testing
 
 import java.io.{File, PrintWriter}
 
-import scala.collection.mutable.{Stack,ListBuffer}
+import org.apache.commons.lang.StringEscapeUtils
+import org.opencypher.okapi.api.value.CypherValue.{CypherList => OKAPICypherList, CypherMap => OKAPICypherMap, CypherNull => OKAPICypherNull, CypherString => OKAPICypherString, CypherValue => OKAPICypherValue}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.tck.test.ScenariosFor
+import org.opencypher.okapi.tck.test.TckToCypherConverter.tckValueToCypherValue
 import org.opencypher.tools.tck.api._
+import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue}
 import org.scalatest.prop.TableFor1
-import org.apache.commons.lang.StringEscapeUtils
+
+import scala.collection.mutable
 
 
 object AcceptanceTestGenerator extends App {
@@ -19,6 +23,7 @@ object AcceptanceTestGenerator extends App {
   private val lineIndention = "\t\t"
   private val escapeStringMarks = "\"\"\""
 
+  case class ResultRows(queryResult :String, expected : List[Map[String, TCKCypherValue]])
 
   private def generateClassFiles(featureName: String, scenarios: TableFor1[Scenario], black: Boolean) = {
     val path = s"spark-cypher-testing/src/test/scala/org/opencypher/spark/impl/acceptance/"
@@ -34,6 +39,8 @@ object AcceptanceTestGenerator extends App {
           |import org.opencypher.spark.impl.acceptance.ScanGraphInit
           |import org.apache.commons.lang.StringEscapeUtils
           |import org.opencypher.spark.impl.graph.CAPSGraphFactory
+          |import org.opencypher.okapi.api.value.CypherValue._
+          |import org.opencypher.tools.tck.values.CypherValue
           |import scala.util.{Failure, Success, Try}
           |
           |@RunWith(classOf[JUnitRunner])
@@ -56,7 +63,7 @@ object AcceptanceTestGenerator extends App {
     file.createNewFile()
   }
 
-  private def stringEscape(s: String): String = {
+  private def stringControlCharacterEscape(s: String): String = {
     s.replace("\n", "\\n").replace("\t", "\\t")
   }
 
@@ -64,25 +71,34 @@ object AcceptanceTestGenerator extends App {
     query.replace("\n", s"\n$lineIndention\t")
   }
 
+  private def escapeString(s: String): String = {
+    s""" "$s" """
+  }
+
+  //todo refactor into cypherToCreateString object ?
+  private def cypherValueToValueString(value : OKAPICypherValue) : String = {
+    value match {
+      case OKAPICypherList(l) => "List(" + l.map(cypherValueToValueString).mkString(",") + ")"
+      case OKAPICypherMap(m) => "CypherMap(" + m.map{case (key, cv) => "(" + escapeString(key) + "," + cypherValueToValueString(cv) + ")"}.mkString(",") + ")"
+      case OKAPICypherString(s) =>  s""" "$s" """
+      case OKAPICypherNull => "CypherNull"
+      case _ => s"${value.getClass.getSimpleName}(${value.unwrap})"
+    }
+  }
+
+  private def cypherMapToCreateString(cypherMap : Map[String, TCKCypherValue]): String = {
+    val mapString = cypherMap.map{case (key, cypherValue) => s""" "$key" """ -> cypherValueToValueString(tckValueToCypherValue(cypherValue))  }
+    s"CypherMap(${mapString.mkString(",")})"
+  }
 
   private def stepsToString(steps: List[(Step, Int)]): String = {
     //todo: don't use immutable object
-    val contextStack = Stack[(Execute, Int)]()
-    val paremeters = ListBuffer.empty[String]
-
-    //as parameter sometimes have invalid variable identifier
-    def renameParameter(query: String) : String = {
-      paremeters.fold(query)((acc, par) => acc.replace("$" + par,"$p" + par).replace("$`" + par + "`","$p" + par))
-    }
+    val contextStack = mutable.Stack[(Execute, Int)]()
+    val contextParameters = mutable.Stack[String]()
 
     steps.map {
-      case (Parameters(p, _), _) => p.foldLeft("") { (acc, x) =>
-        paremeters += x._1
-        acc +
-          s"""
-             |$lineIndention val p${x._1} = "${x._2}"
-             |""".stripMargin
-      }
+      case (Parameters(p, _), _) => contextParameters.push(cypherMapToCreateString(p))
+        ""
       case (ex@Execute(_, querytype, _), nr) =>
         querytype match {
           case ExecQuery =>
@@ -93,24 +109,27 @@ object AcceptanceTestGenerator extends App {
             throw NotImplementedException("Side Effect Queries not supported yet")
         }
       case (ExpectResult(expectedResult, _, sorted), _) =>
+        val parameters = if(contextParameters.nonEmpty) "," + contextParameters.pop() else ""
+
         val (contextQuery, stepNumber) = contextStack.pop()
         //result -> expected
         val resultRows = if (sorted)
-          s"result${stepNumber}ValueRecords.rows" -> expectedResult.rows
-        else
-          s"result${stepNumber}ValueRecords.rows.sortBy(_.hashCode())" -> expectedResult.rows.sortBy(_.hashCode())
+          ResultRows(s"result${stepNumber}ValueRecords.rows", expectedResult.rows)
 
+        else
+          ResultRows(s"result${stepNumber}ValueRecords.rows.sortBy(_.hashCode())", expectedResult.rows.sortBy(_.hashCode()))
+        //todo: write CypherValueRecordToBagOfCypherMaps convertion
         s"""
-           |val result${stepNumber} = graph.cypher(s$escapeStringMarks${alignQuery(renameParameter(contextQuery.query))}$escapeStringMarks)
+           |${lineIndention}val result$stepNumber = graph.cypher($escapeStringMarks${alignQuery(contextQuery.query)}$escapeStringMarks$parameters)
            |
-               |${lineIndention}val result${stepNumber}ValueRecords = CypherToTCKConverter.convertToTckStrings(result${stepNumber}.records).asValueRecords
-           |${lineIndention}StringEscapeUtils.escapeJava(result${stepNumber}ValueRecords.header.toString()) should equal("${StringEscapeUtils.escapeJava(stringEscape(expectedResult.header.toString))}")
-           |${lineIndention}StringEscapeUtils.escapeJava(${resultRows._1}.toString()) should equal("${StringEscapeUtils.escapeJava(stringEscape(resultRows._2.toString))}")
+           |${lineIndention}val result${stepNumber}ValueRecords = CypherToTCKConverter.convertToTckStrings(result$stepNumber.records).asValueRecords
+           |${lineIndention}StringEscapeUtils.escapeJava(result${stepNumber}ValueRecords.header.toString()) should equal("${StringEscapeUtils.escapeJava(stringControlCharacterEscape(expectedResult.header.toString))}")
+           |${lineIndention}StringEscapeUtils.escapeJava(${resultRows.queryResult}.toString()) should equal("${StringEscapeUtils.escapeJava(stringControlCharacterEscape(resultRows.expected.toString))}")
            """.stripMargin
       case (ExpectError(errorType, errorPhase, detail, _), _) =>
         val (contextQuery, stepNumber) = contextStack.pop()
         s"""
-           |${lineIndention}val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{graph.cypher(s$escapeStringMarks${alignQuery(renameParameter(contextQuery.query))}$escapeStringMarks)}
+           |${lineIndention}val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{graph.cypher($escapeStringMarks${alignQuery(contextQuery.query)}$escapeStringMarks)}
            """.stripMargin
       case (SideEffects(expected, _), _) =>
         val relevantEffects = expected.v.filter(_._2 > 0) //check if relevant Side-Effects exist
@@ -119,7 +138,7 @@ object AcceptanceTestGenerator extends App {
         else
           ""
       case _ => ""
-    }.filter(_.nonEmpty).mkString(s"\n ${lineIndention}")
+    }.filter(_.nonEmpty).mkString(s"\n $lineIndention")
   }
 
 
@@ -134,28 +153,24 @@ object AcceptanceTestGenerator extends App {
       case _ => combined
     }) + escapeStringMarks
 
-    val xyz = stepsToString(scenario.steps.filter { case Execute(_, InitQuery, _) => false
-    case _ => true
-    }.zipWithIndex)
-
+    val execString = stepsToString(execSteps.zipWithIndex)
 
     val testString =
       s"""
          |    val graph = ${if (initSteps.nonEmpty) s"initGraph($initQuery)" else "CAPSGraphFactory.apply().empty"}
-         |    $xyz
+         |    $execString
        """.stripMargin
 
     if (black)
       s"""  it("${scenario.name}") {
-         |      Try({
+         |    Try({
          |        $testString
-         |      }) match{
-         |        case Success(_) =>
-         |          throw new RuntimeException(s"A blacklisted scenario actually worked")
-         |        case Failure(_) =>
-         |          ()
-         |      }
+         |    }) match{
+         |      case Success(_) =>
+         |        throw new RuntimeException(s"A blacklisted scenario actually worked")
+         |      case Failure(_) =>
          |    }
+         |   }
       """.stripMargin
     else
       s"""  it("${scenario.name}") {
