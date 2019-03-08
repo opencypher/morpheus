@@ -38,6 +38,7 @@ import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.v9_0.ast.semantics.SemanticState
 import org.opencypher.v9_0.util.symbols
 import org.opencypher.v9_0.{expressions => ast}
+import org.scalatest.Assertion
 
 import scala.language.implicitConversions
 
@@ -113,27 +114,24 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   describe("coalesce") {
     it("should convert coalesce") {
-      convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE)")) should equal(
+      convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE)")) shouldEqual
         Coalesce(IndexedSeq('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE))(CTAny)
-      )
     }
 
     it("should become nullable if nothing is non-null") {
-      convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE_OR_NULL)")) should equal(
+      convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE_OR_NULL)")) shouldEqual
         Coalesce(IndexedSeq('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE_OR_NULL))(CTAny.nullable)
-      )
     }
 
     it("should not consider arguments past the first non-nullable coalesce") {
-      convert(parseExpr("coalesce(INTEGER_OR_NULL, FLOAT, NODE, STRING)")) should equal(
+      convert(parseExpr("coalesce(INTEGER_OR_NULL, FLOAT, NODE, STRING)")) shouldEqual
         Coalesce(IndexedSeq('INTEGER_OR_NULL, 'FLOAT))(CTNumber)
-      )
     }
 
     it("should remove coalesce if the first arg is non-nullable") {
-      val expr = convert(parseExpr("coalesce(INTEGER, STRING_OR_NULL, NODE)"))
-      expr should equal(toVar('INTEGER))
-      expr.cypherType should equal(CTInteger)
+      convert(parseExpr("coalesce(INTEGER, STRING_OR_NULL, NODE)")) shouldEqual(
+        toVar('INTEGER), CTInteger
+      )
     }
   }
 
@@ -141,53 +139,65 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     // NOTE: pattern version of exists((:A)-->(:B)) is rewritten before IR building
 
     it("can convert") {
-      convert(parseExpr("exists(NODE.key)")) should equal(
-        Exists(Property('NODE, PropertyKey("key"))(CTAny))
+      convert(parseExpr("exists(NODE.name)")) shouldEqual(
+        Exists(Property('NODE, PropertyKey("name"))(CTString)), CTBoolean
       )
     }
   }
 
-  test("converting in predicate and literal list") {
-    convert(parseExpr("a IN [a, b, c]")) should equal(
-      In('a, ListLit('a, 'b, 'c))
+  it("can convert in predicate and literal list") {
+    convert(parseExpr("INTEGER IN [INTEGER, INTEGER_OR_NULL, FLOAT]")) shouldEqual(
+      In('INTEGER, ListLit('INTEGER, 'INTEGER_OR_NULL, 'FLOAT)), CTBoolean
     )
   }
 
-  test("converting or predicate") {
-    convert(parseExpr("n = a OR n > b")) should equalWithTracing(
-      Ors(Equals('n, 'a), GreaterThan('n, 'b))
+  it("can convert or predicate") {
+    convert(parseExpr("NODE = NODE_OR_NULL OR STRING_OR_NULL > STRING")) shouldEqual(
+      Ors(Equals('NODE, 'NODE_OR_NULL), GreaterThan('STRING_OR_NULL, 'STRING)), CTBoolean.nullable
     )
   }
 
-  test("can convert type") {
-    convert(parseExpr("type(a)")) should equal(
-      Type(Var("a")())
-    )
+  describe("type()") {
+    it("can convert") {
+      convert(parseExpr("type(REL)")) shouldEqual(Type('REL), CTString)
+    }
+
+    it("can convert nullable") {
+      convert(parseExpr("type(REL_OR_NULL)")) shouldEqual(
+        Type('REL_OR_NULL), CTString.nullable
+      )
+    }
   }
 
-  it("can convert count") {
-    convert(parseExpr("count(a)")) should equal(
-      Count(Var("a")(), false)
-    )
-    convert(parseExpr("count(distinct a)")) should equal(
-      Count(Var("a")(), true)
-    )
-    convert(parseExpr("count(*)")) should equal(
-      CountStar
-    )
+  describe("count()") {
+    it("can convert") {
+      convert(parseExpr("count(NODE)")) shouldEqual(
+        Count('NODE, distinct = false), CTInteger
+      )
+    }
+    it("can convert distinct") {
+      convert(parseExpr("count(distinct INTEGER)")) shouldEqual(
+        Count('INTEGER, distinct = true), CTInteger
+      )
+    }
+    it("can convert star") {
+      convert(parseExpr("count(*)")) shouldEqual(
+        CountStar, CTInteger
+      )
+    }
   }
 
   describe("range") {
 
     it("can convert range") {
-      convert(parseExpr("range(0, 10, 2)")) should equal(
-        Range(IntegerLit(0), IntegerLit(10), Some(IntegerLit(2)))
+      convert(parseExpr("range(0, 10, 2)")) shouldEqual(
+        Range(IntegerLit(0), IntegerLit(10), Some(IntegerLit(2))), CTList(CTInteger)
       )
     }
 
     it("can convert range with missing step size") {
-      convert(parseExpr("range(0, 10)")) should equal(
-        Range(IntegerLit(0), IntegerLit(10), None)
+      convert(parseExpr("range(0, 10)")) shouldEqual(
+        Range(IntegerLit(0), IntegerLit(10), None), CTList(CTInteger)
       )
     }
   }
@@ -195,27 +205,27 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   describe("substring") {
 
     it("can convert substring") {
-      convert(parseExpr("substring('foobar', 0, 3)")) should equal(
-        Substring(StringLit("foobar"), IntegerLit(0), Some(IntegerLit(3)))
+      convert(parseExpr("substring('foobar', 0, 3)")) shouldEqual(
+        Substring(StringLit("foobar"), IntegerLit(0), Some(IntegerLit(3))), CTString
       )
     }
 
     it("can convert substring with missing length") {
-      convert(parseExpr("substring('foobar', 0)")) should equal(
-        Substring(StringLit("foobar"), IntegerLit(0), None)
+      convert(parseExpr("substring('foobar', 0)")) shouldEqual(
+        Substring(StringLit("foobar"), IntegerLit(0), None), CTString
       )
     }
   }
 
-  test("can convert less than") {
-    convert(parseExpr("a < b")) should equal(
-      LessThan(Var("a")(), Var("b")())
+  it("can convert less than") {
+    convert(parseExpr("INTEGER < FLOAT_OR_NULL")) shouldEqual(
+      LessThan('INTEGER, 'FLOAT_OR_NULL), CTBoolean.nullable
     )
   }
 
-  test("can convert less than or equal") {
-    convert(parseExpr("a <= b")) should equal(
-      LessThanOrEqual(Var("a")(), Var("b")())
+  it("can convert less than or equal") {
+    convert(parseExpr("INTEGER <= FLOAT_OR_NULL")) shouldEqual(
+      LessThanOrEqual('INTEGER, 'FLOAT_OR_NULL), CTBoolean.nullable
     )
   }
 
@@ -335,4 +345,16 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   private def convert(e: ast.Expression): Expr =
     new ExpressionConverter(testContext).convert(e)
+
+  implicit class TestExpr(expr: Expr) {
+    def shouldEqual(other: Expr): Assertion = {
+      expr should equal(other)
+      expr.cypherType should equal(other.cypherType)
+    }
+    def shouldEqual(other: Expr, typ: CypherType): Assertion = {
+      expr should equal(other)
+      expr.cypherType should equal(other.cypherType)
+      expr.cypherType should equal(typ)
+    }
+  }
 }

@@ -26,13 +26,14 @@
  */
 package org.opencypher.okapi.ir.impl
 
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.OperatorTyping._
 import org.opencypher.okapi.ir.impl.parse.{functions => f}
-import org.opencypher.okapi.ir.impl.typer.{InvalidContainerAccess, NoSuitableSignatureForExpr, SignatureConverter, UnTypedExpr}
+import org.opencypher.okapi.ir.impl.typer.{InvalidContainerAccess, NoSuitableSignatureForExpr, SignatureConverter, UnTypedExpr, MissingParameter}
 import org.opencypher.v9_0.expressions.{OperatorExpression, RegexMatch, TypeSignatures, functions}
 import org.opencypher.v9_0.{expressions => ast}
 
@@ -173,7 +174,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
 
     case funcInv: ast.FunctionInvocation =>
       val convertedArgs = funcInv.args.map(convert)
-      lazy val returnType = funcInv.returnTypeFor(convertedArgs.map(_.cypherType): _*)
+      def returnType: CypherType = funcInv.returnTypeFor(convertedArgs.map(_.cypherType): _*)
 
       val distinct = funcInv.distinct
 
@@ -216,7 +217,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
               // keep only the args up until the first non-nullable (inclusive)
               val relevantArgs = convertedArgs.slice(0, other + 1)
               val outType = relevantArgs.map(_.cypherType).reduceLeft(_ join _)
-              Coalesce(relevantArgs)(outType)
+              Coalesce(relevantArgs)(outType.material)
           }
         case functions.Range => Range(arg0, arg1, convertedArgs.lift(2))
         case functions.Substring => Substring(arg0, arg1, convertedArgs.lift(2))
@@ -335,7 +336,12 @@ object OperatorTyping {
       .expandWithSubstitutions(CTFloat, CTInteger)
       .signatures
 
-    val possibleReturnTypes = expandedSignatures.filter(_.input == args).map(_.output)
+    val possibleReturnTypes = expandedSignatures.filter { sig =>
+      sig.input.zip(args).forall {
+        case (sigType, argType) =>
+          argType.couldBeSameTypeAs(sigType)
+      }
+    }.map(_.output)
 
     possibleReturnTypes.reduceLeftOption(_ join _)
   }
