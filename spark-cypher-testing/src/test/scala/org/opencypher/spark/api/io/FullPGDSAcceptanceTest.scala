@@ -213,7 +213,11 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
         ddl.graphs(gn).edgeToViewMappings.foreach { edgeToViewMapping =>
           val startNodeDf = g.canonicalNodeTable(edgeToViewMapping.relType.startNodeType.elementTypes)
           val endNodeDf = g.canonicalNodeTable(edgeToViewMapping.relType.endNodeType.elementTypes)
-          val allRelsDf = g.canonicalRelationshipTable(edgeToViewMapping.key.relType.elementType).removePrefix(propertyPrefix)
+          val relationshipType = edgeToViewMapping.key.relType.elementTypes.toList match {
+            case relType :: Nil => relType
+            case other => throw IllegalArgumentException(expected = "Single relationship type", actual = s"${other.mkString(",")}")
+          }
+          val allRelsDf = g.canonicalRelationshipTable(relationshipType).removePrefix(propertyPrefix)
           val relDfColumns = allRelsDf.columns.toSeq
 
           val tmpNodeId = s"node_${GraphEntity.sourceIdKey}"

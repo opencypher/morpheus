@@ -85,19 +85,18 @@ case class NodeTypeDefinition(
 
 object RelationshipTypeDefinition {
   def apply(startNodeElementType: String, elementType: String, endNodeElementType: String): RelationshipTypeDefinition =
-    RelationshipTypeDefinition(NodeTypeDefinition(startNodeElementType), elementType, NodeTypeDefinition(endNodeElementType))
+    RelationshipTypeDefinition(NodeTypeDefinition(startNodeElementType), Set(elementType), NodeTypeDefinition(endNodeElementType))
 
-  def apply(startNodeElementTypes: String*)(elementType: String)(endNodeElementTypes: String*): RelationshipTypeDefinition =
-    RelationshipTypeDefinition(NodeTypeDefinition(startNodeElementTypes.toSet), elementType, NodeTypeDefinition(endNodeElementTypes.toSet))
+  def apply(startNodeElementTypes: String*)(elementTypes: String*)(endNodeElementTypes: String*): RelationshipTypeDefinition =
+    RelationshipTypeDefinition(NodeTypeDefinition(startNodeElementTypes.toSet), elementTypes.toSet, NodeTypeDefinition(endNodeElementTypes.toSet))
 }
 
 case class RelationshipTypeDefinition(
   startNodeType: NodeTypeDefinition,
-  // TODO: needs to be a set in DDL
-  elementType: String,
+  elementTypes: Set[String],
   endNodeType: NodeTypeDefinition
 ) extends GraphDdlAst with GraphTypeStatement {
-  override def toString: String = s"$startNodeType-[$elementType]->$endNodeType"
+  override def toString: String = s"$startNodeType-[${elementTypes.mkString(",")}]->$endNodeType"
 }
 
 trait ElementToViewDefinition {

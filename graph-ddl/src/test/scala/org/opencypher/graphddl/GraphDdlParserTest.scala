@@ -176,6 +176,25 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       failure(globalElementTypeDefinition(_))
     }
   }
+
+  describe("node and relationship type definitions") {
+    it("parses (A)") {
+      success(nodeTypeDefinition(_), NodeTypeDefinition("A"))
+    }
+
+    it("parses (A,B)") {
+      success(nodeTypeDefinition(_), NodeTypeDefinition("A", "B"))
+    }
+
+    it("parses (A)-[R]->(B)") {
+      success(relTypeDefinition(_), RelationshipTypeDefinition("A", "R", "B"))
+    }
+
+    it("parses (A)-[R,S]->(B)") {
+      success(relTypeDefinition(_), RelationshipTypeDefinition("A")("R", "S")("B"))
+    }
+  }
+
   //
   //  describe("schema pattern definitions") {
   //

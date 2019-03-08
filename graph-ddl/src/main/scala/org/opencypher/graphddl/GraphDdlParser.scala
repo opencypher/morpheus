@@ -117,7 +117,7 @@ object GraphDdlParser {
     P("(" ~ elementTypes ~ ")").map(NodeTypeDefinition(_))
 
   def relTypeDefinition[_: P]: P[RelationshipTypeDefinition] =
-    P(nodeTypeDefinition ~ "-" ~ "[" ~ elementType ~ "]" ~ "->" ~ nodeTypeDefinition).map {
+    P(nodeTypeDefinition ~ "-" ~ "[" ~ elementTypes ~ "]" ~ "->" ~ nodeTypeDefinition).map {
       case (startNodeType, eType, endNodeType) => RelationshipTypeDefinition(startNodeType, eType, endNodeType)
     }
 

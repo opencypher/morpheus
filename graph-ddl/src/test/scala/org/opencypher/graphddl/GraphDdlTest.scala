@@ -64,8 +64,6 @@ class GraphDdlTest extends FunSpec with Matchers {
      """.stripMargin
 
   it("converts to GraphDDL IR") {
-
-
     val graphDdl = GraphDdl(ddlString)
 
     val maybeSetSchema = Some(SetSchemaDefinition("dataSourceName", "fooDatabaseName"))
@@ -171,7 +169,6 @@ class GraphDdlTest extends FunSpec with Matchers {
       """SET SCHEMA ds1.db1
         |CREATE GRAPH myGraph (
         |  A (x STRING), B (y STRING),
-        |  (A)-[B]->(A),
         |  (A) FROM a,
         |  (A)-[B]->(A) FROM b e
         |    START NODES (A) FROM a n JOIN ON e.id = n.id
@@ -223,7 +220,7 @@ class GraphDdlTest extends FunSpec with Matchers {
           EndNode(A_a, List(Join("id", "id"))),
           Map("y" -> "y")
         ),
-        EdgeToViewMapping(RelationshipType(NodeType("A", "B"), "R", NodeType("A")), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
+        EdgeToViewMapping(RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A")), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
           StartNode(A_ab, List(Join("id", "id"))),
           EndNode(A_a, List(Join("id", "id"))),
           Map("y" -> "y")

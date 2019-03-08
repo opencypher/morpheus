@@ -96,7 +96,10 @@ case class SqlPropertyGraphDataSource(
 
     val relationshipTables = ddlGraph.edgeToViewMappings.map { edgeToViewMapping =>
       val edgeViewKey = edgeToViewMapping.key
-      val relElementType = edgeViewKey.relType.elementType
+      val relElementType = edgeViewKey.relType.elementTypes.toList match {
+        case relType :: Nil => relType
+        case other => throw IllegalArgumentException(expected = "Single relationship type", actual = s"${other.mkString(",")}")
+      }
       val relDf = relDataFramesWithIds(edgeViewKey)
       val startNodeViewKey = edgeToViewMapping.startNode.nodeViewKey
       val endNodeViewKey = edgeToViewMapping.endNode.nodeViewKey

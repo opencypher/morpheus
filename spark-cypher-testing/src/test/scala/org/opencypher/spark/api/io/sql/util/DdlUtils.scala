@@ -99,7 +99,7 @@ object DdlUtils {
           val relKeyMapping = schema.relationshipPropertyKeys(relType).keySet.map(k => k -> k).toMap
           patterns.map { case SchemaPattern(sourceLabelCombination, _, targetLabelCombination) =>
             EdgeToViewMapping(
-              RelationshipType(NodeType(sourceLabelCombination), relType, NodeType(targetLabelCombination)),
+              RelationshipType(NodeType(sourceLabelCombination), Set(relType), NodeType(targetLabelCombination)),
               relViewId(sourceLabelCombination, relType, targetLabelCombination),
               StartNode(nodeViewKey(sourceLabelCombination), joinFromStartNode),
               EndNode(nodeViewKey(targetLabelCombination), joinFromEndNode),

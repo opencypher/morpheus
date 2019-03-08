@@ -162,13 +162,16 @@ object GraphDdl {
     lazy val allEdgeTypes: Map[RelationshipTypeDefinition, PropertyKeys] =
       parent.map(_.allEdgeTypes).getOrElse(Map.empty) ++ edgeTypes
 
+    // TODO move out of Graph DDL (maybe to CAPSSchema)
     lazy val allPatterns: Set[SchemaPattern] =
       parent.map(_.allPatterns).getOrElse(Set.empty) ++ allEdgeTypes.keys.map(edgeType => SchemaPattern(
         sourceLabelCombination = edgeType.startNodeType.elementTypes,
-        relType = edgeType.elementType,
+        // TODO: validate there is only one rel type
+        relType = edgeType.elementTypes.head,
         targetLabelCombination = edgeType.endNodeType.elementTypes
       ))
 
+    // TODO move out of Graph DDL (maybe to CAPSSchema)
     lazy val asOkapiSchema: Schema = Schema.empty
       .foldLeftOver(allNodeTypes) { case (schema, (nodeTypeDefinition, properties)) =>
         schema.withNodePropertyKeys(nodeTypeDefinition.elementTypes, properties)
@@ -176,10 +179,12 @@ object GraphDdl {
       .foldLeftOver(allNodeTypes.keySet.flatMap(_.elementTypes).flatMap(resolveElementTypes)) { case (schema, eType) =>
         eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
       }
+      // TODO: validate there is only one rel type
       .foldLeftOver(allEdgeTypes) { case (schema, (relTypeDefinition, properties)) =>
-        schema.withRelationshipPropertyKeys(relTypeDefinition.elementType, properties)
+        schema.withRelationshipPropertyKeys(relTypeDefinition.elementTypes.head, properties)
       }
-      .foldLeftOver(allEdgeTypes.keySet.map(_.elementType).flatMap(resolveElementTypes)) { case (schema, eType) =>
+      // TODO: validate there is only one rel type
+      .foldLeftOver(allEdgeTypes.keySet.map(_.elementTypes.head).flatMap(resolveElementTypes)) { case (schema, eType) =>
         eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
       }
       .withSchemaPatterns(allPatterns.toSeq: _*)
@@ -204,7 +209,7 @@ object GraphDdl {
     def toRelType(relationshipTypeDefinition: RelationshipTypeDefinition): RelationshipType =
       RelationshipType(
         startNodeType = toNodeType(relationshipTypeDefinition.startNodeType),
-        elementType = resolveRelationshipLabel(relationshipTypeDefinition),
+        elementTypes = resolveRelationshipLabel(relationshipTypeDefinition),
         endNodeType = toNodeType(relationshipTypeDefinition.endNodeType))
 
     private def resolveNodeTypes(
@@ -225,25 +230,18 @@ object GraphDdl {
       parts.relTypes
         .map(relType => relType.copy(
           startNodeType = relType.startNodeType.copy(elementTypes = local.resolveNodeLabels(relType.startNodeType)),
-          elementType = local.resolveRelationshipLabel(relType),
+          elementTypes = local.resolveRelationshipLabel(relType),
           endNodeType = relType.endNodeType.copy(elementTypes = local.resolveNodeLabels(relType.endNodeType))))
         .validateDistinctBy(identity, "Duplicate relationship type")
-        .map(relType => relType -> tryWithRel(relType)(mergeProperties(local.resolveElementTypes(relType.elementType))))
+        .map(relType => relType -> tryWithRel(relType)(mergeProperties(relType.elementTypes.flatMap(local.resolveElementTypes))))
         .toMap
     }
 
     private def resolveNodeLabels(nodeTypeDefinition: NodeTypeDefinition): Set[String] =
       tryWithNode(nodeTypeDefinition)(nodeTypeDefinition.elementTypes.flatMap(resolveElementTypes).map(_.name))
 
-    private def resolveRelationshipLabel(relTypeDefinition: RelationshipTypeDefinition): String = {
-      val resolved = tryWithRel(relTypeDefinition)(resolveElementTypes(relTypeDefinition.elementType))
-
-      // TODO: move out of DDL
-      if (resolved.size > 1) {
-        illegalInheritance("Inheritance not allowed for relationship  element type ", relTypeDefinition.elementType)
-      }
-      resolved.head.name
-    }
+    private def resolveRelationshipLabel(relTypeDefinition: RelationshipTypeDefinition): Set[String] =
+      tryWithRel(relTypeDefinition)(relTypeDefinition.elementTypes.flatMap(resolveElementTypes).map(_.name))
 
     private def mergeProperties(elementTypes: Set[ElementTypeDefinition]): PropertyKeys = {
       elementTypes
@@ -369,8 +367,9 @@ object GraphDdl {
               ))
             ),
             propertyMappings = toPropertyMappings(
-              elementTypes = Set(rmd.relType.elementType),
-              graphTypePropertyKeys = okapiSchema.relationshipPropertyKeys(rmd.relType.elementType).keySet,
+              elementTypes = rmd.relType.elementTypes,
+              // TODO: remove dependency to OKAPI schema
+              graphTypePropertyKeys = okapiSchema.relationshipPropertyKeys(rmd.relType.elementTypes.head).keySet,
               maybePropertyMapping = rvd.maybePropertyMapping
             )
           )
@@ -534,11 +533,11 @@ case class NodeType(elementTypes: Set[String]) {
 
 object RelationshipType {
   def apply(startNodeElementType: String, elementType: String, endNodeElementType: String): RelationshipType =
-    RelationshipType(NodeType(startNodeElementType), elementType, NodeType(endNodeElementType))
+    RelationshipType(NodeType(startNodeElementType), Set(elementType), NodeType(endNodeElementType))
 }
 
-case class RelationshipType(startNodeType: NodeType, elementType: String, endNodeType: NodeType) {
-  override def toString: String = s"$startNodeType-[$elementType]->$endNodeType"
+case class RelationshipType(startNodeType: NodeType, elementTypes: Set[String], endNodeType: NodeType) {
+  override def toString: String = s"$startNodeType-[${elementTypes.mkString(",")}]->$endNodeType"
 }
 
 trait ElementViewKey {
@@ -554,7 +553,7 @@ case class NodeViewKey(nodeType: NodeType, viewId: ViewId) extends ElementViewKe
 }
 
 case class EdgeViewKey(relType: RelationshipType, viewId: ViewId) extends ElementViewKey {
-  override val elementType: Set[String] = Set(relType.elementType)
+  override val elementType: Set[String] = relType.elementTypes
 
   override def toString: String = s"relationship type: $relType, view: $viewId"
 }
