@@ -274,9 +274,9 @@ final class ExpressionConverter(implicit context: IRBuilderContext) {
     case ast.CaseExpression(None, alternatives, default) =>
       val convertedAlternatives: IndexedSeq[(Expr, Expr)] = alternatives.map { case (left, right) => convert(left) -> convert(right) }
       val maybeConvertedDefault: Option[Expr] = default.map(expr => convert(expr))
-      val possibleTypes = convertedAlternatives.map { case (_, thenExpr) => thenExpr.cypherType } ++
-        maybeConvertedDefault.map(_.cypherType)
-      val returnType = possibleTypes.foldLeft(CTVoid: CypherType)(_ join _)
+      val possibleTypes = convertedAlternatives.map { case (_, thenExpr) => thenExpr.cypherType }
+      val defaultCaseType = maybeConvertedDefault.map(_.cypherType).getOrElse(CTNull)
+      val returnType = possibleTypes.foldLeft(defaultCaseType)(_ join _)
       CaseExpr(convertedAlternatives, maybeConvertedDefault)(returnType)
 
     case ast.MapExpression(items) =>

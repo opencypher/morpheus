@@ -42,19 +42,60 @@ import org.opencypher.v9_0.{expressions => ast}
 
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
-  private def testTypes(ref: Ref[ast.Expression]): CypherType = ref.value match {
-    case ast.Variable("r") => CTRelationship
-    case ast.Variable("n") => CTNode
-    case ast.Variable("m") => CTNode
-    case _                 => CTAny
-  }
+  val baseTypes = Seq[CypherType](
+    CTAny, CTNumber, CTNull, CTVoid,
+    CTBoolean, CTInteger, CTFloat, CTString,
+    CTDate, CTLocalDateTime, CTDuration,
+    CTIdentity, CTPath
+  )
+
+  val simple =
+    baseTypes.map(tpe => tpe.name -> tpe) ++
+      baseTypes.map(tpe => s"${tpe.name}_OR_NULL" -> tpe.nullable)
+
+  private val lists = simple
+    .map { case (n, t) => s"LIST_$n" -> CTList(t) }
+
+  private val maps = Seq(
+    "NODE" -> CTNode(Set("Node")),
+    "NODE_EMPTY" -> CTNode(),
+    "REL" -> CTRelationship(Set("REL")),
+    "REL_EMPTY" -> CTRelationship(),
+    "MAP" -> CTMap(simple.toMap),
+    "MAP_EMPTY" -> CTMap(Map())
+  )
+
+  private val all = Seq(
+    simple,
+    lists,
+    lists.map { case (n, t) => s"${n}_OR_NULL" -> t.nullable },
+    maps,
+    maps.map { case (n, t) => s"${n}_OR_NULL" -> t.nullable }
+  ).flatten.map {
+    case (name, typ) => Var(name)(typ)
+  }.toSet
+
+  private val properties  =
+    simple ++ Seq("name" -> CTString,  "age" -> CTInteger)
+
+  private val properties2 =
+    simple ++ Seq("name" -> CTBoolean, "age" -> CTFloat)
+
+  private val propertiesJoined =
+    simple ++ Seq("name" -> CTAny, "age" -> CTNumber)
+
+  private val schema: Schema = Schema.empty
+    .withNodePropertyKeys("Node")(properties : _*)
+    .withRelationshipPropertyKeys("REL")(properties: _*)
+    .withNodePropertyKeys("Node2")(properties2 : _*)
+    .withRelationshipPropertyKeys("REL2")(properties2: _*)
 
   it("should convert CASE") {
-    convert(parseExpr("CASE WHEN a > b THEN c ELSE d END")) should equal(
-      CaseExpr(IndexedSeq((GreaterThan('a, 'b), 'c)), Some('d))(CTAny)
+    convert(parseExpr("CASE WHEN INTEGER > INTEGER THEN INTEGER ELSE FLOAT END")) should equal(
+      CaseExpr(IndexedSeq((GreaterThan('INTEGER, 'INTEGER), 'INTEGER)), Some('FLOAT))(CTNumber)
     )
-    convert(parseExpr("CASE WHEN a > b THEN c END")) should equal(
-      CaseExpr(IndexedSeq((GreaterThan('a, 'b), 'c)), None)(CTAny)
+    convert(parseExpr("CASE WHEN STRING > STRING_OR_NULL THEN NODE END")) should equal(
+      CaseExpr(IndexedSeq((GreaterThan('STRING, 'STRING_OR_NULL), 'NODE)), None)(CTNode("Node").nullable)
     )
   }
 
@@ -261,7 +302,8 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     IRCatalogGraph(QualifiedGraphName(Namespace(""), GraphName("")), Schema.empty),
     qgnGenerator,
     Map.empty,
-    _ => ???
+    _ => ???,
+    all
   )
   private def convert(e: ast.Expression): Expr =
     new ExpressionConverter()(testContext).convert(e)
