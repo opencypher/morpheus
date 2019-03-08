@@ -54,6 +54,7 @@ import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 
+import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
@@ -234,16 +235,18 @@ case object Writers {
   }
 
   private def rowToListValue(row: Row): Value = {
+    def castValue(v: Any): Any = v match {
+      case a: mutable.WrappedArray[_] => a.array.map(o => castValue(o))
+      case d: java.sql.Date => d.toLocalDate
+      case ts: java.sql.Timestamp => ts.toLocalDateTime
+      case ci: CalendarInterval => ci.toJavaDuration
+      case other => other
+    }
+
     val array = new Array[Value](row.size)
     var i = 0
     while (i < row.size) {
-      val castedValue = row.get(i) match {
-        case d: java.sql.Date => d.toLocalDate
-        case ts: java.sql.Timestamp => ts.toLocalDateTime
-        case ci: CalendarInterval => ci.toJavaDuration
-        case other => other
-      }
-      array(i) = Values.value(castedValue)
+      array(i) = Values.value(castValue(row.get(i)))
       i += 1
     }
     Values.value(array: _*)
