@@ -34,7 +34,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.OperatorTyping._
 import org.opencypher.okapi.ir.impl.parse.functions.FunctionExtensions
 import org.opencypher.okapi.ir.impl.parse.{functions => f}
-import org.opencypher.okapi.ir.impl.typer.{InvalidContainerAccess, MissingParameter, NoSuitableSignatureForExpr, SignatureConverter, UnTypedExpr}
+import org.opencypher.okapi.ir.impl.typer.{InvalidArgument, InvalidContainerAccess, MissingParameter, NoSuitableSignatureForExpr, SignatureConverter, UnTypedExpr}
 import org.opencypher.v9_0.expressions.{OperatorExpression, RegexMatch, TypeSignatures, functions}
 import org.opencypher.v9_0.{expressions => ast}
 
@@ -237,7 +237,17 @@ final class ExpressionConverter(context: IRBuilderContext) {
         case functions.RTrim => RTrim(arg0)
         case functions.ToUpper => ToUpper(arg0)
         case functions.ToLower => ToLower(arg0)
-        case functions.Properties => Properties(arg0)(returnType)
+        case functions.Properties =>
+          val outType = arg0.cypherType.material match {
+            case CTVoid => CTNull
+            case CTNode(labels, _) =>
+              CTMap(schema.nodePropertyKeysForCombinations(schema.combinationsFor(labels)))
+            case CTRelationship(types, _) =>
+              CTMap(schema.relationshipPropertyKeysForTypes(types))
+            case m: CTMap => m
+            case _ => throw InvalidArgument(funcInv, funcInv.args(0))
+          }
+          Properties(arg0)(outType)
 
         // Logarithmic functions
         case functions.Sqrt => Sqrt(arg0)
@@ -306,7 +316,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
 
     case ast.MapExpression(items) =>
       val convertedMap = items.map { case (key, value) => key.name -> convert(value) }.toMap
-      val mapType = CTMap(convertedMap.mapValues(_.cypherType))
+      val mapType = CTMap(convertedMap.map { case(key, value) => key -> value.cypherType })
       MapExpression(convertedMap)(mapType)
 
     // Expression

@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.Format.defaultValueFormatter
 import org.opencypher.okapi.api.value.CypherValue.{CypherFloat, CypherInteger, CypherList, CypherMap}
 import org.opencypher.okapi.api.value.GenCypherValue._
-import org.opencypher.okapi.impl.exception.NotImplementedException
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.temporal.Duration
 import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.testing.Bag
@@ -310,8 +310,8 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       val result = given.cypher("MATCH (a) RETURN a.val")
 
       // Then
-      val e = the [NotImplementedException] thrownBy result.records.size
-      e.msg should (include("CypherType ANY") and include("Spark type"))
+      val e = the [IllegalArgumentException] thrownBy result.records.size
+      e.getMessage should include("Equal column data types")
     }
   }
 
@@ -1228,7 +1228,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       val result = g.cypher(
         """
           |MATCH (a:A)
-          |RETURN properties(a) as props
+          |RETURN properties(a) AS props
         """.stripMargin).records
 
       result.toMaps should equal(Bag(
@@ -1292,7 +1292,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
             |RETURN {
             | foo: "bar",
             | baz: 42
-            |} as myMap
+            |} AS myMap
           """.stripMargin)
 
         result.records.toMaps should equal(Bag(
