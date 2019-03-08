@@ -992,7 +992,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
     it("can concat two literal lists of duration type") {
       val duration = "P1WT2H"
       caps.cypher("RETURN [duration($duration)] + [duration($duration)] AS res", CypherMap("duration" -> duration))
-        .records.toMapsWithCollectedEntities should equal(Bag(
+        .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(Duration.parse(duration), Duration.parse(duration)))
       ))
     }
@@ -1231,7 +1231,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
           |RETURN properties(a) as props
         """.stripMargin).records
 
-      result.toMapsWithCollectedEntities should equal(Bag(
+      result.toMaps should equal(Bag(
         CypherMap("props" -> CypherMap("val1" -> "foo", "val2" -> 42)),
         CypherMap("props" -> CypherMap("val1" -> "bar", "val2" -> 21)),
         CypherMap("props" -> CypherMap("val1" -> null, "val2" -> null))
@@ -1253,7 +1253,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
           |RETURN properties(rel) as props
         """.stripMargin).records
 
-      result.toMapsWithCollectedEntities should equal(Bag(
+      result.toMaps should equal(Bag(
         CypherMap("props" -> CypherMap("val1" -> "foo", "val2" -> 42)),
         CypherMap("props" -> CypherMap("val1" -> "bar", "val2" -> 21)),
         CypherMap("props" -> CypherMap("val1" -> null, "val2" -> null))
@@ -1276,7 +1276,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
           |RETURN properties(map) as props
         """.stripMargin).records
 
-      result.toMapsWithCollectedEntities should equal(Bag(
+      result.toMaps should equal(Bag(
         CypherMap("props" -> CypherMap("val1" -> "foo", "val2" -> 42)),
         CypherMap("props" -> CypherMap("val1" -> "bar", "val2" -> 21))
       ))
@@ -1295,7 +1295,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
             |} as myMap
           """.stripMargin)
 
-        result.records.toMapsWithCollectedEntities should equal(Bag(
+        result.records.toMaps should equal(Bag(
           CypherMap("myMap" -> Map("foo" -> "bar", "baz" -> 42))
         ))
       }
@@ -1307,7 +1307,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
             |RETURN {foo: value} as myMap
           """.stripMargin)
 
-        result.records.toMapsWithCollectedEntities should equal(Bag(
+        result.records.toMaps should equal(Bag(
           CypherMap("myMap" -> Map("foo" -> 21)),
           CypherMap("myMap" -> Map("foo" -> 42))
         ))
@@ -1328,7 +1328,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
             |RETURN n.map as map
           """.stripMargin).records
 
-        result.toMapsWithCollectedEntities should equal(Bag(
+        result.toMaps should equal(Bag(
           CypherMap("map" -> CypherMap("val" -> "foo"))
         ))
       }
@@ -1339,7 +1339,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
             |RETURN {} as myMap
           """.stripMargin)
 
-        result.records.toMapsWithCollectedEntities should equal(Bag(
+        result.records.toMaps should equal(Bag(
           CypherMap("myMap" -> CypherMap())
         ))
       }
@@ -1357,7 +1357,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
             |RETURN myMap["foo"] as foo, myMap["baz"] as baz
           """.stripMargin)
 
-        result.records.toMapsWithCollectedEntities should equal(Bag(
+        result.records.toMaps should equal(Bag(
           CypherMap("foo" -> "bar", "baz" -> 42)
         ))
       }
@@ -1372,7 +1372,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
             |RETURN myMap["barbaz"] as barbaz
           """.stripMargin)
 
-        result.records.toMapsWithCollectedEntities should equal(Bag(
+        result.records.toMaps should equal(Bag(
           CypherMap("barbaz" -> null)
         ))
       }
@@ -1387,7 +1387,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
             |RETURN myMap[$fooKey] as foo, myMap[$bazKey] as baz
           """.stripMargin, CypherMap("fooKey" -> "foo", "bazKey" -> "baz"))
 
-        result.records.toMapsWithCollectedEntities should equal(Bag(
+        result.records.toMaps should equal(Bag(
           CypherMap("foo" -> "bar", "baz" -> 42)
         ))
       }
@@ -1403,7 +1403,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
             |RETURN myMap[$barbazKey] as barbaz
           """.stripMargin, CypherMap("barbazKey" -> "barbaz"))
 
-        result.records.toMapsWithCollectedEntities should equal(Bag(
+        result.records.toMaps should equal(Bag(
           CypherMap("barbaz" -> null)
         ))
       }
@@ -1420,7 +1420,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
             |RETURN myMap[key] as value
           """.stripMargin)
 
-        result.records.toMapsWithCollectedEntities should equal(Bag(
+        result.records.toMaps should equal(Bag(
           CypherMap("value" -> 1),
           CypherMap("value" -> 2)
         ))

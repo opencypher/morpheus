@@ -45,7 +45,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
           |RETURN 2 AS one
         """.stripMargin).records
 
-      result.toMapsWithCollectedEntities should equal(Bag(
+      result.toMaps should equal(Bag(
         CypherMap("one" -> 1),
         CypherMap("one" -> 2)
       ))
@@ -63,7 +63,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
           |RETURN 3 AS one
         """.stripMargin).records
 
-      result.toMapsWithCollectedEntities should equal(Bag(
+      result.toMaps should equal(Bag(
         CypherMap("one" -> 1),
         CypherMap("one" -> 2),
         CypherMap("one" -> 2),
@@ -81,7 +81,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
           |RETURN i
         """.stripMargin).records
 
-      result.toMapsWithCollectedEntities should equal(Bag(
+      result.toMaps should equal(Bag(
         CypherMap("i" -> 1),
         CypherMap("i" -> 2),
         CypherMap("i" -> 1),
@@ -106,7 +106,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
           |RETURN b AS node
         """.stripMargin).records
 
-      result.toMapsWithCollectedEntities should equal(Bag(
+      result.toMaps should equal(Bag(
         CypherMap("node" -> CAPSNode(0, Set("A"), CypherMap("val" -> "foo"))),
         CypherMap("node" -> CAPSNode(1, Set("B"), CypherMap("bar" -> "baz")))
       ))
@@ -130,7 +130,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
           |RETURN b AS node, r AS rel
         """.stripMargin).records
 
-      result.toMapsWithCollectedEntities should equal(Bag(
+      result.toMaps should equal(Bag(
         CypherMap("node" -> CAPSNode(0, Set("A"), CypherMap("val" -> "foo")), "rel" -> CAPSRelationship(2, 0, 1, "REL1", CypherMap("foo" -> 42))),
         CypherMap("node" -> CAPSNode(1, Set("B"), CypherMap("bar" -> "baz")), "rel" -> CAPSRelationship(3, 1, 0, "REL2", CypherMap("bar" -> true)))
       ))
@@ -146,7 +146,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
           |RETURN 2 AS one
         """.stripMargin).records
 
-      result.toMapsWithCollectedEntities should equal(Bag(
+      result.toMaps should equal(Bag(
         CypherMap("one" -> 1),
         CypherMap("one" -> 2)
       ))
@@ -160,7 +160,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
           |RETURN 1 AS one
         """.stripMargin).records
 
-      result.toMapsWithCollectedEntities should equal(Bag(
+      result.toMaps should equal(Bag(
         CypherMap("one" -> 1)
       ))
     }
@@ -177,7 +177,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
           |RETURN 3 AS one
         """.stripMargin).records
 
-      result.toMapsWithCollectedEntities should equal(Bag(
+      result.toMaps should equal(Bag(
         CypherMap("one" -> 1),
         CypherMap("one" -> 2),
         CypherMap("one" -> 3)
@@ -194,7 +194,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
           |RETURN i
         """.stripMargin).records
 
-      result.toMapsWithCollectedEntities should equal(Bag(
+      result.toMaps should equal(Bag(
         CypherMap("i" -> 1),
         CypherMap("i" -> 2),
         CypherMap("i" -> 6)
@@ -217,7 +217,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
           |RETURN b AS node1, a AS node2
         """.stripMargin).records
 
-      result.toMapsWithCollectedEntities should equal(Bag(
+      result.toMaps should equal(Bag(
         CypherMap("node1" -> CAPSNode(0, Set("A"), CypherMap("val" -> "foo")), "node2" -> CAPSNode(1, Set("B"), CypherMap("bar" -> "baz"))),
         CypherMap("node1" -> CAPSNode(1, Set("B"), CypherMap("bar" -> "baz")), "node2" -> CAPSNode(0, Set("A"), CypherMap("val" -> "foo")))
       ))
@@ -238,7 +238,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
           |RETURN a AS node
         """.stripMargin).records
 
-      result.toMapsWithCollectedEntities should equal(Bag(
+      result.toMaps should equal(Bag(
         CypherMap("node" -> CAPSNode(0, Set("A"), CypherMap("val" -> "foo")))
       ))
     }
@@ -259,7 +259,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
           |RETURN r AS rel
         """.stripMargin).records
 
-      result.toMapsWithCollectedEntities should equal(Bag(
+      result.toMaps should equal(Bag(
         CypherMap("rel" -> CAPSRelationship(1, 0, 0, "REL", CypherMap("val" -> 42)))
       ))
     }

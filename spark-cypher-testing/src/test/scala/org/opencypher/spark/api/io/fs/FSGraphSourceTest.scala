@@ -34,9 +34,9 @@ import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.GraphSources
 import org.opencypher.spark.api.io.FileFormat
 import org.opencypher.spark.api.io.util.HiveTableName
+import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.acceptance.ScanGraphInit
-import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.testing.CAPSTestSuite
 
 class FSGraphSourceTest extends CAPSTestSuite with ScanGraphInit {
@@ -123,7 +123,7 @@ class FSGraphSourceTest extends CAPSTestSuite with ScanGraphInit {
 
       val graph = fs.graph(graphName)
 
-      graph.nodes("n").toMapsWithCollectedEntities should equal(Bag(
+      graph.nodes("n").toMaps should equal(Bag(
         CypherMap("n" -> CAPSNode(0, Set("A"), CypherMap("foo@bar" -> 42)))
       ))
     }

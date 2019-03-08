@@ -32,6 +32,7 @@ import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.value.CAPSEntity._
+import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.junit.JUnitRunner
 
@@ -41,7 +42,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
   describe("Acos") {
     it("on int value") {
       val result = caps.cypher("RETURN acos(1) AS res")
-      result.records.toMapsWithCollectedEntities should equal(
+      result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 0.0)
         )
@@ -50,7 +51,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
     it("on float value") {
       val result = caps.cypher("RETURN acos(0.5) AS res")
-      result.records.toMapsWithCollectedEntities should equal(
+      result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 1.0471975511965979)
         )
@@ -59,7 +60,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
     it("on null value") {
       val result = caps.cypher("RETURN acos(null) AS res")
-      result.records.toMapsWithCollectedEntities should equal(
+      result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
         )
@@ -889,8 +890,8 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       result.records.toMaps should equal(
         Bag(
-          CypherMap("r.val" -> "a", "startNode(r)" -> 0L.encodeAsCAPSId),
-          CypherMap("r.val" -> "b", "startNode(r)" -> 3L.encodeAsCAPSId)
+          CypherMap("r.val" -> "a", "startNode(r)" -> CAPSNode(0L.encodeAsCAPSId.toSeq, Set.empty[String], CypherMap())),
+          CypherMap("r.val" -> "b", "startNode(r)" -> CAPSNode(3L.encodeAsCAPSId.toSeq, Set.empty[String], CypherMap()))
         ))
     }
   }
@@ -904,8 +905,8 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       result.records.toMaps should equal(
         Bag(
-          CypherMap("r.val" -> "a", "endNode(r)" -> 1L.encodeAsCAPSId),
-          CypherMap("r.val" -> "b", "endNode(r)" -> 4L.encodeAsCAPSId)
+          CypherMap("r.val" -> "a", "endNode(r)" -> CAPSNode(1L.encodeAsCAPSId.toSeq, Set.empty[String], CypherMap())),
+          CypherMap("r.val" -> "b", "endNode(r)" -> CAPSNode(4L.encodeAsCAPSId.toSeq, Set.empty[String], CypherMap()))
         ))
     }
   }

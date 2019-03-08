@@ -109,9 +109,9 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
       val result = given.cypher("MATCH (n) RETURN n")
 
       result.records.toMaps should equal(Bag(
-        CypherMap("n" -> 0L.encodeAsCAPSId, "n.foo" -> "bar"),
-        CypherMap("n" -> 1L.encodeAsCAPSId, "n.foo" -> null))
-      )
+        CypherMap("n" -> CAPSNode(0L.encodeAsCAPSId.toSeq, Set.empty[String], CypherMap("foo" -> "bar"))),
+        CypherMap("n" -> CAPSNode(1L.encodeAsCAPSId.toSeq, Set.empty[String], CypherMap()))
+      ))
     }
 
     it("returns full rel") {
