@@ -44,7 +44,7 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
       val result = graph.cypher("MATCH (n) WITH AVG(n.val) AS res RETURN res")
 
       result.records.collect.toBag should equal(Bag(
-        CypherMap("res" -> 4)
+        CypherMap("res" -> 4.0)
       ))
     }
 
@@ -54,7 +54,7 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
       val result = graph.cypher("MATCH (n) RETURN AVG(n.val) AS res")
 
       result.records.collect.toBag should equal(Bag(
-        CypherMap("res" -> 4)
+        CypherMap("res" -> 4.0)
       ))
     }
 
@@ -64,7 +64,7 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
       val result = graph.cypher("MATCH (n) RETURN AVG(n.val)")
 
       result.records.toMaps should equal(Bag(
-        CypherMap("AVG(n.val)" -> 4)
+        CypherMap("AVG(n.val)" -> 4.0)
       ))
     }
 
@@ -630,7 +630,7 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
           |RETURN avg, cnt, min, max, sum, col""".stripMargin)
 
       result.records.toMaps should equal(Bag(
-        CypherMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(23, 42, 84))
+        CypherMap("avg" -> 49.666666666666664, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(23, 42, 84))
       ))
     }
 
@@ -648,7 +648,7 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
           | COLLECT(n.val) AS col""".stripMargin)
 
       result.records.toMaps should equal(Bag(
-        CypherMap("avg" -> 49, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(23, 42, 84))
+        CypherMap("avg" -> 49.666666666666664, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(23, 42, 84))
       ))
     }
 
@@ -668,8 +668,8 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
 
       result.records.toMaps should equal(Bag(
         CypherMap(
-          "key" -> "a", "avg" -> 32, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65, "col" -> Seq(23, 42)),
-        CypherMap("key" -> "b", "avg" -> 84, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84, "col" -> Seq(84))
+          "key" -> "a", "avg" -> 32.5, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65, "col" -> Seq(23, 42)),
+        CypherMap("key" -> "b", "avg" -> 84.0, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84, "col" -> Seq(84))
       ))
     }
 
@@ -690,8 +690,8 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
 
       result.records.toMaps should equal(Bag(
         CypherMap(
-          "key" -> "a", "avg" -> 32, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65, "col" -> Seq(23, 42)),
-        CypherMap("key" -> "b", "avg" -> 84, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84, "col" -> Seq(84))
+          "key" -> "a", "avg" -> 32.5, "cnt" -> 2, "min" -> 23L, "max" -> 42L, "sum" -> 65, "col" -> Seq(23, 42)),
+        CypherMap("key" -> "b", "avg" -> 84.0, "cnt" -> 1, "min" -> 84, "max" -> 84, "sum" -> 84, "col" -> Seq(84))
       ))
     }
   }

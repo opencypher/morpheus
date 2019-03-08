@@ -32,8 +32,9 @@ import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.OperatorTyping._
+import org.opencypher.okapi.ir.impl.parse.functions.FunctionExtensions
 import org.opencypher.okapi.ir.impl.parse.{functions => f}
-import org.opencypher.okapi.ir.impl.typer.{InvalidContainerAccess, NoSuitableSignatureForExpr, SignatureConverter, UnTypedExpr, MissingParameter}
+import org.opencypher.okapi.ir.impl.typer.{InvalidContainerAccess, MissingParameter, NoSuitableSignatureForExpr, SignatureConverter, UnTypedExpr}
 import org.opencypher.v9_0.expressions.{OperatorExpression, RegexMatch, TypeSignatures, functions}
 import org.opencypher.v9_0.{expressions => ast}
 
@@ -362,7 +363,7 @@ object OperatorTyping {
   implicit class RichTypeSignatures(val f: ast.FunctionInvocation) {
     def returnTypeFor(args: CypherType*): CypherType = {
 
-      val signatures = f.function match {
+      val signatures = FunctionExtensions.getOrElse(f.function.name, f.function) match {
         case t: TypeSignatures => t.signatures
         case _ => ??? // TODO
       }
