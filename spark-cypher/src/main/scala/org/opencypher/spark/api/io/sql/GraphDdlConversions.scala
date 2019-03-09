@@ -26,15 +26,107 @@
  */
 package org.opencypher.spark.api.io.sql
 
-import org.opencypher.graphddl.GraphType
+import org.opencypher.graphddl.{ElementType, GraphType}
+import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
 import org.opencypher.okapi.impl.util.ScalaUtils._
 
 object GraphDdlConversions {
 
   implicit class SchemaOps(schema: Schema) {
+
     def asGraphType: GraphType = {
-      ???
+      val allKeys = schema.nodeKeys ++ schema.relationshipKeys
+
+      val nodeElementTypes = schema.labelCombinations.combos.flatMap { labelCombo =>
+        val comboProperties = schema.nodePropertyKeys(labelCombo)
+        labelCombo.map(_ -> comboProperties)
+      }
+      val relElementTypes = schema.relationshipTypes.map { relType =>
+        relType -> schema.relationshipPropertyKeys(relType)
+      }
+
+      val flatElementTypes = (nodeElementTypes ++ relElementTypes)
+        .groupBy { case (name, _) => name }
+        .map { case (name, keySets) => name -> keySets.map(_._2).toSeq.minBy(_.size) }
+        .toSeq
+
+      val explicitInheritance = extractInheritance(flatElementTypes)
+      val implicitInheritance = explicitInheritance.map { case (label, (parents, propertyKeys)) =>
+        val superTypes = parents.filterNot { parent =>
+          val otherParents = parents - parent
+          otherParents.exists(otherParent => explicitInheritance(otherParent)._1.contains(parent))
+        }
+        label -> (superTypes -> propertyKeys)
+      }
+      val elementTypes = implicitInheritance.toSeq
+        .sortBy { case (_, (parents, _)) => parents.size }
+        .map { case (label, (parents, propertyKeys)) =>
+          val maybeKey = allKeys.get(label) match {
+            case Some(s) => Some(label -> s)
+            case None => None
+          }
+          ElementType(label, parents, propertyKeys, maybeKey)
+        }
+
+      GraphType.empty
+        .foldLeftOver(elementTypes) { case (graphType, elementType) =>
+          graphType.withElementType(elementType)
+        }
+        .foldLeftOver(schema.labelCombinations.combos) { case (graphType, labelCombo) =>
+          graphType.withNodeType(labelCombo.toSeq: _*)
+        }
+        .foldLeftOver(schema.schemaPatterns) { case (graphType, pattern) =>
+          graphType.withRelationshipType(pattern.sourceLabelCombination, Set(pattern.relType), pattern.targetLabelCombination)
+        }
+    }
+
+    private def extractInheritance(
+      elementTypes: Seq[(String, PropertyKeys)],
+      output: Map[String, (Set[String], PropertyKeys)] = Map.empty
+    ): Map[String, (Set[String], PropertyKeys)] = {
+      if (elementTypes.isEmpty) {
+        output
+      } else {
+
+        val sortedElementTypes = elementTypes.sortBy { case (name, keys) => (name, keys.size) }
+
+        val (label, propertyKeys) = sortedElementTypes.head
+        val propertyKeysSet = propertyKeys.toSet
+
+        val updatedOutput = sortedElementTypes.foldLeft(output) {
+
+          case (currentOutput, (currentLabel, _)) if currentLabel == label && currentOutput.contains(currentLabel) =>
+            currentOutput
+
+          case (currentOutput, (currentLabel, currentPropertyKeys)) if currentLabel == label =>
+            currentOutput.updated(currentLabel, Set.empty[String] -> currentPropertyKeys)
+
+          case (currentOutput, (currentLabel, currentPropertyKeys)) =>
+            val currentPropertyKeysSet = currentPropertyKeys.toSet
+            val updatedPropertyKeys = if (propertyKeysSet.subsetOf(currentPropertyKeysSet)) {
+              (currentPropertyKeysSet -- propertyKeysSet).toMap
+            } else {
+              currentPropertyKeys
+            }
+            val isSubType = updatedPropertyKeys.size < currentPropertyKeys.size
+
+            val currentParents = currentOutput.get(currentLabel) match {
+              case Some((parents, _)) => parents
+              case None => Set.empty[String]
+            }
+            val updatedParents = if (isSubType) {
+              currentParents + label
+            } else {
+              currentParents
+            }
+            currentOutput.updated(currentLabel, updatedParents -> updatedPropertyKeys)
+        }
+
+        val remainingElementTypes = sortedElementTypes.tail.map { case (name, _) => name -> updatedOutput(name)._2 }
+
+        extractInheritance(remainingElementTypes, updatedOutput)
+      }
     }
   }
 

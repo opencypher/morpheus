@@ -40,7 +40,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
   val typeName = "myType"
   val graphName = GraphName("myGraph")
 
-  describe("DDL to OKAPI schema") {
+  describe("GraphType to OKAPI schema") {
     it("can construct schema with node label") {
 
       val ddl =
@@ -489,4 +489,53 @@ class GraphDdlConversionsTest extends BaseTestSuite {
 
   }
 
+  describe("OKAPI schema to GraphType") {
+    it("converts single node type") {
+      Schema.empty
+        .withNodePropertyKeys("A")("foo" -> CTString)
+        .asGraphType shouldEqual GraphType.empty
+          .withElementType("A", "foo" -> CTString)
+          .withNodeType("A")
+    }
+
+    it("converts multiple node types") {
+      Schema.empty
+        .withNodePropertyKeys("A")("foo" -> CTString)
+        .withNodePropertyKeys("B")("bar" -> CTInteger)
+        .asGraphType shouldEqual GraphType.empty
+        .withElementType("A", "foo" -> CTString)
+        .withElementType("B", "bar" -> CTInteger)
+        .withNodeType("A")
+        .withNodeType("B")
+    }
+
+    it("converts single node type with multiple labels") {
+      Schema.empty
+        .withNodePropertyKeys("A", "B")("foo" -> CTString)
+        .asGraphType shouldEqual GraphType.empty
+        .withElementType("A", "foo" -> CTString)
+        .withElementType("B", Set("A"))
+        .withNodeType("A", "B")
+    }
+
+    it("converts multiple node types with overlapping labels") {
+      Schema.empty
+        .withNodePropertyKeys("A")("a" -> CTString)
+        .withNodePropertyKeys("A", "B")("a" -> CTString, "b" -> CTInteger)
+        .withNodePropertyKeys("A", "B", "C")("a" -> CTString, "b" -> CTInteger, "c" -> CTFloat)
+        .withNodePropertyKeys("A", "B", "D")("a" -> CTString, "b" -> CTInteger, "d" -> CTFloat)
+        .withNodePropertyKeys("A", "B", "C", "D", "E")("a" -> CTString, "b" -> CTInteger, "c" -> CTFloat, "d" -> CTFloat, "e" -> CTBoolean)
+        .asGraphType shouldEqual GraphType.empty
+        .withElementType("A", "a" -> CTString)
+        .withElementType("B", Set("A"), "b" -> CTInteger)
+        .withElementType("C", Set("B"), "c" -> CTFloat)
+        .withElementType("D", Set("B"), "d" -> CTFloat)
+        .withElementType("E", Set("C", "D"), "e" -> CTBoolean)
+        .withNodeType("A")
+        .withNodeType("A", "B")
+        .withNodeType("A", "B", "C")
+        .withNodeType("A", "B", "D")
+        .withNodeType("A", "B", "C", "D", "E")
+    }
+  }
 }

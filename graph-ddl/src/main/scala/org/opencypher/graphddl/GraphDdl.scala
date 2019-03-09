@@ -492,6 +492,9 @@ case class GraphType(
   def withElementType(label: String, propertyKeys: (String, CypherType)*): GraphType =
     withElementType(ElementType(name = label, properties = propertyKeys.toMap))
 
+  def withElementType(label: String, parents: Set[String], propertyKeys: (String, CypherType)*): GraphType =
+    withElementType(ElementType(name = label, parents = parents, properties = propertyKeys.toMap))
+
   def withElementType(elementType: ElementType): GraphType = {
     validateElementType(elementType)
     copy(elementTypes = elementTypes + elementType)
