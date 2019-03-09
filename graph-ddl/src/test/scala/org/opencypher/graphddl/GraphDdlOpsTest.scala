@@ -130,26 +130,6 @@ class GraphDdlOpsTest extends BaseTestSuite {
       )
     }
 
-    it("can construct schema with single NEN pattern 2") {
-      val ddl =
-        s"""|CREATE ELEMENT TYPE Node ( val String )
-            |CREATE ELEMENT TYPE REL ( name STRING )
-            |
-            |CREATE GRAPH TYPE $typeName (
-            |  (Node),
-            |  (Node)-[REL]->(Node)
-            |)
-            |CREATE GRAPH $graphName OF $typeName ()
-            |""".stripMargin
-
-      GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
-        Schema.empty
-          .withNodePropertyKeys("Node")("val" -> CTString)
-          .withRelationshipPropertyKeys("REL")("name" -> CTString)
-          .withSchemaPatterns(SchemaPattern("Node", "REL", "Node"))
-      )
-    }
-
     it("can combine local and global labels") {
       // Given
       val ddl =

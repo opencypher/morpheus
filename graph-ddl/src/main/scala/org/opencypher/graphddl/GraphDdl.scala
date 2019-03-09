@@ -471,43 +471,73 @@ case class GraphType(
 
   def relElementTypes: Set[ElementType] = relTypes.flatMap(_.labels).map(elementTypesByName)
 
-  def nodePropertyKeys(nodeType: NodeType): PropertyKeys = getPropertyKeys(nodeType.labels)
+  def nodePropertyKeys(labels: String*): PropertyKeys =
+    nodePropertyKeys(NodeType(labels.toSet))
 
-  def relationshipPropertyKeys(relationshipType: RelationshipType): PropertyKeys = getPropertyKeys(relationshipType.labels)
+  def nodePropertyKeys(nodeType: NodeType): PropertyKeys =
+    getPropertyKeys(nodeType.labels)
 
-  def withName(name: String): GraphType = copy(name = name)
+  def relationshipPropertyKeys(startLabel: String, label: String, endLabel: String): PropertyKeys =
+    relationshipPropertyKeys(RelationshipType(startLabel, label, endLabel))
+
+  def relationshipPropertyKeys(startLabels: Set[String], labels: Set[String], endLabels: Set[String]): PropertyKeys =
+    relationshipPropertyKeys(RelationshipType(NodeType(startLabels), labels, NodeType(endLabels)))
+
+  def relationshipPropertyKeys(relationshipType: RelationshipType): PropertyKeys =
+    getPropertyKeys(relationshipType.labels)
+
+  def withName(name: String): GraphType =
+    copy(name = name)
+
+  def withElementType(label: String, propertyKeys: (String, CypherType)*): GraphType =
+    withElementType(ElementType(name = label, properties = propertyKeys.toMap))
 
   def withElementType(elementType: ElementType): GraphType = {
-    elementType.parents.foreach(validateElementType)
+    validateElementType(elementType)
     copy(elementTypes = elementTypes + elementType)
   }
+
+  def withNodeType(labels: String*): GraphType = withNodeType(NodeType(labels: _*))
 
   def withNodeType(nodeType: NodeType): GraphType = {
     validateNodeType(nodeType)
     copy(nodeTypes = nodeTypes + nodeType)
   }
 
+  def withRelationshipType(startLabel: String, label: String, endLabel: String): GraphType =
+    withRelationshipType(Set(startLabel), Set(label), Set(endLabel))
+
+  def withRelationshipType(startLabels: Set[String], labels: Set[String], endLabels: Set[String]): GraphType =
+    withRelationshipType(RelationshipType(NodeType(startLabels), labels, NodeType(endLabels)))
+
   def withRelationshipType(relationshipType: RelationshipType): GraphType = {
     validateRelType(relationshipType)
     copy(relTypes = relTypes + relationshipType)
   }
 
-  private def validateElementType(label: String): Unit = tryWithContext(label) {
-    if (elementTypes.exists(_.name == label)) {
-      elementTypes.collectFirst { case et if et.name == label => et }.get.parents.foreach(validateElementType)
+  private def validateElementType(elementType: ElementType): Unit = tryWithContext(elementType.toString) {
+    if (elementTypes.contains(elementType)) {
+      duplicate("Element type already exists", elementType)
+    }
+    elementType.parents.foreach(validateElementTypeHierarchy)
+  }
+
+  private def validateElementTypeHierarchy(parent: String): Unit = {
+    if (elementTypes.exists(_.name == parent)) {
+      elementTypes.collectFirst { case et if et.name == parent => et }.get.parents.foreach(validateElementTypeHierarchy)
     } else {
-      illegalInheritance("Element type not found", label)
+      illegalInheritance("Element type not found", parent)
     }
   }
 
   private def validateNodeType(nodeType: NodeType): Unit = tryWithContext(nodeType.toString) {
-    nodeType.labels.foreach(validateElementType)
+    nodeType.labels.foreach(validateElementTypeHierarchy)
   }
 
   private def validateRelType(relType: RelationshipType): Unit = tryWithContext(relType.toString) {
     validateNodeType(relType.startNodeType)
     validateNodeType(relType.endNodeType)
-    relType.labels.foreach(validateElementType)
+    relType.labels.foreach(validateElementTypeHierarchy)
   }
 
   private def getElementTypes(label: String): Set[ElementType] = {
@@ -579,7 +609,9 @@ case class ElementType(
   parents: Set[String] = Set.empty,
   properties: Map[String, CypherType] = Map.empty,
   maybeKey: Option[KeyDefinition] = None
-)
+) {
+  override def toString: String = name
+}
 
 object NodeType {
   def apply(labels: String*): NodeType = NodeType(labels.toSet)
