@@ -77,21 +77,14 @@ class GraphDdlTest extends FunSpec with Matchers {
     val expected = GraphDdl(
       Map(
         GraphName("fooGraph") -> Graph(GraphName("fooGraph"),
-          GraphType(
-            name = "fooSchema",
-            elementTypes = Set(
-              ElementType("Person", Set.empty, Map("name" -> CTString, "age" -> CTInteger)),
-              ElementType("Book", Set.empty, Map("title" -> CTString)),
-              ElementType("READS", Set.empty, Map("rating" -> CTFloat))
-            ),
-            nodeTypes = Map(
-              NodeType("Person") -> Map("name" -> CTString, "age" -> CTInteger),
-              NodeType("Book") -> Map("title" -> CTString)
-            ),
-            relTypes = Map(
-              RelationshipType("Person", "READS", "Book") -> Map("rating" -> CTFloat)
-            )
-          ),
+          GraphType.empty
+            .withName("fooSchema")
+            .withElementType(ElementType("Person", Set.empty, Map("name" -> CTString, "age" -> CTInteger)))
+            .withElementType(ElementType("Book", Set.empty, Map("title" -> CTString)))
+            .withElementType(ElementType("READS", Set.empty, Map("rating" -> CTFloat)))
+            .withNodeType(NodeType("Person"))
+            .withNodeType(NodeType("Book"))
+            .withRelationshipType(RelationshipType("Person", "READS", "Book")),
           Map(
             personKey1 -> NodeToViewMapping(
               nodeType = NodeType("Person"),
@@ -190,19 +183,12 @@ class GraphDdlTest extends FunSpec with Matchers {
 
     ddl.graphs(GraphName("myGraph")) shouldEqual Graph(
       name = GraphName("myGraph"),
-      graphType = GraphType(
-        name = "myGraph",
-        elementTypes = Set(
-          ElementType("A", Set.empty, Map("x" -> CTString)),
-          ElementType("B", Set.empty, Map("y" -> CTString))
-        ),
-        nodeTypes = Map(
-          NodeType("A") -> Map("x" -> CTString)
-        ),
-        relTypes = Map(
-          RelationshipType("A", "B", "A") -> Map("y" -> CTString)
-        )
-      ),
+      graphType = GraphType.empty
+        .withName("myGraph")
+        .withElementType(ElementType("A", Set.empty, Map("x" -> CTString)))
+        .withElementType(ElementType("B", Set.empty, Map("y" -> CTString)))
+        .withNodeType(NodeType("A"))
+        .withRelationshipType(RelationshipType("A", "B", "A")),
       nodeToViewMappings = Map(
         A_a -> NodeToViewMapping(NodeType("A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")), Map("x" -> "x"))
       ),
@@ -246,22 +232,15 @@ class GraphDdlTest extends FunSpec with Matchers {
 
       ddl.graphs(GraphName("myGraph")) shouldEqual Graph(
         name = GraphName("myGraph"),
-        graphType = GraphType(
-          name = "myGraph",
-          elementTypes = Set(
-            ElementType("A", Set.empty, Map("x" -> CTString)),
-            ElementType("B", Set.empty, Map("y" -> CTString)),
-            ElementType("R", Set.empty, Map("y" -> CTString))
-          ),
-          nodeTypes = Map(
-            NodeType("A") -> Map("x" -> CTString),
-            NodeType("A", "B") -> Map("x" -> CTString, "y" -> CTString)
-          ),
-          relTypes = Map(
-            RelationshipType("A", "R", "A") -> Map("y" -> CTString),
-            RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A")) -> Map("y" -> CTString)
-          )
-        ),
+        graphType = GraphType.empty
+          .withName("myGraph")
+          .withElementType(ElementType("A", Set.empty, Map("x" -> CTString)))
+          .withElementType(ElementType("B", Set.empty, Map("y" -> CTString)))
+          .withElementType(ElementType("R", Set.empty, Map("y" -> CTString)))
+          .withNodeType(NodeType("A"))
+          .withNodeType(NodeType("A", "B"))
+          .withRelationshipType(RelationshipType("A", "R", "A"))
+          .withRelationshipType(RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A"))),
         nodeToViewMappings = Map(
           A_a -> NodeToViewMapping(NodeType("A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")), Map("x" -> "x")),
           A_ab -> NodeToViewMapping(NodeType("A", "B"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a_b")), Map("x" -> "x", "y" -> "y"))
@@ -306,22 +285,14 @@ class GraphDdlTest extends FunSpec with Matchers {
 
       ddl.graphs(GraphName("myGraph")) shouldEqual Graph(
         name = GraphName("myGraph"),
-        graphType = GraphType(
-          name = "myGraph",
-          elementTypes = Set(
-            ElementType("A", Set.empty, Map("x" -> CTString)),
-            ElementType("B", Set(ElementType("A", Set.empty, Map("x" -> CTString))), Map("y" -> CTString)),
-            ElementType("R", Set.empty, Map("y" -> CTString))
-          ),
-          nodeTypes = Map(
-            NodeType("A") -> Map("x" -> CTString),
-            NodeType("A", "B") -> Map("x" -> CTString, "y" -> CTString)
-          ),
-          relTypes = Map(
-            RelationshipType("A", "R", "A") -> Map("y" -> CTString),
-            RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A")) -> Map("y" -> CTString)
-          )
-        ),
+        graphType = GraphType("myGraph")
+          .withElementType(ElementType("A", Set.empty, Map("x" -> CTString)))
+          .withElementType(ElementType("B", Set("A"), Map("y" -> CTString)))
+          .withElementType(ElementType("R", Set.empty, Map("y" -> CTString)))
+          .withNodeType(NodeType("A"))
+          .withNodeType(NodeType("A", "B"))
+          .withRelationshipType(RelationshipType("A", "R", "A"))
+          .withRelationshipType(RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A"))),
         nodeToViewMappings = Map(
           A_a -> NodeToViewMapping(NodeType("A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")), Map("x" -> "x")),
           A_ab -> NodeToViewMapping(NodeType("A", "B"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a_b")), Map("x" -> "x", "y" -> "y"))

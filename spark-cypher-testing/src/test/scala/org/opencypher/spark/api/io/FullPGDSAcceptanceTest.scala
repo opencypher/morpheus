@@ -206,14 +206,14 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
         val ddl = g.defaultDdl(gn, Some(dataSourceName), Some(databaseName))
 
         ddl.graphs(gn).nodeToViewMappings.foreach { case (key: NodeViewKey, mapping: NodeToViewMapping) =>
-          val nodeDf = g.canonicalNodeTable(key.nodeType.elementTypes).removePrefix(propertyPrefix)
+          val nodeDf = g.canonicalNodeTable(key.nodeType.labels).removePrefix(propertyPrefix)
           writeTable(nodeDf, mapping.view.tableName)
         }
 
         ddl.graphs(gn).edgeToViewMappings.foreach { edgeToViewMapping =>
-          val startNodeDf = g.canonicalNodeTable(edgeToViewMapping.relType.startNodeType.elementTypes)
-          val endNodeDf = g.canonicalNodeTable(edgeToViewMapping.relType.endNodeType.elementTypes)
-          val relationshipType = edgeToViewMapping.key.relType.elementTypes.toList match {
+          val startNodeDf = g.canonicalNodeTable(edgeToViewMapping.relType.startNodeType.labels)
+          val endNodeDf = g.canonicalNodeTable(edgeToViewMapping.relType.endNodeType.labels)
+          val relationshipType = edgeToViewMapping.key.relType.labels.toList match {
             case relType :: Nil => relType
             case other => throw IllegalArgumentException(expected = "Single relationship type", actual = s"${other.mkString(",")}")
           }

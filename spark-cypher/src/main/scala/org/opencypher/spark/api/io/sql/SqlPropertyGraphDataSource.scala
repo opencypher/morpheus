@@ -78,7 +78,7 @@ case class SqlPropertyGraphDataSource(
 
     val nodeTables = nodeDataFramesWithIds.map {
       case (nodeViewKey, nodeDf) =>
-        val nodeElementTypes = nodeViewKey.nodeType.elementTypes
+        val nodeElementTypes = nodeViewKey.nodeType.labels
         val columnsWithType = nodeColsWithCypherType(schema, nodeElementTypes)
         val inputNodeMapping = createNodeMapping(nodeElementTypes, ddlGraph.nodeToViewMappings(nodeViewKey).propertyMappings)
         val normalizedDf = normalizeDataFrame(nodeDf, inputNodeMapping, columnsWithType).castToLong
@@ -97,7 +97,7 @@ case class SqlPropertyGraphDataSource(
 
     val relationshipTables = ddlGraph.edgeToViewMappings.map { edgeToViewMapping =>
       val edgeViewKey = edgeToViewMapping.key
-      val relElementType = edgeViewKey.relType.elementTypes.toList match {
+      val relElementType = edgeViewKey.relType.labels.toList match {
         case relType :: Nil => relType
         case other => throw IllegalArgumentException(expected = "Single relationship type", actual = s"${other.mkString(",")}")
       }

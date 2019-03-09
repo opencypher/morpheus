@@ -26,6 +26,8 @@
  */
 package org.opencypher.graphddl
 
+import cats.instances.map._
+import cats.syntax.semigroup._
 import org.opencypher.graphddl.GraphDdl._
 import org.opencypher.graphddl.GraphDdlAst.{ColumnIdentifier, KeyDefinition, PropertyToColumnMappingDefinition}
 import org.opencypher.graphddl.GraphDdlException._
@@ -180,11 +182,11 @@ object GraphDdl {
 
     def toGraphType: GraphType = GraphType(name,
       allElementTypes.values.toSet.map { elementTypeDef: ElementTypeDefinition => toElementType(elementTypeDef) },
-      allNodeTypes.map { case (nodeTypeDef, props) => toNodeType(nodeTypeDef) -> props },
-      allEdgeTypes.map { case (relTypeDef, props) => toRelType(relTypeDef) -> props })
+      allNodeTypes.map { case (nodeTypeDef, _) => toNodeType(nodeTypeDef) }.toSet,
+      allEdgeTypes.map { case (relTypeDef, _) => toRelType(relTypeDef) }.toSet)
 
     def toElementType(elementTypeDefinition: ElementTypeDefinition): ElementType = {
-      val parentTypes = elementTypeDefinition.parents.map(resolveElementType).map(toElementType)
+      val parentTypes = elementTypeDefinition.parents.map(resolveElementType).map(toElementType).map(_.name)
       ElementType(elementTypeDefinition.name, parentTypes, elementTypeDefinition.properties, elementTypeDefinition.maybeKey)
     }
 
@@ -194,7 +196,7 @@ object GraphDdl {
     def toRelType(relationshipTypeDefinition: RelationshipTypeDefinition): RelationshipType =
       RelationshipType(
         startNodeType = toNodeType(relationshipTypeDefinition.startNodeType),
-        elementTypes = resolveRelationshipLabel(relationshipTypeDefinition),
+        labels = resolveRelationshipLabel(relationshipTypeDefinition),
         endNodeType = toNodeType(relationshipTypeDefinition.endNodeType))
 
     private def resolveNodeTypes(
@@ -306,8 +308,8 @@ object GraphDdl {
             nodeType = nodeKey.nodeType,
             view = toViewId(maybeSetSchema, nvd.viewId),
             propertyMappings = toPropertyMappings(
-              elementTypes = nodeKey.nodeType.elementTypes,
-              graphTypePropertyKeys = graphType.nodeTypes(nodeKey.nodeType).keySet,
+              elementTypes = nodeKey.nodeType.labels,
+              graphTypePropertyKeys = graphType.nodePropertyKeys(nodeKey.nodeType).keySet,
               maybePropertyMapping = nvd.maybePropertyMapping
             )
           )
@@ -352,8 +354,8 @@ object GraphDdl {
               ))
             ),
             propertyMappings = toPropertyMappings(
-              elementTypes = edgeKey.relType.elementTypes,
-              graphTypePropertyKeys = graphType.relTypes(edgeKey.relType).keySet,
+              elementTypes = edgeKey.relType.labels,
+              graphTypePropertyKeys = graphType.relationshipPropertyKeys(edgeKey.relType).keySet,
               maybePropertyMapping = rvd.maybePropertyMapping
             )
           )
@@ -452,18 +454,69 @@ case class Graph(
   }
 }
 
+object GraphType {
+  val empty = GraphType("empty")
+}
+
 case class GraphType(
   name: String,
   elementTypes: Set[ElementType] = Set.empty,
-  nodeTypes: Map[NodeType, PropertyKeys] = Map.empty,
-  relTypes: Map[RelationshipType, PropertyKeys] = Map.empty
+  nodeTypes: Set[NodeType] = Set.empty,
+  relTypes: Set[RelationshipType] = Set.empty
 ) {
 
   private lazy val elementTypesByName = elementTypes.map(et => et.name -> et).toMap
 
-  def nodeElementTypes: Set[ElementType] = nodeTypes.keySet.flatMap(_.elementTypes).map(elementTypesByName)
+  def nodeElementTypes: Set[ElementType] = nodeTypes.flatMap(_.labels).map(elementTypesByName)
 
-  def relElementTypes: Set[ElementType] = relTypes.keySet.flatMap(_.elementTypes).map(elementTypesByName)
+  def relElementTypes: Set[ElementType] = relTypes.flatMap(_.labels).map(elementTypesByName)
+
+  def nodePropertyKeys(nodeType: NodeType): PropertyKeys = getPropertyKeys(nodeType.labels)
+
+  def relationshipPropertyKeys(relationshipType: RelationshipType): PropertyKeys = getPropertyKeys(relationshipType.labels)
+
+  def withName(name: String): GraphType = copy(name = name)
+
+  def withElementType(elementType: ElementType): GraphType = {
+    elementType.parents.foreach(validateElementType)
+    copy(elementTypes = elementTypes + elementType)
+  }
+
+  def withNodeType(nodeType: NodeType): GraphType = {
+    validateNodeType(nodeType)
+    copy(nodeTypes = nodeTypes + nodeType)
+  }
+
+  def withRelationshipType(relationshipType: RelationshipType): GraphType = {
+    validateRelType(relationshipType)
+    copy(relTypes = relTypes + relationshipType)
+  }
+
+  private def validateElementType(label: String): Unit = tryWithContext(label) {
+    if (elementTypes.exists(_.name == label)) {
+      elementTypes.collectFirst { case et if et.name == label => et }.get.parents.foreach(validateElementType)
+    } else {
+      illegalInheritance("Element type not found", label)
+    }
+  }
+
+  private def validateNodeType(nodeType: NodeType): Unit = tryWithContext(nodeType.toString) {
+    nodeType.labels.foreach(validateElementType)
+  }
+
+  private def validateRelType(relType: RelationshipType): Unit = tryWithContext(relType.toString) {
+    validateNodeType(relType.startNodeType)
+    validateNodeType(relType.endNodeType)
+    relType.labels.foreach(validateElementType)
+  }
+
+  private def getElementTypes(label: String): Set[ElementType] = {
+    val children = elementTypes.filter(_.name == label)
+    children ++ children.flatMap(_.parents.flatMap(getElementTypes))
+  }
+
+  private def getPropertyKeys(labels: Set[String]): PropertyKeys =
+    labels.flatMap(getElementTypes).map(_.properties).reduce(_ |+| _)
 }
 
 case class ViewId(maybeSetSchema: Option[SetSchemaDefinition], parts: List[String]) {
@@ -523,26 +576,26 @@ case class Join(
 
 case class ElementType(
   name: String,
-  parents: Set[ElementType] = Set.empty,
+  parents: Set[String] = Set.empty,
   properties: Map[String, CypherType] = Map.empty,
   maybeKey: Option[KeyDefinition] = None
 )
 
 object NodeType {
-  def apply(elementTypeLabels: String*): NodeType = NodeType(elementTypeLabels.toSet)
+  def apply(labels: String*): NodeType = NodeType(labels.toSet)
 }
 
-case class NodeType(elementTypes: Set[String]) {
-  override def toString: String = s"(${elementTypes.mkString(",")})"
+case class NodeType(labels: Set[String]) {
+  override def toString: String = s"(${labels.mkString(",")})"
 }
 
 object RelationshipType {
-  def apply(startNodeElementType: String, elementType: String, endNodeElementType: String): RelationshipType =
-    RelationshipType(NodeType(startNodeElementType), Set(elementType), NodeType(endNodeElementType))
+  def apply(startNodeElementType: String, label: String, endNodeElementType: String): RelationshipType =
+    RelationshipType(NodeType(startNodeElementType), Set(label), NodeType(endNodeElementType))
 }
 
-case class RelationshipType(startNodeType: NodeType, elementTypes: Set[String], endNodeType: NodeType) {
-  override def toString: String = s"$startNodeType-[${elementTypes.mkString(",")}]->$endNodeType"
+case class RelationshipType(startNodeType: NodeType, labels: Set[String], endNodeType: NodeType) {
+  override def toString: String = s"$startNodeType-[${labels.mkString(",")}]->$endNodeType"
 }
 
 trait ElementViewKey {
@@ -552,13 +605,13 @@ trait ElementViewKey {
 }
 
 case class NodeViewKey(nodeType: NodeType, viewId: ViewId) extends ElementViewKey {
-  override val elementType: Set[String] = nodeType.elementTypes
+  override val elementType: Set[String] = nodeType.labels
 
   override def toString: String = s"node type: $nodeType, view: $viewId"
 }
 
 case class EdgeViewKey(relType: RelationshipType, viewId: ViewId) extends ElementViewKey {
-  override val elementType: Set[String] = relType.elementTypes
+  override val elementType: Set[String] = relType.labels
 
   override def toString: String = s"relationship type: $relType, view: $viewId"
 }
