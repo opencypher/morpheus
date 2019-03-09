@@ -48,7 +48,7 @@ import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
-import GraphDdlOps._
+import GraphDdlConversions._
 
 import scala.reflect.io.Path
 
