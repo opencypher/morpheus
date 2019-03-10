@@ -553,8 +553,8 @@ class GraphDdlConversionsTest extends BaseTestSuite {
       Schema.empty
         .withNodePropertyKeys("A")("foo" -> CTString)
         .asGraphType shouldEqual GraphType.empty
-          .withElementType("A", "foo" -> CTString)
-          .withNodeType("A")
+        .withElementType("A", "foo" -> CTString)
+        .withNodeType("A")
     }
 
     it("converts multiple node types") {
@@ -578,23 +578,41 @@ class GraphDdlConversionsTest extends BaseTestSuite {
     }
 
     it("converts multiple node types with overlapping labels") {
-      Schema.empty
+      val schema = Schema.empty
         .withNodePropertyKeys("A")("a" -> CTString)
         .withNodePropertyKeys("A", "B")("a" -> CTString, "b" -> CTInteger)
         .withNodePropertyKeys("A", "B", "C")("a" -> CTString, "b" -> CTInteger, "c" -> CTFloat)
         .withNodePropertyKeys("A", "B", "D")("a" -> CTString, "b" -> CTInteger, "d" -> CTFloat)
         .withNodePropertyKeys("A", "B", "C", "D", "E")("a" -> CTString, "b" -> CTInteger, "c" -> CTFloat, "d" -> CTFloat, "e" -> CTBoolean)
-        .asGraphType shouldEqual GraphType.empty
-        .withElementType("A", "a" -> CTString)
-        .withElementType("B", Set("A"), "b" -> CTInteger)
-        .withElementType("C", Set("B"), "c" -> CTFloat)
-        .withElementType("D", Set("B"), "d" -> CTFloat)
+
+      val expected = GraphType.empty
+        .withElementType("A", "a" -> CTString, "b" -> CTInteger.nullable, "c" -> CTFloat.nullable, "d" -> CTFloat.nullable, "e" -> CTBoolean.nullable)
+        .withElementType("B", Set("A"), "b" -> CTInteger, "c" -> CTFloat.nullable, "d" -> CTFloat.nullable, "e" -> CTBoolean.nullable)
+        .withElementType("C", Set("B"), "c" -> CTFloat, "d" -> CTFloat.nullable, "e" -> CTBoolean.nullable)
+        .withElementType("D", Set("B"), "d" -> CTFloat, "c" -> CTFloat.nullable, "e" -> CTBoolean.nullable)
         .withElementType("E", Set("C", "D"), "e" -> CTBoolean)
         .withNodeType("A")
         .withNodeType("A", "B")
         .withNodeType("A", "B", "C")
         .withNodeType("A", "B", "D")
         .withNodeType("A", "B", "C", "D", "E")
+
+      val actual = schema.asGraphType
+
+      actual shouldEqual expected
+    }
+
+    it("converts multiple node types with overlapping labels but non-overlapping properties") {
+      Schema.empty
+        .withNodePropertyKeys("A")("a" -> CTString)
+        .withNodePropertyKeys("B")("b" -> CTString)
+        .withNodePropertyKeys("A", "B")("c" -> CTString)
+        .asGraphType shouldEqual GraphType.empty
+        .withElementType("A", "a" -> CTString.nullable, "c" -> CTString.nullable)
+        .withElementType("B", "b" -> CTString.nullable, "c" -> CTString.nullable)
+        .withNodeType("A")
+        .withNodeType("B")
+        .withNodeType("A", "B")
     }
   }
 }

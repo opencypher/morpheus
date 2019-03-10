@@ -54,7 +54,15 @@ object GraphDdlConversions {
 
       val flatElementTypes = (nodeElementTypes ++ relElementTypes)
         .groupBy { case (name, _) => name }
-        .map { case (name, keySets) => name -> keySets.map(_._2).toSeq.minBy(_.size) }
+        .map { case (name, keySets) =>
+          val propertyKeysSets = keySets.map(_._2.toSet)
+          val intersect = propertyKeysSets.reduce(_ intersect _)
+          val union = propertyKeysSets.map(_ -- intersect).reduce(_ union _)
+          val unionOptional = union.map { case (key, ct) => key -> ct.nullable }
+          val propertyKeys = intersect ++ unionOptional
+
+          name -> propertyKeys.toMap
+        }
         .toSeq
 
       val explicitInheritance = extractInheritance(flatElementTypes)
@@ -99,7 +107,7 @@ object GraphDdlConversions {
         val sortedElementTypes = elementTypes.sortBy { case (name, keys) => (name, keys.size) }
 
         val (label, propertyKeys) = sortedElementTypes.head
-        val propertyKeysSet = propertyKeys.toSet
+        val propertyKeysSet = propertyKeys.toSet.filterNot(_._2.isNullable)
 
         val updatedOutput = sortedElementTypes.foldLeft(output) {
 
