@@ -8,7 +8,7 @@ import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.tck.test.ScenariosFor
 import org.opencypher.okapi.tck.test.TckToCypherConverter.tckValueToCypherValue
 import org.opencypher.tools.tck.api._
-import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue}
+import org.opencypher.tools.tck.values.{Connection, Backward => TCKBackward, CypherBoolean => TCKCypherBoolean, CypherFloat => TCKCypherFloat, CypherInteger => TCKCypherInteger, CypherList => TCKCypherList, CypherNode => TCKCypherNode, CypherNull => TCKCypherNull, CypherPath => TCKCypherPath, CypherProperty => TCKCypherProperty, CypherPropertyMap => TCKCypherPropertyMap, CypherRelationship => TCKCypherRelationship, CypherString => TCKCypherString, CypherValue => TCKCypherValue, Forward => TCKForward}
 import org.scalatest.prop.TableFor1
 
 import scala.collection.mutable
@@ -23,7 +23,7 @@ object AcceptanceTestGenerator extends App {
   private val lineIndention = "\t\t"
   private val escapeStringMarks = "\"\"\""
 
-  case class ResultRows(queryResult :String, expected : List[Map[String, TCKCypherValue]])
+  case class ResultRows(queryResult: String, expected: List[Map[String, TCKCypherValue]])
 
   private def generateClassFiles(featureName: String, scenarios: TableFor1[Scenario], black: Boolean) = {
     val path = s"spark-cypher-testing/src/test/scala/org/opencypher/spark/impl/acceptance/"
@@ -40,8 +40,12 @@ object AcceptanceTestGenerator extends App {
           |import org.apache.commons.lang.StringEscapeUtils
           |import org.opencypher.spark.impl.graph.CAPSGraphFactory
           |import org.opencypher.okapi.api.value.CypherValue._
-          |import org.opencypher.tools.tck.values.CypherValue
           |import scala.util.{Failure, Success, Try}
+          |import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, CypherString => TCKCypherString, CypherOrderedList => TCKCypherOrderedList,
+          |   CypherNode => TCKCypherNode, CypherRelationship => TCKCypherRelationship, Connection, Forward => TCKForward, Backward => TCKBackward,
+          |   CypherInteger => TCKCypherInteger, CypherFloat => TCKCypherFloat, CypherBoolean => TCKCypherBoolean, CypherProperty => TCKCypherProperty,
+          |   CypherPropertyMap => TCKCypherPropertyMap, CypherNull => TCKCypherNull, CypherPath => TCKCypherPath}
+          |
           |
           |@RunWith(classOf[JUnitRunner])
           |class $className extends CAPSTestSuite with ScanGraphInit {""".stripMargin
@@ -63,42 +67,71 @@ object AcceptanceTestGenerator extends App {
     file.createNewFile()
   }
 
-  private def stringControlCharacterEscape(s: String): String = {
-    s.replace("\n", "\\n").replace("\t", "\\t")
-  }
-
   private def alignQuery(query: String): String = {
-    query.replace("\n", s"\n$lineIndention\t")
+    query.replaceAllLiterally("\n", s"\n$lineIndention\t")
   }
 
   private def escapeString(s: String): String = {
-    s""" "$s" """
+    s""" "${StringEscapeUtils.escapeJava(s)}" """
+  }
+
+  //todo: move to better place
+  private def tckConnectionToCreateString(con: Connection): String = {
+    con match {
+      case TCKForward(r, n) => s"TCKForward(${tckCypherValueToCreateString(r)},${tckCypherValueToCreateString(n)})"
+      case TCKBackward(r, n) => s"TCKBackward(${tckCypherValueToCreateString(r)},${tckCypherValueToCreateString(n)})"
+    }
+  }
+  //todo: move to better place
+  private def tckCypherValueToCreateString(value: TCKCypherValue): String = {
+    value match {
+      case TCKCypherString(v) => s"TCKCypherString(${escapeString(v)})"
+      case TCKCypherInteger(v) => "TCKCypherInteger(" + v + "L)"
+      case TCKCypherFloat(v) => "TCKCypherFloat(" + v + ")"
+      case TCKCypherBoolean(v) => "TCKCypherBoolean(" + v + ")"
+      case TCKCypherProperty(key, v) => "TCKCypherProperty(\"" + escapeString(key) + "\"," + tckCypherValueToCreateString(v) + ")"
+      case TCKCypherPropertyMap(properties) =>
+        val propertyCreateString = properties.map { case (key, v) => s"(${escapeString(key)}, ${tckCypherValueToCreateString(v)})" }.mkString(",")
+        s"TCKCypherPropertyMap(Map($propertyCreateString))"
+      case l: TCKCypherList => "TCKCypherOrderedList" + "(" + s"List(${l.elements.map(tckCypherValueToCreateString).mkString(",")}))" //todo: how to handle unorderedList? (as it is private)
+      case TCKCypherNull => "TCKCypherNull"
+      case TCKCypherNode(labels, properties) => s"TCKCypherNode(Set(${labels.map(escapeString).mkString(",")}), ${tckCypherValueToCreateString(properties)})"
+      case TCKCypherRelationship(typ, properties) => s"TCKCypherRelationship(${escapeString(typ)}, ${tckCypherValueToCreateString(properties)})"
+      case TCKCypherPath(start, connections) => s"TCKCypherPath(${tckCypherValueToCreateString(start)},List(${connections.map(tckConnectionToCreateString).mkString(",")}))"
+      case other =>
+        throw NotImplementedException(s"Converting Cypher value $value of type `${other.getClass.getSimpleName}`")
+    }
   }
 
   //todo refactor into cypherToCreateString object ?
-  private def cypherValueToValueString(value : OKAPICypherValue) : String = {
+  private def cypherValueToCreateString(value: OKAPICypherValue): String = {
     value match {
-      case OKAPICypherList(l) => "List(" + l.map(cypherValueToValueString).mkString(",") + ")"
-      case OKAPICypherMap(m) => "CypherMap(" + m.map{case (key, cv) => "(" + escapeString(key) + "," + cypherValueToValueString(cv) + ")"}.mkString(",") + ")"
-      case OKAPICypherString(s) =>  s""" "$s" """
+      case OKAPICypherList(l) => "List(" + l.map(cypherValueToCreateString).mkString(",") + ")"
+      case OKAPICypherMap(m) => "CypherMap(" + m.map { case (key, cv) => "(" + escapeString(key) + "," + cypherValueToCreateString(cv) + ")" }.mkString(",") + ")"
+      case OKAPICypherString(s) => s""" "$s" """
       case OKAPICypherNull => "CypherNull"
       case _ => s"${value.getClass.getSimpleName}(${value.unwrap})"
     }
   }
 
-  private def cypherMapToCreateString(cypherMap : Map[String, TCKCypherValue]): String = {
-    val mapString = cypherMap.map{case (key, cypherValue) => s""" "$key" """ -> cypherValueToValueString(tckValueToCypherValue(cypherValue))  }
+  private def tckCypherMapToTCKCreateString(cypherMap: Map[String, TCKCypherValue]): String = {
+    val mapString = cypherMap.map { case (key, cypherValue) => s""" "$key" """ -> tckCypherValueToCreateString(cypherValue) }
+    s"Map(${mapString.mkString(",")})"
+  }
+
+  private def tckCypherMapToOkapiCreateString(cypherMap: Map[String, TCKCypherValue]): String = {
+    val mapString = cypherMap.map { case (key, tckCypherValue) => s""" "$key" """ -> cypherValueToCreateString(tckValueToCypherValue(tckCypherValue)) }
     s"CypherMap(${mapString.mkString(",")})"
   }
 
   private def stepsToString(steps: List[(Step, Int)]): String = {
     //todo: don't use immutable object
     val contextStack = mutable.Stack[(Execute, Int)]()
-    val contextParameters = mutable.Stack[String]()
+    val contextParameters = mutable.Stack[Int]()
 
     steps.map {
-      case (Parameters(p, _), _) => contextParameters.push(cypherMapToCreateString(p))
-        ""
+      case (Parameters(p, _), stepnr) => contextParameters.push(stepnr)
+        s"val parameter$stepnr = ${tckCypherMapToOkapiCreateString(p)}"
       case (ex@Execute(_, querytype, _), nr) =>
         querytype match {
           case ExecQuery =>
@@ -109,27 +142,28 @@ object AcceptanceTestGenerator extends App {
             throw NotImplementedException("Side Effect Queries not supported yet")
         }
       case (ExpectResult(expectedResult, _, sorted), _) =>
-        val parameters = if(contextParameters.nonEmpty) "," + contextParameters.pop() else ""
+        val parameters = if (contextParameters.nonEmpty) "," + s"parameter${contextParameters.pop()}" else ""
 
         val (contextQuery, stepNumber) = contextStack.pop()
         //result -> expected
         val resultRows = if (sorted)
           ResultRows(s"result${stepNumber}ValueRecords.rows", expectedResult.rows)
-
         else
           ResultRows(s"result${stepNumber}ValueRecords.rows.sortBy(_.hashCode())", expectedResult.rows.sortBy(_.hashCode()))
-        //todo: write CypherValueRecordToBagOfCypherMaps convertion
+        //todo: format expectedResultCreation String
         s"""
            |${lineIndention}val result$stepNumber = graph.cypher($escapeStringMarks${alignQuery(contextQuery.query)}$escapeStringMarks$parameters)
            |
            |${lineIndention}val result${stepNumber}ValueRecords = CypherToTCKConverter.convertToTckStrings(result$stepNumber.records).asValueRecords
-           |${lineIndention}StringEscapeUtils.escapeJava(result${stepNumber}ValueRecords.header.toString()) should equal("${StringEscapeUtils.escapeJava(stringControlCharacterEscape(expectedResult.header.toString))}")
-           |${lineIndention}StringEscapeUtils.escapeJava(${resultRows.queryResult}.toString()) should equal("${StringEscapeUtils.escapeJava(stringControlCharacterEscape(resultRows.expected.toString))}")
+           |${lineIndention}result${stepNumber}ValueRecords.header should equal(List(${expectedResult.header.map(escapeString).mkString(",")}))
+           |$lineIndention${resultRows.queryResult} should equal(List(${resultRows.expected.map(tckCypherMapToTCKCreateString).mkString(s", \n$lineIndention$lineIndention$lineIndention")}))
            """.stripMargin
       case (ExpectError(errorType, errorPhase, detail, _), _) =>
         val (contextQuery, stepNumber) = contextStack.pop()
+        //todo: check errorType and detail
         s"""
            |${lineIndention}val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{graph.cypher($escapeStringMarks${alignQuery(contextQuery.query)}$escapeStringMarks)}
+           |fail()
            """.stripMargin
       case (SideEffects(expected, _), _) =>
         val relevantEffects = expected.v.filter(_._2 > 0) //check if relevant Side-Effects exist
@@ -153,6 +187,7 @@ object AcceptanceTestGenerator extends App {
       case _ => combined
     }) + escapeStringMarks
 
+    //todo: get parameterContext beforehand and execContext beforehand --> use of immutable stacks possible
     val execString = stepsToString(execSteps.zipWithIndex)
 
     val testString =
