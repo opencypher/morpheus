@@ -612,9 +612,7 @@ case class ElementType(
   parents: Set[String] = Set.empty,
   properties: Map[String, CypherType] = Map.empty,
   maybeKey: Option[KeyDefinition] = None
-) {
-  override def toString: String = name
-}
+)
 
 object NodeType {
   def apply(labels: String*): NodeType = NodeType(labels.toSet)

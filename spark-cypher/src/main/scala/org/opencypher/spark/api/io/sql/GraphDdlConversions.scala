@@ -33,6 +33,8 @@ import org.opencypher.okapi.impl.util.ScalaUtils._
 
 object GraphDdlConversions {
 
+  private val NO_LABEL = "NO_LABEL"
+
   implicit class SchemaOps(schema: Schema) {
 
     def asGraphType: GraphType = {
@@ -40,7 +42,11 @@ object GraphDdlConversions {
 
       val nodeElementTypes = schema.labelCombinations.combos.flatMap { labelCombo =>
         val comboProperties = schema.nodePropertyKeys(labelCombo)
-        labelCombo.map(_ -> comboProperties)
+        if (labelCombo.isEmpty) {
+          Set(NO_LABEL -> comboProperties)
+        } else {
+          labelCombo.map(_ -> comboProperties)
+        }
       }
       val relElementTypes = schema.relationshipTypes.map { relType =>
         relType -> schema.relationshipPropertyKeys(relType)
@@ -74,7 +80,8 @@ object GraphDdlConversions {
           graphType.withElementType(elementType)
         }
         .foldLeftOver(schema.labelCombinations.combos) { case (graphType, labelCombo) =>
-          graphType.withNodeType(labelCombo.toSeq: _*)
+          val nodeLabels = if (labelCombo.isEmpty) Set(NO_LABEL) else labelCombo
+          graphType.withNodeType(nodeLabels.toSeq: _*)
         }
         .foldLeftOver(schema.schemaPatterns) { case (graphType, pattern) =>
           graphType.withRelationshipType(pattern.sourceLabelCombination, Set(pattern.relType), pattern.targetLabelCombination)
@@ -143,7 +150,8 @@ object GraphDdlConversions {
     // TODO move out of Graph DDL (maybe to CAPSSchema)
     def asOkapiSchema: Schema = Schema.empty
       .foldLeftOver(graphType.nodeTypes) { case (schema, nodeType) =>
-        schema.withNodePropertyKeys(nodeType.labels, graphType.nodePropertyKeys(nodeType))
+        val combo = if (nodeType.labels.contains(NO_LABEL)) Set.empty[String] else nodeType.labels
+        schema.withNodePropertyKeys(combo, graphType.nodePropertyKeys(nodeType))
       }
       .foldLeftOver(graphType.nodeElementTypes) { case (schema, eType) =>
         eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))

@@ -112,7 +112,7 @@ object DdlUtils {
 
       GraphDdl(Map(graphName -> Graph(
         graphName,
-        schema.asGraphType,
+        schema.withSchemaPatterns(pg.schemaPatterns.toSeq: _*).asGraphType,
         nodeToViewMappings,
         edgeToViewMappings
       )))
