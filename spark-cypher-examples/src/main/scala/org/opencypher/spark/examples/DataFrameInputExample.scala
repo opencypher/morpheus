@@ -24,18 +24,18 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-// tag::full-example[]
 package org.opencypher.spark.examples
 
+// tag::full-example[]
 import org.apache.spark.sql.DataFrame
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
-import org.opencypher.spark.util.ConsoleApp
+import org.opencypher.spark.util.App
 
 /**
   * Demonstrates basic usage of the CAPS API by loading an example graph from [[DataFrame]]s.
   */
-object DataFrameInputExample extends ConsoleApp {
+object DataFrameInputExample extends App {
   // 1) Create CAPS session and retrieve Spark session
   implicit val session: CAPSSession = CAPSSession.local()
   val spark = session.sparkSession

@@ -33,9 +33,9 @@ import org.apache.spark.sql.SparkSession
 import org.opencypher.okapi.api.graph.{GraphName, Node}
 import org.opencypher.spark.api.io.util.HiveTableName
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.util.ConsoleApp
+import org.opencypher.spark.util.App
 
-object HiveSupportExample extends ConsoleApp {
+object HiveSupportExample extends App {
 
   val sparkSession = SparkSession
     .builder()

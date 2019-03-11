@@ -33,14 +33,14 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
 import org.opencypher.spark.impl.encoders._
-import org.opencypher.spark.util.ConsoleApp
+import org.opencypher.spark.util.App
 
 import scala.collection.JavaConverters._
 
 /**
   * Demonstrates how to retrieve Cypher entities as a Dataset and update them.
   */
-object UpdateExample extends ConsoleApp {
+object UpdateExample extends App {
   // 1) Create CAPS session and retrieve Spark session
   implicit val session: CAPSSession = CAPSSession.local()
 

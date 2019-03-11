@@ -110,7 +110,6 @@ Once the property graph is constructed, it supports Cypher queries via its `cyph
 import org.apache.spark.sql.DataFrame
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
-import org.opencypher.spark.util.ConsoleApp
 
 /**
   * Demonstrates basic usage of the CAPS API by loading an example graph from [[DataFrame]]s.

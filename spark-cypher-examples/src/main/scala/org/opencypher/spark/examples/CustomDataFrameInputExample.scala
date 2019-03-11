@@ -33,13 +33,13 @@ import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.CAPSEntityTable
-import org.opencypher.spark.util.ConsoleApp
+import org.opencypher.spark.util.App
 
 /**
   * Demonstrates basic usage of the CAPS API by loading an example network from existing [[DataFrame]]s including
   * custom entity mappings and running a Cypher query on it.
   */
-object CustomDataFrameInputExample extends ConsoleApp {
+object CustomDataFrameInputExample extends App {
 
   // 1) Create CAPS session and retrieve Spark session
   // tag::create-session[]

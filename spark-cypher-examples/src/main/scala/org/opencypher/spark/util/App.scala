@@ -31,7 +31,7 @@ import java.net.URL
 
 import org.opencypher.okapi.impl.util.PrintOptions
 
-abstract class ConsoleApp extends App {
+abstract class App extends scala.App {
 
   // Redirects output to the current Console. This is needed for testing.
   implicit val printOptions: PrintOptions = PrintOptions(Console.out)

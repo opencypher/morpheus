@@ -33,7 +33,7 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
 import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.impl.expressions.EncodeLong.decodeLong
-import org.opencypher.spark.util.ConsoleApp
+import org.opencypher.spark.util.App
 
 /**
   * Round trip CAPS -> GraphX -> CAPS
@@ -41,7 +41,7 @@ import org.opencypher.spark.util.ConsoleApp
   * This example demonstrates how CAPS results can be used to construct a GraphX graph and invoke a GraphX algorithm
   * on it. The computed ranks are imported back into CAPS and used in a Cypher query.
   */
-object GraphXPageRankExample extends ConsoleApp {
+object GraphXPageRankExample extends App {
 
   // 1) Create CAPS session
   implicit val session: CAPSSession = CAPSSession.local()

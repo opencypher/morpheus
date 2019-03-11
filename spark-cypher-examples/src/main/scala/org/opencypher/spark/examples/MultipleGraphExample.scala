@@ -29,14 +29,14 @@ package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.util.ConsoleApp
+import org.opencypher.spark.util.App
 
 /**
   * Demonstrates multiple graph capabilities by loading a social network from case class objects and a purchase network
   * from CSV data and schema files. The example connects both networks via matching user and customer names. A Cypher
   * query is then used to compute products that friends have bought.
   */
-object MultipleGraphExample extends ConsoleApp {
+object MultipleGraphExample extends App {
   // 1) Create CAPS session
   implicit val session: CAPSSession = CAPSSession.local()
 

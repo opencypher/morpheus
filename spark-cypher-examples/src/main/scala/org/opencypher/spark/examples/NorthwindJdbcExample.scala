@@ -30,9 +30,9 @@ package org.opencypher.spark.examples
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.util.{ConsoleApp, NorthwindDB}
+import org.opencypher.spark.util.{App, NorthwindDB}
 
-object NorthwindJdbcExample extends ConsoleApp {
+object NorthwindJdbcExample extends App {
 
   implicit val resourceFolder: String = "/northwind"
 

@@ -42,7 +42,7 @@ class MetaTest extends BaseTestSuite {
   val moduleName = "spark-cypher-examples"
 
   private val rootFolderPath = findRootFolderPath(Paths.get(".").toAbsolutePath.normalize.toString)
-  private val examplePath = CaseClassExample.getClass.getName.dropRight(1).replace(".", File.separator)
+  private val examplePath = DataFrameInputExample.getClass.getName.dropRight(1).replace(".", File.separator)
   private val exampleClassName = examplePath.substring(examplePath.lastIndexOf(File.separator) + 1) + ".scala"
   private val examplePackagePath = examplePath.substring(0, examplePath.lastIndexOf(File.separator))
   private val readmePath = Paths.get(rootFolderPath, readmeName).toString
@@ -50,7 +50,7 @@ class MetaTest extends BaseTestSuite {
   private def absolutePackagePath(scope: String) =
     Paths.get(rootFolderPath, moduleName, Paths.get("src", scope, "scala").toString, examplePackagePath).toString
 
-  private val caseClassExamplePath =
+  private val dataFrameInputExamplePath =
     Paths.get(absolutePackagePath("main"), exampleClassName).toString
 
   it("should exist a test for each CAPS example") {
@@ -67,13 +67,13 @@ class MetaTest extends BaseTestSuite {
   }
 
   /**
-    * Tests whether the README example is aligned with the code contained in [[CaseClassExample]].
+    * Tests whether the README example is aligned with the code contained in [[DataFrameInputExample]].
     */
   it("the code in the readme matches the example") {
     val readmeLines = Source.fromFile(readmePath).getLines.toVector
     val readmeSourceCodeBlocks = extractMarkdownScalaSourceBlocks(readmeLines).map(_.canonical).toSet
 
-    val exampleSourceCodeLines = Source.fromFile(caseClassExamplePath).getLines.toVector
+    val exampleSourceCodeLines = Source.fromFile(dataFrameInputExamplePath).getLines.toVector
     val exampleSourceCode = ScalaSourceCode(exampleSourceCodeLines).canonical
 
     readmeSourceCodeBlocks should contain(exampleSourceCode)
@@ -83,6 +83,7 @@ class MetaTest extends BaseTestSuite {
     def canonical: Vector[String] = lines
       .dropWhile(line => !line.startsWith("import")) // Drop license and everything else before the first import
       .filterNot(_.contains("// tag::")).filterNot(_.contains("// end::")) // Filter documentation tags
+      .filterNot(_.contains("import org.opencypher.spark.util.App")) // Filter custom App import
       .filterNot(_ == "") // Filter empty lines
 
     override def toString: String = lines.mkString("\n")
