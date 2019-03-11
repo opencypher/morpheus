@@ -325,12 +325,15 @@ object RelationalPlanner {
   }
 
   implicit class RelationalOperatorOps[T <: Table[T] : TypeTag](op: RelationalOperator[T]) {
+    private implicit def context: RelationalRuntimeContext[T] = op.context
 
     def select(expressions: Expr*): RelationalOperator[T] = relational.Select(op, expressions.toList)
 
     def filter(expression: Expr): RelationalOperator[T] = {
       if (expression == TrueLit) {
         op
+      } else if (expression.cypherType == CTNull) {
+        relational.Start.fromEmptyGraph(context.session.records.empty(op.header))
       } else {
         relational.Filter(op, expression)
       }
