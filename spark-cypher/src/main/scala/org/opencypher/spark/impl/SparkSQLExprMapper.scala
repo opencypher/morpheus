@@ -366,11 +366,13 @@ object SparkSQLExprMapper {
         case ToLower(str) => functions.lower(str.asSparkSQLExpr)
 
         case Range(from, to, maybeStep) =>
-          val stepCol = maybeStep.map(_.asSparkSQLExpr).getOrElse(ONE_LIT)
-          functions.sequence(from.asSparkSQLExpr, to.asSparkSQLExpr, stepCol)
+          nullSafeBinary(from, to) { (f, t) =>
+            val stepCol = maybeStep.map(_.asSparkSQLExpr).getOrElse(ONE_LIT)
+            functions.sequence(f, t, stepCol)
+          }
 
-        // TODO: Replace with something else
-        case Replace(original, search, replacement) => translateColumn(original.asSparkSQLExpr, search.asSparkSQLExpr, replacement.asSparkSQLExpr)
+        case Replace(original, search, replacement) =>
+          nullSafeTernary(original, search, replacement) { (o, s, r) => translate(o, s, r) }
 
         case Substring(original, start, maybeLength) =>
           val origCol = original.asSparkSQLExpr
@@ -498,8 +500,25 @@ object SparkSQLExprMapper {
 
   private def nullSafeUnary(arg0: Expr)(ifNotNull: Column => Column)
     (implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
-    val convertedArg = arg0.asSparkSQLExpr
-    new Column(CaseWhen(Seq(convertedArg.isNull.expr -> NULL_LIT.expr), ifNotNull(convertedArg).expr))
+    val a0 = arg0.asSparkSQLExpr
+    new Column(CaseWhen(Seq(a0.isNull.expr -> NULL_LIT.expr), ifNotNull(a0).expr))
+  }
+
+  private def nullSafeBinary(arg0: Expr, arg1: Expr)(ifNotNull: (Column, Column) => Column)
+    (implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
+    val a0 = arg0.asSparkSQLExpr
+    val a1 = arg1.asSparkSQLExpr
+    val caseWhen = Seq(a0.isNull.expr, a1.isNull.expr).zip(List.fill(2)(NULL_LIT.expr))
+    new Column(CaseWhen(caseWhen, ifNotNull(a0, a1).expr))
+  }
+
+  private def nullSafeTernary(arg0: Expr, arg1: Expr, arg2: Expr)(ifNotNull: (Column, Column, Column) => Column)
+    (implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
+    val a0 = arg0.asSparkSQLExpr
+    val a1 = arg1.asSparkSQLExpr
+    val a2 = arg2.asSparkSQLExpr
+    val caseWhen = Seq(a0.isNull.expr, a1.isNull.expr, a2.isNull.expr).zip(List.fill(3)(NULL_LIT.expr))
+    new Column(CaseWhen(caseWhen, ifNotNull(a0, a1, a2).expr))
   }
 
 }
