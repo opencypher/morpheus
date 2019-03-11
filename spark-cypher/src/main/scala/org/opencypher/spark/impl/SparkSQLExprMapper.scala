@@ -128,7 +128,7 @@ object SparkSQLExprMapper {
               if (inner.keySet.contains(key)) e.asSparkSQLExpr.getField(key) else functions.lit(null)
 
             case CTDate =>
-              temporalAccessor[Date](e.asSparkSQLExpr, key)
+              temporalAccessor[java.sql.Date](e.asSparkSQLExpr, key)
 
             case CTLocalDateTime =>
               temporalAccessor[java.sql.Timestamp](e.asSparkSQLExpr, key)
