@@ -58,9 +58,9 @@ object SparkSQLExprMapper {
 
   private val ONE_LIT: Column = functions.lit(1)
 
-  private val E: Column = functions.lit(Math.E)
+  private val E_LIT: Column = functions.lit(Math.E)
 
-  private val PI: Column = functions.lit(Math.PI)
+  private val PI_LIT: Column = functions.lit(Math.PI)
 
   implicit class RichExpression(expr: Expr) {
 
@@ -393,8 +393,8 @@ object SparkSQLExprMapper {
 
         // Mathematical functions
 
-        case E => E
-        case Pi => PI
+        case E => E_LIT
+        case Pi => PI_LIT
 
         case Sqrt(e) => functions.sqrt(e.asSparkSQLExpr)
         case Log(e) => functions.log(e.asSparkSQLExpr)
