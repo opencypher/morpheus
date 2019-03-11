@@ -28,6 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.catalyst.expressions.CaseWhen
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
+import org.apache.spark.sql.catalyst.expressions.{ArrayFilter, ArrayTransform, CaseWhen, EqualTo, GetStructField, LambdaFunction, NamedLambdaVariable}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.types._
@@ -38,7 +39,7 @@ import org.opencypher.okapi.impl.temporal.{Duration => DurationValue}
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_node_labels, get_property_keys, get_rel_type, _}
+import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_property_keys, get_rel_type, _}
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.expressions.AddPrefix._
 import org.opencypher.spark.impl.expressions.EncodeLong._
@@ -295,21 +296,24 @@ object SparkSQLExprMapper {
         case _: MonotonicallyIncreasingId => functions.monotonically_increasing_id()
         case Exists(e) => e.asSparkSQLExpr.isNotNull
         case Labels(e) =>
-          nullSafeUnary(e) { convertedNode =>
-            e.cypherType match {
-              case _: CTNode | _: CTNodeOrNull =>
-                val node = e.owner.get
-                val labelExprs = header.labelsFor(node)
-                val (labelNames, labelColumns) = labelExprs
-                  .toSeq
-                  // TODO: Putting `convertedNode` here instead of e.asSparkSQLExpr should be equivalent but fails in a weird way
-                  .map(e => e.label.name -> e.asSparkSQLExpr)
-                  .sortBy(_._1)
-                  .unzip
-                val booleanLabelFlagColumn = functions.array(labelColumns: _*)
-                get_node_labels(labelNames)(booleanLabelFlagColumn)
-              case other => throw IllegalArgumentException("an expression with type CTNode, CTNodeOrNull, or CTNull", other)
-            }
+          e.owner match {
+            case None =>
+              NULL_LIT
+            case Some(owner) =>
+              nullSafeUnary(owner) { _ =>
+                val labels = header.labelsFor(owner).toSeq.sortBy(_.label.name)
+                val labelNamesCol = functions.array(labels.map(l => functions.lit(l.label.name)): _*)
+                val labelBooleanFlagsCol = functions.array(labels.map(_.asSparkSQLExpr): _*)
+                val zippedArray = functions.arrays_zip(labelNamesCol, labelBooleanFlagsCol)
+
+                val x = NamedLambdaVariable("x", StructType(Seq(StructField("label", StringType), StructField("isSet", BooleanType))), nullable = false)
+                val lambda = LambdaFunction(EqualTo(GetStructField(x, 1), TRUE_LIT.expr), Seq(x), hidden = false)
+                val filtered = ArrayFilter(zippedArray.expr, lambda)
+
+                val transform = ArrayTransform(filtered, LambdaFunction(GetStructField(x, 0), Seq(x), hidden = false))
+
+                new Column(transform)
+              }
           }
 
         case Keys(e) => e.cypherType.material match {
@@ -505,7 +509,8 @@ object SparkSQLExprMapper {
     }
   }
 
-  private def nullSafeUnary(arg0: Expr)(ifNotNull: Column => Column)(implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
+  private def nullSafeUnary(arg0: Expr)(ifNotNull: Column => Column)
+    (implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
     val convertedArg = arg0.asSparkSQLExpr
     new Column(CaseWhen(Seq(convertedArg.isNull.expr -> NULL_LIT.expr), ifNotNull(convertedArg).expr))
   }

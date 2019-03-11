@@ -78,9 +78,6 @@ object CAPSFunctions {
     functions.udf(extractRelTypes.andThen(_.headOption.orNull), StringType)
   }
 
-  def get_node_labels(labelNames: Seq[String]): UserDefinedFunction =
-    functions.udf(filterWithMask(labelNames) _, ArrayType(StringType, containsNull = false))
-
   private def filterWithMask(dataToFilter: Seq[String])(mask: Seq[Boolean]): Seq[String] =
     dataToFilter.zip(mask).collect {
       case (label, true) => label
