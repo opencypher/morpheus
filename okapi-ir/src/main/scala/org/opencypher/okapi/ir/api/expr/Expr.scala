@@ -235,7 +235,13 @@ object Ands {
 final case class Ands(_exprs: List[Expr]) extends Expr {
   require(_exprs.forall(!_.isInstanceOf[Ands]), "Ands need to be flattened")
 
-  override val cypherType: CypherType = childNullPropagatesTo(CTBoolean)
+  override val cypherType: CypherType = {
+    if (children.exists(_.cypherType.isNullable)) {
+      CTBoolean.nullable
+    } else {
+      CTBoolean
+    }
+  }
 
   def exprs: Set[Expr] = _exprs.toSet
 
@@ -257,7 +263,13 @@ object Ors {
 final case class Ors(_exprs: List[Expr]) extends Expr {
   require(_exprs.forall(!_.isInstanceOf[Ors]), "Ors need to be flattened")
 
-  override val cypherType: CypherType = childNullPropagatesTo(CTBoolean)
+  override val cypherType: CypherType = {
+    if (children.exists(_.cypherType.isNullable)) {
+      CTBoolean.nullable
+    } else {
+      CTBoolean
+    }
+  }
 
   def exprs: Set[Expr] = _exprs.toSet
 

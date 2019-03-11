@@ -228,6 +228,10 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val plannedInner = inner.foldLeft(acc)((op, expr) => planInnerExpr(expr, op))
         producer.projectField(a, f, plannedInner)
 
+      case (acc, (f, o@Ors(inner))) =>
+        val plannedInner = inner.foldLeft(acc)((op, expr) => planInnerExpr(expr, op))
+        producer.projectField(o, f, plannedInner)
+
       case (acc, (f, containerIndex@ ContainerIndex(container, idx))) =>
         val withContainer = planInnerExpr(container, acc)
         val withIndex = planInnerExpr(idx, withContainer)
