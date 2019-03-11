@@ -51,7 +51,6 @@ class NullTests extends CAPSTestSuite with ScanGraphInit with TestNameFixture {
     it("calling: id(null)")(returnsNull())
     it("calling: labels(null)")(returnsNull())
     it("calling: type(null)")(returnsNull())
-    it("calling: exists(null.b)")(returnsNull())
     it("calling: size(null)")(returnsNull())
     it("calling: keys(null)")(returnsNull())
     it("calling: startNode(null)")(returnsNull())

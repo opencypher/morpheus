@@ -67,12 +67,16 @@ sealed abstract class Expr extends AbstractTreeNode[Expr] {
 
   def as(alias: Var) = AliasExpr(this, alias)
 
-  protected def asNullableAsChildren(baseType: MaterialDefiniteCypherType): CypherType = {
-    if (children.map(_.cypherType.isNullable).foldLeft(false)(_ || _)) {
-      baseType.nullable
-    } else
-      baseType
+  protected def childNullPropagatesTo(ct: CypherType): CypherType = {
+    if (children.exists(_.cypherType == CTNull)) {
+      CTNull
+    } else if (children.exists(_.cypherType.isNullable)) {
+      ct.nullable
+    } else {
+      ct
+    }
   }
+
 }
 
 final case class AliasExpr(expr: Expr, alias: Var) extends Expr {
@@ -231,7 +235,7 @@ object Ands {
 final case class Ands(_exprs: List[Expr]) extends Expr {
   require(_exprs.forall(!_.isInstanceOf[Ands]), "Ands need to be flattened")
 
-  override val cypherType: CypherType = asNullableAsChildren(CTBoolean)
+  override val cypherType: CypherType = childNullPropagatesTo(CTBoolean)
 
   def exprs: Set[Expr] = _exprs.toSet
 
@@ -253,7 +257,7 @@ object Ors {
 final case class Ors(_exprs: List[Expr]) extends Expr {
   require(_exprs.forall(!_.isInstanceOf[Ors]), "Ors need to be flattened")
 
-  override val cypherType: CypherType = asNullableAsChildren(CTBoolean)
+  override val cypherType: CypherType = childNullPropagatesTo(CTBoolean)
 
   def exprs: Set[Expr] = _exprs.toSet
 
@@ -349,7 +353,7 @@ sealed trait BinaryExpr extends Expr {
 
 sealed trait BinaryPredicate extends BinaryExpr {
 
-  override val cypherType: CypherType = CTBoolean.asNullableAs(lhs.cypherType.join(rhs.cypherType))
+  override val cypherType: CypherType = childNullPropagatesTo(CTBoolean)
 
 }
 
@@ -392,6 +396,14 @@ final case class GreaterThanOrEqual(lhs: Expr, rhs: Expr) extends BinaryPredicat
 final case class In(lhs: Expr, rhs: Expr) extends BinaryPredicate {
 
   override val op = "IN"
+
+  override val cypherType: CypherType = {
+    if (rhs.cypherType == CTList(CTVoid)) {
+      CTBoolean
+    } else {
+      childNullPropagatesTo(CTBoolean)
+    }
+  }
 
 }
 
@@ -477,7 +489,7 @@ sealed trait UnaryFunctionExpr extends FunctionExpr {
 }
 
 final case class Id(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = asNullableAsChildren(CTIdentity)
+  override val cypherType: CypherType = childNullPropagatesTo(CTIdentity)
 }
 
 object PrefixId {
@@ -489,19 +501,19 @@ final case class PrefixId(expr: Expr, prefix: GraphIdPrefix)(val cypherType: Cyp
 final case class ToId(expr: Expr)(val cypherType: CypherType = CTIdentity) extends UnaryFunctionExpr
 
 final case class Labels(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = asNullableAsChildren(CTList(CTString))
+  override val cypherType: CypherType = childNullPropagatesTo(CTList(CTString))
 }
 
 final case class Type(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = asNullableAsChildren(CTString)
+  override val cypherType: CypherType = childNullPropagatesTo(CTString)
 }
 
 final case class Exists(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = asNullableAsChildren(CTBoolean)
+  override val cypherType: CypherType = childNullPropagatesTo(CTBoolean)
 }
 
 final case class Size(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = asNullableAsChildren(CTInteger)
+  override val cypherType: CypherType = childNullPropagatesTo(CTInteger)
 }
 
 final case class Keys(expr: Expr)(val cypherType: CypherType) extends UnaryFunctionExpr
@@ -669,7 +681,7 @@ final case class Atan(expr: Expr) extends UnaryFunctionExpr {
 final case class Atan2(expr1: Expr, expr2: Expr) extends FunctionExpr {
   override def exprs: IndexedSeq[Expr] = IndexedSeq(expr1, expr2)
 
-  override val cypherType: CypherType = asNullableAsChildren(CTFloat)
+  override val cypherType: CypherType = childNullPropagatesTo(CTFloat)
 }
 
 final case class Cos(expr: Expr) extends UnaryFunctionExpr {
@@ -720,7 +732,7 @@ final case class Avg(expr: Expr) extends Aggregator {
 
   override def withoutType: String = s"avg(${expr.withoutType})"
 
-  override val cypherType: CypherType = asNullableAsChildren(CTFloat)
+  override val cypherType: CypherType = childNullPropagatesTo(CTFloat)
 
 }
 
@@ -828,13 +840,13 @@ sealed abstract class TemporalInstant(expr: Option[Expr]) extends FunctionExpr {
 
 final case class LocalDateTime(maybeExpr: Option[Expr]) extends TemporalInstant(maybeExpr) {
 
-  override val cypherType: CypherType = asNullableAsChildren(CTLocalDateTime)
+  override val cypherType: CypherType = childNullPropagatesTo(CTLocalDateTime)
 
 }
 
 final case class Date(expr: Option[Expr]) extends TemporalInstant(expr) {
 
-  override val cypherType: CypherType = asNullableAsChildren(CTDate)
+  override val cypherType: CypherType = childNullPropagatesTo(CTDate)
 
 }
 
