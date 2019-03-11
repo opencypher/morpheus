@@ -509,7 +509,7 @@ final case class Type(expr: Expr) extends UnaryFunctionExpr {
 }
 
 final case class Exists(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = childNullPropagatesTo(CTBoolean)
+  override val cypherType: CypherType = CTBoolean
 }
 
 final case class Size(expr: Expr) extends UnaryFunctionExpr {
