@@ -35,13 +35,26 @@ object Neo4jUtils {
 
   case class Neo4jContext(driver: Driver, session: Session, config: Neo4jConfig) {
 
+    def clear(): Unit = {
+      execute(
+        """
+          |MATCH (n)
+          |DETACH DELETE n
+        """.stripMargin).consume()
+      execute(
+        """
+          |CALL db.constraints()
+        """.stripMargin)
+        .list(_.get("description").asString())
+        .toArray()
+        .foreach(const =>
+          execute(s"""DROP $const""")
+        )
+    }
+
     def close(): Unit = {
       try {
-        execute(
-          """
-            |MATCH (n)
-            |DETACH DELETE n
-          """.stripMargin).consume()
+        clear()
       } finally {
         session.close()
         driver.close()

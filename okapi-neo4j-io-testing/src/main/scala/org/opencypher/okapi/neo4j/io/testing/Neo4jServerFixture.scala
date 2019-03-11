@@ -43,11 +43,7 @@ trait Neo4jServerFixture extends BaseTestFixture {
   abstract override def beforeAll(): Unit = {
     super.beforeAll()
     neo4jContext = Neo4jUtils.connectNeo4j(dataFixture, neo4jHost)
-    neo4jContext.execute(
-      """
-        |MATCH (n)
-        |DETACH DELETE n
-      """.stripMargin).consume()
+    neo4jContext.clear()
   }
 
   abstract override def afterAll(): Unit = {
