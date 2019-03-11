@@ -31,9 +31,9 @@ import org.apache.spark.sql.SparkSession
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.util.{CensusDB, ConsoleApp}
+import org.opencypher.spark.util.{CensusDB, App}
 
-object CensusJdbcExample extends ConsoleApp {
+object CensusJdbcExample extends App {
 
   implicit val resourceFolder: String = "/census"
 

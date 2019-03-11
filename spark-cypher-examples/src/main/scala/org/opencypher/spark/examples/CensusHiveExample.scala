@@ -34,9 +34,9 @@ import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Hive
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.util.{CensusDB, ConsoleApp}
+import org.opencypher.spark.util.{App, CensusDB}
 
-object CensusHiveExample extends ConsoleApp {
+object CensusHiveExample extends App {
 
   implicit val resourceFolder: String = "/census"
 

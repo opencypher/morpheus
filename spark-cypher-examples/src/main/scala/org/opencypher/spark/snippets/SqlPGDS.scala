@@ -28,9 +28,9 @@ package org.opencypher.spark.snippets
 
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
-import org.opencypher.spark.util.ConsoleApp
+import org.opencypher.spark.util.App
 
-object SqlPGDS extends ConsoleApp {
+object SqlPGDS extends App {
   implicit val session: CAPSSession = CAPSSession.local()
 
   // tag::create-sql-pgds[]

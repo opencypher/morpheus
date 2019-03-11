@@ -28,9 +28,9 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.util.ConsoleApp
+import org.opencypher.spark.util.App
 
-object DataSourceExample extends ConsoleApp {
+object DataSourceExample extends App {
 
   implicit val session: CAPSSession = CAPSSession.local()
 

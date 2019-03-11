@@ -21,18 +21,21 @@ integration with GraphX. To learn more about this, please see our [examples](htt
 ## Current status: Pre-release
 
 The functionality and APIs are stabilizing but surface changes (e.g. to the Cypher syntax and semantics for multiple graph processing and graph projections/construction) are still likely to occur. 
-We invite you to try out the project, and we welcome feedback and contributions 
+We invite you to try out the project, and we welcome feedback and contributions.
 
 If you are interested in contributing to the project we would love to hear from you; email us at `opencypher@neo4j.org` or just raise a PR. 
 Please note that this is an openCypher project and contributions can only be accepted if you’ve agreed to the  [openCypher Contributors Agreement (oCCA)](CONTRIBUTING.adoc).
 
+## Documentation
+
+A preview of the documentation for Morpheus, which is a commercially supported version of CAPS, is [available from Neo4j](https://neo4j.com/docs/morpheus-user-guide/1.0-preview/).
 
 ## CAPS Features
 
 CAPS is built on top of the Spark DataFrame API and uses features such as the Catalyst optimizer.
 The Spark representations are accessible and can be converted to representations that integrate with other Spark libraries.
 
-CAPS supports a subset of Cypher <!-- TODO: link to User Guide --> and is the first implementation of [multiple graphs](https://github.com/boggle/openCypher/blob/CIP2017-06-18-multiple-graphs/cip/1.accepted/CIP2017-06-18-multiple-graphs.adoc) and graph query compositionality.
+CAPS supports [a subset of Cypher](https://github.com/opencypher/cypher-for-apache-spark/blob/master/documentation/asciidoc/cypher-cypher9-features.adoc) and is the first implementation of [multiple graphs](https://github.com/boggle/openCypher/blob/CIP2017-06-18-multiple-graphs/cip/1.accepted/CIP2017-06-18-multiple-graphs.adoc) and graph query compositionality.
 
 CAPS currently supports importing graphs from both Neo4j and from custom [CSV format](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-core/src/test/resources/csv/sn) in HDFS and local file system.
 CAPS has a data source API that allows you to plug in custom data importers for external graphs.
@@ -104,61 +107,53 @@ If you have existing data frames which you would like to treat as a graph, have 
 Once the property graph is constructed, it supports Cypher queries via its `cypher` method.
 
 ```scala
+import org.apache.spark.sql.DataFrame
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.{Node, Relationship, RelationshipType}
-import org.opencypher.spark.util.ConsoleApp
+import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
 
 /**
-  * Demonstrates basic usage of the CAPS API by loading an example network via Scala case classes and running a Cypher
-  * query on it.
+  * Demonstrates basic usage of the CAPS API by loading an example graph from [[DataFrame]]s.
   */
-object CaseClassExample extends ConsoleApp {
-
-  // 1) Create CAPS session
+object DataFrameInputExample extends App {
+  // 1) Create CAPS session and retrieve Spark session
   implicit val session: CAPSSession = CAPSSession.local()
+  val spark = session.sparkSession
 
-  // 2) Load social network data via case class instances
-  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  import spark.sqlContext.implicits._
 
-  // 3) Query graph with Cypher
-  val results = socialNetwork.cypher(
-    """|MATCH (a:Person)-[r:FRIEND_OF]->(b)
-       |RETURN a.name, b.name, r.since
-       |ORDER BY a.name""".stripMargin
-  )
+  // 2) Generate some DataFrames that we'd like to interpret as a property graph.
+  val nodesDF = spark.createDataset(Seq(
+    (0L, "Alice", 42L),
+    (1L, "Bob", 23L),
+    (2L, "Eve", 84L)
+  )).toDF("id", "name", "age")
+  val relsDF = spark.createDataset(Seq(
+    (0L, 0L, 1L, "23/01/1987"),
+    (1L, 1L, 2L, "12/12/2009")
+  )).toDF("id", "source", "target", "since")
 
-  // 4) Print result to console
-  results.show
-}
+  // 3) Generate node- and relationship tables that wrap the DataFrames. The mapping between graph entities and columns
+  //    is derived using naming conventions for identifier columns.
+  val personTable = CAPSNodeTable(Set("Person"), nodesDF)
+  val friendsTable = CAPSRelationshipTable("KNOWS", relsDF)
 
-/**
-  * Specify schema and data with case classes.
-  */
-object SocialNetworkData {
+  // 4) Create property graph from graph scans
+  val graph = session.readFrom(personTable, friendsTable)
 
-  case class Person(id: Long, name: String, age: Int) extends Node
+  // 5) Execute Cypher query and print results
+  val result = graph.cypher("MATCH (n:Person) RETURN n.name")
 
-  @RelationshipType("FRIEND_OF")
-  case class Friend(id: Long, source: Long, target: Long, since: String) extends Relationship
+  // 6) Collect results into string by selecting a specific column.
+  //    This operation may be very expensive as it materializes results locally.
+  val names: Set[String] = result.records.table.df.collect().map(_.getAs[String]("n_name")).toSet
 
-  val alice = Person(0, "Alice", 10)
-  val bob = Person(1, "Bob", 20)
-  val carol = Person(2, "Carol", 15)
-
-  val persons = List(alice, bob, carol)
-  val friendships = List(Friend(0, alice.id, bob.id, "23/01/1987"), Friend(1, bob.id, carol.id, "12/12/2009"))
+  println(names)
 }
 ```
 
 The above program prints:
 ```
-╔═════════╤═════════╤══════════════╗
-║ a.name  │ b.name  │ r.since      ║
-╠═════════╪═════════╪══════════════╣
-║ 'Alice' │ 'Bob'   │ '23/01/1987' ║
-║ 'Bob'   │ 'Carol' │ '12/12/2009' ║
-╚═════════╧═════════╧══════════════╝
-(2 rows)
+Set(Alice, Bob, Eve)
 ```
 
 More examples, including [multiple graph features](spark-cypher-examples/src/main/scala/org/opencypher/spark/examples/MultipleGraphExample.scala), can be found [in the examples module](spark-cypher-examples).

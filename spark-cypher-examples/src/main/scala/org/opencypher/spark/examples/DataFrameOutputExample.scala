@@ -31,12 +31,12 @@ import org.apache.spark.sql.{DataFrame, functions}
 import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
-import org.opencypher.spark.util.ConsoleApp
+import org.opencypher.spark.util.App
 
 /**
   * Shows how to access a Cypher query result as a [[DataFrame]].
   */
-object DataFrameOutputExample extends ConsoleApp {
+object DataFrameOutputExample extends App {
 
   // 1) Create CAPS session and retrieve Spark session
   implicit val session: CAPSSession = CAPSSession.local()

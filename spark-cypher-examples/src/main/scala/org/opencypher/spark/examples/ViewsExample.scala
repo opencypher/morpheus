@@ -28,12 +28,12 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.util.ConsoleApp
+import org.opencypher.spark.util.App
 
 /**
   * Demonstrates how to use views to filter graphs.
   */
-object ViewsExample extends ConsoleApp {
+object ViewsExample extends App {
   // 1) Create CAPS session and retrieve Spark session
   implicit val session: CAPSSession = CAPSSession.local()
 

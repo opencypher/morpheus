@@ -30,7 +30,7 @@ package org.opencypher.spark.examples
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.util.ConsoleApp
+import org.opencypher.spark.util.App
 
 /**
   * Demonstrates usage patterns where Cypher and SQL can be interleaved in the
@@ -38,7 +38,7 @@ import org.opencypher.spark.util.ConsoleApp
   * SQL table, and using the output of a SQL query as an input driving table
   * for a Cypher query.
   */
-object CypherSQLRoundtripExample extends ConsoleApp {
+object CypherSQLRoundtripExample extends App {
   // 1) Create CAPS session
   implicit val session: CAPSSession = CAPSSession.local()
 
