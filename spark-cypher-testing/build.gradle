@@ -28,9 +28,10 @@ task neo4jstart(type: ch.kk7.gradle.spawn.SpawnTask) {
     def java = System.getProperty('java.home') + '/bin/java'
     def classpath = sourceSets.services.runtimeClasspath.collect { it.absolutePath }.join(':')
     def main = 'org.opencypher.testing.services.Neo4j'
-
-    commandLine = [java, '-cp', classpath, main]
-    waitFor = 'neo4j started'
+    def marker = 'neo4j started'
+    
+    commandLine = [java, '-cp', classpath, main, marker]
+    waitFor = marker
 }
 
 task neo4jstop(type: ch.kk7.gradle.spawn.KillTask) {
