@@ -27,12 +27,13 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.catalyst.analysis.UnresolvedExtractValue
-import org.apache.spark.sql.catalyst.expressions.{ArrayContains, StringTranslate, XxHash64}
-import org.apache.spark.sql.expressions.UserDefinedFunction
+import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.functions.monotonically_increasing_id
-import org.apache.spark.sql.types.{ArrayType, StringType}
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, functions}
 import org.opencypher.spark.impl.expressions.Serialize
+
+import scala.reflect.runtime.universe.TypeTag
 
 object CAPSFunctions {
 
@@ -73,27 +74,34 @@ object CAPSFunctions {
     new Column(Serialize(columns.map(_.expr)))
   }
 
-  def get_rel_type(relTypeNames: Seq[String]): UserDefinedFunction = {
-    val extractRelTypes = (booleanMask: Seq[Boolean]) => filterWithMask(relTypeNames)(booleanMask)
-    functions.udf(extractRelTypes.andThen(_.headOption.orNull), StringType)
+  def get_array_item(array: Column, index: Int): Column = {
+    new Column(GetArrayItem(array.expr, functions.lit(index).expr))
   }
 
-  private def filterWithMask(dataToFilter: Seq[String])(mask: Seq[Boolean]): Seq[String] =
-    dataToFilter.zip(mask).collect {
-      case (label, true) => label
-    }
+  private val x: NamedLambdaVariable = NamedLambdaVariable("x", StructType(Seq(StructField("item", StringType), StructField("flag", BooleanType))), nullable = false)
+  private val TRUE_EXPR: Expression = functions.lit(true).expr
 
-  def get_property_keys(propertyKeys: Seq[String]): UserDefinedFunction =
-    functions.udf(filterNotNull(propertyKeys) _, ArrayType(StringType, containsNull = false))
+  def filter_true[T: TypeTag](items: Seq[T], mask: Seq[Column]): Column = {
+    filter_with_mask(items, mask, LambdaFunction(EqualTo(GetStructField(x, 1), TRUE_EXPR), Seq(x), hidden = false))
+  }
 
-  private def filterNotNull(dataToFilter: Seq[String])(values: Seq[Any]): Seq[String] =
-    dataToFilter.zip(values).collect {
-      case (key, value) if value != null => key
-    }
+  def filter_not_null[T: TypeTag](items: Seq[T], mask: Seq[Column]): Column = {
+    filter_with_mask(items, mask, LambdaFunction(IsNotNull(GetStructField(x, 1)), Seq(x), hidden = false))
+  }
+
+  private def filter_with_mask[T: TypeTag](items: Seq[T], mask: Seq[Column], predicate: LambdaFunction): Column = {
+    require(items.size == mask.size, s"Array filtering requires for the items and the mask to have the same length.")
+    val itemLiterals = functions.array(items.map(functions.typedLit): _*)
+    val zippedArray = functions.arrays_zip(itemLiterals, functions.array(mask: _*))
+    val filtered = ArrayFilter(zippedArray.expr, predicate)
+    val transform = ArrayTransform(filtered, LambdaFunction(GetStructField(x, 0), Seq(x), hidden = false))
+    new Column(transform)
+  }
 
   /**
     * Alternative version of {{{org.apache.spark.sql.functions.translate}}} that takes {{{org.apache.spark.sql.Column}}}s for search and replace strings.
     */
+  // TODO: Replace
   def translateColumn(src: Column, matchingString: Column, replaceString: Column): Column = {
     new Column(StringTranslate(src.expr, matchingString.expr, replaceString.expr))
   }
