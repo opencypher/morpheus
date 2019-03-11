@@ -36,14 +36,16 @@ object Neo4jUtils {
   case class Neo4jContext(driver: Driver, session: Session, config: Neo4jConfig) {
 
     def close(): Unit = {
-      execute(
-        """
-          |MATCH (n)
-          |DETACH DELETE n
-        """.stripMargin)
-
-      session.close()
-      driver.close()
+      try {
+        execute(
+          """
+            |MATCH (n)
+            |DETACH DELETE n
+          """.stripMargin).consume()
+      } finally {
+        session.close()
+        driver.close()
+      }
     }
 
     def execute(cypher: String): StatementResult = {

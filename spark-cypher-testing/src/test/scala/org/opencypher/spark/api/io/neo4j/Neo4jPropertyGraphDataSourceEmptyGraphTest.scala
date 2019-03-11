@@ -24,34 +24,30 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.neo4j.io.testing
+package org.opencypher.spark.api.io.neo4j
 
-import org.opencypher.okapi.neo4j.io.testing.Neo4jUtils.Neo4jContext
-import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
+import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
+import org.opencypher.okapi.testing.Bag
+import org.opencypher.spark.testing.CAPSTestSuite
 
-trait Neo4jServerFixture extends BaseTestFixture {
-  self: BaseTestSuite =>
+class Neo4jPropertyGraphDataSourceEmptyGraphTest extends CAPSTestSuite with Neo4jServerFixture {
 
-  def dataFixture: String
+  override def dataFixture: String = ""
 
-  def neo4jHost: String = "bolt://localhost:7687"
 
-  var neo4jContext: Neo4jContext = _
+  it("can read an empty graph") {
+    val graph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
 
-  def neo4jConfig = neo4jContext.config
-
-  abstract override def beforeAll(): Unit = {
-    super.beforeAll()
-    neo4jContext = Neo4jUtils.connectNeo4j(dataFixture, neo4jHost)
-    neo4jContext.execute(
+    val result = graph.cypher(
       """
         |MATCH (n)
-        |DETACH DELETE n
-      """.stripMargin).consume()
-  }
+        |RETURN count(n) as count
+      """.stripMargin).records
 
-  abstract override def afterAll(): Unit = {
-    neo4jContext.close()
-    super.afterAll()
+    result.toMaps should equal(Bag(
+      CypherMap("count" -> 0)
+    ))
   }
 }
