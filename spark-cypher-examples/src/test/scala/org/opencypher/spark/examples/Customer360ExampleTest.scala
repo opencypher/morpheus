@@ -24,46 +24,13 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.neo4j.io.testing
+package org.opencypher.spark.examples
 
-import java.net.URI
-
-import org.neo4j.driver.v1.{Driver, Session, StatementResult}
-import org.opencypher.okapi.neo4j.io.Neo4jConfig
-
-object Neo4jUtils {
-
-  case class Neo4jContext(driver: Driver, session: Session, config: Neo4jConfig) {
-
-    def close(): Unit = {
-      execute(
-        """
-          |MATCH (n)
-          |DETACH DELETE n
-        """.stripMargin)
-
-      session.close()
-      driver.close()
-    }
-
-    def execute(cypher: String): StatementResult = {
-      session.run(cypher)
-    }
-
+class Customer360ExampleTest extends ExampleTest {
+  it("should produce the correct output") {
+    validateBag(
+      Customer360Example.main(Array.empty),
+      getClass.getResource("/example_outputs/Customer360Example.out").toURI
+    )
   }
-
-  def connectNeo4j(dataFixture: String, uri: String = "bolt://localhost:7687"): Neo4jContext = {
-    val neo4jURI = URI.create(uri)
-
-    val config = Neo4jConfig(neo4jURI, user = "anonymous", password = Some("password"), encrypted = false)
-    val driver = config.driver()
-    val session = driver.session()
-    val neo4jContext = Neo4jContext(driver, session, config)
-    if (dataFixture.nonEmpty) {
-      neo4jContext.execute(dataFixture).consume()
-    }
-
-    neo4jContext
-  }
-
 }
