@@ -179,7 +179,6 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
           .withNodePropertyKeys("A", "B")("name" -> CTString, "type" -> CTString, "size" -> CTInteger.nullable)
           .withNodePropertyKeys("C")("name" -> CTString)
           .withNodePropertyKeys("A", "C")("name" -> CTString)
-          .withNodePropertyKeys()("name" -> CTString, "type" -> CTString)
           .withRelationshipPropertyKeys("R")("since" -> CTInteger, "before" -> CTBoolean.nullable)
           .withRelationshipPropertyKeys("S")("since" -> CTInteger)
           .withRelationshipPropertyKeys("T")()
@@ -248,7 +247,7 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
             withClue("`hasGraph` needs to return `true` after graph creation") {
               session.catalog.source(ns).hasGraph(gn) shouldBe true
             }
-            session.catalog.graph(s"$ns.$gn").nodes("n").size shouldBe 8
+            session.catalog.graph(s"$ns.$gn").nodes("n").size shouldBe 7
 
             a[GraphAlreadyExistsException] shouldBe thrownBy {
               session.cypher(s"CATALOG CREATE GRAPH $ns.$g1 { RETURN GRAPH }")
