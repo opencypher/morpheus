@@ -52,8 +52,8 @@ object Neo4jUtils {
 
   }
 
-  def connectNeo4j(dataFixture: String): Neo4jContext = {
-    val neo4jURI = URI.create("bolt://localhost:7687")
+  def connectNeo4j(dataFixture: String, uri: String = "bolt://localhost:7687"): Neo4jContext = {
+    val neo4jURI = URI.create(uri)
 
     val config = Neo4jConfig(neo4jURI, user = "anonymous", password = Some("password"), encrypted = false)
     val driver = config.driver()

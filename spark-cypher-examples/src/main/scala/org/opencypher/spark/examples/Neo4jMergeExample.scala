@@ -45,8 +45,8 @@ object Neo4jMergeExample extends ConsoleApp {
 
   // Connect to a Neo4j instance and populates it with social network data
   // To run a test instance you may use
-  //  ./gradlew :okapi-neo4j-io-testing:neo4jstart
-  //  ./gradlew :okapi-neo4j-io-testing:neo4jstop
+  //  ./gradlew :okapi-neo4j-io-testing:neo4jStart
+  //  ./gradlew :okapi-neo4j-io-testing:neo4jStop
   val neo4j = connectNeo4j(
     """
        |CREATE (a:Person { name: 'Alice', age: 10 })

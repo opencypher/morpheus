@@ -18,5 +18,5 @@ dependencies {
 
 }
 
-tasks.test.dependsOn(":okapi-neo4j-io-testing:neo4jstart")
-tasks.test.finalizedBy(":okapi-neo4j-io-testing:neo4jstop")
+tasks.test.dependsOn(":okapi-neo4j-io-testing:neo4jStart")
+tasks.test.finalizedBy(":okapi-neo4j-io-testing:neo4jStop")
