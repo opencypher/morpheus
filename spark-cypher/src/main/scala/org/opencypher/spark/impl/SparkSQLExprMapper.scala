@@ -28,7 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.catalyst.expressions.CaseWhen
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
-import org.apache.spark.sql.catalyst.expressions.{ArrayFilter, ArrayTransform, CaseWhen, EqualTo, GetStructField, LambdaFunction, NamedLambdaVariable}
+import org.apache.spark.sql.catalyst.expressions.CaseWhen
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.types._
@@ -39,7 +39,7 @@ import org.opencypher.okapi.impl.temporal.{Duration => DurationValue}
 import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.impl.CAPSFunctions.{array_contains, get_property_keys, get_rel_type, _}
+import org.opencypher.spark.impl.CAPSFunctions._
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.expressions.AddPrefix._
 import org.opencypher.spark.impl.expressions.EncodeLong._
@@ -250,11 +250,11 @@ object SparkSQLExprMapper {
               case (nonListType, CTList(inner)) if inner.material == nonListType || inner.material == CTVoid =>
                 functions.concat(functions.array(lhs.asSparkSQLExpr), rhs.asSparkSQLExpr)
 
-            case (CTString, _) if rhsCT.subTypeOf(CTNumber) =>
-              functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr.cast(StringType))
+              case (CTString, _) if rhsCT.subTypeOf(CTNumber) =>
+                functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr.cast(StringType))
 
-            case (_, CTString) if lhsCT.subTypeOf(CTNumber) =>
-              functions.concat(lhs.asSparkSQLExpr.cast(StringType), rhs.asSparkSQLExpr)
+              case (_, CTString) if lhsCT.subTypeOf(CTNumber) =>
+                functions.concat(lhs.asSparkSQLExpr.cast(StringType), rhs.asSparkSQLExpr)
 
               case (CTString, CTString) =>
                 functions.concat(lhs.asSparkSQLExpr, rhs.asSparkSQLExpr)
@@ -296,45 +296,42 @@ object SparkSQLExprMapper {
         case _: MonotonicallyIncreasingId => functions.monotonically_increasing_id()
         case Exists(e) => e.asSparkSQLExpr.isNotNull
         case Labels(e) =>
-          e.owner match {
-            case None =>
-              NULL_LIT
-            case Some(owner) =>
-              nullSafeUnary(owner) { _ =>
-                val labels = header.labelsFor(owner).toSeq.sortBy(_.label.name)
-                val labelNamesCol = functions.array(labels.map(l => functions.lit(l.label.name)): _*)
-                val labelBooleanFlagsCol = functions.array(labels.map(_.asSparkSQLExpr): _*)
-                val zippedArray = functions.arrays_zip(labelNamesCol, labelBooleanFlagsCol)
-
-                val x = NamedLambdaVariable("x", StructType(Seq(StructField("label", StringType), StructField("isSet", BooleanType))), nullable = false)
-                val lambda = LambdaFunction(EqualTo(GetStructField(x, 1), TRUE_LIT.expr), Seq(x), hidden = false)
-                val filtered = ArrayFilter(zippedArray.expr, lambda)
-
-                val transform = ArrayTransform(filtered, LambdaFunction(GetStructField(x, 0), Seq(x), hidden = false))
-
-                new Column(transform)
-              }
+          nullSafeUnary(e) { _ =>
+            val possibleLabels = header.labelsFor(e.owner.get).toSeq.sortBy(_.label.name)
+            val labelBooleanFlagsCol = possibleLabels.map(_.asSparkSQLExpr)
+            val nodeLabels = filter_true(possibleLabels.map(_.label.name), labelBooleanFlagsCol)
+            nodeLabels
           }
 
-        case Keys(e) => e.cypherType.material match {
-          case _: CTNode | _: CTRelationship =>
-            val node = e.owner.get
-            val propertyExprs = header.propertiesFor(node).toSeq.sortBy(_.key.name)
-            val (propertyKeys, propertyColumns) = propertyExprs.map(e => e.key.name -> e.asSparkSQLExpr).unzip
-            val valuesColumn = functions.array(propertyColumns: _*)
-            get_property_keys(propertyKeys)(valuesColumn)
+        case Type(e) =>
+          nullSafeUnary(e) { _ =>
+            val possibleRelTypes = header.typesFor(e.owner.get).toSeq.sortBy(_.relType.name)
+            val relTypeBooleanFlagsCol = possibleRelTypes.map(_.asSparkSQLExpr)
+            val relTypes = filter_true(possibleRelTypes.map(_.relType.name), relTypeBooleanFlagsCol)
+            val relType = get_array_item(relTypes, index = 0)
+            relType
+          }
 
-          case CTMap(innerTypes) =>
-            val mapColumn = e.asSparkSQLExpr
-            val (keys, valueColumns) = innerTypes.keys.map { e =>
-              // Whe have to make sure that every column has the same type (true or null)
-              e -> functions.when(mapColumn.getField(e).isNotNull, functions.lit(true)).otherwise(NULL_LIT)
-            }.toSeq.unzip
-            val valueColumn = functions.array(valueColumns: _*)
-            get_property_keys(keys)(valueColumn)
+        case Keys(e) =>
+          nullSafeUnary(e) { _ =>
+            e.cypherType.material match {
+              case _: CTNode | _: CTRelationship =>
+                val possibleProperties = header.propertiesFor(e.owner.get).toSeq.sortBy(_.key.name)
+                val propertyNames = possibleProperties.map(_.key.name)
+                val propertyValues = possibleProperties.map(_.asSparkSQLExpr)
+                filter_not_null(propertyNames, propertyValues)
 
-          case other => throw IllegalArgumentException("an Expression with type CTNode, CTRelationship or CTMap", other)
-        }
+              case CTMap(inner) =>
+                val mapColumn = e.asSparkSQLExpr
+                val (propertyKeys, propertyValues) = inner.keys.map { e =>
+                  // Whe have to make sure that every column has the same type (true or null)
+                  e -> functions.when(mapColumn.getField(e).isNotNull, functions.lit(true)).otherwise(NULL_LIT)
+                }.toSeq.unzip
+                filter_not_null(propertyKeys, propertyValues)
+
+              case other => throw IllegalArgumentException("an Expression with type CTNode, CTRelationship or CTMap", other)
+            }
+          }
 
         case Properties(e) =>
           e.cypherType.material match {
@@ -346,17 +343,6 @@ object SparkSQLExprMapper {
             case _: CTMap => e.asSparkSQLExpr
             case other =>
               throw IllegalArgumentException("a node, relationship or map", other, "Invalid input to properties function")
-          }
-
-        case Type(inner) =>
-          inner match {
-            case v: Var =>
-              val typeExprs = header.typesFor(v)
-              val (relTypeNames, relTypeColumn) = typeExprs.toSeq.map(e => e.relType.name -> e.asSparkSQLExpr).unzip
-              val booleanLabelFlagColumn = functions.array(relTypeColumn: _*)
-              get_rel_type(relTypeNames)(booleanLabelFlagColumn)
-            case _ =>
-              throw NotImplementedException(s"Inner expression $inner of $expr is not yet supported (only variables)")
           }
 
         case StartNodeFunction(e) =>
@@ -383,6 +369,7 @@ object SparkSQLExprMapper {
           val stepCol = maybeStep.map(_.asSparkSQLExpr).getOrElse(ONE_LIT)
           functions.sequence(from.asSparkSQLExpr, to.asSparkSQLExpr, stepCol)
 
+        // TODO: Replace with something else
         case Replace(original, search, replacement) => translateColumn(original.asSparkSQLExpr, search.asSparkSQLExpr, replacement.asSparkSQLExpr)
 
         case Substring(original, start, maybeLength) =>
