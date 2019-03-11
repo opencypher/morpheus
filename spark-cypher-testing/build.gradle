@@ -2,10 +2,6 @@ apply plugin: 'ch.kk7.spawn'
 
 description = 'Cypher for Apache Spark - Test Utilities'
 
-sourceSets {
-    services {}
-}
-
 dependencies {
     compile project(':spark-cypher')
     compile project(':okapi-testing')
@@ -20,20 +16,7 @@ dependencies {
     testCompile group: 'com.h2database', name: 'h2', version: ver.h2
     testCompile group: 'org.spire-math', name: 'claimant'.scala(), version: ver.claimant
 
-    servicesCompile group: 'org.neo4j.test', name: 'neo4j-harness', version: '3.4.10' //ver.neo4j.main
 }
 
-task neo4jstart(type: ch.kk7.gradle.spawn.SpawnTask) {
-    dependsOn sourceSets.services.runtimeClasspath
-    def java = System.getProperty('java.home') + '/bin/java'
-    def classpath = sourceSets.services.runtimeClasspath.collect { it.absolutePath }.join(':')
-    def main = 'org.opencypher.testing.services.Neo4j'
-    def marker = 'neo4j started'
-    
-    commandLine = [java, '-cp', classpath, main, marker]
-    waitFor = marker
-}
-
-task neo4jstop(type: ch.kk7.gradle.spawn.KillTask) {
-    kills tasks.neo4jstart
-}
+tasks.test.dependsOn(":okapi-neo4j-io-testing:neo4jstart")
+tasks.test.finalizedBy(":okapi-neo4j-io-testing:neo4jstop")
