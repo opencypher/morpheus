@@ -58,7 +58,7 @@ case class SqlPropertyGraphDataSource(
 )(implicit val caps: CAPSSession) extends CAPSPropertyGraphDataSource {
 
   require(
-    sqlDataSourceConfigs.forall {case (_, config) => config.format != FileFormat.csv},
+    sqlDataSourceConfigs.forall { case (_, config) => config.format != FileFormat.csv },
     "CSV files are not supported by the SqlPropertyGraphDataSource"
   )
 
