@@ -38,6 +38,7 @@ import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.expressions.Serialize
+import org.opencypher.spark.impl.convert.SparkConversions._
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -163,7 +164,10 @@ object CAPSFunctions {
     if (df.columns.contains(columnName)) {
       df.col(columnName)
     } else {
-      NULL_LIT
+      expr.cypherType.toSparkType match {
+        case None => NULL_LIT
+        case Some(st) => NULL_LIT.cast(st)
+      }
     }
   }
 
