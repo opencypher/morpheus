@@ -219,7 +219,7 @@ object AcceptanceTestGenerator extends App {
   }
 
   //checks if package directories exists clears them or creates new
-  def setUpDirectories(): Unit = {
+  private def setUpDirectories(): Unit = {
     packageNames.values.map(packageName => {
       val directory = new File(path + packageName)
       if (directory.exists()) {
@@ -229,6 +229,11 @@ object AcceptanceTestGenerator extends App {
       else {
         directory.mkdir()
       }
+      val gitIgnoreFile = new File(path + packageName + "/.gitignore")
+      val writer = new PrintWriter(gitIgnoreFile)
+      writer.println("*")
+      writer.close()
+      gitIgnoreFile.createNewFile()
     }
     )
   }
@@ -256,5 +261,6 @@ object AcceptanceTestGenerator extends App {
     generateClassFile(feature._1, feature._2, black = true)
   }
   }
+
 
 }
