@@ -63,24 +63,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with Neo4jServerFixture with Sca
     """.stripMargin)
 
   override def afterEach(): Unit = {
-    neo4jConfig.withSession { session =>
-      session.run("MATCH (n) DETACH DELETE n").consume()
-      val constraints = session.run("CALL db.constraints").list().asScala.map(_.get(0).asString)
-      val regexp = """CONSTRAINT ON (.+) ASSERT \(?(.+?)\)? IS NODE KEY""".r
-
-      constraints.map {
-        case regexp(label, keys) => s"DROP CONSTRAINT ON $label ASSERT ($keys) IS NODE KEY"
-        case c => s"DROP $c"
-      }.foreach(session.run(_).consume())
-      session.run("MATCH (n) DETACH DELETE n").consume()
-
-      session
-        .run("CALL db.indexes YIELD description")
-        .list().asScala
-        .map(_.get(0).asString)
-        .map(i => s"DROP $i")
-        .foreach(session.run(_).consume())
-    }
+    neo4jContext.clear()
     super.afterEach()
   }
 

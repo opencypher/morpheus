@@ -30,17 +30,31 @@ import java.net.URI
 
 import org.neo4j.driver.v1.{Driver, Session, StatementResult}
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
+import scala.collection.JavaConverters._
 
 object Neo4jTestUtils {
 
   case class Neo4jContext(driver: Driver, session: Session, config: Neo4jConfig) {
 
+
+    private def dropConstraint(desc: String) = {
+      val regexp = """CONSTRAINT ON (.+) ASSERT \(?(.+?)\)? IS NODE KEY""".r
+      val constraint = desc match {
+        case regexp(label, keys) => s"CONSTRAINT ON $label ASSERT ($keys) IS NODE KEY"
+        case c => c
+      }
+      execute(s"DROP $constraint").consume()
+    }
+
     def clear(): Unit = {
       execute("MATCH (n) DETACH DELETE n")
         .consume()
       execute("CALL db.constraints()")
-        .list(_.get("description").asString()).toArray()
-        .foreach(const => execute(s"""DROP $const"""))
+        .list(_.get("description").asString()).asScala
+        .foreach(dropConstraint)
+      execute("CALL db.indexes YIELD description")
+        .list(_.get(0).asString).asScala
+        .foreach(index => execute(s"DROP $index").consume())
     }
 
     def close(): Unit = {
