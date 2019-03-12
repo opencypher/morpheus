@@ -66,7 +66,7 @@ object SparkConversions {
     }
 
     def toSparkType: Option[DataType] = ct match {
-      case CTNull | CTVoid => Some(NullType)
+      case CTNull => Some(NullType)
       case _ =>
         ct.material match {
           case CTString => Some(StringType)
@@ -79,8 +79,9 @@ object SparkConversions {
           case CTIdentity => Some(BinaryType)
           case _: CTNode => Some(BinaryType)
           case _: CTRelationship => Some(BinaryType)
-          case CTList(CTVoid) => Some(ArrayType(NullType, containsNull = true))
-          case CTList(CTNull) => Some(ArrayType(NullType, containsNull = true))
+            // Spark uses String as the default array inner type
+          case CTList(CTVoid) => Some(ArrayType(StringType, containsNull = false))
+          case CTList(CTNull) => Some(ArrayType(StringType, containsNull = true))
           case CTList(elemType) =>
             elemType.toSparkType.map(ArrayType(_, elemType.isNullable))
           case CTMap(inner) =>

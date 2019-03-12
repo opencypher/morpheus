@@ -93,11 +93,15 @@ object CAPSFunctions {
 
   private def filter_with_mask[T: TypeTag](items: Seq[T], mask: Seq[Column], predicate: LambdaFunction): Column = {
     require(items.size == mask.size, s"Array filtering requires for the items and the mask to have the same length.")
-    val itemLiterals = functions.array(items.map(functions.typedLit): _*)
-    val zippedArray = functions.arrays_zip(itemLiterals, functions.array(mask: _*))
-    val filtered = ArrayFilter(zippedArray.expr, predicate)
-    val transform = ArrayTransform(filtered, LambdaFunction(GetStructField(x, 0), Seq(x), hidden = false))
-    new Column(transform)
+    if (items.isEmpty) {
+      functions.array()
+    } else {
+      val itemLiterals = functions.array(items.map(functions.typedLit): _*)
+      val zippedArray = functions.arrays_zip(itemLiterals, functions.array(mask: _*))
+      val filtered = ArrayFilter(zippedArray.expr, predicate)
+      val transform = ArrayTransform(filtered, LambdaFunction(GetStructField(x, 0), Seq(x), hidden = false))
+      new Column(transform)
+    }
   }
 
   /**

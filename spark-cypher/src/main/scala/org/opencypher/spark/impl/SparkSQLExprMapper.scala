@@ -78,7 +78,6 @@ object SparkSQLExprMapper {
         expr match {
           case _: ListLit => array(convertedChildren: _*)
           case l: Lit[_] => lit(l.v)
-          case _: Var | _: HasLabel | _: HasType | _: StartNode | _: EndNode => columnFor(expr)
           case _: AliasExpr => c1
           case Param(name) => toSparkLiteral(parameters(name).unwrap)
 
@@ -107,7 +106,11 @@ object SparkSQLExprMapper {
           case _: RegexMatch => regex_match(c1, c2)
 
           // Other
-          case _: Explode => explode(c1)
+          case Explode(list) => list.cypherType match {
+            case CTNull => explode(NULL_LIT.cast(ArrayType(NullType)))
+            case _ => explode(c1)
+          }
+
           case Property(e, PropertyKey(key)) =>
             // Convert property lookups into separate specific lookups instead of overloading
             e.cypherType.material match {
@@ -421,16 +424,26 @@ object SparkSQLExprMapper {
 
   private def convert(expr: Expr)(ifNotNull: Seq[Column] => Column)
     (implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
-    val evaluatedArgs = expr.children.map(_.asSparkSQLExpr)
-    // TODO: Cleaner compatibility check
-    expr.cypherType.getSparkType
-    if (expr.cypherType == CTNull) {
-      NULL_LIT
-    } else if (expr.children.nonEmpty && expr.nullInNullOut && expr.cypherType.isNullable) {
-      val nullPropagationCases = evaluatedArgs.map(_.isNull.expr).zip(Seq.fill(evaluatedArgs.length)(NULL_LIT.expr))
-      new Column(CaseWhen(nullPropagationCases, ifNotNull(evaluatedArgs).expr))
-    } else {
-      new Column(ifNotNull(evaluatedArgs).expr)
+
+    expr match {
+      // evaluate based on already present data; no recursion
+      case _: Var | _: HasLabel | _: HasType | _: StartNode | _: EndNode =>
+        columnFor(expr)
+      // evaluate depth-first
+      case _ =>
+        val evaluatedArgs = expr.children.map(_.asSparkSQLExpr)
+        val colOut = if (expr.cypherType == CTNull) {
+          NULL_LIT
+        } else if (expr.children.nonEmpty && expr.nullInNullOut && expr.cypherType.isNullable) {
+          val nullPropagationCases = evaluatedArgs.map(_.isNull.expr).zip(Seq.fill(evaluatedArgs.length)(NULL_LIT.expr))
+          new Column(CaseWhen(nullPropagationCases, ifNotNull(evaluatedArgs).expr))
+        } else {
+          new Column(ifNotNull(evaluatedArgs).expr)
+        }
+        header.getColumn(expr) match {
+          case None => colOut
+          case Some(colName) => colOut.as(colName)
+        }
     }
   }
 
