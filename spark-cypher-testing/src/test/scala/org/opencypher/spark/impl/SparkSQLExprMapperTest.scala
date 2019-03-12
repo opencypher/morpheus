@@ -31,7 +31,7 @@ import java.util.Collections
 import org.apache.spark.sql._
 import org.apache.spark.sql.catalyst.InternalRow
 import org.apache.spark.sql.types.{IntegerType, StructField, StructType}
-import org.opencypher.okapi.api.types.CTAny
+import org.opencypher.okapi.api.types.{CTAny, CTIdentity, CTInteger}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
@@ -45,12 +45,12 @@ import scala.language.implicitConversions
 
 class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
 
-  val vA: Var = Var("a")()
-  val vB: Var = Var("b")()
+  val vA: Var = Var("a")(CTInteger)
+  val vB: Var = Var("b")(CTInteger)
   val header: RecordHeader = RecordHeader.from(vA, vB)
 
   it("can map subtract") {
-    val expr = Subtract(Var("a")(), Var("b")())(CTAny)
+    val expr = Subtract(vA, vB)(CTInteger)
     convert(expr, header.withExpr(expr).withAlias(expr as Var("foo")())) should equal(
       df.col(header.column(vA)) - df.col(header.column(vB))
     )
@@ -59,7 +59,7 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
   it("converts prefix id expressions") {
     val id = 257L
     val prefix = 2.toByte
-    val expr = PrefixId(ToId(IntegerLit(id))(), prefix)(CTAny)
+    val expr = PrefixId(ToId(IntegerLit(id))(), prefix)(CTIdentity)
     expr.eval.asInstanceOf[Array[_]].toList should equal(prefix :: id.encodeAsCAPSId.toList)
   }
 
@@ -72,7 +72,7 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
   it("converts a CypherInteger to an ID and prefixes it") {
     val id = 257L
     val prefix = 2.toByte
-    val expr = PrefixId(ToId(IntegerLit(id))(), prefix)(CTAny)
+    val expr = PrefixId(ToId(IntegerLit(id))(), prefix)(CTIdentity)
     expr.eval.asInstanceOf[Array[_]].toList should equal(prefix :: id.encodeAsCAPSId.toList)
   }
 

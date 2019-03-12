@@ -52,15 +52,10 @@ final case class SparkSQLMappingException(msg: String) extends InternalException
 object SparkSQLExprMapper {
 
   private val NULL_LIT: Column = lit(null)
-
   private val TRUE_LIT: Column = lit(true)
-
   private val FALSE_LIT: Column = lit(false)
-
   private val ONE_LIT: Column = lit(1)
-
   private val E_LIT: Column = lit(Math.E)
-
   private val PI_LIT: Column = lit(Math.PI)
 
   implicit class RichExpression(expr: Expr) {
