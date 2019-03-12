@@ -168,21 +168,11 @@ object SparkSQLExprMapper {
             }.orNull
             lit(durationValue)
 
-
-          case In(lhs, rhs) if lhs.cypherType == CTNull =>
-            val array = c2
-            functions
-              .when(size(array) === 0, FALSE_LIT)
-              .otherwise(NULL_LIT)
-
-          case In(lhs, rhs) =>
-            val element = c1
-            val array = c2
-            functions
-              .when(size(array) === 0, FALSE_LIT)
-              .when(array.isNull, NULL_LIT)
-              .when(element.isNull, NULL_LIT)
-              .otherwise(array_contains(array, element))
+          case In(lhs, rhs) => rhs.cypherType.material match {
+            case CTList(CTVoid) => FALSE_LIT
+            case CTList(inner) if inner.couldBeSameTypeAs(lhs.cypherType) => array_contains(c2, c1)
+            case _ => NULL_LIT
+          }
 
           // Arithmetic
           case Add(lhs, rhs) =>
