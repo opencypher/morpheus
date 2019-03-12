@@ -28,24 +28,21 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
-import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.GraphSources
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.acceptance.ScanGraphInit
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.OpenCypherDataFixture
 
 import scala.language.reflectiveCalls
 
-class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture with OpenCypherDataFixture {
+class CAPSRecordsAcceptanceTest extends CAPSTestSuite with ScanGraphInit with OpenCypherDataFixture {
 
-  private lazy val graph: RelationalCypherGraph[DataFrameTable] =
-    GraphSources.cypher.neo4j(neo4jConfig).graph(entireGraphName).asCaps
+  private lazy val graph: RelationalCypherGraph[DataFrameTable] = initGraph(dataFixture)
 
   it("convert nodes to CypherMaps") {
     // When
@@ -65,9 +62,9 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
 
     // Then
     result.records.collect.toBag should equal(Bag(
-      CypherMap("r" -> CAPSRelationship(23, 6, 18, "ACTED_IN", CypherMap("charactername" -> "Albus Dumbledore"))),
-      CypherMap("r" -> CAPSRelationship(21, 2, 20, "ACTED_IN", CypherMap("charactername" -> "Guenevere"))),
-      CypherMap("r" -> CAPSRelationship(26, 8, 19, "ACTED_IN", CypherMap("charactername" -> "Halle/Annie")))
+      CypherMap("r" -> CAPSRelationship(46, 6, 18, "ACTED_IN", CypherMap("charactername" -> "Albus Dumbledore"))),
+      CypherMap("r" -> CAPSRelationship(44, 2, 20, "ACTED_IN", CypherMap("charactername" -> "Guenevere"))),
+      CypherMap("r" -> CAPSRelationship(49, 8, 19, "ACTED_IN", CypherMap("charactername" -> "Halle/Annie")))
     ))
   }
 
@@ -100,7 +97,7 @@ class CAPSRecordsAcceptanceTest extends CAPSTestSuite with Neo4jServerFixture wi
     result.records.collect.toBag should equal(Bag(
       CypherMap(
         "a" -> CAPSNode(2, Set("Actor", "Person"), CypherMap("birthyear" -> 1937, "name" -> "Vanessa Redgrave")),
-        "r" -> CAPSRelationship(21, 2, 20, "ACTED_IN", CypherMap("charactername" -> "Guenevere"))
+        "r" -> CAPSRelationship(44, 2, 20, "ACTED_IN", CypherMap("charactername" -> "Guenevere"))
       )
     ))
   }
