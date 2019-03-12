@@ -88,6 +88,7 @@ object SparkConversions {
               case (key, valueType) => valueType.toStructField(key)
             }.toSeq
             Some(StructType(innerFields))
+          case CTNumber => Some(DoubleType)
           case _ =>
             None
         }

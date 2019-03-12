@@ -74,6 +74,8 @@ object CAPSFunctions {
     new Column(Serialize(columns.map(_.expr)))
   }
 
+  def regex_match(text: Column, pattern: Column): Column = new Column(RLike(text.expr, pattern.expr))
+
   def get_array_item(array: Column, index: Int): Column = {
     new Column(GetArrayItem(array.expr, functions.lit(index).expr))
   }

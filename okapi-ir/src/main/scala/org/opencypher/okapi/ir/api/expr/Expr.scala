@@ -77,11 +77,15 @@ sealed abstract class Expr extends AbstractTreeNode[Expr] {
     }
   }
 
+  def nullInNullOut: Boolean = true
+
 }
 
 final case class AliasExpr(expr: Expr, alias: Var) extends Expr {
 
   override def cypherType: CypherType = alias.cypherType
+
+  override def nullInNullOut: Boolean = expr.nullInNullOut
 
   override def withoutType: String = s"$expr AS $alias"
 
@@ -243,6 +247,8 @@ final case class Ands(_exprs: List[Expr]) extends Expr {
     }
   }
 
+  override def nullInNullOut: Boolean = false
+
   def exprs: Set[Expr] = _exprs.toSet
 
   override def withoutType = s"ANDS(${_exprs.map(_.withoutType).mkString(", ")})"
@@ -270,6 +276,8 @@ final case class Ors(_exprs: List[Expr]) extends Expr {
       CTBoolean
     }
   }
+
+  override def nullInNullOut: Boolean = false
 
   def exprs: Set[Expr] = _exprs.toSet
 
@@ -325,6 +333,8 @@ final case class IsNull(expr: Expr) extends PredicateExpression {
 
   def inner: Expr = expr
 
+  override val cypherType: CypherType = CTBoolean
+
   override def withoutType: String = s"type(${expr.withoutType}) IS NULL"
 
 }
@@ -332,6 +342,8 @@ final case class IsNull(expr: Expr) extends PredicateExpression {
 final case class IsNotNull(expr: Expr) extends PredicateExpression {
 
   def inner: Expr = expr
+
+  override val cypherType: CypherType = CTBoolean
 
   override def withoutType: String = s"type(${expr.withoutType}) IS NOT NULL"
 
