@@ -44,7 +44,6 @@ import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNo
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy._
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.{File, Hive, Jdbc}
-import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.schema.CAPSSchema
@@ -202,11 +201,7 @@ case class SqlPropertyGraphDataSource(
         expected = s"Column with name $column",
         actual = indexedFields)
     }.toMap
-    val renamedDf = dataFrame.safeRenameColumns(columnRenamings)
-    val columnCasts = columnTypes.map { case (columnName, cypherType) =>
-      renamedDf.col(columnRenamings.getOrElse(columnName, columnName)) -> cypherType.getSparkType
-    }
-    renamedDf.transformColumns(columnTypes.keys.toSeq: _*)(column => column.cast(columnCasts(column)))
+    dataFrame.safeRenameColumns(columnRenamings)
   }
 
   private def normalizeMapping(mapping: EntityMapping): EntityMapping = {
