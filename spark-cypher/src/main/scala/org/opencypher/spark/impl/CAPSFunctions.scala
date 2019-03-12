@@ -28,7 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.catalyst.analysis.UnresolvedExtractValue
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.functions.monotonically_increasing_id
+import org.apache.spark.sql.functions.{lit, monotonically_increasing_id, struct, udf}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, functions}
 import org.opencypher.spark.impl.expressions.Serialize
@@ -36,6 +36,15 @@ import org.opencypher.spark.impl.expressions.Serialize
 import scala.reflect.runtime.universe.TypeTag
 
 object CAPSFunctions {
+
+  val NULL_LIT: Column = lit(null)
+  val TRUE_LIT: Column = lit(true)
+  val FALSE_LIT: Column = lit(false)
+  val ONE_LIT: Column = lit(1)
+  val E_LIT: Column = lit(Math.E)
+  val PI_LIT: Column = lit(Math.PI)
+  // See: https://issues.apache.org/jira/browse/SPARK-20193
+  val EMPTY_STRUCT: Column = udf(() => new GenericRowWithSchema(Array(), StructType(Nil)), StructType(Nil))()
 
   implicit class RichColumn(column: Column) {
 
@@ -102,6 +111,12 @@ object CAPSFunctions {
       val transform = ArrayTransform(filtered, LambdaFunction(GetStructField(x, 0), Seq(x), hidden = false))
       new Column(transform)
     }
+  }
+
+  // See: https://issues.apache.org/jira/browse/SPARK-20193
+  def create_struct(structColumns: Seq[Column]): Column = {
+    if (structColumns.isEmpty) EMPTY_STRUCT
+    else struct(structColumns: _*)
   }
 
   /**
