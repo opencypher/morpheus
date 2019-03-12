@@ -38,7 +38,6 @@ import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.expressions.Serialize
-import org.opencypher.spark.impl.convert.SparkConversions._
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -170,10 +169,7 @@ object CAPSFunctions {
 
   implicit class CypherValueConversion(val v: CypherValue) extends AnyVal {
 
-    import org.opencypher.okapi.api.types.CypherType._
-
     def toSparkLiteral: Column = {
-      v.cypherType.ensureSparkCompatible()
       v match {
         case list: CypherList => array(list.value.map(_.toSparkLiteral): _*)
         case map: CypherMap =>
