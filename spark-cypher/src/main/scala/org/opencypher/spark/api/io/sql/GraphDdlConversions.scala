@@ -26,9 +26,10 @@
  */
 package org.opencypher.spark.api.io.sql
 
-import org.opencypher.graphddl.{ElementType, GraphType}
+import org.opencypher.graphddl.{ElementType, GraphType, RelationshipType}
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.ScalaUtils._
 
 object GraphDdlConversions {
@@ -147,15 +148,24 @@ object GraphDdlConversions {
 
   implicit class GraphTypeOps(graphType: GraphType) {
 
+    def getSingleLabel(relType: RelationshipType): String = {
+      if (relType.labels.size != 1) {
+        throw IllegalArgumentException(
+          expected = "Relationship type with single label",
+          actual = relType,
+          explanation = "CAPS does not support relationships with multiple labels."
+        )
+      }
+      relType.labels.head
+    }
+
     lazy val allPatterns: Set[SchemaPattern] =
-      graphType.relTypes.map(edgeType => SchemaPattern(
-        sourceLabelCombination = edgeType.startNodeType.labels,
-        // TODO: validate there is only one rel type
-        relType = edgeType.labels.head,
-        targetLabelCombination = edgeType.endNodeType.labels
+      graphType.relTypes.map(relType => SchemaPattern(
+        sourceLabelCombination = relType.startNodeType.labels,
+        relType = getSingleLabel(relType),
+        targetLabelCombination = relType.endNodeType.labels
       ))
 
-    // TODO move out of Graph DDL (maybe to CAPSSchema)
     def asOkapiSchema: Schema = Schema.empty
       .foldLeftOver(graphType.nodeTypes) { case (schema, nodeType) =>
         val combo = if (nodeType.labels.contains(NO_LABEL)) Set.empty[String] else nodeType.labels
@@ -164,14 +174,12 @@ object GraphDdlConversions {
       .foldLeftOver(graphType.nodeElementTypes) { case (schema, eType) =>
         eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
       }
-      // TODO: validate there is only one rel type
       .foldLeftOver(graphType.relTypes) { case (schema, relType) =>
-      schema.withRelationshipPropertyKeys(relType.labels.head, graphType.relationshipPropertyKeys(relType))
-    }
-      // TODO: validate there is only one rel type
+        schema.withRelationshipPropertyKeys(getSingleLabel(relType), graphType.relationshipPropertyKeys(relType))
+      }
       .foldLeftOver(graphType.relElementTypes) { case (schema, eType) =>
-      eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
-    }
+        eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
+      }
       .withSchemaPatterns(allPatterns.toSeq: _*)
   }
 }
