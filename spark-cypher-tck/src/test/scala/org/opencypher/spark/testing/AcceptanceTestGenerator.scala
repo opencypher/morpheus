@@ -8,7 +8,7 @@ import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.tck.test.ScenariosFor
 import org.opencypher.okapi.tck.test.TckToCypherConverter.tckValueToCypherValue
 import org.opencypher.tools.tck.api._
-import org.opencypher.tools.tck.values.{Connection, Backward => TCKBackward, CypherBoolean => TCKCypherBoolean, CypherFloat => TCKCypherFloat, CypherInteger => TCKCypherInteger, CypherList => TCKCypherList, CypherNode => TCKCypherNode, CypherNull => TCKCypherNull, CypherPath => TCKCypherPath, CypherProperty => TCKCypherProperty, CypherPropertyMap => TCKCypherPropertyMap, CypherRelationship => TCKCypherRelationship, CypherString => TCKCypherString, CypherValue => TCKCypherValue, Forward => TCKForward}
+import org.opencypher.tools.tck.values.{Connection, Backward => TCKBackward, CypherOrderedList => TCKCypherOrderedList, CypherUnorderedList => TCKUnorderedList,CypherBoolean => TCKCypherBoolean, CypherFloat => TCKCypherFloat, CypherInteger => TCKCypherInteger, CypherList => TCKCypherList, CypherNode => TCKCypherNode, CypherNull => TCKCypherNull, CypherPath => TCKCypherPath, CypherProperty => TCKCypherProperty, CypherPropertyMap => TCKCypherPropertyMap, CypherRelationship => TCKCypherRelationship, CypherString => TCKCypherString, CypherValue => TCKCypherValue, Forward => TCKForward}
 import org.scalatest.prop.TableFor1
 
 import scala.collection.mutable
@@ -26,9 +26,9 @@ object AcceptanceTestGenerator extends App {
   case class ResultRows(queryResult: String, expected: List[Map[String, TCKCypherValue]])
 
   private def generateClassFiles(featureName: String, scenarios: TableFor1[Scenario], black: Boolean) = {
-    val path = s"spark-cypher-testing/src/test/scala/org/opencypher/spark/impl/acceptance/"
+    val path = s"spark-cypher-testing/src/test/scala/org/opencypher/spark/impl/acceptance/" //or here?spark-cypher-tck/src/test/scala/org/opencypher/spark/testing/
     val packageName = if (black) "blackList" else "whiteList"
-    val className = s"${featureName}_$packageName"
+    val className = featureName
     val classHeader =
       s"""|package org.opencypher.spark.impl.acceptance.$packageName
           |
@@ -52,7 +52,7 @@ object AcceptanceTestGenerator extends App {
 
 
     val testCases = "\n" + scenarios.map(scenario =>
-      if (scenario.name.equals("Failing on incorrect unicode literal")) "" //this fails at compilation
+      if (scenario.name.equals("Failing on incorrect unicode literal")) "" //this fails at scala-compilation
       else
         generateTest(scenario, black)).mkString("\n")
 
@@ -86,14 +86,18 @@ object AcceptanceTestGenerator extends App {
   private def tckCypherValueToCreateString(value: TCKCypherValue): String = {
     value match {
       case TCKCypherString(v) => s"TCKCypherString(${escapeString(v)})"
-      case TCKCypherInteger(v) => "TCKCypherInteger(" + v + "L)"
-      case TCKCypherFloat(v) => "TCKCypherFloat(" + v + ")"
-      case TCKCypherBoolean(v) => "TCKCypherBoolean(" + v + ")"
-      case TCKCypherProperty(key, v) => "TCKCypherProperty(\"" + escapeString(key) + "\"," + tckCypherValueToCreateString(v) + ")"
+      case TCKCypherInteger(v) => s"TCKCypherInteger(${v}L)"
+      case TCKCypherFloat(v) => s"TCKCypherFloat($v)"
+      case TCKCypherBoolean(v) => s"TCKCypherBoolean($v)"
+      case TCKCypherProperty(key, v) => s"""TCKCypherProperty("${escapeString(key)}",${tckCypherValueToCreateString(v)})"""
       case TCKCypherPropertyMap(properties) =>
-        val propertyCreateString = properties.map { case (key, v) => s"(${escapeString(key)}, ${tckCypherValueToCreateString(v)})" }.mkString(",")
-        s"TCKCypherPropertyMap(Map($propertyCreateString))"
-      case l: TCKCypherList => "TCKCypherOrderedList" + "(" + s"List(${l.elements.map(tckCypherValueToCreateString).mkString(",")}))" //todo: how to handle unorderedList? (as it is private)
+        val propertiesCreateString = properties.map { case (key, v) => s"(${escapeString(key)}, ${tckCypherValueToCreateString(v)})" }.mkString(",")
+        s"TCKCypherPropertyMap(Map($propertiesCreateString))"
+      case l : TCKCypherList =>
+        l match {
+          case TCKCypherOrderedList(elems) => s"TCKCypherOrderedList(List(${elems.map(tckCypherValueToCreateString).mkString(",")}))"
+          case _ => s"TCKCypherValue.apply(${escapeString(l.toString)}, false)"
+        }
       case TCKCypherNull => "TCKCypherNull"
       case TCKCypherNode(labels, properties) => s"TCKCypherNode(Set(${labels.map(escapeString).mkString(",")}), ${tckCypherValueToCreateString(properties)})"
       case TCKCypherRelationship(typ, properties) => s"TCKCypherRelationship(${escapeString(typ)}, ${tckCypherValueToCreateString(properties)})"
@@ -107,8 +111,8 @@ object AcceptanceTestGenerator extends App {
   private def cypherValueToCreateString(value: OKAPICypherValue): String = {
     value match {
       case OKAPICypherList(l) => "List(" + l.map(cypherValueToCreateString).mkString(",") + ")"
-      case OKAPICypherMap(m) => "CypherMap(" + m.map { case (key, cv) => "(" + escapeString(key) + "," + cypherValueToCreateString(cv) + ")" }.mkString(",") + ")"
-      case OKAPICypherString(s) => s""" "$s" """
+      case OKAPICypherMap(m) => "CypherMap(" + m.map { case (key, cv) => s"(${escapeString(key)},${cypherValueToCreateString(cv)})" }.mkString(",") + ")"
+      case OKAPICypherString(s) => escapeString(s)
       case OKAPICypherNull => "CypherNull"
       case _ => s"${value.getClass.getSimpleName}(${value.unwrap})"
     }
@@ -160,11 +164,11 @@ object AcceptanceTestGenerator extends App {
            """.stripMargin
       case (ExpectError(errorType, errorPhase, detail, _), _) =>
         val (contextQuery, stepNumber) = contextStack.pop()
-        //todo: check errorType and detail
+        //todo: check for errorType and detail (when coresponding errors exist like SyntaxError, TypeError, ParameterMissing, ...)
         s"""
            |${lineIndention}val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{graph.cypher($escapeStringMarks${alignQuery(contextQuery.query)}$escapeStringMarks)}
-           |fail()
            """.stripMargin
+
       case (SideEffects(expected, _), _) =>
         val relevantEffects = expected.v.filter(_._2 > 0) //check if relevant Side-Effects exist
         if (relevantEffects.nonEmpty)
