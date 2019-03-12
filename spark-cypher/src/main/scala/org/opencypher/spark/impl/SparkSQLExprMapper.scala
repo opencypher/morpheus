@@ -26,9 +26,7 @@
  */
 package org.opencypher.spark.impl
 
-import org.apache.spark.sql.catalyst.expressions.CaseWhen
-import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
-import org.apache.spark.sql.catalyst.expressions.CaseWhen
+import org.apache.spark.sql.catalyst.expressions.{CaseWhen, GenericRowWithSchema}
 import org.apache.spark.sql.functions.{array_contains => _, translate => _, _}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
