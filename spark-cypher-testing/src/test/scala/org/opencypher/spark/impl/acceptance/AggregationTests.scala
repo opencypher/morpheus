@@ -518,9 +518,9 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
 
       val result = graph.cypher("MATCH (n) WITH COLLECT(n.val) AS res RETURN res")
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("res" -> Seq(2, 4, 6))
-      ))
+      val rows = result.records.collect
+      rows.length shouldBe 1
+      rows.head("res").cast[CypherList].unwrap.toBag should equal(Bag(2, 4, 6))
     }
 
     it("collect(prop) with integers in RETURN") {
@@ -528,11 +528,10 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
 
       val result = graph.cypher("MATCH (n) RETURN COLLECT(n.val) AS res")
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("res" -> Seq(2, 4, 6))
-      ))
+      val rows = result.records.collect
+      rows.length shouldBe 1
+      rows.head("res").cast[CypherList].unwrap.toBag should equal(Bag(2, 4, 6))
     }
-
 
     it("simple collect(prop) with single null value in WITH") {
       val graph = initGraph("CREATE ({val:42.0D}),({val:23.0D}),()")
@@ -553,7 +552,6 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
         CypherMap("res" -> Seq(23.0, 42.0))
       ))
     }
-
 
     it("simple collect(prop) with only null values in WITH") {
       val graph = initGraph("CREATE ({val:NULL}),(),()")
@@ -629,9 +627,14 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
           | COLLECT(n.val) AS col
           |RETURN avg, cnt, min, max, sum, col""".stripMargin)
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("avg" -> 49.666666666666664, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(23, 42, 84))
-      ))
+      val rows = result.records.collect
+      rows.length shouldBe 1
+      rows.head("col").cast[CypherList].unwrap.toBag should equal(Bag(23, 42, 84))
+      rows.head("avg") should equal(CypherFloat(49.666666666666664))
+      rows.head("cnt") should equal(CypherInteger(3))
+      rows.head("min") should equal(CypherInteger(23))
+      rows.head("max") should equal(CypherInteger(84))
+      rows.head("sum") should equal(CypherInteger(149))
     }
 
     it("multiple aggregates in RETURN") {
@@ -647,9 +650,14 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
           | SUM(n.val) AS sum,
           | COLLECT(n.val) AS col""".stripMargin)
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("avg" -> 49.666666666666664, "cnt" -> 3, "min" -> 23L, "max" -> 84L, "sum" -> 149, "col" -> Seq(23, 42, 84))
-      ))
+      val rows = result.records.collect
+      rows.length shouldBe 1
+      rows.head("col").cast[CypherList].unwrap.toBag should equal(Bag(23, 42, 84))
+      rows.head("avg") should equal(CypherFloat(49.666666666666664))
+      rows.head("cnt") should equal(CypherInteger(3))
+      rows.head("min") should equal(CypherInteger(23))
+      rows.head("max") should equal(CypherInteger(84))
+      rows.head("sum") should equal(CypherInteger(149))
     }
 
     it("computes multiple aggregates with grouping in RETURN clause") {

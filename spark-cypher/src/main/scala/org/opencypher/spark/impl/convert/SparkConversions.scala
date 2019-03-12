@@ -36,6 +36,7 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImpleme
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
+import org.opencypher.spark.impl.SparkSQLMappingException
 
 object SparkConversions {
 
@@ -97,10 +98,12 @@ object SparkConversions {
 
     def getSparkType: DataType = toSparkType match {
       case Some(t) => t
-      case None => throw NotImplementedException(s"Mapping of CypherType $ct to Spark type")
+      case None => throw SparkSQLMappingException(s"Mapping of CypherType $ct to Spark type is unsupported")
     }
 
     def isSparkCompatible: Boolean = toSparkType.isDefined
+
+    def ensureSparkCompatible(): Unit = getSparkType
 
   }
 

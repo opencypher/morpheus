@@ -32,6 +32,7 @@ import org.apache.spark.sql.catalyst.expressions.CaseWhen
 import org.apache.spark.sql.functions.{array_contains => _, translate => _, _}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception._
@@ -79,7 +80,10 @@ object SparkSQLExprMapper {
           case _: ListLit => array(convertedChildren: _*)
           case l: Lit[_] => lit(l.v)
           case _: AliasExpr => c1
-          case Param(name) => toSparkLiteral(parameters(name).unwrap)
+          case Param(name) =>
+            val value = parameters(name)
+            value.cypherType.ensureSparkCompatible()
+            toSparkLiteral(value.unwrap)
 
           // Predicates
           case _: Equals => c1 === c2
@@ -427,8 +431,7 @@ object SparkSQLExprMapper {
 
     expr match {
       // evaluate based on already present data; no recursion
-      case _: Var | _: HasLabel | _: HasType | _: StartNode | _: EndNode =>
-        columnFor(expr)
+      case _: Var | _: HasLabel | _: HasType | _: StartNode | _: EndNode => columnFor(expr)
       // evaluate depth-first
       case _ =>
         val evaluatedArgs = expr.children.map(_.asSparkSQLExpr)

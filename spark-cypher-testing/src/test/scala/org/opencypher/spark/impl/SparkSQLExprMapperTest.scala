@@ -49,13 +49,6 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
   val vB: Var = Var("b")(CTInteger)
   val header: RecordHeader = RecordHeader.from(vA, vB)
 
-  it("can map subtract") {
-    val expr = Subtract(vA, vB)(CTInteger)
-    convert(expr, header.withExpr(expr).withAlias(expr as Var("foo")())) should equal(
-      df.col(header.column(vA)) - df.col(header.column(vB))
-    )
-  }
-
   it("converts prefix id expressions") {
     val id = 257L
     val prefix = 2.toByte

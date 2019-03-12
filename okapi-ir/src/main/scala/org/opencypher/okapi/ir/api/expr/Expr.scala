@@ -83,6 +83,8 @@ sealed abstract class Expr extends AbstractTreeNode[Expr] {
 
 final case class AliasExpr(expr: Expr, alias: Var) extends Expr {
 
+  override val children: Array[Expr] = Array(expr)
+
   override def cypherType: CypherType = alias.cypherType
 
   override def nullInNullOut: Boolean = expr.nullInNullOut
@@ -562,7 +564,9 @@ final case class ToBoolean(expr: Expr) extends UnaryFunctionExpr {
   override val cypherType: CypherType = CTBoolean.asNullableAs(expr.cypherType)
 }
 
-final case class Coalesce(exprs: List[Expr])(val cypherType: CypherType) extends FunctionExpr
+final case class Coalesce(exprs: List[Expr])(val cypherType: CypherType) extends FunctionExpr {
+  override def nullInNullOut: Boolean = false
+}
 
 final case class Explode(expr: Expr)(val cypherType: CypherType) extends Expr {
 
