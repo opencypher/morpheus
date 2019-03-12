@@ -28,10 +28,17 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.catalyst.analysis.UnresolvedExtractValue
 import org.apache.spark.sql.catalyst.expressions._
-import org.apache.spark.sql.functions.{lit, monotonically_increasing_id, struct, udf}
+import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Column, functions}
+import org.apache.spark.sql.{Column, DataFrame, functions}
+import org.opencypher.okapi.api.types.CTNull
+import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap, CypherValue}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.ir.api.expr.Expr
+import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.expressions.Serialize
+import org.opencypher.spark.impl.convert.SparkConversions._
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -124,6 +131,59 @@ object CAPSFunctions {
     */
   def translate(src: Column, matchingString: Column, replaceString: Column): Column = {
     new Column(StringTranslate(src.expr, matchingString.expr, replaceString.expr))
+  }
+
+  /**
+    * Converts `expr` with the `withConvertedChildren` function, which is passed the converted child expressions as its
+    * argument.
+    *
+    * Iff the expression has `expr.nullInNullOut == true`, then any child being mapped to `null` will also result in
+    * the parent expression being mapped to null.
+    *
+    * For these expressions the `withConvertedChildren` function is guaranteed to not receive any `null`
+    * values from the evaluated children.
+    */
+  def null_safe_conversion(expr: Expr)(withConvertedChildren: Seq[Column] => Column)
+    (implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
+    val evaluatedArgs = expr.children.map(_.asSparkSQLExpr)
+    if (expr.cypherType == CTNull) {
+      NULL_LIT
+    } else if (expr.children.nonEmpty && expr.nullInNullOut && expr.cypherType.isNullable) {
+      val nullPropagationCases = evaluatedArgs.map(_.isNull.expr).zip(Seq.fill(evaluatedArgs.length)(NULL_LIT.expr))
+      new Column(CaseWhen(nullPropagationCases, withConvertedChildren(evaluatedArgs).expr))
+    } else {
+      new Column(withConvertedChildren(evaluatedArgs).expr)
+    }
+  }
+
+  def column_for(expr: Expr)(implicit header: RecordHeader, df: DataFrame): Column = {
+    val columnName = header.getColumn(expr).getOrElse(throw IllegalArgumentException(
+      expected = s"Expression in ${header.expressions.mkString("[", ", ", "]")}",
+      actual = expr)
+    )
+    if (df.columns.contains(columnName)) {
+      df.col(columnName)
+    } else {
+      NULL_LIT
+    }
+  }
+
+  implicit class CypherValueConversion(val v: CypherValue) extends AnyVal {
+
+    import org.opencypher.okapi.api.types.CypherType._
+
+    def toSparkLiteral: Column = {
+      v.cypherType.ensureSparkCompatible()
+      v match {
+        case list: CypherList => array(list.value.map(_.toSparkLiteral): _*)
+        case map: CypherMap =>
+          create_struct(map.value.map {
+            case (key, value) => value.toSparkLiteral.as(key.toString)
+          }.toSeq)
+        case _ => lit(v.unwrap)
+      }
+    }
+
   }
 
 }
