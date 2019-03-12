@@ -481,21 +481,21 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
          | Person (id INTEGER, name STRING),
          | KNOWS,
          |
-         |  (Person) FROM csv.`Person.csv`,
+         |  (Person) FROM parquet.`Person.parquet`,
          |
          |  (Person)-[KNOWS]->(Person)
-         |    FROM csv.`KNOWS.csv` edge
-         |      START NODES (Person) FROM csv.`Person.csv` person JOIN ON person.id = edge.p1
-         |      END   NODES (Person) FROM csv.`Person.csv` person JOIN ON edge.p2 = person.id
+         |    FROM parquet.`KNOWS.parquet` edge
+         |      START NODES (Person) FROM parquet.`Person.parquet` person JOIN ON person.id = edge.p1
+         |      END   NODES (Person) FROM parquet.`Person.parquet` person JOIN ON edge.p2 = person.id
          |)
      """.stripMargin
 
     // -- Read graph and validate
     val ds = SqlPropertyGraphDataSource(
       GraphDdl(ddlString),
-      Map("csv" -> File(
-        format = FileFormat.csv,
-        basePath = Some("file://" + getClass.getResource("/csv").getPath)
+      Map("parquet" -> File(
+        format = FileFormat.parquet,
+        basePath = Some("file://" + getClass.getResource("/parquet").getPath)
       ))
     )
 
@@ -518,27 +518,27 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
   }
 
   it("reads nodes and rels from file-based sources with absolute paths") {
-    val basePath = "file://" + getClass.getResource("/csv").getPath
+    val basePath = "file://" + getClass.getResource("/parquet").getPath
     val ddlString =
       s"""
          |CREATE GRAPH fooGraph (
          | Person (id INTEGER, name STRING),
          | KNOWS,
          |
-         |  (Person) FROM csv.`$basePath/Person.csv`,
+         |  (Person) FROM parquet.`$basePath/Person.parquet`,
          |
          |  (Person)-[KNOWS]->(Person)
-         |    FROM csv.`$basePath/KNOWS.csv` edge
-         |      START NODES (Person) FROM csv.`$basePath/Person.csv` person JOIN ON person.id = edge.p1
-         |      END   NODES (Person) FROM csv.`$basePath/Person.csv` person JOIN ON edge.p2 = person.id
+         |    FROM parquet.`$basePath/KNOWS.parquet` edge
+         |      START NODES (Person) FROM parquet.`$basePath/Person.parquet` person JOIN ON person.id = edge.p1
+         |      END   NODES (Person) FROM parquet.`$basePath/Person.parquet` person JOIN ON edge.p2 = person.id
          |)
      """.stripMargin
 
     // -- Read graph and validate
     val ds = SqlPropertyGraphDataSource(
       GraphDdl(ddlString),
-      Map("csv" -> File(
-        format = FileFormat.csv
+      Map("parquet" -> File(
+        format = FileFormat.parquet
       ))
     )
 
@@ -558,5 +558,18 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
         CypherMap("type" -> "KNOWS", "startId" -> 1, "endId" -> 2),
         CypherMap("type" -> "KNOWS", "startId" -> 2, "endId" -> 3)
       ))
+  }
+
+  it("does not support reading from csv files") {
+    val e = the[IllegalArgumentException] thrownBy {
+      SqlPropertyGraphDataSource(
+        GraphDdl.apply(""),
+        Map("csv" -> File(
+          format = FileFormat.csv
+        ))
+      )
+    }
+
+    e.getMessage should(include("not supported") and include("CSV"))
   }
 }

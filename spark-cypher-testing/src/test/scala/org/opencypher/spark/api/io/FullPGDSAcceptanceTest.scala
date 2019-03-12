@@ -81,7 +81,7 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
 
   lazy val sqlFileSystemContextFactories: List[TestContextFactory] = {
     for {
-      format <- fileFormatOptions
+      format <- fileFormatOptions.filterNot(_ == FileFormat.csv)
       filesPerTable <- filesPerTableOptions
       idGeneration <- idGenerationOptions
     } yield SQLWithLocalFSContextFactory(format, filesPerTable, idGeneration)
