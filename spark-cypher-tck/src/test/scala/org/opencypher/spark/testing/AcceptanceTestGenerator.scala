@@ -40,6 +40,7 @@ object AcceptanceTestGenerator extends App {
           |import org.opencypher.spark.impl.graph.CAPSGraphFactory
           |import org.opencypher.okapi.api.value.CypherValue._
           |import scala.util.{Failure, Success, Try}
+          |import org.opencypher.tools.tck.api.CypherValueRecords
           |import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, CypherString => TCKCypherString, CypherOrderedList => TCKCypherOrderedList,
           |   CypherNode => TCKCypherNode, CypherRelationship => TCKCypherRelationship, Connection, Forward => TCKForward, Backward => TCKBackward,
           |   CypherInteger => TCKCypherInteger, CypherFloat => TCKCypherFloat, CypherBoolean => TCKCypherBoolean, CypherProperty => TCKCypherProperty,
@@ -135,47 +136,43 @@ object AcceptanceTestGenerator extends App {
   }
 
   private def stepsToString(steps: List[(Step, Int)]): String = {
-    val contextStack = mutable.Stack[(Execute, Int)]()
+    val contextExecQueryStack = mutable.Stack[Int]()
     val contextParameterStepNrs = mutable.Stack[Int]()
 
     steps.map {
       case (Parameters(p, _), stepNr) => contextParameterStepNrs.push(stepNr)
         s"val parameter$stepNr = ${tckCypherMapToOkapiCreateString(p)}"
-      case (ex@Execute(_, querytype, _), nr) =>
+      case (ex@Execute(query, querytype, _), nr) =>
         querytype match {
           case ExecQuery =>
-            contextStack.push((ex, nr))
-            ""
+            contextExecQueryStack.push(nr)
+            val parameters = if (contextParameterStepNrs.nonEmpty) s", parameter${contextParameterStepNrs.head}" else ""
+            s"""
+               |		lazy val result$nr = graph.cypher($escapeStringMarks${alignQuery(query)}$escapeStringMarks$parameters)
+           """
           case _ =>
             //currently no TCK-Tests with side effect queries
             throw NotImplementedException("Side Effect Queries not supported yet")
         }
-      case (ExpectResult(expectedResult, _, sorted), _) =>
-        val parameters = if (contextParameterStepNrs.nonEmpty) s", parameter${contextParameterStepNrs.head}" else ""
-        val (contextQuery, stepNumber) = contextStack.head
-        val resultRows = if (sorted)
-          ResultRows(s"result${stepNumber}ValueRecords.rows", expectedResult.rows)
-        else
-          ResultRows(s"result${stepNumber}ValueRecords.rows.sortBy(_.hashCode())", expectedResult.rows.sortBy(_.hashCode()))
+      case (ExpectResult(expectedResult: CypherValueRecords, _, sorted), _) =>
+        val resultNumber = contextExecQueryStack.head
+        val equalMethod = if (sorted) "equals" else "equalsUnordered"
 
-        s"""
-           |		val result$stepNumber = graph.cypher($escapeStringMarks${alignQuery(contextQuery.query)}$escapeStringMarks$parameters)
-           |
-           |		val result${stepNumber}ValueRecords = CypherToTCKConverter.convertToTckStrings(result$stepNumber.records).asValueRecords
-           |		result${stepNumber}ValueRecords.header should equal(List(${expectedResult.header.map(escapeString).mkString(",")}))
-           |		${resultRows.queryResult} should equal(List(${resultRows.expected.map(tckCypherMapToTCKCreateString).mkString(s", \n						")}))
+        s"""val result${resultNumber}ValueRecords = CypherToTCKConverter.convertToTckStrings(result$resultNumber.records).asValueRecords
+           |    val expected${resultNumber}ValueRecords = CypherValueRecords(List(${expectedResult.header.map(escapeString).mkString(",")}), List(${expectedResult.rows.map(tckCypherMapToTCKCreateString).mkString(s", \n						")}))
+           |   	result${resultNumber}ValueRecords.$equalMethod(expected${resultNumber}ValueRecords)
            """.stripMargin
       case (ExpectError(errorType, errorPhase, detail, _), _) =>
-        val (contextQuery, stepNumber) = contextStack.pop()
+        val stepNumber = contextExecQueryStack.head
         //todo: check for errorType and detail (when coresponding errors exist like SyntaxError, TypeError, ParameterMissing, ...)
         s"""
-           |		val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{graph.cypher($escapeStringMarks${alignQuery(contextQuery.query)}$escapeStringMarks)}
+           |		val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{result$stepNumber}
            """.stripMargin
 
       case (SideEffects(expected, _), _) =>
         val relevantEffects = expected.v.filter(_._2 > 0) //check if relevant Side-Effects exist
         if (relevantEffects.nonEmpty)
-          //SideEffects not relevant in CAPS
+        //SideEffects not relevant in CAPS
           s"		fail() //TODO: side effects not handled yet"
         else
           ""
@@ -205,7 +202,7 @@ object AcceptanceTestGenerator extends App {
     if (black)
       s"""  it("${scenario.name}") {
          |    Try({
-         |     ${testString.replaceAll("\n    ","\n     ")}
+         |     ${testString.replaceAll("\n    ", "\n     ")}
          |    }) match{
          |      case Success(_) =>
          |        throw new RuntimeException(s"A blacklisted scenario may work (expected error cases can be false-positives)")
