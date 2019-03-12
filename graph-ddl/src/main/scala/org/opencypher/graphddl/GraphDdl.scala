@@ -279,7 +279,7 @@ object GraphDdl {
       .push(graphTypeName, parts.nodeMappings.map(_.nodeType) ++ parts.relMappings.map(_.relType))
     val graphType = partialGraphType.toGraphType
 
-    Graph(
+    val g = Graph(
       name = GraphName(graph.definition.name),
       graphType = graphType,
       nodeToViewMappings = parts.nodeMappings
@@ -290,6 +290,13 @@ object GraphDdl {
         .flatMap(rmd => toEdgeToViewMappings(partialGraphType.toRelType(rmd.relType), graphType, graph.maybeSetSchema, rmd))
         .validateDistinctBy(_.key, "Duplicate relationship mapping")
     )
+
+    g.edgeToViewMappings.flatMap(evm => Seq(
+      evm.startNode.nodeViewKey -> evm.startNodeJoinColumns.toSet,
+      evm.endNode.nodeViewKey -> evm.endNodeJoinColumns.toSet
+    )).distinct
+      .validateDistinctBy({ case (nvk, _) => nvk }, msg = "Inconsistent join column definition", illegalConstraint)
+    g
   }
 
   private def toNodeToViewMappings(
@@ -417,9 +424,9 @@ object GraphDdl {
     def keyBy[K](key: T => K): Map[K, T] =
       elems.map(t => key(t) -> t).toMap
 
-    def validateDistinctBy[K](key: T => K, msg: String): C[T] = {
+    def validateDistinctBy[K](key: T => K, msg: String, error: (String, Any) => Nothing = duplicate): C[T] = {
       elems.groupBy(key).foreach {
-        case (k, values) if values.size > 1 => duplicate(msg, k)
+        case (k, values) if values.size > 1 => error(msg, k)
         case _ =>
       }
       elems
@@ -444,13 +451,9 @@ case class Graph(
   edgeToViewMappings: List[EdgeToViewMapping]
 ) {
 
-  // TODO: validate (during GraphDdl construction) if the user always uses the same join columns for the node views
   def nodeIdColumnsFor(nodeViewKey: NodeViewKey): Option[List[String]] = edgeToViewMappings.collectFirst {
-    case evm: EdgeToViewMapping if evm.startNode.nodeViewKey == nodeViewKey =>
-      evm.startNode.joinPredicates.map(_.nodeColumn)
-
-    case evm: EdgeToViewMapping if evm.endNode.nodeViewKey == nodeViewKey =>
-      evm.endNode.joinPredicates.map(_.nodeColumn)
+    case evm: EdgeToViewMapping if evm.startNode.nodeViewKey == nodeViewKey => evm.startNodeJoinColumns
+    case evm: EdgeToViewMapping if evm.endNode.nodeViewKey == nodeViewKey => evm.endNodeJoinColumns
   }
 }
 
@@ -590,6 +593,10 @@ case class EdgeToViewMapping(
   propertyMappings: PropertyMappings
 ) extends ElementToViewMapping {
   def key: EdgeViewKey = EdgeViewKey(relType, view)
+
+  def startNodeJoinColumns: List[String] = startNode.joinPredicates.map(_.nodeColumn)
+
+  def endNodeJoinColumns: List[String] = endNode.joinPredicates.map(_.nodeColumn)
 }
 
 case class StartNode(

@@ -52,6 +52,10 @@ private[graphddl] object GraphDdlException {
     s"$desc: $reference"
   )
 
+  def illegalConstraint(desc: String, reference: Any): Nothing = throw IllegalConstraintException(
+    s"$desc: $reference"
+  )
+
   def incompatibleTypes(msg: String): Nothing =
     throw TypeException(msg)
 
@@ -78,6 +82,8 @@ case class UnresolvedReferenceException(msg: String, cause: Option[Exception] = 
 case class DuplicateDefinitionException(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
 
 case class IllegalInheritanceException(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
+
+case class IllegalConstraintException(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
 
 case class TypeException(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
 

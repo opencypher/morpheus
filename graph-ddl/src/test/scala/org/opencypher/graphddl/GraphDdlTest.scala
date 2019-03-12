@@ -1217,5 +1217,34 @@ class GraphDdlTest extends FunSpec with Matchers {
         GraphDdl(parseDdl(ddlString)).graphs(GraphName("myGraph")).graphType
       }
     }
+
+    it("throws if a node view key is referenced by different join columns") {
+      val e = the[GraphDdlException] thrownBy {
+        val ddlString =
+          s"""|CREATE GRAPH TYPE myType (
+              |  A ( foo STRING ),
+              |  B ( bar STRING ),
+              |  R,
+              |  (A),
+              |  (B),
+              |  (A)-[R]->(B)
+              |)
+              |CREATE GRAPH myGraph OF myType (
+              |  (A) FROM view_A,
+              |  (B) FROM view_B,
+              |  (A)-[R]->(A)
+              |   FROM view_R1 e
+              |     START NODES (A) FROM view_A n JOIN ON e.id = n.id1
+              |     END   NODES (B) FROM view_B n JOIN ON e.id = n.id,
+              |   FROM view_R2 e
+              |     START NODES (A) FROM view_A n JOIN ON e.id = n.id2
+              |     END   NODES (B) FROM view_B n JOIN ON e.id = n.id
+              |)
+              |""".stripMargin
+
+        GraphDdl(parseDdl(ddlString)).graphs(GraphName("myGraph"))
+      }
+      e.getFullMessage should (include("Inconsistent join column definition") and include("(A)") and include("view_A"))
+    }
   }
 }
