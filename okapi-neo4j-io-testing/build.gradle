@@ -10,7 +10,8 @@ dependencies {
 
     compile group: 'org.bouncycastle', name: 'bctls-jdk15on', version: ver.bctls
 
-    servicesCompile group: 'org.neo4j.test', name: 'neo4j-harness', version: '3.4.10' //ver.neo4j.main
+    servicesCompile group: 'org.neo4j.test', name: 'neo4j-harness',            version: '3.4.10' //ver.neo4j.main
+    servicesCompile group: 'org.neo4j.test', name: 'neo4j-harness-enterprise', version: '3.4.10'
 }
 
 
