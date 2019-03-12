@@ -83,8 +83,9 @@ object SparkConversions {
             // Spark uses String as the default array inner type
           case CTList(CTVoid) => Some(ArrayType(StringType, containsNull = false))
           case CTList(CTNull) => Some(ArrayType(StringType, containsNull = true))
-          case CTList(elemType) =>
-            elemType.toSparkType.map(ArrayType(_, elemType.isNullable))
+          case CTList(CTNumber) => Some(ArrayType(DoubleType, containsNull = false))
+          case CTList(CTNumber.nullable) => Some(ArrayType(DoubleType, containsNull = true))
+          case CTList(elemType) => elemType.toSparkType.map(ArrayType(_, elemType.isNullable))
           case CTMap(inner) =>
             val innerFields = inner.map {
               case (key, valueType) => valueType.toStructField(key)

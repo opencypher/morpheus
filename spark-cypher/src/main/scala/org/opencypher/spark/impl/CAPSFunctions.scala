@@ -32,13 +32,14 @@ import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.types.CTNull
+import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap, CypherValue}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.SparkSQLExprMapper._
-import org.opencypher.spark.impl.expressions.Serialize
 import org.opencypher.spark.impl.convert.SparkConversions._
+import org.opencypher.spark.impl.expressions.Serialize
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -149,7 +150,11 @@ object CAPSFunctions {
     if (expr.cypherType == CTNull) {
       NULL_LIT
     } else if (expr.children.nonEmpty && expr.nullInNullOut && expr.cypherType.isNullable) {
-      val nullPropagationCases = evaluatedArgs.map(_.isNull.expr).zip(Seq.fill(evaluatedArgs.length)(NULL_LIT.expr))
+      val castNull = expr.cypherType.toSparkType match {
+        case None => NULL_LIT
+        case Some(st) => NULL_LIT.cast(st)
+      }
+      val nullPropagationCases = evaluatedArgs.map(_.isNull.expr).zip(Seq.fill(evaluatedArgs.length)(castNull.expr))
       new Column(CaseWhen(nullPropagationCases, withConvertedChildren(evaluatedArgs).expr))
     } else {
       new Column(withConvertedChildren(evaluatedArgs).expr)
@@ -174,12 +179,15 @@ object CAPSFunctions {
   implicit class CypherValueConversion(val v: CypherValue) extends AnyVal {
 
     def toSparkLiteral: Column = {
+      v.cypherType.ensureSparkCompatible()
       v match {
         case list: CypherList => array(list.value.map(_.toSparkLiteral): _*)
         case map: CypherMap =>
-          create_struct(map.value.map {
-            case (key, value) => value.toSparkLiteral.as(key.toString)
-          }.toSeq)
+          create_struct(
+            map.value.map { case (key, value) =>
+              value.toSparkLiteral.as(key.toString)
+            }.toSeq
+          )
         case _ => lit(v.unwrap)
       }
     }
