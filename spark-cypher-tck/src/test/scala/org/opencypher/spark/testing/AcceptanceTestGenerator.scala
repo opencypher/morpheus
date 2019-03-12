@@ -148,7 +148,7 @@ object AcceptanceTestGenerator extends App {
             contextExecQueryStack.push(nr)
             val parameters = if (contextParameterStepNrs.nonEmpty) s", parameter${contextParameterStepNrs.head}" else ""
             s"""
-               |		lazy val result$nr = graph.cypher($escapeStringMarks${alignQuery(query)}$escapeStringMarks$parameters)
+               |    lazy val result$nr = graph.cypher($escapeStringMarks${alignQuery(query)}$escapeStringMarks$parameters)
            """
           case _ =>
             //currently no TCK-Tests with side effect queries
@@ -158,9 +158,10 @@ object AcceptanceTestGenerator extends App {
         val resultNumber = contextExecQueryStack.head
         val equalMethod = if (sorted) "equals" else "equalsUnordered"
 
-        s"""val result${resultNumber}ValueRecords = CypherToTCKConverter.convertToTckStrings(result$resultNumber.records).asValueRecords
+        s"""
+           |    val result${resultNumber}ValueRecords = CypherToTCKConverter.convertToTckStrings(result$resultNumber.records).asValueRecords
            |    val expected${resultNumber}ValueRecords = CypherValueRecords(List(${expectedResult.header.map(escapeString).mkString(",")}), List(${expectedResult.rows.map(tckCypherMapToTCKCreateString).mkString(s", \n						")}))
-           |   	result${resultNumber}ValueRecords.$equalMethod(expected${resultNumber}ValueRecords)
+           |    result${resultNumber}ValueRecords.$equalMethod(expected${resultNumber}ValueRecords)
            """.stripMargin
       case (ExpectError(errorType, errorPhase, detail, _), _) =>
         val stepNumber = contextExecQueryStack.head
@@ -205,7 +206,7 @@ object AcceptanceTestGenerator extends App {
          |     ${testString.replaceAll("\n    ", "\n     ")}
          |    }) match{
          |      case Success(_) =>
-         |        throw new RuntimeException(s"A blacklisted scenario may work (expected error cases can be false-positives)")
+         |        throw new RuntimeException(s"A blacklisted scenario may work (cases with expected error probably are false-positives)")
          |      case Failure(_) =>
          |    }
          |   }
@@ -217,22 +218,34 @@ object AcceptanceTestGenerator extends App {
       """.stripMargin
   }
 
+  //checks if package directories exists clears them or creates new
+  def setUpDirectories(): Unit = {
+    packageNames.values.map(packageName => {
+      val directory = new File(path + packageName)
+      if (directory.exists()) {
+        val files = directory.listFiles()
+        files.map(_.delete())
+      }
+      else {
+        directory.mkdir()
+      }
+    }
+    )
+  }
 
+  //generates test-cases for given scenario names
+  def generateGivenScenarios(names: String*) = {
+    setUpDirectories()
+    val wantedWhiteScenarios = scenarios.whiteList.filter(s => names.contains(s.name))
+    val wantedBlackScenarios = scenarios.blackList.filter(s => names.contains(s.name))
+    generateClassFile("specialWhiteCases",wantedWhiteScenarios, black = false)
+    generateClassFile("specialBlackCases",wantedBlackScenarios, black = true)
+  }
+
+
+  setUpDirectories()
   val blackFeatures = scenarios.blackList.groupBy(_.featureName)
   val whiteFeatures = scenarios.whiteList.groupBy(_.featureName)
-
-  //checks if package directories exists clears them or creates new
-  packageNames.values.map(packageName => {
-    val directory = new File(path + packageName)
-    if (directory.exists()) {
-      val files = directory.listFiles()
-      files.map(_.delete())
-    }
-    else {
-      directory.mkdir()
-    }
-  }
-  )
 
   whiteFeatures.map { feature => {
     generateClassFile(feature._1, feature._2, black = false)
