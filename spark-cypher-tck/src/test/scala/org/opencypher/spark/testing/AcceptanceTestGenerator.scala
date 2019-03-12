@@ -8,7 +8,7 @@ import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.tck.test.ScenariosFor
 import org.opencypher.okapi.tck.test.TckToCypherConverter.tckValueToCypherValue
 import org.opencypher.tools.tck.api._
-import org.opencypher.tools.tck.values.{Connection, Backward => TCKBackward, CypherOrderedList => TCKCypherOrderedList, CypherUnorderedList => TCKUnorderedList,CypherBoolean => TCKCypherBoolean, CypherFloat => TCKCypherFloat, CypherInteger => TCKCypherInteger, CypherList => TCKCypherList, CypherNode => TCKCypherNode, CypherNull => TCKCypherNull, CypherPath => TCKCypherPath, CypherProperty => TCKCypherProperty, CypherPropertyMap => TCKCypherPropertyMap, CypherRelationship => TCKCypherRelationship, CypherString => TCKCypherString, CypherValue => TCKCypherValue, Forward => TCKForward}
+import org.opencypher.tools.tck.values.{Backward => TCKBackward, CypherBoolean => TCKCypherBoolean, CypherFloat => TCKCypherFloat, CypherInteger => TCKCypherInteger, CypherList => TCKCypherList, CypherNode => TCKCypherNode, CypherNull => TCKCypherNull, CypherOrderedList => TCKCypherOrderedList, CypherPath => TCKCypherPath, CypherProperty => TCKCypherProperty, CypherPropertyMap => TCKCypherPropertyMap, CypherRelationship => TCKCypherRelationship, CypherString => TCKCypherString, CypherUnorderedList => TCKUnorderedList, CypherValue => TCKCypherValue, Forward => TCKForward}
 import org.scalatest.prop.TableFor1
 
 import scala.collection.mutable
@@ -22,12 +22,13 @@ object AcceptanceTestGenerator extends App {
   private val scenarios: ScenariosFor = ScenariosFor(failingBlacklist, temporalBlacklist, wontFixBlacklistFile, failureReportingBlacklistFile)
   private val lineIndention = "\t\t"
   private val escapeStringMarks = "\"\"\""
+  private val path = s"spark-cypher-testing/src/test/scala/org/opencypher/spark/impl/acceptance/" //or here? spark-cypher-tck/src/test/scala/org/opencypher/spark/testing/
+  private val packageNames = Map("white" -> "whiteList", "black" -> "blackList")
 
   case class ResultRows(queryResult: String, expected: List[Map[String, TCKCypherValue]])
 
-  private def generateClassFiles(featureName: String, scenarios: TableFor1[Scenario], black: Boolean) = {
-    val path = s"spark-cypher-testing/src/test/scala/org/opencypher/spark/impl/acceptance/" //or here?spark-cypher-tck/src/test/scala/org/opencypher/spark/testing/
-    val packageName = if (black) "blackList" else "whiteList"
+  private def generateClassFile(featureName: String, scenarios: TableFor1[Scenario], black: Boolean) = {
+    val packageName = if (black) packageNames.getOrElse("black","") else packageNames.getOrElse("white","")
     val className = featureName
     val classHeader =
       s"""|package org.opencypher.spark.impl.acceptance.$packageName
@@ -57,6 +58,7 @@ object AcceptanceTestGenerator extends App {
         generateTest(scenario, black)).mkString("\n")
 
     val file = new File(s"$path/$packageName/$className.scala")
+
     val fileString =
       s"""$classHeader
          |$testCases
@@ -75,13 +77,7 @@ object AcceptanceTestGenerator extends App {
     s""" "${StringEscapeUtils.escapeJava(s)}" """
   }
 
-  //todo: move to better place
-  private def tckConnectionToCreateString(con: Connection): String = {
-    con match {
-      case TCKForward(r, n) => s"TCKForward(${tckCypherValueToCreateString(r)},${tckCypherValueToCreateString(n)})"
-      case TCKBackward(r, n) => s"TCKBackward(${tckCypherValueToCreateString(r)},${tckCypherValueToCreateString(n)})"
-    }
-  }
+
   //todo: move to better place
   private def tckCypherValueToCreateString(value: TCKCypherValue): String = {
     value match {
@@ -101,7 +97,13 @@ object AcceptanceTestGenerator extends App {
       case TCKCypherNull => "TCKCypherNull"
       case TCKCypherNode(labels, properties) => s"TCKCypherNode(Set(${labels.map(escapeString).mkString(",")}), ${tckCypherValueToCreateString(properties)})"
       case TCKCypherRelationship(typ, properties) => s"TCKCypherRelationship(${escapeString(typ)}, ${tckCypherValueToCreateString(properties)})"
-      case TCKCypherPath(start, connections) => s"TCKCypherPath(${tckCypherValueToCreateString(start)},List(${connections.map(tckConnectionToCreateString).mkString(",")}))"
+      case TCKCypherPath(start, connections) =>
+        val connectionsCreateString = connections.map{
+          case TCKForward(r, n) => s"TCKForward(${tckCypherValueToCreateString(r)},${tckCypherValueToCreateString(n)})"
+          case TCKBackward(r, n) => s"TCKBackward(${tckCypherValueToCreateString(r)},${tckCypherValueToCreateString(n)})"
+        }.mkString(",")
+
+        s"TCKCypherPath(${tckCypherValueToCreateString(start)},List(${connectionsCreateString}))"
       case other =>
         throw NotImplementedException(s"Converting Cypher value $value of type `${other.getClass.getSimpleName}`")
     }
@@ -129,7 +131,7 @@ object AcceptanceTestGenerator extends App {
   }
 
   private def stepsToString(steps: List[(Step, Int)]): String = {
-    //todo: don't use immutable object
+    //todo: don't use mutable object
     val contextStack = mutable.Stack[(Execute, Int)]()
     val contextParameters = mutable.Stack[Int]()
 
@@ -154,7 +156,7 @@ object AcceptanceTestGenerator extends App {
           ResultRows(s"result${stepNumber}ValueRecords.rows", expectedResult.rows)
         else
           ResultRows(s"result${stepNumber}ValueRecords.rows.sortBy(_.hashCode())", expectedResult.rows.sortBy(_.hashCode()))
-        //todo: format expectedResultCreation String
+
         s"""
            |${lineIndention}val result$stepNumber = graph.cypher($escapeStringMarks${alignQuery(contextQuery.query)}$escapeStringMarks$parameters)
            |
@@ -191,7 +193,7 @@ object AcceptanceTestGenerator extends App {
       case _ => combined
     }) + escapeStringMarks
 
-    //todo: get parameterContext beforehand and execContext beforehand --> use of immutable stacks possible
+    //todo: get parameterContext beforehand and execContext beforehand --> use of immutable stacks possible?
     val execString = stepsToString(execSteps.zipWithIndex)
 
     val testString =
@@ -218,17 +220,29 @@ object AcceptanceTestGenerator extends App {
       """.stripMargin
   }
 
-  //todo: clear directories before first write?
+
   val blackFeatures = scenarios.blackList.groupBy(_.featureName)
   val whiteFeatures = scenarios.whiteList.groupBy(_.featureName)
 
+  //checks if package directories exists clears them or creates new
+  packageNames.values.map(packageName => {
+    val directory = new File(path + packageName)
+    if(directory.exists()) {
+      val files = directory.listFiles()
+      files.map(_.delete())
+    }
+    else {
+      directory.mkdir()
+    } }
+  )
+
   whiteFeatures.map { feature => {
-    generateClassFiles(feature._1, feature._2, black = false)
+    generateClassFile(feature._1, feature._2, black = false)
   }
   }
 
   blackFeatures.map { feature => {
-    generateClassFiles(feature._1, feature._2, black = true)
+    generateClassFile(feature._1, feature._2, black = true)
   }
   }
 
