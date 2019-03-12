@@ -239,7 +239,7 @@ object AcceptanceTestGenerator extends App {
   }
 
   //generates test-cases for given scenario names
-  def generateGivenScenarios(names: String*) = {
+  def generateGivenScenarios(names: Array[String] = Array.empty): Unit = {
     setUpDirectories()
     val wantedWhiteScenarios = scenarios.whiteList.filter(s => names.contains(s.name))
     val wantedBlackScenarios = scenarios.blackList.filter(s => names.contains(s.name))
@@ -247,20 +247,25 @@ object AcceptanceTestGenerator extends App {
     generateClassFile("specialBlackCases",wantedBlackScenarios, black = true)
   }
 
+  def generateAllScenarios() : Unit = {
+    setUpDirectories()
+    val blackFeatures = scenarios.blackList.groupBy(_.featureName)
+    val whiteFeatures = scenarios.whiteList.groupBy(_.featureName)
 
-  setUpDirectories()
-  val blackFeatures = scenarios.blackList.groupBy(_.featureName)
-  val whiteFeatures = scenarios.whiteList.groupBy(_.featureName)
+    whiteFeatures.map { feature => {
+      generateClassFile(feature._1, feature._2, black = false)
+    }
+    }
 
-  whiteFeatures.map { feature => {
-    generateClassFile(feature._1, feature._2, black = false)
-  }
-  }
-
-  blackFeatures.map { feature => {
-    generateClassFile(feature._1, feature._2, black = true)
-  }
+    blackFeatures.map { feature => {
+      generateClassFile(feature._1, feature._2, black = true)
+    }
+    }
   }
 
+  if(args.isEmpty)
+    generateAllScenarios()
+  else
+    generateGivenScenarios(args)
 
 }
