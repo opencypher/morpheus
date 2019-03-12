@@ -26,7 +26,8 @@
  */
 package org.opencypher.okapi.neo4j.io.testing
 
-import org.opencypher.okapi.neo4j.io.testing.Neo4jUtils.Neo4jContext
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
+import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils.Neo4jContext
 import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
 
 trait Neo4jServerFixture extends BaseTestFixture {
@@ -38,12 +39,11 @@ trait Neo4jServerFixture extends BaseTestFixture {
 
   var neo4jContext: Neo4jContext = _
 
-  def neo4jConfig = neo4jContext.config
+  def neo4jConfig: Neo4jConfig = neo4jContext.config
 
   abstract override def beforeAll(): Unit = {
     super.beforeAll()
-    neo4jContext = Neo4jUtils.connectNeo4j(dataFixture, neo4jHost)
-    neo4jContext.clear()
+    neo4jContext = Neo4jTestUtils.connectNeo4j(dataFixture, neo4jHost)
   }
 
   abstract override def afterAll(): Unit = {

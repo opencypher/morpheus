@@ -45,6 +45,7 @@ import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
+import org.opencypher.spark.testing.utils.BagHelpers._
 
 class Neo4jPropertyGraphDataSourceTest
   extends CAPSTestSuite
@@ -64,8 +65,8 @@ class Neo4jPropertyGraphDataSourceTest
 
   it("should load a graph from Neo4j via DataSource") {
     val graph = CypherGraphSources.neo4j(neo4jConfig).graph(entireGraphName).asCaps
-    graph.nodes("n").asCaps.toCypherMaps.collect.toBag should equal(teamDataGraphNodes)
-    graph.relationships("r").asCaps.toCypherMaps.collect.toBag should equal(teamDataGraphRels)
+    graph.nodes("n").asCaps.toCypherMaps.collect.toBag.nodeValuesWithoutIds shouldEqual teamDataGraphNodes.nodeValuesWithoutIds
+    graph.relationships("r").asCaps.toCypherMaps.collect.toBag.relValuesWithoutIds shouldEqual teamDataGraphRels.relValuesWithoutIds
   }
 
   it("should load a graph from Neo4j via catalog") {
@@ -74,10 +75,10 @@ class Neo4jPropertyGraphDataSourceTest
     caps.registerSource(testNamespace, CypherGraphSources.neo4j(neo4jConfig))
 
     val nodes: CypherResult = caps.cypher(s"FROM GRAPH $testNamespace.$entireGraphName MATCH (n) RETURN n")
-    nodes.records.collect.toBag should equal(teamDataGraphNodes)
+    nodes.records.collect.toBag.nodeValuesWithoutIds shouldEqual teamDataGraphNodes.nodeValuesWithoutIds
 
     val edges = caps.cypher(s"FROM GRAPH $testNamespace.$entireGraphName MATCH ()-[r]->() RETURN r")
-    edges.records.collect.toBag should equal(teamDataGraphRels)
+    edges.records.collect.toBag.relValuesWithoutIds shouldEqual teamDataGraphRels.relValuesWithoutIds
   }
 
   it("should omit properties with unsupported types if corresponding flag is set") {

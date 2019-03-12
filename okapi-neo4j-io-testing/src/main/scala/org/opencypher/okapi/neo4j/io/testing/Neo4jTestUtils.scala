@@ -31,25 +31,16 @@ import java.net.URI
 import org.neo4j.driver.v1.{Driver, Session, StatementResult}
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
 
-object Neo4jUtils {
+object Neo4jTestUtils {
 
   case class Neo4jContext(driver: Driver, session: Session, config: Neo4jConfig) {
 
     def clear(): Unit = {
-      execute(
-        """
-          |MATCH (n)
-          |DETACH DELETE n
-        """.stripMargin).consume()
-      execute(
-        """
-          |CALL db.constraints()
-        """.stripMargin)
-        .list(_.get("description").asString())
-        .toArray()
-        .foreach(const =>
-          execute(s"""DROP $const""")
-        )
+      execute("MATCH (n) DETACH DELETE n")
+        .consume()
+      execute("CALL db.constraints()")
+        .list(_.get("description").asString()).toArray()
+        .foreach(const => execute(s"""DROP $const"""))
     }
 
     def close(): Unit = {
@@ -74,6 +65,7 @@ object Neo4jUtils {
     val driver = config.driver()
     val session = driver.session()
     val neo4jContext = Neo4jContext(driver, session, config)
+    neo4jContext.clear()
     if (dataFixture.nonEmpty) {
       neo4jContext.execute(dataFixture).consume()
     }
