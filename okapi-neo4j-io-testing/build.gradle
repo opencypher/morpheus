@@ -1,3 +1,5 @@
+apply plugin: 'ch.kk7.spawn'
+
 description = 'Okapi - Neo4j IO test utils'
 
 sourceSets {
@@ -10,18 +12,18 @@ dependencies {
 
     compile group: 'org.bouncycastle', name: 'bctls-jdk15on', version: ver.bctls
 
-    servicesCompile group: 'org.neo4j.test', name: 'neo4j-harness',            version: '3.4.10' //ver.neo4j.main
-    servicesCompile group: 'org.neo4j.test', name: 'neo4j-harness-enterprise', version: '3.4.10'
+    servicesCompile group: 'org.neo4j.test', name: 'neo4j-harness',            version: ver.neo4j.harness
+    servicesCompile group: 'org.neo4j.test', name: 'neo4j-harness-enterprise', version: ver.neo4j.harness
 }
 
 
-ext.marker = 'neo4j started'
+def neo4jStartedMarker() { 'neo4j started' }
 
 def neo4jCommandLine(int instances) {
     def java = System.getProperty('java.home') + '/bin/java'
     def classpath = sourceSets.services.runtimeClasspath.collect { it.absolutePath }.join(':')
     def main = 'org.opencypher.testing.services.Neo4j'
-    return [java, '-cp', classpath, main, marker, instances.toString()]
+    return [java, '-cp', classpath, main, neo4jStartedMarker(), instances.toString()]
 }
 
 task neo4jStart(type: ch.kk7.gradle.spawn.SpawnTask) {
@@ -31,10 +33,8 @@ task neo4jStart(type: ch.kk7.gradle.spawn.SpawnTask) {
     dependsOn sourceSets.services.runtimeClasspath
 
     commandLine = neo4jCommandLine(1)
-    waitFor = marker
-    doLast {
-        println getStdoutFile().text
-    }
+    waitFor     = neo4jStartedMarker()
+    doLast { println getStdoutFile().text }
 }
 
 task neo4jStop(type: ch.kk7.gradle.spawn.KillTask) {
@@ -51,10 +51,8 @@ task neo4jStartDouble(type: ch.kk7.gradle.spawn.SpawnTask) {
     dependsOn sourceSets.services.runtimeClasspath
 
     commandLine = neo4jCommandLine(2)
-    waitFor = marker
-    doLast {
-        println getStdoutFile().text
-    }
+    waitFor     = neo4jStartedMarker()
+    doLast { println getStdoutFile().text }
 }
 
 task neo4jStopDouble(type: ch.kk7.gradle.spawn.KillTask) {
