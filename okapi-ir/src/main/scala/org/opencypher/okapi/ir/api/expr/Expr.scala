@@ -485,7 +485,7 @@ final case class Divide(lhs: Expr, rhs: Expr)(val cypherType: CypherType) extend
 // Functions
 sealed trait FunctionExpr extends Expr {
 
-  def exprs: IndexedSeq[Expr]
+  def exprs: List[Expr]
 
   def name: String = this.getClass.getSimpleName.toLowerCase
 
@@ -496,20 +496,20 @@ sealed trait FunctionExpr extends Expr {
 
 final case class MonotonicallyIncreasingId(cypherType: CypherType = CTInteger) extends FunctionExpr {
 
-  override def exprs: IndexedSeq[Expr] = IndexedSeq.empty
+  override def exprs: List[Expr] = List.empty
 
 }
 
 sealed trait NullaryFunctionExpr extends FunctionExpr {
 
-  def exprs: IndexedSeq[Expr] = IndexedSeq.empty[Expr]
+  def exprs: List[Expr] = List.empty[Expr]
 }
 
 sealed trait UnaryFunctionExpr extends FunctionExpr {
 
   def expr: Expr
 
-  def exprs: IndexedSeq[Expr] = IndexedSeq(expr)
+  def exprs: List[Expr] = List(expr)
 }
 
 final case class Id(expr: Expr) extends UnaryFunctionExpr {
@@ -562,9 +562,11 @@ final case class ToBoolean(expr: Expr) extends UnaryFunctionExpr {
   override val cypherType: CypherType = CTBoolean.asNullableAs(expr.cypherType)
 }
 
-final case class Coalesce(exprs: IndexedSeq[Expr])(val cypherType: CypherType) extends FunctionExpr
+final case class Coalesce(exprs: List[Expr])(val cypherType: CypherType) extends FunctionExpr
 
 final case class Explode(expr: Expr)(val cypherType: CypherType) extends Expr {
+
+  override def nullInNullOut = false
 
   override def withoutType: String = s"explode(${expr.withoutType})"
 
@@ -596,17 +598,17 @@ final case class Properties(expr: Expr)(val cypherType: CypherType) extends Unar
 
 final case class Range(from: Expr, to: Expr, o: Option[Expr]) extends FunctionExpr {
 
-  override def exprs: IndexedSeq[Expr] = IndexedSeq(from, to)
+  override def exprs: List[Expr] = List(from, to)
   override def cypherType: CypherType = CTList(CTInteger)
 }
 
 final case class Replace(original: Expr, search: Expr, replacement: Expr) extends FunctionExpr {
-  override def exprs: IndexedSeq[Expr] = IndexedSeq(original, search, replacement)
+  override def exprs: List[Expr] = List(original, search, replacement)
   override def cypherType: CypherType = CTString
 }
 
 final case class Substring(original: Expr, start: Expr, length: Option[Expr]) extends FunctionExpr {
-  override def exprs: IndexedSeq[Expr] = IndexedSeq(original, start)
+  override def exprs: List[Expr] = List(original, start)
   override def cypherType: CypherType = CTString
 }
 
@@ -703,7 +705,7 @@ final case class Atan(expr: Expr) extends UnaryFunctionExpr {
 }
 
 final case class Atan2(expr1: Expr, expr2: Expr) extends FunctionExpr {
-  override def exprs: IndexedSeq[Expr] = IndexedSeq(expr1, expr2)
+  override def exprs: List[Expr] = List(expr1, expr2)
 
   override val cypherType: CypherType = childNullPropagatesTo(CTFloat)
 }
@@ -746,6 +748,8 @@ case object Timestamp extends NullaryFunctionExpr {
 
 sealed trait Aggregator extends Expr {
   def inner: Option[Expr]
+
+  override def nullInNullOut: Boolean = false
 }
 
 final case class Avg(expr: Expr) extends Aggregator {
@@ -834,11 +838,7 @@ sealed trait Lit[T] extends Expr {
   override def withoutType = s"$v"
 }
 
-object ListLit {
-  def apply(exprs: Expr*): ListLit = new ListLit(exprs.toIndexedSeq)()
-}
-
-final case class ListLit(v: IndexedSeq[Expr])(val cypherType: CypherType = CTList(CTVoid)) extends Lit[IndexedSeq[Expr]]
+final case class ListLit(v: List[Expr])(val cypherType: CypherType = CTList(CTVoid)) extends Lit[List[Expr]]
 
 final case class ContainerIndex(container: Expr, index: Expr)(val cypherType: CypherType) extends Expr {
 
@@ -856,10 +856,7 @@ final case class StringLit(v: String) extends Lit[String] {
 
 sealed abstract class TemporalInstant(expr: Option[Expr]) extends FunctionExpr {
 
-  override val exprs: IndexedSeq[Expr] = expr match {
-    case Some(expr) => IndexedSeq(expr)
-    case None => IndexedSeq.empty
-  }
+  override val exprs: List[Expr] = expr.toList
 }
 
 final case class LocalDateTime(maybeExpr: Option[Expr]) extends TemporalInstant(maybeExpr) {
@@ -874,11 +871,10 @@ final case class Date(expr: Option[Expr]) extends TemporalInstant(expr) {
 
 }
 
-final case class Duration(expr: Expr) extends FunctionExpr {
+final case class Duration(expr: Expr) extends UnaryFunctionExpr {
 
   override val cypherType: CypherType = CTDuration.asNullableAs(expr.cypherType)
 
-  override def exprs: IndexedSeq[Expr] = IndexedSeq(expr)
 }
 
 sealed abstract class BoolLit(val v: Boolean) extends Lit[Boolean] {
@@ -909,7 +905,7 @@ final case class ExistsPatternExpr(targetField: Var, ir: CypherQuery)
 
 }
 
-final case class CaseExpr(alternatives: IndexedSeq[(Expr, Expr)], default: Option[Expr])
+final case class CaseExpr(alternatives: List[(Expr, Expr)], default: Option[Expr])
   (val cypherType: CypherType) extends Expr {
 
   override def toString: String = s"$withoutType($cypherType)"

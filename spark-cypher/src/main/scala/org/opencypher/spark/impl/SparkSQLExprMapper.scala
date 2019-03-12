@@ -76,7 +76,7 @@ object SparkSQLExprMapper {
         def c3: Column = convertedChildren(2)
 
         expr match {
-          case ListLit(inner) => array(inner.map(_.asSparkSQLExpr): _*)
+          case _: ListLit => array(convertedChildren: _*)
           case l: Lit[_] => lit(l.v)
           case _: Var | _: HasLabel | _: HasType | _: StartNode | _: EndNode => columnFor(expr)
           case _: AliasExpr => c1
@@ -107,7 +107,7 @@ object SparkSQLExprMapper {
           case _: RegexMatch => regex_match(c1, c2)
 
           // Other
-          case _: Explode => functions.explode(c1)
+          case _: Explode => explode(c1)
           case Property(e, PropertyKey(key)) =>
             // Convert property lookups into separate specific lookups instead of overloading
             e.cypherType.material match {
@@ -366,6 +366,20 @@ object SparkSQLExprMapper {
             case other => throw IllegalArgumentException("an expression of type CTMap", other)
           }
 
+            // Aggregators
+          case Count(_, distinct) =>
+            if (distinct) countDistinct(c1)
+            else count(c1)
+
+          case Collect(_, distinct) =>
+            if (distinct) collect_set(c1)
+            else collect_list(c1)
+
+          case CountStar => count(ONE_LIT)
+          case _: Avg => avg(c1)//.cast(cypherType.getSparkType)
+          case _: Max => max(c1)
+          case _: Min => min(c1)
+          case _: Sum => sum(c1)
 
           case _ =>
             throw NotImplementedException(s"No support for converting Cypher expression $expr to a Spark SQL expression")
@@ -412,7 +426,7 @@ object SparkSQLExprMapper {
     expr.cypherType.getSparkType
     if (expr.cypherType == CTNull) {
       NULL_LIT
-    } else if (expr.nullInNullOut && expr.cypherType.isNullable) {
+    } else if (expr.children.nonEmpty && expr.nullInNullOut && expr.cypherType.isNullable) {
       val nullPropagationCases = evaluatedArgs.map(_.isNull.expr).zip(Seq.fill(evaluatedArgs.length)(NULL_LIT.expr))
       new Column(CaseWhen(nullPropagationCases, ifNotNull(evaluatedArgs).expr))
     } else {

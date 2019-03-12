@@ -103,27 +103,27 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   it("should convert CASE") {
     convert(parseExpr("CASE WHEN INTEGER > INTEGER THEN INTEGER ELSE FLOAT END")) should equal(
-      CaseExpr(IndexedSeq((GreaterThan('INTEGER, 'INTEGER), 'INTEGER)), Some('FLOAT))(CTNumber)
+      CaseExpr(List((GreaterThan('INTEGER, 'INTEGER), 'INTEGER)), Some('FLOAT))(CTNumber)
     )
     convert(parseExpr("CASE WHEN STRING > STRING_OR_NULL THEN NODE END")) should equal(
-      CaseExpr(IndexedSeq((GreaterThan('STRING, 'STRING_OR_NULL), 'NODE)), None)(CTNode("Node").nullable)
+      CaseExpr(List((GreaterThan('STRING, 'STRING_OR_NULL), 'NODE)), None)(CTNode("Node").nullable)
     )
   }
 
   describe("coalesce") {
     it("should convert coalesce") {
       convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE)")) shouldEqual
-        Coalesce(IndexedSeq('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE))(CTAny)
+        Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE))(CTAny)
     }
 
     it("should become nullable if nothing is non-null") {
       convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE_OR_NULL)")) shouldEqual
-        Coalesce(IndexedSeq('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE_OR_NULL))(CTAny.nullable)
+        Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE_OR_NULL))(CTAny.nullable)
     }
 
     it("should not consider arguments past the first non-nullable coalesce") {
       convert(parseExpr("coalesce(INTEGER_OR_NULL, FLOAT, NODE, STRING)")) shouldEqual
-        Coalesce(IndexedSeq('INTEGER_OR_NULL, 'FLOAT))(CTNumber)
+        Coalesce(List('INTEGER_OR_NULL, 'FLOAT))(CTNumber)
     }
 
     it("should remove coalesce if the first arg is non-nullable") {
@@ -146,7 +146,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   describe("IN") {
     it("can convert in predicate and literal list") {
       convert(parseExpr("INTEGER IN [INTEGER, INTEGER_OR_NULL, FLOAT]")) shouldEqual(
-        In('INTEGER, ListLit('INTEGER, 'INTEGER_OR_NULL, 'FLOAT)), CTBoolean
+        In('INTEGER, ListLit(List('INTEGER, 'INTEGER_OR_NULL, 'FLOAT))(CTList(CTNumber.nullable))), CTBoolean
       )
     }
 

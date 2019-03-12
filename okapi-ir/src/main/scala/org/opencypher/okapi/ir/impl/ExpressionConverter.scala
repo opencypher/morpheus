@@ -100,7 +100,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
     case _: ast.True => TrueLit
     case _: ast.False => FalseLit
     case ast.ListLiteral(exprs) =>
-      val elements = exprs.map(convert).toIndexedSeq
+      val elements = exprs.map(convert).toList
       val elementType = elements.foldLeft(CTVoid: CypherType) { case (agg, nextExpr) => agg.join(nextExpr.cypherType) }
       ListLit(elements)(CTList(elementType))
 
@@ -181,7 +181,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
       Divide(convertedLhs, convertedRhs)(exprType)
 
     case funcInv: ast.FunctionInvocation =>
-      val convertedArgs = funcInv.args.map(convert)
+      val convertedArgs = funcInv.args.map(convert).toList
       def returnType: CypherType = funcInv.returnTypeFor(convertedArgs.map(_.cypherType): _*)
 
       val distinct = funcInv.distinct
@@ -307,7 +307,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
 
     // Case When .. Then .. [Else ..] End
     case ast.CaseExpression(None, alternatives, default) =>
-      val convertedAlternatives: IndexedSeq[(Expr, Expr)] = alternatives.map { case (left, right) => convert(left) -> convert(right) }
+      val convertedAlternatives = alternatives.toList.map { case (left, right) => convert(left) -> convert(right) }
       val maybeConvertedDefault: Option[Expr] = default.map(expr => convert(expr))
       val possibleTypes = convertedAlternatives.map { case (_, thenExpr) => thenExpr.cypherType }
       val defaultCaseType = maybeConvertedDefault.map(_.cypherType).getOrElse(CTNull)

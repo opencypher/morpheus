@@ -344,7 +344,7 @@ final case class Aggregate[T <: Table[T] : TypeTag](
   override lazy val header: RecordHeader = in.header.select(group).withExprs(aggregations.map { case (v, _) => v })
 
   override lazy val _table: T = {
-    val preparedAggregations = aggregations.map { case (v, agg) => agg -> (header.column(v) -> v.cypherType) }
+    val preparedAggregations = aggregations.map { case (v, agg) => header.column(v) -> agg }.toMap
     in.table.group(group, preparedAggregations)(in.header, context.parameters)
   }
 }

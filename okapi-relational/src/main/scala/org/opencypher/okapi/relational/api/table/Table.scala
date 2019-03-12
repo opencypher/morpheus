@@ -155,7 +155,7 @@ trait Table[T <: Table[T]] extends CypherTable {
     * @param parameters   query parameters
     * @return table grouped by the given keys and results of possible aggregate functions
     */
-  def group(by: Set[Var], aggregations: Set[(Aggregator, (String, CypherType))])
+  def group(by: Set[Var], aggregations: Map[String, Aggregator])
     (implicit header: RecordHeader, parameters: CypherMap): T
 
   /**
