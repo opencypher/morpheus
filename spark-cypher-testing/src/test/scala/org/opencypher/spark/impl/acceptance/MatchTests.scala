@@ -451,7 +451,7 @@ class MatchTests extends CAPSTestSuite with ScanGraphInit {
       "MATCH (a:Person)-[:LIVES_IN]->(c:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b) RETURN a.name, b.name, c.name"
     )
 
-    result.records.toMapsWithCollectedEntities should equal(Bag(
+    result.records.toMaps should equal(Bag(
       CypherMap("a.name" -> "Philip", "b.name" -> "Stefan", "c.name" -> "The Pan-European Sprawl")
     ))
   }

@@ -109,9 +109,9 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
       val result = given.cypher("MATCH (n) RETURN n")
 
       result.records.toMaps should equal(Bag(
-        CypherMap("n" -> 0L.encodeAsCAPSId, "n.foo" -> "bar"),
-        CypherMap("n" -> 1L.encodeAsCAPSId, "n.foo" -> null))
-      )
+        CypherMap("n" -> CAPSNode(0L.encodeAsCAPSId.toSeq, Set.empty[String], CypherMap("foo" -> "bar"))),
+        CypherMap("n" -> CAPSNode(1L.encodeAsCAPSId.toSeq, Set.empty[String], CypherMap()))
+      ))
     }
 
     it("returns full rel") {
@@ -343,5 +343,19 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
       val res = caps.cypher("WITH { foo : 123, bar : '456'} AS m RETURN m.foo AS foo, m.bar AS bar")
       res.records.collect.toBag should equal(Bag(CypherMap("foo" -> 123, "bar" -> "456")))
     }
+
+    it("returns lists of maps") {
+      val res = caps.cypher(
+        """
+          |RETURN [
+          | {foo: "bar"},
+          | {foo: "baz"}
+          |] as maps
+        """.stripMargin)
+      res.records.collect.toBag should equal(Bag(
+        CypherMap("maps" -> CypherList(Map("foo" -> "bar"), Map("foo" -> "baz")))
+      ))
+    }
+
   }
 }

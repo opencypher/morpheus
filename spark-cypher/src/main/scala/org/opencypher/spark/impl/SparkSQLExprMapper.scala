@@ -26,11 +26,12 @@
  */
 package org.opencypher.spark.impl
 
+import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, InternalException, NotImplementedException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, InternalException, NotImplementedException}
 import org.opencypher.okapi.impl.temporal.TemporalTypesHelper._
 import org.opencypher.okapi.impl.temporal.{Duration => DurationValue}
 import org.opencypher.okapi.ir.api.PropertyKey
@@ -497,7 +498,8 @@ object SparkSQLExprMapper {
 
   private def createStructColumn(structColumns: Seq[Column]): Column = {
     if (structColumns.isEmpty) {
-      functions.lit(null).cast(new StructType())
+      val emptyStructUdf = functions.udf( () => new GenericRowWithSchema(Array(), StructType(Nil)), StructType(Nil))
+      emptyStructUdf()
     } else {
       functions.struct(structColumns: _*)
     }

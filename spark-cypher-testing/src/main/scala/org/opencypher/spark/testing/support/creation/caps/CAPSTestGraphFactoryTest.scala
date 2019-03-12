@@ -123,7 +123,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
 
     val g = factory(propertyGraph).asCaps
 
-    g.cypher("MATCH (n) RETURN n.l as list").records.toMapsWithCollectedEntities should equal(Bag(
+    g.cypher("MATCH (n) RETURN n.l as list").records.toMaps should equal(Bag(
       CypherMap("list" -> List(1,2,3))
     ))
   }
@@ -138,7 +138,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
 
     val g = factory(propertyGraph).asCaps
 
-    g.cypher("MATCH (n) RETURN n.val1, n.val2").records.toMapsWithCollectedEntities should equal(Bag(
+    g.cypher("MATCH (n) RETURN n.val1, n.val2").records.toMaps should equal(Bag(
       CypherMap("n.val1" -> 1,    "n.val2" -> "foo"),
       CypherMap("n.val1" -> 1,    "n.val2" -> null),
       CypherMap("n.val1" -> null, "n.val2" -> null)

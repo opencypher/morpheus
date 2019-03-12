@@ -56,7 +56,7 @@ class PatternScanTests extends CAPSTestSuite with ScanGraphInit {
         |RETURN a.name, b.name
       """.stripMargin)
 
-    res.records.toMapsWithCollectedEntities should equal(Bag(
+    res.records.toMaps should equal(Bag(
       CypherMap("a.name" -> "Alice", "b.name" -> "Bob")
     ))
   }
@@ -84,7 +84,7 @@ class PatternScanTests extends CAPSTestSuite with ScanGraphInit {
         |RETURN a.name, b.name, c.name
       """.stripMargin)
 
-    res.records.toMapsWithCollectedEntities should equal(Bag(
+    res.records.toMaps should equal(Bag(
       CypherMap("a.name" -> "Alice", "b.name" -> "Bob", "c.name" -> "Carol")
     ))
   }
@@ -111,7 +111,7 @@ class PatternScanTests extends CAPSTestSuite with ScanGraphInit {
         |RETURN a.name, b.name
       """.stripMargin)
 
-    res.records.toMapsWithCollectedEntities should equal(Bag(
+    res.records.toMaps should equal(Bag(
       CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
       CypherMap("a.name" -> "Garfield", "b.name" -> "Bob")
     ))
@@ -138,7 +138,7 @@ class PatternScanTests extends CAPSTestSuite with ScanGraphInit {
         |RETURN a.name, b.name
       """.stripMargin)
 
-    res.records.toMapsWithCollectedEntities should equal(Bag(
+    res.records.toMaps should equal(Bag(
       CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
       CypherMap("a.name" -> "Garfield", "b.name" -> "Bob")
     ))
@@ -164,7 +164,7 @@ class PatternScanTests extends CAPSTestSuite with ScanGraphInit {
         |RETURN a.name, b.name
       """.stripMargin)
 
-    res.records.toMapsWithCollectedEntities should equal(Bag(
+    res.records.toMaps should equal(Bag(
       CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
       CypherMap("a.name" -> "Alice", "b.name" -> "Bob")
     ))
@@ -191,7 +191,7 @@ class PatternScanTests extends CAPSTestSuite with ScanGraphInit {
         |RETURN a.name, b.name
       """.stripMargin)
 
-    res.records.toMapsWithCollectedEntities should equal(Bag(
+    res.records.toMaps should equal(Bag(
       CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
       CypherMap("a.name" -> "Garfield", "b.name" -> "Bob")
     ))
@@ -218,7 +218,7 @@ class PatternScanTests extends CAPSTestSuite with ScanGraphInit {
         |RETURN a.name, b.name
       """.stripMargin)
 
-    res.records.toMapsWithCollectedEntities should equal(Bag(
+    res.records.toMaps should equal(Bag(
       CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
       CypherMap("a.name" -> "Alice", "b.name" -> "Garfield")
     ))
@@ -244,7 +244,7 @@ class PatternScanTests extends CAPSTestSuite with ScanGraphInit {
         |RETURN a.name, b.name
       """.stripMargin)
 
-    res.records.toMapsWithCollectedEntities should equal(Bag(
+    res.records.toMaps should equal(Bag(
       CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
       CypherMap("a.name" -> "Alice", "b.name" -> "Bob")
     ))

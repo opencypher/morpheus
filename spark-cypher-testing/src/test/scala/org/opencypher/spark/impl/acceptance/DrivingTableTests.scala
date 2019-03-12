@@ -60,7 +60,7 @@ class DrivingTableTests extends CAPSTestSuite with ScanGraphInit {
       caps.cypher(
         """
           |RETURN age, name
-        """.stripMargin, drivingTable = Some(drivingTable)).records.toMapsWithCollectedEntities should equal(Bag(
+        """.stripMargin, drivingTable = Some(drivingTable)).records.toMaps should equal(Bag(
         CypherMap("age" -> 10, "name" -> "Alice"),
         CypherMap("age" -> 20, "name" -> "Bob"),
         CypherMap("age" -> 15, "name" -> "Carol")
@@ -72,7 +72,7 @@ class DrivingTableTests extends CAPSTestSuite with ScanGraphInit {
         """
           |UNWIND [1,2] AS i
           |RETURN i, age, name
-        """.stripMargin, drivingTable = Some(drivingTable)).records.toMapsWithCollectedEntities should equal(Bag(
+        """.stripMargin, drivingTable = Some(drivingTable)).records.toMaps should equal(Bag(
         CypherMap("i" -> 1, "age" -> 10, "name" -> "Alice"),
         CypherMap("i" -> 1, "age" -> 20, "name" -> "Bob"),
         CypherMap("i" -> 1, "age" -> 15, "name" -> "Carol"),
@@ -97,7 +97,7 @@ class DrivingTableTests extends CAPSTestSuite with ScanGraphInit {
           |MATCH (p:Person)
           |WHERE p.age = age
           |RETURN p.name, name
-        """.stripMargin, drivingTable = Some(drivingTable)).records.toMapsWithCollectedEntities should equal(Bag(
+        """.stripMargin, drivingTable = Some(drivingTable)).records.toMaps should equal(Bag(
         CypherMap("p.name" -> "George", "name" -> "Bob"),
         CypherMap("p.name" -> "Jon", "name" -> "Carol")
       ))
@@ -115,7 +115,7 @@ class DrivingTableTests extends CAPSTestSuite with ScanGraphInit {
         """
           |MATCH (p:Person {age: age})
           |RETURN p.name, name
-        """.stripMargin, drivingTable = Some(drivingTable)).records.toMapsWithCollectedEntities should equal(Bag(
+        """.stripMargin, drivingTable = Some(drivingTable)).records.toMaps should equal(Bag(
         CypherMap("p.name" -> "George", "name" -> "Bob"),
         CypherMap("p.name" -> "Jon", "name" -> "Carol")
       ))
@@ -135,7 +135,7 @@ class DrivingTableTests extends CAPSTestSuite with ScanGraphInit {
           |MATCH (p:Person {age: age})
           |MATCH (p)-[]->()
           |RETURN p.name, name
-        """.stripMargin, drivingTable = Some(drivingTable)).records.toMapsWithCollectedEntities should equal(Bag(
+        """.stripMargin, drivingTable = Some(drivingTable)).records.toMaps should equal(Bag(
         CypherMap("p.name" -> "George", "name" -> "Bob"),
         CypherMap("p.name" -> "Jon", "name" -> "Carol")
       ))

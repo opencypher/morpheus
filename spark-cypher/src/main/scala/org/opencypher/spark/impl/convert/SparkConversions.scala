@@ -29,10 +29,13 @@ package org.opencypher.spark.impl.convert
 import org.apache.spark.sql.Row
 import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.types._
+import org.apache.spark.unsafe.types.CalendarInterval
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue, CypherValueConverter}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 
 object SparkConversions {
 
@@ -204,4 +207,20 @@ object SparkConversions {
     def allNull(rowSize: Int): Boolean = (for (i <- 0 until rowSize) yield row.isNullAt(i)).reduce(_ && _)
   }
 
+
+  object SparkCypherValueConverter extends CypherValueConverter {
+    override def convert(v: Any): Option[CypherValue] = v match {
+      case interval: CalendarInterval => Some(interval.toDuration)
+      case row: Row =>
+        val pairs: Seq[(String, Any)] = row.schema.fieldNames.map { field =>
+          val index = row.fieldIndex(field)
+          field -> row.get(index)
+        }
+        Some(CypherMap(pairs: _*))
+
+      case _ => None
+    }
+  }
+
+  implicit val sparkCypherValueConverter: CypherValueConverter = SparkCypherValueConverter
 }

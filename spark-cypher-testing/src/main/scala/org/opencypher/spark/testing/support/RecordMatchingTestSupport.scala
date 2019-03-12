@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.ir.api.expr.{Expr, Param, Var}
+import org.opencypher.okapi.ir.api.expr.{Expr, Param}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.Bag
@@ -84,21 +84,7 @@ trait RecordMatchingTestSupport {
   implicit class RichRecords(records: CypherRecords) {
     val capsRecords: CAPSRecords = records.asCaps
 
-    // TODO: Remove this and replace usages with toMapsWithCollectedEntities below
-    // probably use this name though, and have not collecting be the special case
-    def toMaps: Bag[CypherMap] = {
-      val rows = capsRecords.df.collect().map { r =>
-        val properties = capsRecords.header.expressions.map {
-          case v: Var => v.name -> r.getCypherValue(v, capsRecords.header)
-          case e => e.withoutType -> r.getCypherValue(e, capsRecords.header)
-        }.toMap
-        CypherMap(properties)
-      }
-      Bag(rows: _*)
-    }
-
-    def toMapsWithCollectedEntities: Bag[CypherMap] =
-      Bag(capsRecords.toCypherMaps.collect(): _*)
+    def toMaps: Bag[CypherMap] = Bag(capsRecords.toCypherMaps.collect(): _*)
   }
 
 }

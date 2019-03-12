@@ -41,7 +41,7 @@ class UnwindTests extends CAPSTestSuite with ScanGraphInit {
 
     val result = caps.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-    result.records.toMapsWithCollectedEntities should equal(
+    result.records.toMaps should equal(
       Bag(
         CypherMap("item" -> 1),
         CypherMap("item" -> 2),
@@ -54,7 +54,7 @@ class UnwindTests extends CAPSTestSuite with ScanGraphInit {
 
     val result = caps.cypher(query)
 
-    result.records.toMapsWithCollectedEntities should be(
+    result.records.toMaps should be(
       Bag(
         CypherMap("item" -> 1),
         CypherMap("item" -> 2),
@@ -69,7 +69,7 @@ class UnwindTests extends CAPSTestSuite with ScanGraphInit {
 
     val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-    result.records.toMapsWithCollectedEntities.map(_.toString) should equal(
+    result.records.toMaps.map(_.toString) should equal(
       Bag(
         CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 1),
         CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
@@ -87,7 +87,7 @@ class UnwindTests extends CAPSTestSuite with ScanGraphInit {
 
     val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-    result.records.toMapsWithCollectedEntities should equal(
+    result.records.toMaps should equal(
       Bag(
         CypherMap("item" -> 1),
         CypherMap("item" -> 15),
@@ -102,7 +102,7 @@ class UnwindTests extends CAPSTestSuite with ScanGraphInit {
 
     val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-    result.records.toMapsWithCollectedEntities should equal(
+    result.records.toMaps should equal(
       Bag(
         CypherMap("item" -> 1),
         CypherMap("item" -> 2),
@@ -118,7 +118,7 @@ class UnwindTests extends CAPSTestSuite with ScanGraphInit {
 
     val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-    result.records.toMapsWithCollectedEntities should equal(
+    result.records.toMaps should equal(
       Bag(
         CypherMap("item" -> 1),
         CypherMap("item" -> 2),
@@ -136,7 +136,7 @@ class UnwindTests extends CAPSTestSuite with ScanGraphInit {
 
     val result = graph.cypher(query)
 
-    result.records.toMapsWithCollectedEntities should be(empty)
+    result.records.toMaps should be(empty)
   }
 
   it("unwind from null expression") {
@@ -151,7 +151,7 @@ class UnwindTests extends CAPSTestSuite with ScanGraphInit {
 
     val result = graph.cypher(query)
 
-    result.records.toMapsWithCollectedEntities should be(empty)
+    result.records.toMaps should be(empty)
   }
 
   it("unwinds in an involved query") {
@@ -166,7 +166,7 @@ class UnwindTests extends CAPSTestSuite with ScanGraphInit {
 
     val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
-    result.records.toMapsWithCollectedEntities should equal(
+    result.records.toMaps should equal(
       Bag(
         CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
         CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3),

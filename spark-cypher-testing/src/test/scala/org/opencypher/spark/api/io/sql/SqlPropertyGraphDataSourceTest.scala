@@ -453,7 +453,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
     val pgds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map("ds1" -> Hive))
 
-    pgds.graph(GraphName("fooGraph")).cypher("MATCH (n) RETURN n.int, n.long").records.toMapsWithCollectedEntities should equal(Bag(
+    pgds.graph(GraphName("fooGraph")).cypher("MATCH (n) RETURN n.int, n.long").records.toMaps should equal(Bag(
       CypherMap("n.int" -> 1, "n.long" -> 10),
       CypherMap("n.int" -> 15, "n.long" -> 800)
     ))

@@ -672,7 +672,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
 
     result.schema should equal((testGraph1.schema ++ testGraph2.schema).withRelationshipPropertyKeys("KNOWS")())
     result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
-    val resultRelationship = result.relationships("r").toMapsWithCollectedEntities.head._1("r").asInstanceOf[CAPSRelationship]
+    val resultRelationship = result.relationships("r").toMaps.head._1("r").asInstanceOf[CAPSRelationship]
     resultRelationship.startId should equal(0L.withPrefix(0).toList)
     resultRelationship.endId should equal(0L.withPrefix(1).toList)
     resultRelationship.id should equal(0L.withPrefix(-1).toList)
@@ -695,7 +695,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
 
     result.schema should equal((testGraph1.schema ++ testGraph2.schema).withRelationshipPropertyKeys("KNOWS")())
     result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
-    val resultRelationship = result.relationships("r").toMapsWithCollectedEntities.head._1("r").asInstanceOf[CAPSRelationship]
+    val resultRelationship = result.relationships("r").toMaps.head._1("r").asInstanceOf[CAPSRelationship]
     resultRelationship.startId should equal(0L.withPrefix(0).toList)
     resultRelationship.endId should equal(0L.withPrefix(1).toList)
     resultRelationship.id should equal(0L.withPrefix(-1).toList)
@@ -783,14 +783,14 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
 
     result.schema should equal((testGraph1.schema ++ testGraph2.schema).withRelationshipPropertyKeys("HAS_SIMILAR_NAME")())
 
-    result.nodes("n").toMapsWithCollectedEntities should equal(Bag(
+    result.nodes("n").toMaps should equal(Bag(
       CypherMap("n" -> CAPSNode(0L.withPrefix(0), Set("Person"), CypherMap("name" -> "Mats"))),
       CypherMap("n" -> CAPSNode(1L.withPrefix(0), Set("Person"), CypherMap("name" -> "Max"))),
       CypherMap("n" -> CAPSNode(0L.withPrefix(1), Set("Person"), CypherMap("name" -> "Mats"))),
       CypherMap("n" -> CAPSNode(1L.withPrefix(1), Set("Person"), CypherMap("name" -> "Max")))
     ))
 
-    result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
+    result.relationships("r").toMaps should equal(Bag(
       CypherMap("r" -> CAPSRelationship(2L.withPrefix(0), 1L.withPrefix(0), 0L.withPrefix(0), "HAS_SIMILAR_NAME")),
       CypherMap("r" -> CAPSRelationship(2L.withPrefix(1), 1L.withPrefix(1), 0L.withPrefix(1), "HAS_SIMILAR_NAME"))
     ))
@@ -821,14 +821,14 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
     val result = caps.cypher(query).graph
     result.schema.asCaps shouldEqual testGraphRels.schema
 
-    result.nodes("n").toMapsWithCollectedEntities should equal(Bag(
+    result.nodes("n").toMaps should equal(Bag(
       CypherMap("n" -> CAPSNode(0L.withPrefix(0), Set("Person"), CypherMap("name" -> "Mats"))),
       CypherMap("n" -> CAPSNode(1L.withPrefix(0), Set("Person"), CypherMap("name" -> "Max"))),
       CypherMap("n" -> CAPSNode(0L.withPrefix(1), Set("Person"), CypherMap("name" -> "Mats"))),
       CypherMap("n" -> CAPSNode(1L.withPrefix(1), Set("Person"), CypherMap("name" -> "Max")))
     ))
 
-    result.relationships("r").toMapsWithCollectedEntities should equal(Bag(
+    result.relationships("r").toMaps should equal(Bag(
       CypherMap("r" -> CAPSRelationship(2L.withPrefix(0), 1L.withPrefix(0), 0L.withPrefix(0), "HAS_SIMILAR_NAME")),
       CypherMap("r" -> CAPSRelationship(2L.withPrefix(1), 1L.withPrefix(1), 0L.withPrefix(1), "HAS_SIMILAR_NAME"))
     ))
@@ -971,7 +971,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph1.cypher(query)
 
-    result.records.toMapsWithCollectedEntities shouldBe Bag(
+    result.records.toMaps shouldBe Bag(
       CypherMap("n" -> CAPSNode(0, Set("FOO")))
     )
   }
