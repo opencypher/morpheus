@@ -371,6 +371,9 @@ object SparkSQLExprMapper {
         case _: Min => min(child0)
         case _: Sum => sum(child0)
 
+        case BigDecimal(_, precision, scale) =>
+          make_big_decimal(child0, precision.toInt, scale.toInt)
+
         case _ =>
           throw NotImplementedException(s"No support for converting Cypher expression $expr to a Spark SQL expression")
       }

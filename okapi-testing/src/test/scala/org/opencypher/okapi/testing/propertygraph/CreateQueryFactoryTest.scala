@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.testing.propertygraph
 
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.api.value.CypherValue.{CypherBigDecimal, CypherMap}
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.okapi.testing.{Bag, BaseTestSuite}
 
@@ -184,6 +184,29 @@ class CreateQueryFactoryTest extends BaseTestSuite {
     graph.nodes.toBag should equal(Bag(
       InMemoryTestNode(0, Set("Person"), CypherMap("name" -> "Alice")),
       InMemoryTestNode(1, Set("Person"), CypherMap("name" -> "Alice"))
+    ))
+
+    graph.relationships should be(Seq.empty)
+  }
+
+  it("can create nodes with big decimal property") {
+    val graph = CreateGraphFactory(
+      """
+        |CREATE ({val: bigdecimal("42", 2, 0)})
+        |CREATE ({val: bigdecimal(42, 2, 0)})
+        |CREATE ({val: bigdecimal("42.1", 3, 1)})
+        |CREATE ({val: bigdecimal(42.1, 3, 1)})
+        |CREATE ({val: bigdecimal(42.25, 4, 1, "HALF_UP")})
+        |CREATE ({val: bigdecimal(423, 2, 0, "HALF_UP")})
+      """.stripMargin)
+
+    graph.nodes.toBag should equal(Bag(
+      InMemoryTestNode(0, Set.empty, CypherMap("val" -> CypherBigDecimal("42", 2, 0))),
+      InMemoryTestNode(1, Set.empty, CypherMap("val" -> CypherBigDecimal("42", 2, 0))),
+      InMemoryTestNode(2, Set.empty, CypherMap("val" -> CypherBigDecimal("42.1", 3, 1))),
+      InMemoryTestNode(3, Set.empty, CypherMap("val" -> CypherBigDecimal("42.1", 3, 1))),
+      InMemoryTestNode(4, Set.empty, CypherMap("val" -> CypherBigDecimal("42.3", 4, 1))),
+      InMemoryTestNode(5, Set.empty, CypherMap("val" -> CypherBigDecimal("420", 2, 0)))
     ))
 
     graph.relationships should be(Seq.empty)

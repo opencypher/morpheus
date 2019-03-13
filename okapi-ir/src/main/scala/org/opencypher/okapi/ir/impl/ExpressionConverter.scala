@@ -28,7 +28,8 @@ package org.opencypher.okapi.ir.impl
 
 import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.impl.exception.NotImplementedException
+import org.opencypher.okapi.api.value.CypherValue.CypherInteger
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.OperatorTyping._
@@ -84,6 +85,17 @@ final class ExpressionConverter(context: IRBuilderContext) {
     context.parameters.get(p.name) match {
       case None => throw MissingParameter(p.name)
       case Some(param) => param.cypherType
+    }
+  }
+
+  private def extractLong(expr: Expr): Long = {
+    expr match {
+      case param: Param => context.parameters(param.name) match {
+        case CypherInteger(i) => i
+        case other => throw IllegalArgumentException("a CypherInteger value", other)
+      }
+      case l: IntegerLit => l.v
+      case _ => throw IllegalArgumentException("a literal value", expr)
     }
   }
 
@@ -282,6 +294,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
           case f.LocalDateTime.name => LocalDateTime(convertedArgs.headOption)
           case f.Date.name => Date(convertedArgs.headOption)
           case f.Duration.name => Duration(arg0)
+          case "bigdecimal" => BigDecimal(arg0, extractLong(arg1), extractLong(arg2))
           case name => throw NotImplementedException(s"Support for converting function '$name' is not yet implemented")
         }
 
@@ -295,7 +308,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
     case org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern(subquery, trueVar) =>
       val innerModel = IRBuilder(subquery)(context) match {
         case sq: SingleQuery => sq
-        case _ => throw new IllegalArgumentException("ExistsPattern only accepts SingleQuery")
+        case _ => throw IllegalArgumentException("ExistsPattern only accepts SingleQuery")
       }
       ExistsPatternExpr(
         Var(trueVar.name)(CTBoolean),

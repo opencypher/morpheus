@@ -28,7 +28,7 @@ package org.opencypher.okapi.api.value
 
 import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.value.CypherValue.Format._
-import org.opencypher.okapi.api.value.CypherValue.{CypherBoolean, CypherFloat, CypherInteger, CypherList, CypherMap, CypherNode, CypherRelationship, CypherString}
+import org.opencypher.okapi.api.value.CypherValue.{CypherBigDecimal, CypherBoolean, CypherFloat, CypherInteger, CypherList, CypherMap, CypherString}
 import org.opencypher.okapi.api.value.GenCypherValue.{TestNode, TestRelationship}
 
 class CypherValueTest extends ApiBaseTest {
@@ -41,7 +41,8 @@ class CypherValueTest extends ApiBaseTest {
         new CypherString("a\\b") -> "'a\\\\b'",
         new CypherInteger(1L) -> "1",
         new CypherFloat(3.14) -> "3.14",
-        new CypherBoolean(true) -> "true"
+        new CypherBoolean(true) -> "true",
+        new CypherBigDecimal(BigDecimal("1.2")) -> "1.2"
       )
 
       mapping.foreach {

@@ -88,6 +88,13 @@ class CAPSValueEncodingTest extends CAPSValueTestSuite with SparkSessionFixture 
     ds.collect().toList.withoutNaNs should equal(values.withoutNaNs)
   }
 
+  test("BIGDECIMAL encoding") {
+    val values = BIGDECIMAL_valueGroups.flatten
+    val ds = sparkSession.createDataset[CypherValue](values)(cypherValueEncoder)
+
+    ds.collect().toList.withoutNaNs should equal(values.withoutNaNs)
+  }
+
   test("NUMBER encoding") {
     val values = NUMBER_valueGroups.flatten
     val ds = sparkSession.createDataset[CypherValue](values)(cypherValueEncoder)
