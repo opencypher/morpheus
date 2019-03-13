@@ -32,14 +32,14 @@ import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
 import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.util.ConsoleApp
+import org.opencypher.spark.util.App
 
 /**
   * Demonstrates connecting a graph from a CSV data source with a graph from a Neo4j data source.
   *
   * Writes updates back to the Neo4j database with Cypher queries.
   */
-object Neo4jWorkflowExample extends ConsoleApp {
+object Neo4jWorkflowExample extends App {
   // Create CAPS session
   implicit val session: CAPSSession = CAPSSession.local()
 

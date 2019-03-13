@@ -34,7 +34,7 @@ import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge.Batches
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Hive
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.util.{ConsoleApp, LoadInteractionsInHive}
+import org.opencypher.spark.util.{App, LoadInteractionsInHive}
 
 /**
   * Example: Customer360
@@ -55,7 +55,7 @@ import org.opencypher.spark.util.{ConsoleApp, LoadInteractionsInHive}
   *
   * One may observe that the Cypher queries shown here may also be executed directly in Neo4j, with the same results.
   */
-object Customer360Example extends ConsoleApp {
+object Customer360Example extends App {
 
   // Create CAPS session
   implicit val session: CAPSSession = CAPSSession.local()
