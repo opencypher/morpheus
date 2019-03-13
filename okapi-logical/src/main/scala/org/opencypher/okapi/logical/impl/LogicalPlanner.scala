@@ -188,7 +188,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.projectField(existsPlan.expr.targetField, f, existsPlan)
 
       case (acc, (f, expr)) =>
-        if (in.fields.contains(f)) {
+        if (acc.solved.solves(f)) {
           acc
         } else {
           producer.projectField(expr, f, expr.children.foldLeft(acc)((op, e) => planInnerExpr(e, op)))
