@@ -28,7 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.functions.{array_contains => _, translate => _, _}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Column, DataFrame}
+import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception._
@@ -76,9 +76,15 @@ object SparkSQLExprMapper {
 
       def child0: Column = convertedChildren.head
 
+      def maybeC0: Option[Column] = convertedChildren.lift(0)
+
       def child1: Column = convertedChildren(1)
 
+      def maybeC1: Option[Column] = convertedChildren.lift(1)
+
       def child2: Column = convertedChildren(2)
+
+      def maybeC2: Option[Column] = convertedChildren.lift(2)
 
       expr match {
         case _: ListLit => array(convertedChildren: _*)
@@ -273,15 +279,11 @@ object SparkSQLExprMapper {
         case _: ToUpper => upper(child0)
         case _: ToLower => lower(child0)
 
-        case _: Range =>
-          val stepCol = convertedChildren.applyOrElse(2, (_: Int) => ONE_LIT)
-          sequence(child0, child1, stepCol)
+        case _: Range => sequence(child0, child1, maybeC2.getOrElse(ONE_LIT))
 
         case _: Replace => translate(child0, child1, child2)
 
-        case _: Substring =>
-          val lengthCol = convertedChildren.applyOrElse(2, (_: Int) => length(child0) - child1)
-          child0.substr(child1 + ONE_LIT, lengthCol)
+        case _: Substring => child0.substr(child1 + ONE_LIT, maybeC2.getOrElse(length(child0) - child1))
 
         // Mathematical functions
         case E => E_LIT
@@ -351,6 +353,10 @@ object SparkSQLExprMapper {
             case _: CTList | _: CTMap => containerCol.get(indexCol)
             case other => throw NotImplementedException(s"Accessing $other by index is not supported")
           }
+
+        case ListSlice(_, maybeFrom, maybeTo) =>
+          require(maybeFrom.isDefined || maybeTo.isDefined)
+          list_slice(child0, if (maybeFrom.isDefined) Some(child1) else None, if (maybeFrom.isDefined) maybeC2 else Some(c1))
 
         case MapExpression(items) => expr.cypherType.material match {
           case CTMap(_) =>

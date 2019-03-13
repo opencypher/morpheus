@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.junit.runner.RunWith
-import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
+import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
@@ -1628,6 +1628,31 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
         CypherMap("substring" -> CypherNull)
       ))
     }
+  }
+
+  describe("list slice") {
+
+    it("slice") {
+      val result = caps.cypher("RETURN ['a', 'b', 'c', 'd'][0..3] as r")
+      result.records.toMaps should equal(Bag(
+        CypherMap("r" -> CypherList("a", "b", "c"))
+      ))
+    }
+
+    it("slice without from") {
+      val result = caps.cypher("RETURN ['a', 'b', 'c', 'd'][..3] as r")
+      result.records.toMaps should equal(Bag(
+        CypherMap("r" -> CypherList("a", "b", "c"))
+      ))
+    }
+
+    it("slice without to") {
+      val result = caps.cypher("RETURN ['a', 'b', 'c', 'd'][0..] as r")
+      result.records.toMaps should equal(Bag(
+        CypherMap("r" -> CypherList("a", "b", "c", "d"))
+      ))
+    }
+
   }
 
   describe("negative tests") {

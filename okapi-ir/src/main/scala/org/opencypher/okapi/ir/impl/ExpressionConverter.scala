@@ -317,6 +317,8 @@ final class ExpressionConverter(context: IRBuilderContext) {
       MapExpression(convertedMap)(mapType)
 
     // Expression
+    case ast.ListSlice(list, maybeFrom, maybeTo) =>
+      ListSlice(convert(list), maybeFrom.map(convert), maybeTo.map(convert))
     case ast.ContainerIndex(container, index) =>
       val convertedContainer = convert(container)
       val elementType = convertedContainer.cypherType.material match {
