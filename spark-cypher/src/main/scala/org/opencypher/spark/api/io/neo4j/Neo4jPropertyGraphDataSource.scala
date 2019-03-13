@@ -92,7 +92,7 @@ case class Neo4jPropertyGraphDataSource(
     maybeSchema.getOrElse(super.readSchema(entireGraphName))
   }
 
-  override protected def readSchema(graphName: GraphName): CAPSSchema = {
+  override protected[io] def readSchema(graphName: GraphName): CAPSSchema = {
     val filteredSchema = graphName.metaLabel match {
       case None =>
         entireGraphSchema

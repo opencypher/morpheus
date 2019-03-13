@@ -24,28 +24,12 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.neo4j
+package org.opencypher.spark.examples
 
-import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.neo4j.io.{Neo4jConfig, SchemaFromProcedure}
-import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
-import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, Neo4jFormat, StorageFormat}
-import org.opencypher.spark.schema.CAPSSchema
-import org.opencypher.spark.schema.CAPSSchema._
+class Neo4jWorkflowExampleTest extends ExampleTest {
 
-abstract class AbstractNeo4jDataSource extends AbstractPropertyGraphDataSource {
-
-  def config: Neo4jConfig
-
-  def omitIncompatibleProperties = false
-
-  override def tableStorageFormat: StorageFormat = Neo4jFormat
-
-  override protected[io] def readSchema(graphName: GraphName): CAPSSchema = {
-    SchemaFromProcedure(config, omitIncompatibleProperties).asCaps
+  it("should produce the correct output") {
+    validate(Neo4jWorkflowExample.main(Array.empty),
+      getClass.getResource("/example_outputs/Neo4jWorkflowExample.out").toURI)
   }
-
-  override protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit = ()
-  override protected def readCAPSGraphMetaData(graphName: GraphName): CAPSGraphMetaData = CAPSGraphMetaData(tableStorageFormat.name)
-  override protected def writeCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: CAPSGraphMetaData): Unit = ()
 }

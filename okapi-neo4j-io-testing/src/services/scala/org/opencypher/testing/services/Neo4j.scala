@@ -24,28 +24,25 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.neo4j
+package org.opencypher.testing.services
 
-import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.neo4j.io.{Neo4jConfig, SchemaFromProcedure}
-import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
-import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, Neo4jFormat, StorageFormat}
-import org.opencypher.spark.schema.CAPSSchema
-import org.opencypher.spark.schema.CAPSSchema._
+import org.neo4j.harness.EnterpriseTestServerBuilders
 
-abstract class AbstractNeo4jDataSource extends AbstractPropertyGraphDataSource {
+object Neo4j extends App {
+  val Array(marker, instances) = args
 
-  def config: Neo4jConfig
+  Range(0, instances.toInt).foreach { i =>
+    val bolt = 7687 + i
+    val http = 7474 + i
+    val server = EnterpriseTestServerBuilders.newInProcessBuilder()
+      .withConfig("dbms.connector.bolt.listen_address", s"127.0.0.1:$bolt")
+      .withConfig("dbms.connector.http.listen_address", s"127.0.0.1:$http")
+      .newServer()
 
-  def omitIncompatibleProperties = false
-
-  override def tableStorageFormat: StorageFormat = Neo4jFormat
-
-  override protected[io] def readSchema(graphName: GraphName): CAPSSchema = {
-    SchemaFromProcedure(config, omitIncompatibleProperties).asCaps
+    println(s"bolt: ${server.boltURI()}")
+    println(s"http: ${server.httpURI()}")
   }
 
-  override protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit = ()
-  override protected def readCAPSGraphMetaData(graphName: GraphName): CAPSGraphMetaData = CAPSGraphMetaData(tableStorageFormat.name)
-  override protected def writeCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: CAPSGraphMetaData): Unit = ()
+  println(marker)
+
 }

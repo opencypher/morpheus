@@ -3,6 +3,7 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '4.0.3' apply false
     id 'com.github.alisiikh.scalastyle_2.12' version '2.1.0' apply false
     id 'me.champeau.gradle.jmh' version '0.4.8' apply false
+    id "ch.kk7.spawn" version "1.0.20180924200750" apply false
 }
 
 apply from: 'build.params.gradle'

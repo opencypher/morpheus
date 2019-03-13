@@ -9,3 +9,6 @@ dependencies {
     compile group: 'io.netty',                 name: 'netty-all',            version: ver.netty
     compile group: 'com.h2database',           name: 'h2',                   version: ver.h2
 }
+
+tasks.test.dependsOn(":okapi-neo4j-io-testing:neo4jStart")
+tasks.test.finalizedBy(":okapi-neo4j-io-testing:neo4jStop")

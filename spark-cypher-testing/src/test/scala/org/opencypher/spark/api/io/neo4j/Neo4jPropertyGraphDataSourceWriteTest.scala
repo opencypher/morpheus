@@ -27,25 +27,36 @@
 package org.opencypher.spark.api.io.neo4j
 
 import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.neo4j.io.{Neo4jConfig, SchemaFromProcedure}
-import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
-import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, Neo4jFormat, StorageFormat}
-import org.opencypher.spark.schema.CAPSSchema
-import org.opencypher.spark.schema.CAPSSchema._
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
+import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
+import org.opencypher.okapi.testing.Bag
+import org.opencypher.okapi.testing.Bag._
+import org.opencypher.spark.api.CypherGraphSources
+import org.opencypher.spark.impl.acceptance.ScanGraphInit
+import org.opencypher.spark.testing.CAPSTestSuite
 
-abstract class AbstractNeo4jDataSource extends AbstractPropertyGraphDataSource {
+class Neo4jPropertyGraphDataSourceWriteTest
+  extends CAPSTestSuite
+    with Neo4jServerFixture
+    with ScanGraphInit{
 
-  def config: Neo4jConfig
+  it("can write a graph to Neo4j") {
+    val g = initGraph(
+      """
+        |CREATE (a:A {val: 1})-[:REL {val: 3}]->(b:B {val: 2})
+        |CREATE (b)-[:REL {val: 4}]->(a)
+      """.stripMargin)
 
-  def omitIncompatibleProperties = false
+    val dataSource = CypherGraphSources.neo4j(neo4jConfig)
 
-  override def tableStorageFormat: StorageFormat = Neo4jFormat
+    dataSource.store(GraphName("g1"), g)
 
-  override protected[io] def readSchema(graphName: GraphName): CAPSSchema = {
-    SchemaFromProcedure(config, omitIncompatibleProperties).asCaps
+    neo4jConfig.cypherWithNewSession("MATCH (n)-[r]->(m) RETURN n.val, r.val, m.val").map(x => CypherMap(x.toSeq:_*)).toBag should equal(Bag(
+      CypherMap("n.val" -> 1, "r.val" -> 3, "m.val" -> 2),
+      CypherMap("n.val" -> 2, "r.val" -> 4, "m.val" -> 1)
+    ))
   }
 
-  override protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit = ()
-  override protected def readCAPSGraphMetaData(graphName: GraphName): CAPSGraphMetaData = CAPSGraphMetaData(tableStorageFormat.name)
-  override protected def writeCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: CAPSGraphMetaData): Unit = ()
+  override def dataFixture: String = ""
 }

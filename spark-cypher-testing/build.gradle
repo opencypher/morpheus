@@ -1,3 +1,5 @@
+apply plugin: 'ch.kk7.spawn'
+
 description = 'Cypher for Apache Spark - Test Utilities'
 
 dependencies {
@@ -13,4 +15,8 @@ dependencies {
     testCompile project(':okapi-api').sourceSets.test.output
     testCompile group: 'com.h2database', name: 'h2', version: ver.h2
     testCompile group: 'org.spire-math', name: 'claimant'.scala(), version: ver.claimant
+
 }
+
+tasks.test.dependsOn(":okapi-neo4j-io-testing:neo4jStart")
+tasks.test.finalizedBy(":okapi-neo4j-io-testing:neo4jStop")

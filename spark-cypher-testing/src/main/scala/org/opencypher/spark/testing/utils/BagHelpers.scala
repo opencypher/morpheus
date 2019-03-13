@@ -24,28 +24,25 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.neo4j
+package org.opencypher.spark.testing.utils
 
-import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.neo4j.io.{Neo4jConfig, SchemaFromProcedure}
-import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
-import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, Neo4jFormat, StorageFormat}
-import org.opencypher.spark.schema.CAPSSchema
-import org.opencypher.spark.schema.CAPSSchema._
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.testing.Bag.Bag
+import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 
-abstract class AbstractNeo4jDataSource extends AbstractPropertyGraphDataSource {
+object BagHelpers {
 
-  def config: Neo4jConfig
+  implicit class BagOps(val bag: Bag[CypherMap]) {
+    def nodeValuesWithoutIds: Bag[(Set[String], CypherMap)] = for {
+      (map, count) <- bag
+      value <- map.value.values
+      node = value.cast[CAPSNode]
+    } yield (node.labels, node.properties) -> count
 
-  def omitIncompatibleProperties = false
-
-  override def tableStorageFormat: StorageFormat = Neo4jFormat
-
-  override protected[io] def readSchema(graphName: GraphName): CAPSSchema = {
-    SchemaFromProcedure(config, omitIncompatibleProperties).asCaps
+    def relValuesWithoutIds: Bag[(String, CypherMap)] = for {
+      (map, count) <- bag
+      value <- map.value.values
+      rel = value.cast[CAPSRelationship]
+    } yield (rel.relType, rel.properties) -> count
   }
-
-  override protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit = ()
-  override protected def readCAPSGraphMetaData(graphName: GraphName): CAPSGraphMetaData = CAPSGraphMetaData(tableStorageFormat.name)
-  override protected def writeCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: CAPSGraphMetaData): Unit = ()
 }

@@ -26,26 +26,27 @@
  */
 package org.opencypher.spark.api.io.neo4j
 
-import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.neo4j.io.{Neo4jConfig, SchemaFromProcedure}
-import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
-import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, Neo4jFormat, StorageFormat}
-import org.opencypher.spark.schema.CAPSSchema
-import org.opencypher.spark.schema.CAPSSchema._
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
+import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
+import org.opencypher.okapi.testing.Bag
+import org.opencypher.spark.testing.CAPSTestSuite
 
-abstract class AbstractNeo4jDataSource extends AbstractPropertyGraphDataSource {
+class Neo4jPropertyGraphDataSourceEmptyGraphTest extends CAPSTestSuite with Neo4jServerFixture {
 
-  def config: Neo4jConfig
+  override def dataFixture: String = ""
 
-  def omitIncompatibleProperties = false
+  it("can read an empty graph") {
+    val graph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
 
-  override def tableStorageFormat: StorageFormat = Neo4jFormat
+    val result = graph.cypher(
+      """
+        |MATCH (n)
+        |RETURN count(n) as count
+      """.stripMargin).records
 
-  override protected[io] def readSchema(graphName: GraphName): CAPSSchema = {
-    SchemaFromProcedure(config, omitIncompatibleProperties).asCaps
+    result.toMaps should equal(Bag(
+      CypherMap("count" -> 0)
+    ))
   }
-
-  override protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit = ()
-  override protected def readCAPSGraphMetaData(graphName: GraphName): CAPSGraphMetaData = CAPSGraphMetaData(tableStorageFormat.name)
-  override protected def writeCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: CAPSGraphMetaData): Unit = ()
 }

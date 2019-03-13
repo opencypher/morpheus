@@ -24,28 +24,30 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.api.io.neo4j
+package org.opencypher.okapi.neo4j.io.testing
 
-import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.neo4j.io.{Neo4jConfig, SchemaFromProcedure}
-import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
-import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, Neo4jFormat, StorageFormat}
-import org.opencypher.spark.schema.CAPSSchema
-import org.opencypher.spark.schema.CAPSSchema._
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
+import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils.Neo4jContext
+import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
 
-abstract class AbstractNeo4jDataSource extends AbstractPropertyGraphDataSource {
+trait Neo4jServerFixture extends BaseTestFixture {
+  self: BaseTestSuite =>
 
-  def config: Neo4jConfig
+  def dataFixture: String
 
-  def omitIncompatibleProperties = false
+  def neo4jHost: String = "bolt://localhost:7687"
 
-  override def tableStorageFormat: StorageFormat = Neo4jFormat
+  var neo4jContext: Neo4jContext = _
 
-  override protected[io] def readSchema(graphName: GraphName): CAPSSchema = {
-    SchemaFromProcedure(config, omitIncompatibleProperties).asCaps
+  def neo4jConfig: Neo4jConfig = neo4jContext.config
+
+  abstract override def beforeAll(): Unit = {
+    super.beforeAll()
+    neo4jContext = Neo4jTestUtils.connectNeo4j(dataFixture, neo4jHost)
   }
 
-  override protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit = ()
-  override protected def readCAPSGraphMetaData(graphName: GraphName): CAPSGraphMetaData = CAPSGraphMetaData(tableStorageFormat.name)
-  override protected def writeCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: CAPSGraphMetaData): Unit = ()
+  abstract override def afterAll(): Unit = {
+    neo4jContext.close()
+    super.afterAll()
+  }
 }
