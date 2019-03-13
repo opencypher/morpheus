@@ -65,7 +65,7 @@ object GraphDdlParser {
 
   private def CREATE[_: P]: P[Unit] = keyword("CREATE")
   private def ELEMENT[_: P]: P[Unit] = keyword("ELEMENT")
-  private def EXTENDS[_: P]: P[Unit] = keyword("EXTENDS")
+  private def EXTENDS[_: P]: P[Unit] = keyword("EXTENDS") | keyword("<:")
   private def KEY[_: P]: P[Unit] = keyword("KEY")
   private def GRAPH[_: P]: P[Unit] = keyword("GRAPH")
   private def TYPE[_: P]: P[Unit] = keyword("TYPE")

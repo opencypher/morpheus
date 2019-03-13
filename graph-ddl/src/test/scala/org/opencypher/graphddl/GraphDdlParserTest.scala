@@ -146,11 +146,23 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       success(elementTypeDefinition(_), ElementTypeDefinition("A", parents = Set("B")))
     }
 
+    it("parses A <: B ()") {
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", parents = Set("B")))
+    }
+
     it("parses A EXTENDS B, C ()") {
       success(elementTypeDefinition(_), ElementTypeDefinition("A", parents = Set("B", "C")))
     }
 
+    it("parses A <: B, C ()") {
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", parents = Set("B", "C")))
+    }
+
     it("parses A EXTENDS B, C ( key STRING )") {
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", parents = Set("B", "C"), properties = Map("key" -> CTString)))
+    }
+
+    it("parses A <: B, C ( key STRING )") {
       success(elementTypeDefinition(_), ElementTypeDefinition("A", parents = Set("B", "C"), properties = Map("key" -> CTString)))
     }
   }
