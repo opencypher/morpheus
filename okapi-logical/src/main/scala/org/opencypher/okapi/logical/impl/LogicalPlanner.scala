@@ -183,6 +183,20 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   ): LogicalOperator = {
     exprs.foldLeft(in) {
 
+      case (acc, (f, v: Var)) if f.name != v.name => producer.projectField(v, f, acc)
+
+      case (acc, (_, _: Var)) => acc
+
+      case (acc, (f, c: CaseExpr)) =>
+        val (leftExprs, rightExprs) = c.alternatives.unzip
+        val plannedAlternatives = (leftExprs ++ rightExprs).foldLeft(acc)((op, expr) => planInnerExpr(expr, op))
+
+        val plannedAll = c.default match {
+          case Some(inner) => planInnerExpr(inner, plannedAlternatives)
+          case None => plannedAlternatives
+        }
+        producer.projectField(c, f, plannedAll)
+
       case (acc, (f, ex: ExistsPatternExpr)) =>
         val existsPlan = producer.planExistsSubQuery(ex, acc, this (ex.ir))
         producer.projectField(existsPlan.expr.targetField, f, existsPlan)
