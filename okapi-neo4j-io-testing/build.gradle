@@ -27,7 +27,7 @@ def neo4jCommandLine(int instances) {
 }
 
 task neo4jStart(type: ch.kk7.gradle.spawn.SpawnTask) {
-    description "launches neo4j in a separate jvm"
+    description "Launches a Neo4j instance in a separate JVM."
     group "services"
 
     dependsOn sourceSets.services.runtimeClasspath
@@ -38,14 +38,14 @@ task neo4jStart(type: ch.kk7.gradle.spawn.SpawnTask) {
 }
 
 task neo4jStop(type: ch.kk7.gradle.spawn.KillTask) {
-    description "stops neo4j in a separate jvm"
+    description "Stops Neo4j instances started by 'neo4jStart'."
     group "services"
     kills tasks.neo4jStart
 }
 
 
-task neo4jStartDouble(type: ch.kk7.gradle.spawn.SpawnTask) {
-    description "launches neo4j in a separate jvm"
+task neo4jStartTwoInstances(type: ch.kk7.gradle.spawn.SpawnTask) {
+    description "Launches two Neo4j instances in a separate JVM (used for examples)."
     group "services"
 
     dependsOn sourceSets.services.runtimeClasspath
@@ -55,10 +55,10 @@ task neo4jStartDouble(type: ch.kk7.gradle.spawn.SpawnTask) {
     doLast { println getStdoutFile().text }
 }
 
-task neo4jStopDouble(type: ch.kk7.gradle.spawn.KillTask) {
-    description "stops neo4j in a separate jvm"
+task neo4jStopTwoInstances(type: ch.kk7.gradle.spawn.KillTask) {
+    description "Stops Neo4j instances started by 'neo4jStartTwoInstances'."
     group "services"
-    kills tasks.neo4jStartDouble
+    kills tasks.neo4jStartTwoInstances
 }
 
 tasks.test.dependsOn(tasks.neo4jStart)
