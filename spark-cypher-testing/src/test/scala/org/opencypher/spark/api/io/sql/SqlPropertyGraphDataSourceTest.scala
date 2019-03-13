@@ -568,13 +568,12 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       val e = the[IllegalArgumentException] thrownBy {
         SqlPropertyGraphDataSource(
           GraphDdl.apply(""),
-          Map("csv" -> File(
+          Map("IllegalDataSource" -> File(
             format = FileFormat.csv
           ))
         )
       }
-
-      e.getMessage should(include("not supported") and include("CSV"))
+      e.getMessage should(include(FileFormat.csv.toString) and include("IllegalDataSource"))
     }
 
     it("does not support relationship types with more than one label") {

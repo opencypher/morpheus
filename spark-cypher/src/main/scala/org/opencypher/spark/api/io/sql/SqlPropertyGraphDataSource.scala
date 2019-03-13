@@ -52,16 +52,26 @@ import GraphDdlConversions._
 
 import scala.reflect.io.Path
 
-case class SqlPropertyGraphDataSource(
+object SqlPropertyGraphDataSource {
+
+  def apply(graphDdl: GraphDdl,
+    sqlDataSourceConfigs: Map[String, SqlDataSourceConfig],
+    idGenerationStrategy: IdGenerationStrategy = SerializedId)(implicit caps: CAPSSession): SqlPropertyGraphDataSource = {
+
+    val unsupportedDataSources = sqlDataSourceConfigs.filter { case (_, config) => config.format == FileFormat.csv }
+    if (unsupportedDataSources.nonEmpty) throw IllegalArgumentException(
+      expected = "Supported FileFormat for SQL Property Graph Data Source",
+      actual = s"${FileFormat.csv} used in the following data source configs: ${unsupportedDataSources.keys.mkString("[", ", ", "]")}")
+
+    new SqlPropertyGraphDataSource(graphDdl, sqlDataSourceConfigs, idGenerationStrategy)
+  }
+}
+
+case class SqlPropertyGraphDataSource (
   graphDdl: GraphDdl,
   sqlDataSourceConfigs: Map[String, SqlDataSourceConfig],
-  idGenerationStrategy: IdGenerationStrategy = SerializedId
+  idGenerationStrategy: IdGenerationStrategy
 )(implicit val caps: CAPSSession) extends CAPSPropertyGraphDataSource {
-
-  require(
-    sqlDataSourceConfigs.forall { case (_, config) => config.format != FileFormat.csv },
-    "CSV files are not supported by the SqlPropertyGraphDataSource"
-  )
 
   override def hasGraph(graphName: GraphName): Boolean = graphDdl.graphs.contains(graphName)
 
