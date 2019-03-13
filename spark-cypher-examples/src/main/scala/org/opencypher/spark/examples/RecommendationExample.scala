@@ -31,14 +31,14 @@ import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.util.ConsoleApp
+import org.opencypher.spark.util.App
 
 /**
   * This application demonstrates the integration of three data sources into a single graph which is used for computing
   * recommendations. Two graphs are loaded from separate Neo4j databases, one graph is loaded from csv files stored in
   * the local file system.
   */
-object RecommendationExample extends ConsoleApp {
+object RecommendationExample extends App {
 
   // Create CAPS session
   implicit val caps: CAPSSession = CAPSSession.local()
