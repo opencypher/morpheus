@@ -150,11 +150,7 @@ object CAPSFunctions {
     if (expr.cypherType == CTNull) {
       NULL_LIT
     } else if (expr.children.nonEmpty && expr.nullInNullOut && expr.cypherType.isNullable) {
-      val castNull = expr.cypherType.toSparkType match {
-        case None => NULL_LIT
-        case Some(st) => NULL_LIT.cast(st)
-      }
-      val nullPropagationCases = evaluatedArgs.map(_.isNull.expr).zip(Seq.fill(evaluatedArgs.length)(castNull.expr))
+      val nullPropagationCases = evaluatedArgs.map(_.isNull.expr).zip(Seq.fill(evaluatedArgs.length)(NULL_LIT.expr))
       new Column(CaseWhen(nullPropagationCases, withConvertedChildren(evaluatedArgs).expr))
     } else {
       new Column(withConvertedChildren(evaluatedArgs).expr)
@@ -169,10 +165,7 @@ object CAPSFunctions {
     if (df.columns.contains(columnName)) {
       df.col(columnName)
     } else {
-      expr.cypherType.toSparkType match {
-        case None => NULL_LIT
-        case Some(st) => NULL_LIT.cast(st)
-      }
+      NULL_LIT
     }
   }
 
@@ -182,12 +175,11 @@ object CAPSFunctions {
       v.cypherType.ensureSparkCompatible()
       v match {
         case list: CypherList => array(list.value.map(_.toSparkLiteral): _*)
-        case map: CypherMap =>
-          create_struct(
-            map.value.map { case (key, value) =>
-              value.toSparkLiteral.as(key.toString)
-            }.toSeq
-          )
+        case map: CypherMap => create_struct(
+          map.value.map { case (key, value) =>
+            value.toSparkLiteral.as(key.toString)
+          }.toSeq
+        )
         case _ => lit(v.unwrap)
       }
     }
