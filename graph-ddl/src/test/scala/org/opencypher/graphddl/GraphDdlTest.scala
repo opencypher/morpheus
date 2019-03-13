@@ -347,6 +347,48 @@ class GraphDdlTest extends FunSpec with Matchers {
       expected.relationshipPropertyKeys("Node1", "REL", "Node2") shouldEqual Map("name" -> CTString)
     }
 
+    it("can construct schema with inherited node and edge labels") {
+      val ddl =
+        s"""|CREATE ELEMENT TYPE Node1 ( foo STRING )
+            |CREATE ELEMENT TYPE Node2 EXTENDS Node1 ( bar INTEGER )
+            |CREATE ELEMENT TYPE Node3 EXTENDS Node2 ( baz BOOLEAN )
+            |CREATE ELEMENT TYPE REL1 ( name STRING )
+            |CREATE ELEMENT TYPE REL2 EXTENDS REL1 ( since INTEGER )
+            |CREATE ELEMENT TYPE REL3 EXTENDS REL2 ( age BOOLEAN )
+            |
+            |CREATE GRAPH TYPE $typeName (
+            |  (Node1),
+            |  (Node2),
+            |  (Node3),
+            |  (Node1)-[REL1]->(Node1),
+            |  (Node1)-[REL2]->(Node2),
+            |  (Node2)-[REL3]->(Node2)
+            |)
+            |CREATE GRAPH $graphName OF $typeName ()
+            |""".stripMargin
+
+      val expected = GraphType(typeName)
+        .withElementType("Node1", "foo" -> CTString)
+        .withElementType("Node2", parents = Set("Node1"), "bar" -> CTInteger)
+        .withElementType("Node3", parents = Set("Node2"), "baz" -> CTBoolean)
+        .withElementType("REL1", "name" -> CTString)
+        .withElementType("REL2", parents = Set("REL1"), "since" -> CTInteger)
+        .withElementType("REL3", parents = Set("REL2"), "age" -> CTBoolean)
+        .withNodeType("Node1")
+        .withNodeType("Node2")
+        .withNodeType("Node3")
+        .withRelationshipType("Node1", "REL1", "Node1")
+        .withRelationshipType("Node1", "REL2", "Node2")
+        .withRelationshipType("Node2", "REL3", "Node2")
+      GraphDdl(ddl).graphs(graphName).graphType shouldEqual expected
+      expected.nodePropertyKeys("Node1") shouldEqual Map("foo" -> CTString)
+      expected.nodePropertyKeys("Node1", "Node2") shouldEqual Map("foo" -> CTString, "bar" -> CTInteger)
+      expected.nodePropertyKeys("Node1", "Node2", "Node3") shouldEqual Map("foo" -> CTString, "bar" -> CTInteger, "baz" -> CTBoolean)
+      expected.relationshipPropertyKeys(Set("Node1"), Set("REL1"), Set("Node1")) shouldEqual Map("name" -> CTString)
+      expected.relationshipPropertyKeys(Set("Node1"), Set("REL1", "REL2"), Set("Node1", "Node2")) shouldEqual Map("name" -> CTString, "since" -> CTInteger)
+      expected.relationshipPropertyKeys(Set("Node1", "Node2"), Set("REL1", "REL2", "REL3"), Set("Node1", "Node2")) shouldEqual Map("name" -> CTString, "since" -> CTInteger, "age" -> CTBoolean)
+    }
+
     it("prefers local label over global label") {
 
       val ddl =
@@ -1202,7 +1244,7 @@ class GraphDdlTest extends FunSpec with Matchers {
       e.getFullMessage should (include("(A,B,C)") and include("x") and include("INTEGER") and include("STRING"))
     }
 
-    it("throws if an unknown property key is mapped to a column") {
+    it("fails if an unknown property key is mapped to a column") {
       val ddlString =
         s"""|CREATE GRAPH TYPE myType (
             |  A ( foo STRING ),
@@ -1218,7 +1260,7 @@ class GraphDdlTest extends FunSpec with Matchers {
       }
     }
 
-    it("throws if a node view key is referenced by different join columns") {
+    it("fails if a node view key is referenced by different join columns") {
       val e = the[GraphDdlException] thrownBy {
         val ddlString =
           s"""|CREATE GRAPH TYPE myType (

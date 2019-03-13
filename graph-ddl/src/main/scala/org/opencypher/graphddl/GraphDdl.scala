@@ -507,7 +507,7 @@ case class GraphType(
 
   def withNodeType(nodeType: NodeType): GraphType = {
     validateNodeType(nodeType)
-    copy(nodeTypes = nodeTypes + nodeType)
+    copy(nodeTypes = nodeTypes + expandNodeType(nodeType))
   }
 
   def withRelationshipType(startLabel: String, label: String, endLabel: String): GraphType =
@@ -518,7 +518,7 @@ case class GraphType(
 
   def withRelationshipType(relationshipType: RelationshipType): GraphType = {
     validateRelType(relationshipType)
-    copy(relTypes = relTypes + relationshipType)
+    copy(relTypes = relTypes + expandRelType(relationshipType))
   }
 
   private def validateElementType(elementType: ElementType): Unit = tryWithContext(elementType.toString) {
@@ -535,6 +535,15 @@ case class GraphType(
       illegalInheritance("Element type not found", parent)
     }
   }
+
+  private def expandNodeType(nodeType: NodeType): NodeType =
+    nodeType.copy(labels = nodeType.labels.flatMap(getElementTypes).map(_.name))
+
+  private def expandRelType(relType: RelationshipType): RelationshipType =
+    relType.copy(
+      startNodeType = expandNodeType(relType.startNodeType),
+      labels = relType.labels.flatMap(getElementTypes).map(_.name),
+      endNodeType = expandNodeType(relType.endNodeType))
 
   private def validateNodeType(nodeType: NodeType): Unit = tryWithContext(nodeType.toString) {
     nodeType.labels.foreach(validateElementTypeHierarchy)
