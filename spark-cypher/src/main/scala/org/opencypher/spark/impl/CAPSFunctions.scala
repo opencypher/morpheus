@@ -146,14 +146,17 @@ object CAPSFunctions {
     */
   def null_safe_conversion(expr: Expr)(withConvertedChildren: Seq[Column] => Column)
     (implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
-    val evaluatedArgs = expr.children.map(_.asSparkSQLExpr)
     if (expr.cypherType == CTNull) {
       NULL_LIT
-    } else if (expr.children.nonEmpty && expr.nullInNullOut && expr.cypherType.isNullable) {
-      val nullPropagationCases = evaluatedArgs.map(_.isNull.expr).zip(Seq.fill(evaluatedArgs.length)(NULL_LIT.expr))
-      new Column(CaseWhen(nullPropagationCases, withConvertedChildren(evaluatedArgs).expr))
     } else {
-      new Column(withConvertedChildren(evaluatedArgs).expr)
+      val evaluatedArgs = expr.children.map(_.asSparkSQLExpr)
+      val withConvertedChildrenResult = withConvertedChildren(evaluatedArgs).expr
+      if (expr.children.nonEmpty && expr.nullInNullOut && expr.cypherType.isNullable) {
+        val nullPropagationCases = evaluatedArgs.map(_.isNull.expr).zip(Seq.fill(evaluatedArgs.length)(NULL_LIT.expr))
+        new Column(CaseWhen(nullPropagationCases, withConvertedChildrenResult))
+      } else {
+        new Column(withConvertedChildrenResult)
+      }
     }
   }
 
