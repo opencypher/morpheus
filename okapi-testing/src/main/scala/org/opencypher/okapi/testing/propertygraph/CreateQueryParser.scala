@@ -33,6 +33,10 @@ import cats.data.State
 import cats.data.State._
 import cats.instances.list._
 import cats.syntax.all._
+import org.opencypher.okapi.api.value.CypherValue.{CypherBigDecimal, CypherEntity, CypherMap, CypherNode, CypherRelationship}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.temporal.TemporalTypesHelper.parseDate
+import org.opencypher.okapi.impl.temporal.{Duration, TemporalTypesHelper}
 import org.opencypher.v9_0.ast._
 import org.opencypher.v9_0.ast.semantics._
 import org.opencypher.v9_0.expressions._
@@ -41,10 +45,6 @@ import org.opencypher.v9_0.rewriting.Deprecations.V2
 import org.opencypher.v9_0.rewriting._
 import org.opencypher.v9_0.rewriting.rewriters.Never
 import org.opencypher.v9_0.util.{ASTNode, CypherException, InputPosition}
-import org.opencypher.okapi.api.value.CypherValue.{CypherEntity, CypherMap, CypherNode, CypherRelationship}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
-import org.opencypher.okapi.impl.temporal.TemporalTypesHelper.parseDate
-import org.opencypher.okapi.impl.temporal.{Duration, TemporalTypesHelper}
 
 import scala.collection.TraversableOnce
 import scala.reflect.ClassTag
@@ -251,6 +251,19 @@ object CreateGraphFactory extends InMemoryGraphFactory {
           for {
             durationMap <- processExpr(map)
             res <- pure[ParsingContext, Any](Duration(durationMap.asInstanceOf[Map[String, Long]]))
+          } yield res
+
+        case f@ FunctionInvocation(_, FunctionName("bigdecimal"), _, Seq(n: Literal, p: NumberLiteral, s: NumberLiteral)) =>
+          val r = StringLiteral("UNNECESSARY")(f.position)
+          processExpr(FunctionInvocation(f.namespace, f.functionName, f.distinct, f.args :+ r )(f.position))
+
+        case FunctionInvocation(_, FunctionName("bigdecimal"), _, Seq(n: Literal, p: NumberLiteral, s: NumberLiteral, r: StringLiteral)) =>
+          for {
+            number <- processExpr(n)
+            precision <- pure[ParsingContext, Int](p.stringVal.toInt)
+            scale <- pure[ParsingContext, Int](s.stringVal.toInt)
+            roundingMode <- pure[ParsingContext, String](r.value)
+            res <- pure[ParsingContext, Any](CypherBigDecimal(number, precision, scale, roundingMode))
           } yield res
 
         case Property(variable: Variable, propertyKey) =>

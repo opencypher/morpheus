@@ -68,6 +68,7 @@ object SparkConversions {
         ct.material match {
           case CTString => Some(StringType)
           case CTInteger => Some(LongType)
+          case CTBigDecimal(p, s) => Some(DataTypes.createDecimalType(p, s))
           case CTBoolean => Some(BooleanType)
           case CTFloat => Some(DoubleType)
           case CTLocalDateTime => Some(TimestampType)
@@ -133,6 +134,7 @@ object SparkConversions {
         case LongType => Some(CTInteger)
         case BooleanType => Some(CTBoolean)
         case DoubleType => Some(CTFloat)
+        case dt: DecimalType => Some(CTBigDecimal(dt.precision, dt.scale))
         case TimestampType => Some(CTLocalDateTime)
         case DateType => Some(CTDate)
         case CalendarIntervalType => Some(CTDuration)
@@ -162,6 +164,7 @@ object SparkConversions {
     def isCypherCompatible: Boolean = dt match {
       case ArrayType(internalType, _) => internalType.isCypherCompatible
       case StructType(fields) => fields.forall(_.dataType.isCypherCompatible)
+      case _: DecimalType => true
       case other => supportedTypes.contains(other)
     }
 

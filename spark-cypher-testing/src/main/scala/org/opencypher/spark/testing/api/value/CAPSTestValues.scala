@@ -147,6 +147,18 @@ object CAPSTestValues {
     Seq[CypherValue](CypherNull)
   )
 
+  implicit lazy val BIGDECIMAL_valueGroups: ValueGroups[CypherValue] = Seq(
+    Seq[CypherValue](BigDecimal(Double.MinValue)),
+    Seq[CypherValue](BigDecimal("-23.0")),
+    Seq[CypherValue](BigDecimal(-10.0d), BigDecimal(-10.0d)),
+    Seq[CypherValue](BigDecimal(0.0)),
+    Seq[CypherValue](BigDecimal("2.3")),
+    Seq[CypherValue](BigDecimal("5")),
+    Seq[CypherValue](BigDecimal("42.0")),
+    Seq[CypherValue](BigDecimal(Double.MaxValue)),
+    Seq[CypherValue](CypherNull)
+  )
+
   implicit lazy val NUMBER_valueGroups: ValueGroups[CypherValue] = Seq(
     Seq[CypherValue](Double.NegativeInfinity),
     Seq[CypherValue](Double.MinValue),
@@ -161,6 +173,7 @@ object CAPSTestValues {
     Seq[CypherValue](5L, 5L, 5.0d),
     Seq[CypherValue](5.1d, 5.1d),
     Seq[CypherValue](42.0d, 42L),
+    Seq[CypherValue](BigDecimal("42.21")),
     Seq[CypherValue](Long.MaxValue),
     Seq[CypherValue](Double.MaxValue),
     Seq[CypherValue](Double.PositiveInfinity),
