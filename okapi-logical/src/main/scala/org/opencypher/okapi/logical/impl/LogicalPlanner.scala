@@ -183,16 +183,6 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   ): LogicalOperator = {
     exprs.foldLeft(in) {
 
-      case (acc, (f, c: CaseExpr)) =>
-        val (leftExprs, rightExprs) = c.alternatives.unzip
-        val plannedAlternatives = (leftExprs ++ rightExprs).foldLeft(acc)((op, expr) => planInnerExpr(expr, op))
-
-        val plannedAll = c.default match {
-          case Some(inner) => planInnerExpr(inner, plannedAlternatives)
-          case None => plannedAlternatives
-        }
-        producer.projectField(c, f, plannedAll)
-
       case (acc, (f, ex: ExistsPatternExpr)) =>
         val existsPlan = producer.planExistsSubQuery(ex, acc, this (ex.ir))
         producer.projectField(existsPlan.expr.targetField, f, existsPlan)
@@ -210,19 +200,19 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   private def planFilter(in: LogicalOperator, where: Set[Expr])(
     implicit context: LogicalPlannerContext
   ): LogicalOperator = {
-    val filtersAndProjs = where.foldLeft(in) {
+    val filtersAndProjections = where.foldLeft(in) {
 
       case (acc, ex: ExistsPatternExpr) =>
         val predicate = producer.planExistsSubQuery(ex, acc, this (ex.ir))
         producer.planFilter(ex, predicate)
 
       case (acc, predicate) =>
-        val withInnerExprs = predicate.children.foldLeft(acc)((acc, e) => planInnerExpr(e, acc))
-        producer.planFilter(predicate, withInnerExprs)
+        val withInnerExpressions = predicate.children.foldLeft(acc)((acc, e) => planInnerExpr(e, acc))
+        producer.planFilter(predicate, withInnerExpressions)
 
     }
 
-    filtersAndProjs
+    filtersAndProjections
   }
 
   private def planInnerExpr(expr: Expr, in: LogicalOperator)(
@@ -233,21 +223,9 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case ex: ExistsPatternExpr =>
         producer.planExistsSubQuery(ex, in, this (ex.ir))
 
-      case caseExpr@CaseExpr(alternatives, maybeDefault) =>
-        val (leftExprs, rightExprs) = alternatives.unzip
-        val plannedAlternatives = (leftExprs ++ rightExprs).foldLeft(in)((op, expr) => planInnerExpr(expr, op))
+      case _ =>
+        expr.children.foldLeft(in)((op, e) => planInnerExpr(e, op))
 
-        val plannedAll = maybeDefault match {
-          case Some(inner) => planInnerExpr(inner, plannedAlternatives)
-          case None => plannedAlternatives
-        }
-        producer.projectExpr(caseExpr, plannedAll)
-
-      case other: Expr =>
-        other.children.foldLeft(in)((op, e) => planInnerExpr(e, op))
-
-      case x =>
-        throw NotImplementedException(s"Support for projection of inner expression $x not yet implemented. Tree:\n${x.pretty}")
     }
   }
 

@@ -133,6 +133,10 @@ object CAPSFunctions {
     else struct(structColumns: _*)
   }
 
+  def switch(branches: Seq[(Column, Column)], maybeDefault: Option[Column]): Column = {
+    new Column(CaseWhen(branches.map { case (c, v) => c.expr -> v.expr } , maybeDefault.map(_.expr)))
+  }
+
   /**
     * Alternative version of {{{org.apache.spark.sql.functions.translate}}} that takes {{{org.apache.spark.sql.Column}}}s for search and replace strings.
     */

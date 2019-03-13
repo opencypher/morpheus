@@ -328,22 +328,17 @@ object SparkSQLExprMapper {
           val columns = es.map(_.asSparkSQLExpr)
           coalesce(columns: _*)
 
-        case CaseExpr(alternatives, default) =>
-          val convertedAlternatives = alternatives.map {
-            case (predicate, action) => when(predicate.asSparkSQLExpr, action.asSparkSQLExpr)
+        case CaseExpr(_, maybeDefault) =>
+          val (maybeConvertedDefault, convertedAlternatives) = if (maybeDefault.isDefined) {
+            Some(convertedChildren.head) -> convertedChildren.tail
+          } else {
+            None -> convertedChildren
           }
-
-          val alternativesWithDefault = default match {
-            case Some(inner) => convertedAlternatives :+ inner.asSparkSQLExpr
-            case None => convertedAlternatives
-          }
-
-          val reversedColumns = alternativesWithDefault.reverse
-
-          val caseColumn = reversedColumns.tail.foldLeft(reversedColumns.head) {
-            case (tmpCol, whenCol) => whenCol.otherwise(tmpCol)
-          }
-          caseColumn
+          val indexed = convertedAlternatives.zipWithIndex
+          val conditions = indexed.collect { case (c, i) if i % 2 == 0 => c}
+          val values = indexed.collect { case (c, i) if i % 2 == 1 => c}
+          val branches = conditions.zip(values)
+          switch(branches, maybeConvertedDefault)
 
         case ContainerIndex(container, index) =>
           val indexCol = index.asSparkSQLExpr

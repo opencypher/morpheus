@@ -925,6 +925,22 @@ final case class ExistsPatternExpr(targetField: Var, ir: CypherQuery)
 final case class CaseExpr(alternatives: List[(Expr, Expr)], default: Option[Expr])
   (val cypherType: CypherType) extends Expr {
 
+  override val children: Array[Expr] = (default ++ alternatives.flatMap { case (cond, value) => Seq(cond, value) }).toArray
+
+  override def withNewChildren(newChildren: Array[Expr]): CaseExpr = {
+    val hasDefault = newChildren.length % 2 == 1
+    val (newDefault, as) = if (hasDefault) {
+      Some(newChildren.head) -> newChildren.tail
+    } else {
+      None -> newChildren
+    }
+    val indexed = as.zipWithIndex
+    val conditions = indexed.collect { case (c, i) if i % 2 == 0 => c}
+    val values = indexed.collect { case (c, i) if i % 2 == 1 => c}
+    val newAlternatives = conditions.zip(values).toList
+    CaseExpr(newAlternatives, newDefault)(cypherType)
+  }
+
   override def toString: String = s"$withoutType($cypherType)"
 
   override def withoutType: String = {
