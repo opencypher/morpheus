@@ -204,7 +204,7 @@ object GraphDdl {
       local: PartialGraphType
     ): Map[NodeTypeDefinition, PropertyKeys] = {
       parts.nodeTypes
-        .map(nodeType => nodeType.copy(elementTypes = local.resolveNodeLabels(nodeType)))
+        .map(nodeType => NodeTypeDefinition(local.resolveNodeLabels(nodeType)))
         .validateDistinctBy(identity, "Duplicate node type")
         .map(nodeType => nodeType -> tryWithNode(nodeType)(mergeProperties(nodeType.elementTypes.flatMap(local.resolveElementTypes))))
         .toMap
@@ -215,10 +215,10 @@ object GraphDdl {
       local: PartialGraphType
     ): Map[RelationshipTypeDefinition, PropertyKeys] = {
       parts.relTypes
-        .map(relType => relType.copy(
-          startNodeType = relType.startNodeType.copy(elementTypes = local.resolveNodeLabels(relType.startNodeType)),
+        .map(relType => RelationshipTypeDefinition(
+          startNodeType = NodeTypeDefinition(elementTypes = local.resolveNodeLabels(relType.startNodeType)),
           elementTypes = local.resolveRelationshipLabel(relType),
-          endNodeType = relType.endNodeType.copy(elementTypes = local.resolveNodeLabels(relType.endNodeType))))
+          endNodeType = NodeTypeDefinition(elementTypes = local.resolveNodeLabels(relType.endNodeType))))
         .validateDistinctBy(identity, "Duplicate relationship type")
         .map(relType => relType -> tryWithRel(relType)(mergeProperties(relType.elementTypes.flatMap(local.resolveElementTypes))))
         .toMap
@@ -537,10 +537,10 @@ case class GraphType(
   }
 
   private def expandNodeType(nodeType: NodeType): NodeType =
-    nodeType.copy(labels = nodeType.labels.flatMap(getElementTypes).map(_.name))
+    NodeType(labels = nodeType.labels.flatMap(getElementTypes).map(_.name))
 
   private def expandRelType(relType: RelationshipType): RelationshipType =
-    relType.copy(
+    RelationshipType(
       startNodeType = expandNodeType(relType.startNodeType),
       labels = relType.labels.flatMap(getElementTypes).map(_.name),
       endNodeType = expandNodeType(relType.endNodeType))
