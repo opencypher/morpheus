@@ -48,7 +48,7 @@ object TypeConverter {
     case frontend.CTDate          => Some(CTDate)
     case frontend.CTDuration      => Some(CTDuration)
     case ext.CTIdentity           => Some(CTIdentity)
-    case frontend.CTMap           => Some(CTMap(Map.empty)) // TODO: this is not very correct
+    case frontend.CTMap           => Some(CTMap)
     case frontend.ListType(inner) =>
       TypeConverter.convert(inner) match {
         case None => None

@@ -73,9 +73,9 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       EmptyRecords(
         Set(Var("a")(CTNode(Set("Animal")))),
         Start(logicalGraph, emptySqm),
-        SolvedQueryModel(Set(IRField("a")(CTNode(Set("Animal")))), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))(CTBoolean)))
+        SolvedQueryModel(Set(IRField("a")(CTNode(Set("Animal")))), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))))
       ),
-      SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean)))
+      SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))))
     )
 
     optimizedLogicalPlan should equalWithTracing(expected)
@@ -99,16 +99,16 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
         SolvedQueryModel(
           Set(IRField("a")(CTNode(Set("Astronaut", "Animal")))),
           Set(
-            HasLabel(Var("a")(CTNode(Set("Astronaut", "Animal"))), Label("Astronaut"))(CTBoolean),
-            HasLabel(Var("a")(CTNode(Set("Astronaut", "Animal"))), Label("Animal"))(CTBoolean)
+            HasLabel(Var("a")(CTNode(Set("Astronaut", "Animal"))), Label("Astronaut")),
+            HasLabel(Var("a")(CTNode(Set("Astronaut", "Animal"))), Label("Animal"))
           )
         )
       ),
       SolvedQueryModel(
         Set(IRField("a")(CTNode)),
         Set(
-          HasLabel(Var("a")(CTNode), Label("Animal"))(CTBoolean),
-          HasLabel(Var("a")(CTNode), Label("Astronaut"))(CTBoolean)))
+          HasLabel(Var("a")(CTNode), Label("Animal")),
+          HasLabel(Var("a")(CTNode), Label("Astronaut"))))
     )
 
     optimizedLogicalPlan should equalWithTracing(expected)
@@ -123,7 +123,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       val propA = expr.Property(varA, PropertyKey("name"))(CTString)
       val varB = Var("b")(CTNode)
       val propB = expr.Property(varB, PropertyKey("name"))(CTString)
-      val equals = Equals(propA, propB)(CTBoolean)
+      val equals = Equals(propA, propB)
       val irFieldA = IRField(varA.name)(varA.cypherType)
       val irFieldB = IRField(varB.name)(varB.cypherType)
 
@@ -149,7 +149,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       val propA = expr.Property(varA, PropertyKey("name"))(CTString)
       val varB = Var("b")(CTNode)
       val propB = expr.Property(varB, PropertyKey("name"))(CTString)
-      val equals = Equals(propB, propA)(CTBoolean)
+      val equals = Equals(propB, propA)
       val irFieldA = IRField(varA.name)(varA.cypherType)
       val irFieldB = IRField(varB.name)(varB.cypherType)
 
@@ -160,7 +160,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
 
       val optimizedPlan = BottomUp[LogicalOperator](LogicalOptimizer.replaceCartesianWithValueJoin).transform(filter)
 
-      val flippedEquals = Equals(propA, propB)(CTBoolean)
+      val flippedEquals = Equals(propA, propB)
       val projectA = Project(propA -> None, scanA, scanA.solved)
       val projectB = Project(propB -> None, scanB, scanB.solved)
       val solved = SolvedQueryModel(Set(irFieldA, irFieldB)).withPredicate(flippedEquals)
@@ -177,7 +177,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       val varB = Var("b")(CTNode)
       val propB = expr.Property(varB, PropertyKey("name"))(CTString)
 
-      val equals = Equals(nameField, propB)(CTBoolean)
+      val equals = Equals(nameField, propB)
       val irFieldB = IRField(varB.name)(varB.cypherType)
 
       val scanB = PatternScan.nodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))

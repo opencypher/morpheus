@@ -30,7 +30,7 @@ import java.net.URI
 
 import org.apache.hadoop.fs.FileSystem
 import org.apache.spark.sql.DataFrame
-import org.apache.spark.sql.types.{BinaryType, StringType, StructType}
+import org.apache.spark.sql.types.{BinaryType, NullType, StringType, StructType}
 import org.opencypher.okapi.api.graph.{GraphName, Node, Relationship}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.fs.HadoopFSHelpers._
@@ -84,7 +84,12 @@ class FSGraphSource(
       case None => table
       case Some(numFiles) => table.coalesce(numFiles)
     }
-    coalescedTable.write.format(tableStorageFormat.name).save(path)
+    // TODO: Consider changing computation of canonical tables so `null` typed columns don't make it here
+    // Null typed columns cannot be stored by most FS formats
+    val h :: t = coalescedTable.columns.collect {
+      case c if coalescedTable.schema(c).dataType != NullType => c
+    }.toList
+    coalescedTable.select(h, t: _*).write.format(tableStorageFormat.name).save(path)
   }
 
   override protected def listGraphNames: List[String] = {

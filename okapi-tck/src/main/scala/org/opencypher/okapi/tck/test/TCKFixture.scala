@@ -185,6 +185,7 @@ case class ScenariosFor(blacklist: Set[String]) {
   )
 
   def get(name: String): Seq[Scenario] = scenarios.filter(s => s.name == name)
+  def getPrefix(prefix: String): Seq[Scenario] = scenarios.filter(s => s.name.startsWith(prefix))
 }
 
 object ScenariosFor {

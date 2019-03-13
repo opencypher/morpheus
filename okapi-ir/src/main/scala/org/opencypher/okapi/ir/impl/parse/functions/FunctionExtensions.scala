@@ -47,6 +47,9 @@ case object FunctionExtensions {
 
   def get(name: String): Option[Function with TypeSignatures] =
     mappings.get(name.toLowerCase())
+
+  def getOrElse(name: String, f: Function): Function =
+    mappings.getOrElse(name.toLowerCase(), f)
 }
 
 case object Timestamp extends Function with TypeSignatures {

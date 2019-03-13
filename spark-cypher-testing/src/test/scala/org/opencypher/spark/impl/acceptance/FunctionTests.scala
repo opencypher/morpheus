@@ -627,7 +627,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       result.records.toMaps should equal(
         Bag(
-          CypherMap("exists" -> null)
+          CypherMap("exists" -> false)
         ))
     }
   }
@@ -1632,9 +1632,10 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("negative tests") {
     it("should give a good error message on unimplemented functions") {
+      val unimplementedFunction = "tail"
       the[NotImplementedException] thrownBy {
-        caps.cypher("RETURN tail([1, 2])")
-      } should have message "The expression FunctionInvocation(Namespace(List()),FunctionName(tail),false,Vector(Parameter(  AUTOLIST0,List<Any>))) [line 1, column 8 (offset: 7)] is not supported by the system"
+        caps.cypher(s"RETURN $unimplementedFunction([1, 2])")
+      } should have message s"Support for converting function '$unimplementedFunction' is not yet implemented"
     }
   }
 }

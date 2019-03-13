@@ -150,7 +150,15 @@ case object CTString extends MaterialDefiniteCypherLeafType {
   override def name = "STRING"
 }
 
-case class CTMap(innerTypes: Map[String, CypherType]) extends MaterialDefiniteCypherType with MaterialDefiniteCypherType.DefaultOrNull {
+object CTMap extends CTMap(Map.empty.withDefaultValue(CTAny)) {
+  override def superTypeOf(other: CypherType): Boolean = other match {
+    case _: CTMap => true
+    case CTVoid => true
+    case _ => false
+  }
+}
+
+case class CTMap(innerTypes: Map[String, CypherType] = Map.empty[String, CypherType]) extends MaterialDefiniteCypherType with MaterialDefiniteCypherType.DefaultOrNull {
   override def name = {
     val innerNames = innerTypes.map {
       case(key, valueType) => s"$key: ${valueType.name}"

@@ -47,10 +47,10 @@ class RecordHeaderTest extends BaseTestSuite {
   val relList: Var = Var("l")(CTList(CTRelationship))
   val relListSegment: ListSegment = ListSegment(0, relList)(CTRelationship)
 
-  val countN = CountStar(CTInteger)
+  val countN = CountStar
 
-  val nLabelA: HasLabel = HasLabel(n, Label("A"))(CTBoolean)
-  val nLabelB: HasLabel = HasLabel(n, Label("B"))(CTBoolean)
+  val nLabelA: HasLabel = HasLabel(n, Label("A"))
+  val nLabelB: HasLabel = HasLabel(n, Label("B"))
   val nPropFoo: Property = Property(n, PropertyKey("foo"))(CTString)
   val mPropFoo: Property = Property(m, PropertyKey("foo"))(CTString)
   val nExprs: Set[Expr] = Set(n, nLabelA, nLabelB, nPropFoo)
@@ -60,7 +60,7 @@ class RecordHeaderTest extends BaseTestSuite {
 
   val rStart: StartNode = StartNode(r)(CTNode)
   val rEnd: EndNode = EndNode(r)(CTNode)
-  val rRelType: HasType = HasType(r, RelType("R"))(CTBoolean)
+  val rRelType: HasType = HasType(r, RelType("R"))
   val rPropFoo: Property = Property(r, PropertyKey("foo"))(CTString)
   val rExprs: Set[Expr] = Set(r, rStart, rEnd, rRelType, rPropFoo)
   val relListExprs: Set[Expr] = Set(relListSegment) ++ Set(rStart, rEnd, rRelType, rPropFoo).map(_.withOwner(relListSegment))
@@ -516,8 +516,8 @@ class RecordHeaderTest extends BaseTestSuite {
         .withExpr(v)
         .withExpr(StartNode(v)(CTIdentity))
         .withExpr(EndNode(v)(CTIdentity))
-        .withExpr(HasType(v, RelType("FOO"))(CTBoolean))
-        .withExpr(HasType(v, RelType("BAR"))(CTBoolean))
+        .withExpr(HasType(v, RelType("FOO")))
+        .withExpr(HasType(v, RelType("BAR")))
 
       RecordHeader.from(v) should equal(expected)
     }
@@ -529,8 +529,8 @@ class RecordHeaderTest extends BaseTestSuite {
 
       val expected = RecordHeader.empty
         .withExpr(v)
-        .withExpr(HasLabel(v, Label("FOO"))(CTBoolean))
-        .withExpr(HasLabel(v, Label("BAR"))(CTBoolean))
+        .withExpr(HasLabel(v, Label("FOO")))
+        .withExpr(HasLabel(v, Label("BAR")))
 
       RecordHeader.from(v) should equal(expected)
     }

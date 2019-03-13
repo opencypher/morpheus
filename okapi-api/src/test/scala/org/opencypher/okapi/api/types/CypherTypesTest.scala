@@ -77,6 +77,13 @@ class CypherTypesTest extends ApiBaseTest {
 
     CTNull couldBeSameTypeAs CTInteger.nullable shouldBe true
     CTInteger.nullable couldBeSameTypeAs CTNull shouldBe true
+
+    CTMap couldBeSameTypeAs CTMap() shouldBe true
+    CTMap() couldBeSameTypeAs CTMap shouldBe true
+    CTMap(Map("name" -> CTString)) couldBeSameTypeAs CTMap shouldBe true
+    CTMap couldBeSameTypeAs CTMap(Map("name" -> CTString)) shouldBe true
+    CTMap(Map("name" -> CTString)) couldBeSameTypeAs CTMap() shouldBe false
+    CTMap() couldBeSameTypeAs CTMap(Map("name" -> CTString)) shouldBe false
   }
 
   it("intersects") {

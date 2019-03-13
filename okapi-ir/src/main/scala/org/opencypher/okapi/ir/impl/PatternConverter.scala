@@ -45,7 +45,7 @@ import org.opencypher.v9_0.{expressions => ast}
 
 import scala.annotation.tailrec
 
-final class PatternConverter()(implicit val irBuilderContext: IRBuilderContext) {
+final class PatternConverter(irBuilderContext: IRBuilderContext) {
 
   type Result[A] = State[Pattern, A]
 

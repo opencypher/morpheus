@@ -68,9 +68,9 @@ case class SolvedQueryModel(
       case CTRelationship(types, _) =>
         val predicate =
           if (types.size == 1)
-            HasType(r, RelType(types.head))(CTBoolean)
+            HasType(r, RelType(types.head))
           else
-            Ors(types.map(t => HasType(r, RelType(t))(CTBoolean)).toSeq: _*)
+            Ors(types.map(t => HasType(r, RelType(t))).toSeq: _*)
         withField(r).withPredicate(predicate)
       case _ =>
         throw IllegalArgumentException("a relationship variable", r)

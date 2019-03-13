@@ -35,9 +35,9 @@ class AndsTest extends BaseTestSuite {
 
   test("unnests inner ands") {
     val x = Var("x")()
-    val args: Set[Expr] = Set(Ands(TrueLit), HasLabel(x, Label("X"))(CTAny), Ands(Ands(Ands(FalseLit))))
+    val args: Set[Expr] = Set(Ands(TrueLit), HasLabel(x, Label("X")), Ands(Ands(Ands(FalseLit))))
 
-    Ands(args) should equalWithTracing(Ands(Set(TrueLit, HasLabel(x, Label("X"))(CTAny), FalseLit)))
+    Ands(args) should equalWithTracing(Ands(Set(TrueLit, HasLabel(x, Label("X")), FalseLit)))
   }
 
 }

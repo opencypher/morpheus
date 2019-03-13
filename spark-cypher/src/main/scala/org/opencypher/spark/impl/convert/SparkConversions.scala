@@ -36,6 +36,7 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImpleme
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
+import org.opencypher.spark.impl.SparkSQLMappingException
 
 object SparkConversions {
 
@@ -66,7 +67,7 @@ object SparkConversions {
     }
 
     def toSparkType: Option[DataType] = ct match {
-      case CTNull | CTVoid => Some(NullType)
+      case CTNull => Some(NullType)
       case _ =>
         ct.material match {
           case CTString => Some(StringType)
@@ -79,10 +80,12 @@ object SparkConversions {
           case CTIdentity => Some(BinaryType)
           case _: CTNode => Some(BinaryType)
           case _: CTRelationship => Some(BinaryType)
-          case CTList(CTVoid) => Some(ArrayType(NullType, containsNull = true))
-          case CTList(CTNull) => Some(ArrayType(NullType, containsNull = true))
-          case CTList(elemType) =>
-            elemType.toSparkType.map(ArrayType(_, elemType.isNullable))
+            // Spark uses String as the default array inner type
+          case CTList(CTVoid) => Some(ArrayType(StringType, containsNull = false))
+          case CTList(CTNull) => Some(ArrayType(StringType, containsNull = true))
+          case CTList(CTNumber) => Some(ArrayType(DoubleType, containsNull = false))
+          case CTList(CTNumber.nullable) => Some(ArrayType(DoubleType, containsNull = true))
+          case CTList(elemType) => elemType.toSparkType.map(ArrayType(_, elemType.isNullable))
           case CTMap(inner) =>
             val innerFields = inner.map {
               case (key, valueType) => valueType.toStructField(key)
@@ -95,10 +98,12 @@ object SparkConversions {
 
     def getSparkType: DataType = toSparkType match {
       case Some(t) => t
-      case None => throw NotImplementedException(s"Mapping of CypherType $ct to Spark type")
+      case None => throw SparkSQLMappingException(s"Mapping of CypherType $ct to Spark type is unsupported")
     }
 
     def isSparkCompatible: Boolean = toSparkType.isDefined
+
+    def ensureSparkCompatible(): Unit = getSparkType
 
   }
 

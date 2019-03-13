@@ -32,85 +32,178 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.impl.util.VarConverters.{toVar, _}
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.testing.BaseTestSuite
-import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.v9_0.ast.semantics.SemanticState
-import org.opencypher.v9_0.util.{Ref, symbols}
 import org.opencypher.v9_0.{expressions => ast}
+import org.scalatest.Assertion
+
+import scala.language.implicitConversions
 
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
-  private def testTypes(ref: Ref[ast.Expression]): CypherType = ref.value match {
-    case ast.Variable("r") => CTRelationship
-    case ast.Variable("n") => CTNode
-    case ast.Variable("m") => CTNode
-    case _                 => CTAny
-  }
+  val baseTypes = Seq[CypherType](
+    CTAny, CTNumber, CTNull, CTVoid,
+    CTBoolean, CTInteger, CTFloat, CTString,
+    CTDate, CTLocalDateTime, CTDuration,
+    CTIdentity, CTPath
+  )
+
+  val simple =
+    baseTypes.map(tpe => tpe.name -> tpe) ++
+      baseTypes.map(tpe => s"${tpe.name}_OR_NULL" -> tpe.nullable)
+
+  private val lists = simple
+    .map { case (n, t) => s"LIST_$n" -> CTList(t) }
+
+  private val maps = Seq(
+    "NODE" -> CTNode(Set("Node")),
+    "NODE_EMPTY" -> CTNode(),
+    "REL" -> CTRelationship(Set("REL")),
+    "REL_EMPTY" -> CTRelationship(),
+    "MAP" -> CTMap(simple.toMap),
+    "MAP_EMPTY" -> CTMap(Map())
+  )
+
+  private val all = Seq(
+    simple,
+    lists,
+    lists.map { case (n, t) => s"${n}_OR_NULL" -> t.nullable },
+    maps,
+    maps.map { case (n, t) => s"${n}_OR_NULL" -> t.nullable }
+  ).flatten.map {
+    case (name, typ) => Var(name)(typ)
+  }.toSet
+
+  private val properties  =
+    simple ++ Seq("name" -> CTString,  "age" -> CTInteger)
+
+  private val properties2 =
+    simple ++ Seq("name" -> CTBoolean, "age" -> CTFloat)
+
+  private val propertiesJoined =
+    simple ++ Seq("name" -> CTAny, "age" -> CTNumber)
+
+  private val schema: Schema = Schema.empty
+    .withNodePropertyKeys("Node")(properties : _*)
+    .withRelationshipPropertyKeys("REL")(properties: _*)
+    .withNodePropertyKeys("Node2")(properties2 : _*)
+    .withRelationshipPropertyKeys("REL2")(properties2: _*)
+
+  val testContext: IRBuilderContext = IRBuilderContext.initial(
+    "",
+    CypherMap("p" -> CypherString("myParam")),
+    SemanticState.clean,
+    IRCatalogGraph(QualifiedGraphName(Namespace(""), GraphName("")), schema),
+    qgnGenerator,
+    Map.empty,
+    _ => ???,
+    all
+  )
 
   it("should convert CASE") {
-    convert(parseExpr("CASE WHEN a > b THEN c ELSE d END")) should equal(
-      CaseExpr(IndexedSeq((GreaterThan('a, 'b)(CTBoolean), 'c)), Some('d))(CTAny)
+    convert(parseExpr("CASE WHEN INTEGER > INTEGER THEN INTEGER ELSE FLOAT END")) should equal(
+      CaseExpr(List((GreaterThan('INTEGER, 'INTEGER), 'INTEGER)), Some('FLOAT))(CTNumber)
     )
-    convert(parseExpr("CASE WHEN a > b THEN c END")) should equal(
-      CaseExpr(IndexedSeq((GreaterThan('a, 'b)(CTBoolean), 'c)), None)(CTAny)
-    )
-  }
-
-  it("should convert coalesce") {
-    convert(parseExpr("coalesce(a, b, c)")) should equal(
-      Coalesce(IndexedSeq('a, 'b, 'c))(CTAny)
+    convert(parseExpr("CASE WHEN STRING > STRING_OR_NULL THEN NODE END")) should equal(
+      CaseExpr(List((GreaterThan('STRING, 'STRING_OR_NULL), 'NODE)), None)(CTNode("Node").nullable)
     )
   }
 
-  test("exists") {
-    convert(parseExpr("exists(n.key)")) should equalWithTracing(
-      Exists(Property(toNodeVar('n), PropertyKey("key"))(CTAny))(CTAny)
+  describe("coalesce") {
+    it("should convert coalesce") {
+      convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE)")) shouldEqual
+        Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE))(CTAny)
+    }
+
+    it("should become nullable if nothing is non-null") {
+      convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE_OR_NULL)")) shouldEqual
+        Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE_OR_NULL))(CTAny.nullable)
+    }
+
+    it("should not consider arguments past the first non-nullable coalesce") {
+      convert(parseExpr("coalesce(INTEGER_OR_NULL, FLOAT, NODE, STRING)")) shouldEqual
+        Coalesce(List('INTEGER_OR_NULL, 'FLOAT))(CTNumber)
+    }
+
+    it("should remove coalesce if the first arg is non-nullable") {
+      convert(parseExpr("coalesce(INTEGER, STRING_OR_NULL, NODE)")) shouldEqual(
+        toVar('INTEGER), CTInteger
+      )
+    }
+  }
+
+  describe("exists") {
+    // NOTE: pattern version of exists((:A)-->(:B)) is rewritten before IR building
+
+    it("can convert") {
+      convert(parseExpr("exists(NODE.name)")) shouldEqual(
+        Exists(Property('NODE, PropertyKey("name"))(CTString)), CTBoolean
+      )
+    }
+  }
+
+  describe("IN") {
+    it("can convert in predicate and literal list") {
+      convert(parseExpr("INTEGER IN [INTEGER, INTEGER_OR_NULL, FLOAT]")) shouldEqual(
+        In('INTEGER, ListLit(List('INTEGER, 'INTEGER_OR_NULL, 'FLOAT))(CTList(CTNumber.nullable))), CTBoolean
+      )
+    }
+
+    it("can convert IN for single-element lists") {
+      convert(parseExpr("STRING IN ['foo']")) shouldEqual(
+        Equals('STRING, StringLit("foo")), CTBoolean
+      )
+    }
+  }
+
+  it("can convert or predicate") {
+    convert(parseExpr("NODE = NODE_OR_NULL OR STRING_OR_NULL > STRING")) shouldEqual(
+      Ors(Equals('NODE, 'NODE_OR_NULL), GreaterThan('STRING_OR_NULL, 'STRING)), CTBoolean.nullable
     )
   }
 
-  test("converting in predicate and literal list") {
-    convert(parseExpr("a IN [a, b, c]")) should equal(
-      In('a, ListLit('a, 'b, 'c))(CTAny)
-    )
+  describe("type()") {
+    it("can convert") {
+      convert(parseExpr("type(REL)")) shouldEqual(Type('REL), CTString)
+    }
+
+    it("can convert nullable") {
+      convert(parseExpr("type(REL_OR_NULL)")) shouldEqual(
+        Type('REL_OR_NULL), CTString.nullable
+      )
+    }
   }
 
-  test("converting or predicate") {
-    convert(parseExpr("n = a OR n > b")) should equalWithTracing(
-      Ors(Equals(toNodeVar('n), 'a)(CTAny), GreaterThan(toNodeVar('n), 'b)(CTAny))
-    )
-  }
-
-  test("can convert type") {
-    convert(parseExpr("type(a)")) should equal(
-      Type(Var("a")())(CTAny)
-    )
-  }
-
-  it("can convert count") {
-    convert(parseExpr("count(a)")) should equal(
-      Count(Var("a")(), false)(CTAny)
-    )
-    convert(parseExpr("count(distinct a)")) should equal(
-      Count(Var("a")(), true)(CTAny)
-    )
-    convert(parseExpr("count(*)")) should equal(
-      CountStar(CTAny)
-    )
+  describe("count()") {
+    it("can convert") {
+      convert(parseExpr("count(NODE)")) shouldEqual(
+        Count('NODE, distinct = false), CTInteger
+      )
+    }
+    it("can convert distinct") {
+      convert(parseExpr("count(distinct INTEGER)")) shouldEqual(
+        Count('INTEGER, distinct = true), CTInteger
+      )
+    }
+    it("can convert star") {
+      convert(parseExpr("count(*)")) shouldEqual(
+        CountStar, CTInteger
+      )
+    }
   }
 
   describe("range") {
 
     it("can convert range") {
-      convert(parseExpr("range(0, 10, 2)")) should equal(
-        Range(IntegerLit(0)(CTAny), IntegerLit(10)(CTAny), Some(IntegerLit(2)(CTAny)))
+      convert(parseExpr("range(0, 10, 2)")) shouldEqual(
+        Range(IntegerLit(0), IntegerLit(10), Some(IntegerLit(2))), CTList(CTInteger)
       )
     }
 
     it("can convert range with missing step size") {
-      convert(parseExpr("range(0, 10)")) should equal(
-        Range(IntegerLit(0)(CTAny), IntegerLit(10)(CTAny), None)
+      convert(parseExpr("range(0, 10)")) shouldEqual(
+        Range(IntegerLit(0), IntegerLit(10), None), CTList(CTInteger)
       )
     }
   }
@@ -118,151 +211,145 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   describe("substring") {
 
     it("can convert substring") {
-      convert(parseExpr("substring('foobar', 0, 3)")) should equal(
-        Substring(StringLit("foobar")(CTAny), IntegerLit(0)(CTAny), Some(IntegerLit(3)(CTAny)))
+      convert(parseExpr("substring('foobar', 0, 3)")) shouldEqual(
+        Substring(StringLit("foobar"), IntegerLit(0), Some(IntegerLit(3))), CTString
       )
     }
 
     it("can convert substring with missing length") {
-      convert(parseExpr("substring('foobar', 0)")) should equal(
-        Substring(StringLit("foobar")(CTAny), IntegerLit(0)(CTAny), None)
+      convert(parseExpr("substring('foobar', 0)")) shouldEqual(
+        Substring(StringLit("foobar"), IntegerLit(0), None), CTString
       )
     }
   }
 
-  test("can convert less than") {
-    convert(parseExpr("a < b")) should equal(
-      LessThan(Var("a")(), Var("b")())(CTAny)
+  it("can convert less than") {
+    convert(parseExpr("INTEGER < FLOAT_OR_NULL")) shouldEqual(
+      LessThan('INTEGER, 'FLOAT_OR_NULL), CTBoolean.nullable
     )
   }
 
-  test("can convert less than or equal") {
-    convert(parseExpr("a <= b")) should equal(
-      LessThanOrEqual(Var("a")(), Var("b")())(CTAny)
+  it("can convert less than or equal") {
+    convert(parseExpr("INTEGER <= FLOAT_OR_NULL")) shouldEqual(
+      LessThanOrEqual('INTEGER, 'FLOAT_OR_NULL), CTBoolean.nullable
     )
   }
 
-  test("can convert greater than") {
-    convert(parseExpr("a > b")) should equal(
-      GreaterThan(Var("a")(), Var("b")())(CTAny)
+  it("can convert greater than") {
+    convert(parseExpr("INTEGER > FLOAT_OR_NULL")) shouldEqual(
+      GreaterThan('INTEGER, 'FLOAT_OR_NULL), CTBoolean.nullable
     )
   }
 
-  test("can convert greater than or equal") {
-    convert(parseExpr("a >= b")) should equal(
-      GreaterThanOrEqual(Var("a")(), Var("b")())(CTAny)
+  it("can convert greater than or equal") {
+    convert(parseExpr("INTEGER >= INTEGER")) shouldEqual(
+      GreaterThanOrEqual('INTEGER, 'INTEGER), CTBoolean
     )
   }
 
-  test("can convert add") {
-    convert("a + b") should equal(
-      Add(Var("a")(), Var("b")())(CTAny)
+  it("can convert add") {
+    convert("INTEGER + INTEGER") shouldEqual
+      Add('INTEGER, 'INTEGER)(CTInteger)
+  }
+
+  it("can convert subtract") {
+    convert("INTEGER - INTEGER") shouldEqual
+      Subtract('INTEGER, 'INTEGER)(CTInteger)
+  }
+
+  it("can convert multiply") {
+    convert("FLOAT * INTEGER_OR_NULL") shouldEqual
+      Multiply('FLOAT, 'INTEGER_OR_NULL)(CTFloat.nullable)
+  }
+
+  it("can convert divide") {
+    convert("FLOAT / FLOAT") shouldEqual
+      Divide('FLOAT, 'FLOAT)(CTFloat)
+  }
+
+  it("can convert type function calls used as predicates") {
+    convert(parseExpr("type(REL) = 'REL_TYPE'")) shouldEqual(
+      HasType('REL, RelType("REL_TYPE")), CTBoolean
     )
   }
 
-  test("can convert subtract") {
-    convert("a - b") should equal(
-      Subtract(Var("a")(), Var("b")())(CTAny)
-    )
+  it("can convert variables") {
+    convert(varFor("BOOLEAN")) shouldEqual toVar('BOOLEAN)
   }
 
-  test("can convert multiply") {
-    convert("a * b") should equal(
-      Multiply(Var("a")(), Var("b")())(CTAny)
-    )
-  }
-
-  test("can convert divide") {
-    convert("a / b") should equal(
-      Divide(Var("a")(), Var("b")())(CTAny)
-    )
-  }
-
-  test("can convert type function calls used as predicates") {
-    convert(parseExpr("type(r) = 'REL_TYPE'")) should equal(
-      HasType(Var("r")(CTRelationship), RelType("REL_TYPE"))(CTBoolean)
-    )
-  }
-
-  test("can convert variables") {
-    convert(varFor("n")) should equal(toNodeVar('n))
-  }
-
-  test("can convert literals") {
-    convert(literalInt(1)) should equal(IntegerLit(1L)(CTAny))
-    convert(ast.StringLiteral("Hello") _) should equal(StringLit("Hello")(CTAny))
+  it("can convert literals") {
+    convert(literalInt(1)) should equal(IntegerLit(1L))
+    convert(ast.StringLiteral("Hello") _) should equal(StringLit("Hello"))
     convert(parseExpr("false")) should equal(FalseLit)
     convert(parseExpr("true")) should equal(TrueLit)
   }
 
-  test("can convert property access") {
-    convert(prop("n", "key")) should equal(Property(toNodeVar('n), PropertyKey("key"))(CTAny))
+  it("can convert property access") {
+    convert(prop("NODE", "age")) shouldEqual
+      Property('NODE, PropertyKey("age"))(CTInteger)
   }
 
-  test("can convert equals") {
-    convert(ast.Equals(varFor("a"), varFor("b")) _) should equal(Equals('a, 'b)(CTBoolean))
-  }
-
-  test("can convert IN for single-element lists") {
-    val in = ast.In(varFor("x"), ast.ListLiteral(Seq(ast.StringLiteral("foo") _)) _) _
-    convert(in) should equal(Equals('x, StringLit("foo")(CTAny))(CTAny))
-  }
-
-  test("can convert parameters") {
-    val given = ast.Parameter("p", symbols.CTString) _
-    convert(given) should equal(Param("p")(CTAny))
-  }
-
-  test("can convert has-labels") {
-    val given = convert(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _, ast.LabelName("Duck") _)) _)
-    given should equal(Ands(HasLabel('x, Label("Person"))(CTBoolean), HasLabel('x, Label("Duck"))(CTBoolean)))
-  }
-
-  test("can convert single has-labels") {
-    val given = ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _
-    convert(given) should equal(HasLabel('x, Label("Person"))(CTBoolean))
-  }
-
-  test("can convert conjunctions") {
-    val given = ast.Ands(
-      Set(
-        ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _,
-        ast.Equals(prop("x", "name"), ast.StringLiteral("Mats") _) _)) _
-
-    convert(given) should equal(
-      Ands(
-        HasLabel('x, Label("Person"))(CTBoolean),
-        Equals(Property('x, PropertyKey("name"))(CTAny), StringLit("Mats")(CTAny))(CTBoolean)))
-  }
-
-  test("can convert negation") {
-    val given = ast.Not(ast.HasLabels(varFor("x"), Seq(ast.LabelName("Person") _)) _) _
-
-    convert(given) should equal(Not(HasLabel('x, Label("Person"))(CTBoolean))(CTBoolean))
-  }
-
-  it("can convert retyping predicate") {
-    val given = parseExpr("$p1 AND n:Foo AND $p2 AND m:Bar")
-
-    convert(given).asInstanceOf[Ands].exprs should equalWithTracing(
-      Set(HasLabel(toNodeVar('n), Label("Foo"))(CTAny), HasLabel(toNodeVar('m), Label("Bar"))(CTAny), Param("p1")(CTAny), Param("p2")(CTAny)))
-  }
-
-  test("can convert id function") {
-    convert("id(a)") should equal(
-      Id(Var("a")())(CTAny)
+  it("can convert equals") {
+    convert(ast.Equals(varFor("STRING"), varFor("STRING_OR_NULL")) _) shouldEqual(
+      Equals('STRING, 'STRING_OR_NULL), CTBoolean.nullable
     )
   }
 
-  lazy val testContext: IRBuilderContext = IRBuilderContext.initial(
-    "",
-    CypherMap.empty,
-    SemanticState.clean,
-    IRCatalogGraph(QualifiedGraphName(Namespace(""), GraphName("")), Schema.empty),
-    qgnGenerator,
-    Map.empty,
-    _ => ???
-  )
+  it("can convert parameters") {
+    convert(parseExpr("$p")) shouldEqual Param("p")(CTString)
+  }
+
+  describe("has labels") {
+    it("can convert has-labels") {
+      convert(parseExpr("NODE:Person:Duck")) shouldEqual
+        Ands(HasLabel('NODE, Label("Person")), HasLabel('NODE, Label("Duck")))
+    }
+
+    it("can convert single has-labels") {
+      val given = ast.HasLabels(varFor("NODE"), Seq(ast.LabelName("Person") _)) _
+      convert(given) shouldEqual(HasLabel('NODE, Label("Person")))
+    }
+  }
+
+  it("can convert conjunctions") {
+    val given = ast.Ands(
+      Set(
+        ast.HasLabels(varFor("NODE"), Seq(ast.LabelName("Person") _)) _,
+        ast.Equals(prop("NODE", "name"), ast.StringLiteral("Mats") _) _)) _
+
+    convert(given) shouldEqual(
+      Ands(
+        HasLabel('NODE, Label("Person")),
+        Equals(Property('NODE, PropertyKey("name"))(CTAny), StringLit("Mats"))), CTBoolean
+    )
+  }
+
+  it("can convert negation") {
+    val given = ast.Not(ast.HasLabels(varFor("NODE"), Seq(ast.LabelName("Person") _)) _) _
+
+    convert(given) shouldEqual(Not(HasLabel('NODE, Label("Person"))))
+  }
+
+  it("can convert id function") {
+    convert("id(REL_OR_NULL)") shouldEqual(
+      Id('REL_OR_NULL), CTIdentity.nullable
+    )
+  }
+
+  implicit def toVar(s: Symbol): Var = all.find(_.name == s.name).get
+
   private def convert(e: ast.Expression): Expr =
-    new ExpressionConverter()(testContext).convert(e)(testTypes)
+    new ExpressionConverter(testContext).convert(e)
+
+  implicit class TestExpr(expr: Expr) {
+    def shouldEqual(other: Expr): Assertion = {
+      expr should equal(other)
+      expr.cypherType should equal(other.cypherType)
+    }
+    def shouldEqual(other: Expr, typ: CypherType): Assertion = {
+      expr should equal(other)
+      expr.cypherType should equal(other.cypherType)
+      expr.cypherType should equal(typ)
+    }
+  }
 }
