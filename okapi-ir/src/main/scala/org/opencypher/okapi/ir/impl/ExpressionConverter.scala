@@ -372,7 +372,7 @@ object OperatorTyping {
 
       val signatures = FunctionExtensions.getOrElse(f.function.name, f.function) match {
         case t: TypeSignatures => t.signatures
-        case _ => ??? // TODO
+        case _ => throw NoSuitableSignatureForExpr(f, args)
       }
 
       OperatorTyping.returnTypeFor(signatures, args).getOrElse(throw NoSuitableSignatureForExpr(f, args))
