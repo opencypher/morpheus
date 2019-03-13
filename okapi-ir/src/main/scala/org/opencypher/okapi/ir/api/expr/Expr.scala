@@ -77,6 +77,11 @@ sealed abstract class Expr extends AbstractTreeNode[Expr] {
     }
   }
 
+  /**
+    * When `nullInNullOut` is true, then the expression evaluates to `null`, if any of its inputs evaluate to `null`.
+    *
+    * Essentially it means that `null` values pass up the evaluatio chain from children to parents.
+    */
   def nullInNullOut: Boolean = true
 
 }
