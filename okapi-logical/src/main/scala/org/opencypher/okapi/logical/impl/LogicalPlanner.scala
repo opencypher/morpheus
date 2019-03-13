@@ -54,7 +54,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   }
 
   def planModel(block: ResultBlock, model: QueryModel)(
-    implicit context: LogicalPlannerContext): LogicalOperator = {
+    implicit context: LogicalPlannerContext
+  ): LogicalOperator = {
     val first = block.after.head // there should only be one, right?
 
     val plan = planBlock(first, model, None)
@@ -70,7 +71,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   }
 
   final def planBlock(block: Block, model: QueryModel, plan: Option[LogicalOperator])(
-    implicit context: LogicalPlannerContext): LogicalOperator = {
+    implicit context: LogicalPlannerContext
+  ): LogicalOperator = {
     if (block.after.isEmpty) {
       // this is a leaf block, just plan it
       planLeaf(block, model)
@@ -113,7 +115,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   }
 
   def planNonLeaf(block: Block, model: QueryModel, plan: LogicalOperator)(
-    implicit context: LogicalPlannerContext): LogicalOperator = {
+    implicit context: LogicalPlannerContext
+  ): LogicalOperator = {
     block match {
       case MatchBlock(_, pattern, where, optional, graph) =>
         val lg = resolveGraph(graph, plan.fields)
@@ -176,142 +179,45 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   }
 
   private def planFieldProjections(in: LogicalOperator, exprs: Map[IRField, Expr])(
-    implicit context: LogicalPlannerContext) = {
+    implicit context: LogicalPlannerContext
+  ): LogicalOperator = {
     exprs.foldLeft(in) {
-      case (acc, (f, p: Property)) =>
-        producer.projectField(p, f, acc)
-
-      case (acc, (f, func: FunctionExpr)) =>
-        val projectArg = func.exprs.foldLeft(acc) {
-          case (acc2, expr) => planInnerExpr(expr, acc2)
-        }
-        producer.projectField(func, f, projectArg)
-
-      // this is for aliasing
-      case (acc, (f, v: Var)) if f.name != v.name =>
-        producer.projectField(v, f, acc)
-
-      case (acc, (_, _: Var)) =>
-        acc
-
-      case (acc, (f, be: BinaryExpr)) =>
-        val projectLhs = planInnerExpr(be.lhs, acc)
-        val projectRhs = planInnerExpr(be.rhs, projectLhs)
-        producer.projectField(be, f, projectRhs)
-
-      case (acc, (f, c: Param)) =>
-        producer.projectField(c, f, acc)
-
-      case (acc, (f, c: Lit[_])) =>
-        producer.projectField(c, f, acc)
 
       case (acc, (f, ex: ExistsPatternExpr)) =>
-        val subqueryPlan = this (ex.ir)
-        val existsPlan = producer.planExistsSubQuery(ex, acc, subqueryPlan)
+        val existsPlan = producer.planExistsSubQuery(ex, acc, this (ex.ir))
         producer.projectField(existsPlan.expr.targetField, f, existsPlan)
 
-      case (acc, (f, e: PredicateExpression)) =>
-        val projectInner = planInnerExpr(e.inner, acc)
-        producer.projectField(e, f, projectInner)
+      case (acc, (f, expr)) =>
+        producer.projectField(expr, f, expr.children.foldLeft(acc)((op, expr) => planInnerExpr(expr, op)))
 
-      case (acc, (f, c: CaseExpr)) =>
-        val (leftExprs, rightExprs) = c.alternatives.unzip
-        val plannedAlternatives = (leftExprs ++ rightExprs).foldLeft(acc)((op, expr) => planInnerExpr(expr, op))
-
-        val plannedAll = c.default match {
-          case Some(inner) => planInnerExpr(inner, plannedAlternatives)
-          case None => plannedAlternatives
-        }
-        producer.projectField(c, f, plannedAll)
-
-      case (acc, (f, a@Ands(inner))) =>
-        val plannedInner = inner.foldLeft(acc)((op, expr) => planInnerExpr(expr, op))
-        producer.projectField(a, f, plannedInner)
-
-      case (acc, (f, o@Ors(inner))) =>
-        val plannedInner = inner.foldLeft(acc)((op, expr) => planInnerExpr(expr, op))
-        producer.projectField(o, f, plannedInner)
-
-      case (acc, (f, containerIndex@ ContainerIndex(container, idx))) =>
-        val withContainer = planInnerExpr(container, acc)
-        val withIndex = planInnerExpr(idx, withContainer)
-        producer.projectField(containerIndex, f, withIndex)
-
-      case (acc, (f, m@MapExpression(items))) =>
-        val projectInner = items.values.foldLeft(acc)((op, expr) => planInnerExpr(expr, op))
-        producer.projectField(m, f, projectInner)
-
-      case (_, (_, x)) =>
-        throw NotImplementedException(s"Support for projection of $x not yet implemented. Tree:\n${x.pretty}")
     }
   }
 
-  // TODO: Should we check (or silently drop) predicates that are not eligible for planning here? (check dependencies)
   private def planFilter(in: LogicalOperator, where: Set[Expr])(
-    implicit context: LogicalPlannerContext): LogicalOperator = {
+    implicit context: LogicalPlannerContext
+  ): LogicalOperator = {
     val filtersAndProjs = where.foldLeft(in) {
-      case (acc, ors: Ors) =>
-        val withInnerExprs = ors.exprs.foldLeft(acc) {
-          case (_acc, expr) => planInnerExpr(expr, _acc)
-        }
-        producer.planFilter(ors, withInnerExprs)
-
-      case (acc, eq: Equals) =>
-        val project1 = planInnerExpr(eq.lhs, acc)
-        val project2 = planInnerExpr(eq.rhs, project1)
-        producer.planFilter(eq, project2)
-
-      case (acc, be: BinaryExpr) =>
-        val project1 = planInnerExpr(be.lhs, acc)
-        val project2 = planInnerExpr(be.rhs, project1)
-        val projectParent = producer.projectExpr(be, project2)
-        producer.planFilter(be, projectParent)
-
-      case (acc, h@HasLabel(_: Var, _)) =>
-        producer.planFilter(h, acc)
-
-      case (acc, not@Not(Equals(lhs, rhs))) =>
-        val p1 = planInnerExpr(lhs, acc)
-        val p2 = planInnerExpr(rhs, p1)
-        producer.planFilter(not, p2)
-
-      case (acc, not@Not(expr)) =>
-        val project = planInnerExpr(expr, acc)
-        producer.planFilter(not, project)
-
-      case (acc, exists@Exists(expr)) =>
-        val project = planInnerExpr(expr, acc)
-        producer.planFilter(exists, project)
-
-      case (acc, isNull@IsNull(expr)) =>
-        val project = planInnerExpr(expr, acc)
-        producer.planFilter(isNull, project)
-
-      case (acc, isNotNull@IsNotNull(expr)) =>
-        val project = planInnerExpr(expr, acc)
-        producer.planFilter(isNotNull, project)
-
-      case (acc, t@ TrueLit) =>
-        producer.planFilter(t, acc) // optimise away this one somehow... currently we do that in PhysicalPlanner
-
-      case (acc, v: Var) =>
-        producer.planFilter(v, acc)
 
       case (acc, ex: ExistsPatternExpr) =>
-        val innerPlan = this (ex.ir)
-        val predicate = producer.planExistsSubQuery(ex, acc, innerPlan)
+        val predicate = producer.planExistsSubQuery(ex, acc, this (ex.ir))
         producer.planFilter(ex, predicate)
 
-      case (_, x) =>
-        throw NotImplementedException(s"Support for logical planning of predicate $x not yet implemented. Tree:\n${x.pretty}")
+      case (acc, predicate) =>
+        val withInnerExprs = predicate.children.foldLeft(acc) {
+          case (_acc, expr) => planInnerExpr(expr, _acc)
+        }
+        producer.planFilter(predicate, withInnerExprs)
+
     }
 
     filtersAndProjs
   }
 
   private def planInnerExpr(expr: Expr, in: LogicalOperator)(
-    implicit context: LogicalPlannerContext): LogicalOperator = {
+    implicit context: LogicalPlannerContext
+  ): LogicalOperator = {
     expr match {
+
       case _: Param => in
 
       case ListLit(exprs) =>
@@ -354,16 +260,16 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val plannedInner = inner.foldLeft(in)((op, expr) => planInnerExpr(expr, op))
         producer.projectExpr(ors, plannedInner)
 
-      case containerIndex@ ContainerIndex(container, idx) =>
+      case containerIndex@ContainerIndex(container, idx) =>
         val withContainer = planInnerExpr(container, in)
         val withIndex = planInnerExpr(idx, withContainer)
         producer.projectExpr(containerIndex, withIndex)
 
-      case mapExpr@ MapExpression(items) =>
+      case mapExpr@MapExpression(items) =>
         val planInner = items.values.foldLeft(in)((op, expr) => planInnerExpr(expr, op))
         producer.projectExpr(mapExpr, planInner)
 
-      case caseExpr@ CaseExpr(alternatives, maybeDefault) =>
+      case caseExpr@CaseExpr(alternatives, maybeDefault) =>
         val (leftExprs, rightExprs) = alternatives.unzip
         val plannedAlternatives = (leftExprs ++ rightExprs).foldLeft(in)((op, expr) => planInnerExpr(expr, op))
 
@@ -379,7 +285,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   }
 
   private def resolveGraph(graph: IRGraph, fieldsInScope: Set[Var])(
-    implicit context: LogicalPlannerContext): LogicalGraph = {
+    implicit context: LogicalPlannerContext
+  ): LogicalGraph = {
 
     graph match {
       // TODO: IRGraph
@@ -437,13 +344,15 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   }
 
   private def planFromGraph(graph: LogicalGraph, prev: LogicalOperator)(
-    implicit context: LogicalPlannerContext): FromGraph = {
+    implicit context: LogicalPlannerContext
+  ): FromGraph = {
 
     producer.planFromGraph(graph, prev)
   }
 
   private def planMatchPattern(plan: LogicalOperator, pattern: Pattern, where: Set[Expr], graph: IRGraph)(
-    implicit context: LogicalPlannerContext) = {
+    implicit context: LogicalPlannerContext
+  ) = {
     val components = pattern.components.toSeq
     if (components.size == 1) {
       val patternPlan = planComponentPattern(plan, components.head, graph)
@@ -461,7 +370,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   }
 
   private def planComponentPattern(plan: LogicalOperator, pattern: Pattern, graph: IRGraph)(
-    implicit context: LogicalPlannerContext): LogicalOperator = {
+    implicit context: LogicalPlannerContext
+  ): LogicalOperator = {
 
     // find all unsolved nodes from the pattern
     val nodes = pattern.fields.filter(_.cypherType.subTypeOf(CTNode))
@@ -504,7 +414,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   private def planExpansions(
     disconnectedPlans: Set[LogicalOperator],
     pattern: Pattern,
-    producer: LogicalOperatorProducer): LogicalOperator = {
+    producer: LogicalOperatorProducer
+  ): LogicalOperator = {
     val allSolved = disconnectedPlans.map(_.solved).reduce(_ ++ _)
 
     val (r, c) = pattern.topology.collectFirst {
