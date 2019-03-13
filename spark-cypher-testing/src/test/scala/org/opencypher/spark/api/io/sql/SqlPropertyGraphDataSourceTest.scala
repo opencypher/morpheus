@@ -31,6 +31,7 @@ import org.apache.spark.sql.{Row, SaveMode}
 import org.opencypher.graphddl.GraphDdl
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.FileFormat
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.{File, Hive, Jdbc}
@@ -560,16 +561,36 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       ))
   }
 
-  it("does not support reading from csv files") {
-    val e = the[IllegalArgumentException] thrownBy {
-      SqlPropertyGraphDataSource(
-        GraphDdl.apply(""),
-        Map("csv" -> File(
-          format = FileFormat.csv
-        ))
-      )
+
+  describe("Failure handling") {
+
+    it("does not support reading from csv files") {
+      val e = the[IllegalArgumentException] thrownBy {
+        SqlPropertyGraphDataSource(
+          GraphDdl.apply(""),
+          Map("IllegalDataSource" -> File(
+            format = FileFormat.csv
+          ))
+        )
+      }
+      e.getMessage should(include(FileFormat.csv.toString) and include("IllegalDataSource"))
     }
 
-    e.getMessage should(include("not supported") and include("CSV"))
+    it("does not support relationship types with more than one label") {
+      val ddlString =
+        s"""SET SCHEMA $dataSourceName.$databaseName
+           |
+           |CREATE GRAPH TYPE fooSchema (
+           | A ( foo STRING ),
+           | B ( foo STRING ),
+           | (A),
+           | (A)-[A,B]->(A)
+           |)
+           |CREATE GRAPH fooGraph OF fooSchema ()""".stripMargin
+
+      val e = the[IllegalArgumentException] thrownBy SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive)).graph(GraphName("fooGraph"))
+      e.getMessage should (include("(A)-[A,B]->(A)") and include("single label"))
+    }
   }
+
 }

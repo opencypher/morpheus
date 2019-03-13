@@ -79,21 +79,25 @@ object NodeTypeDefinition {
 
 case class NodeTypeDefinition(
   elementTypes: Set[String]
-) extends GraphDdlAst with GraphTypeStatement
+) extends GraphDdlAst with GraphTypeStatement {
+  override def toString: String = s"(${elementTypes.mkString(",")})"
+}
 
 object RelationshipTypeDefinition {
   def apply(startNodeElementType: String, elementType: String, endNodeElementType: String): RelationshipTypeDefinition =
-    RelationshipTypeDefinition(NodeTypeDefinition(startNodeElementType), elementType, NodeTypeDefinition(endNodeElementType))
+    RelationshipTypeDefinition(NodeTypeDefinition(startNodeElementType), Set(elementType), NodeTypeDefinition(endNodeElementType))
 
-  def apply(startNodeElementTypes: String*)(elementType: String)(endNodeElementTypes: String*): RelationshipTypeDefinition =
-    RelationshipTypeDefinition(NodeTypeDefinition(startNodeElementTypes.toSet), elementType, NodeTypeDefinition(endNodeElementTypes.toSet))
+  def apply(startNodeElementTypes: String*)(elementTypes: String*)(endNodeElementTypes: String*): RelationshipTypeDefinition =
+    RelationshipTypeDefinition(NodeTypeDefinition(startNodeElementTypes.toSet), elementTypes.toSet, NodeTypeDefinition(endNodeElementTypes.toSet))
 }
 
 case class RelationshipTypeDefinition(
-  sourceNodeType: NodeTypeDefinition,
-  elementType: String,
-  targetNodeType: NodeTypeDefinition
-) extends GraphDdlAst with GraphTypeStatement
+  startNodeType: NodeTypeDefinition,
+  elementTypes: Set[String],
+  endNodeType: NodeTypeDefinition
+) extends GraphDdlAst with GraphTypeStatement {
+  override def toString: String = s"$startNodeType-[${elementTypes.mkString(",")}]->$endNodeType"
+}
 
 trait ElementToViewDefinition {
   def maybePropertyMapping: Option[PropertyToColumnMappingDefinition]

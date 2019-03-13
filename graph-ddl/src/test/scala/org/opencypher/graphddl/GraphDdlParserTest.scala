@@ -146,11 +146,23 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       success(elementTypeDefinition(_), ElementTypeDefinition("A", parents = Set("B")))
     }
 
+    it("parses A <: B ()") {
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", parents = Set("B")))
+    }
+
     it("parses A EXTENDS B, C ()") {
       success(elementTypeDefinition(_), ElementTypeDefinition("A", parents = Set("B", "C")))
     }
 
+    it("parses A <: B, C ()") {
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", parents = Set("B", "C")))
+    }
+
     it("parses A EXTENDS B, C ( key STRING )") {
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", parents = Set("B", "C"), properties = Map("key" -> CTString)))
+    }
+
+    it("parses A <: B, C ( key STRING )") {
       success(elementTypeDefinition(_), ElementTypeDefinition("A", parents = Set("B", "C"), properties = Map("key" -> CTString)))
     }
   }
@@ -176,65 +188,24 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
       failure(globalElementTypeDefinition(_))
     }
   }
-  //
-  //  describe("schema pattern definitions") {
-  //
-  //    it("parses <1>") {
-  //      success(cardinalityConstraint, CardinalityConstraint(1, Some(1)))
-  //    }
-  //
-  //    it("parses <1, *>") {
-  //      success(cardinalityConstraint, CardinalityConstraint(1, None))
-  //    }
-  //
-  //    it("parses <1 .. *>") {
-  //      success(cardinalityConstraint, CardinalityConstraint(1, None))
-  //    }
-  //
-  //    it("parses <*>") {
-  //      success(cardinalityConstraint, CardinalityConstraint(0, None))
-  //    }
-  //
-  //    it("parses <1, 3>") {
-  //      success(cardinalityConstraint, CardinalityConstraint(1, Some(3)))
-  //    }
-  //
-  //    it("parses (A)-[TYPE]->(B)") {
-  //      success(patternDefinition, PatternDefinition(sourceNodeTypes = Set(Set("A")), relTypes = Set("TYPE"), targetNodeTypes = Set(Set("B"))))
-  //    }
-  //
-  //    it("parses (L1 | L2) <0 .. *> - [R1 | R2] -> <1>(L3)") {
-  //      success(patternDefinition, PatternDefinition(
-  //        Set(Set("L1"), Set("L2")),
-  //        CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
-  //        Set(Set("L3")))
-  //      )
-  //    }
-  //
-  //    it("parses (L1 | L2) - [R1 | R2] -> <1>(L3)") {
-  //      success(patternDefinition, PatternDefinition(
-  //        Set(Set("L1"), Set("L2")),
-  //        CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
-  //        Set(Set("L3")))
-  //      )
-  //    }
-  //
-  //    it("parses (L1, L2) - [R1 | R2] -> <1>(L3)") {
-  //      success(patternDefinition, PatternDefinition(
-  //        Set(Set("L1", "L2")),
-  //        CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
-  //        Set(Set("L3")))
-  //      )
-  //    }
-  //
-  //    it("parses (L4 | L1, L2 | L3 , L5) - [R1 | R2] -> <1>(L3)") {
-  //      success(patternDefinition, PatternDefinition(
-  //        Set(Set("L4"), Set("L1", "L2"), Set("L3", "L5")),
-  //        CardinalityConstraint(0, None), Set("R1", "R2"), CardinalityConstraint(1, Some(1)),
-  //        Set(Set("L3")))
-  //      )
-  //    }
-  //  }
+
+  describe("node and relationship type definitions") {
+    it("parses (A)") {
+      success(nodeTypeDefinition(_), NodeTypeDefinition("A"))
+    }
+
+    it("parses (A,B)") {
+      success(nodeTypeDefinition(_), NodeTypeDefinition("A", "B"))
+    }
+
+    it("parses (A)-[R]->(B)") {
+      success(relTypeDefinition(_), RelationshipTypeDefinition("A", "R", "B"))
+    }
+
+    it("parses (A)-[R,S]->(B)") {
+      success(relTypeDefinition(_), RelationshipTypeDefinition("A")("R", "S")("B"))
+    }
+  }
 
   describe("schema definitions") {
 

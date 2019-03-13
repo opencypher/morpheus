@@ -109,6 +109,7 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
 
   val ns = Namespace("testing")
   val g1 = GraphName("testGraph1")
+  val g2 = GraphName("testGraph2")
   lazy val testCreateGraphStatements: Map[GraphName, String] = Map(
     g1 ->
       s"""
@@ -119,12 +120,15 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
          |CREATE (combo2:A:B { name: 'COMBO2', type: 'AB2' })
          |CREATE (c:C { name: 'C' })
          |CREATE (ac:A:C { name: 'AC' })
-         |CREATE (d { name: 'D', type: 'NO_LABEL' })
          |CREATE (a)-[:R { since: 2004 }]->(b1)
          |CREATE (b1)-[:R { since: 2005, before: false }]->(combo1)
          |CREATE (combo1)-[:S { since: 2006 }]->(combo1)
          |CREATE (ac)-[:T]->(combo2)
-    """.stripMargin
+    """.stripMargin,
+    g2 ->
+    s"""
+       |CREATE (d { name: 'D', type: 'NO_LABEL' })
+     """.stripMargin
   )
 
   def pgds()(implicit ctx: TestContext): PropertyGraphDataSource = ctx.pgds
@@ -179,7 +183,6 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
           .withNodePropertyKeys("A", "B")("name" -> CTString, "type" -> CTString, "size" -> CTInteger.nullable)
           .withNodePropertyKeys("C")("name" -> CTString)
           .withNodePropertyKeys("A", "C")("name" -> CTString)
-          .withNodePropertyKeys()("name" -> CTString, "type" -> CTString)
           .withRelationshipPropertyKeys("R")("since" -> CTInteger, "before" -> CTBoolean.nullable)
           .withRelationshipPropertyKeys("S")("since" -> CTInteger)
           .withRelationshipPropertyKeys("T")()
@@ -191,9 +194,14 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
 
       Scenario("API: PropertyGraphDataSource: correct node/rel count for graph #1", g1) { implicit ctx: TestContext =>
         registerPgds(ns)
-        session.catalog.source(ns).graph(g1).nodes("n").size shouldBe 8
-        val r = session.catalog.source(ns).graph(g1).relationships("r")
+        session.catalog.source(ns).graph(g1).nodes("n").size shouldBe 7
         session.catalog.source(ns).graph(g1).relationships("r").size shouldBe 4
+      },
+
+      Scenario("API: PropertyGraphDataSource: correct node/rel count for graph #2", g2) { implicit ctx: TestContext =>
+        registerPgds(ns)
+        session.catalog.source(ns).graph(g2).nodes("n").size shouldBe 1
+        session.catalog.source(ns).graph(g2).relationships("r").size shouldBe 0
       },
 
       Scenario("API: Cypher query directly on graph #1", g1) { implicit ctx: TestContext =>
@@ -227,8 +235,7 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
           CypherMap("n.name" -> "COMBO1", "n.size" -> 2),
           CypherMap("n.name" -> "COMBO2", "n.size" -> CypherNull),
           CypherMap("n.name" -> CypherNull, "n.size" -> 5),
-          CypherMap("n.name" -> CypherNull, "n.size" -> CypherNull),
-          CypherMap("n.name" -> "D", "n.size" -> CypherNull)
+          CypherMap("n.name" -> CypherNull, "n.size" -> CypherNull)
         )
       },
 
@@ -249,7 +256,7 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
             withClue("`hasGraph` needs to return `true` after graph creation") {
               session.catalog.source(ns).hasGraph(gn) shouldBe true
             }
-            session.catalog.graph(s"$ns.$gn").nodes("n").size shouldBe 8
+            session.catalog.graph(s"$ns.$gn").nodes("n").size shouldBe 7
 
             a[GraphAlreadyExistsException] shouldBe thrownBy {
               session.cypher(s"CATALOG CREATE GRAPH $ns.$g1 { RETURN GRAPH }")
@@ -391,7 +398,7 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
         val firstConstructedGraphName = GraphName("first")
         val secondConstructedGraphName = GraphName("second")
         val graph = session.catalog.source(ns).graph(g1)
-        graph.nodes("n").size shouldBe 8
+        graph.nodes("n").size shouldBe 7
         val firstConstructedGraph = graph.cypher(
           s"""
              |CONSTRUCT
@@ -399,14 +406,14 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
              |  CREATE (:A {name: "A"})
              |  RETURN GRAPH
             """.stripMargin).graph
-        firstConstructedGraph.nodes("n").size shouldBe 9
+        firstConstructedGraph.nodes("n").size shouldBe 8
         val maybeStored = Try(session.catalog.source(ns).store(firstConstructedGraphName, firstConstructedGraph))
         maybeStored match {
           case Failure(_: UnsupportedOperationException) =>
           case Failure(t) => throw t
           case Success(_) =>
             val retrievedConstructedGraph = session.catalog.source(ns).graph(firstConstructedGraphName)
-            retrievedConstructedGraph.nodes("n").size shouldBe 9
+            retrievedConstructedGraph.nodes("n").size shouldBe 8
             val secondConstructedGraph = graph.cypher(
               s"""
                  |CONSTRUCT
@@ -414,10 +421,10 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
                  |  CREATE (:A:B {name: "COMBO", size: 2})
                  |  RETURN GRAPH
             """.stripMargin).graph
-            secondConstructedGraph.nodes("n").size shouldBe 10
+            secondConstructedGraph.nodes("n").size shouldBe 9
             session.catalog.source(ns).store(secondConstructedGraphName, secondConstructedGraph)
             val retrievedSecondConstructedGraph = session.catalog.source(ns).graph(secondConstructedGraphName)
-            retrievedSecondConstructedGraph.nodes("n").size shouldBe 10
+            retrievedSecondConstructedGraph.nodes("n").size shouldBe 9
         }
       },
 

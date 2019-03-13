@@ -48,26 +48,37 @@ import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
+import GraphDdlConversions._
 
 import scala.reflect.io.Path
 
-case class SqlPropertyGraphDataSource(
+object SqlPropertyGraphDataSource {
+
+  def apply(graphDdl: GraphDdl,
+    sqlDataSourceConfigs: Map[String, SqlDataSourceConfig],
+    idGenerationStrategy: IdGenerationStrategy = SerializedId)(implicit caps: CAPSSession): SqlPropertyGraphDataSource = {
+
+    val unsupportedDataSources = sqlDataSourceConfigs.filter { case (_, config) => config.format == FileFormat.csv }
+    if (unsupportedDataSources.nonEmpty) throw IllegalArgumentException(
+      expected = "Supported FileFormat for SQL Property Graph Data Source",
+      actual = s"${FileFormat.csv} used in the following data source configs: ${unsupportedDataSources.keys.mkString("[", ", ", "]")}")
+
+    new SqlPropertyGraphDataSource(graphDdl, sqlDataSourceConfigs, idGenerationStrategy)
+  }
+}
+
+case class SqlPropertyGraphDataSource (
   graphDdl: GraphDdl,
   sqlDataSourceConfigs: Map[String, SqlDataSourceConfig],
-  idGenerationStrategy: IdGenerationStrategy = SerializedId
+  idGenerationStrategy: IdGenerationStrategy
 )(implicit val caps: CAPSSession) extends CAPSPropertyGraphDataSource {
-
-  require(
-    sqlDataSourceConfigs.forall { case (_, config) => config.format != FileFormat.csv },
-    "CSV files are not supported by the SqlPropertyGraphDataSource"
-  )
 
   override def hasGraph(graphName: GraphName): Boolean = graphDdl.graphs.contains(graphName)
 
   override def graph(graphName: GraphName): PropertyGraph = {
 
     val ddlGraph = graphDdl.graphs.getOrElse(graphName, throw GraphNotFoundException(s"Graph $graphName not found"))
-    val schema = ddlGraph.graphType
+    val schema = ddlGraph.graphType.asOkapiSchema
 
     // Build CAPS node tables
     val nodeDataFrames = ddlGraph.nodeToViewMappings.mapValues(nvm => readTable(nvm.view))
@@ -77,7 +88,7 @@ case class SqlPropertyGraphDataSource(
 
     val nodeTables = nodeDataFramesWithIds.map {
       case (nodeViewKey, nodeDf) =>
-        val nodeElementTypes = nodeViewKey.nodeType.elementTypes
+        val nodeElementTypes = nodeViewKey.nodeType.labels
         val columnsWithType = nodeColsWithCypherType(schema, nodeElementTypes)
         val inputNodeMapping = createNodeMapping(nodeElementTypes, ddlGraph.nodeToViewMappings(nodeViewKey).propertyMappings)
         val normalizedDf = normalizeDataFrame(nodeDf, inputNodeMapping, columnsWithType).castToLong
@@ -96,7 +107,10 @@ case class SqlPropertyGraphDataSource(
 
     val relationshipTables = ddlGraph.edgeToViewMappings.map { edgeToViewMapping =>
       val edgeViewKey = edgeToViewMapping.key
-      val relElementType = edgeViewKey.relType.elementType
+      val relElementType = edgeViewKey.relType.labels.toList match {
+        case relType :: Nil => relType
+        case other => throw IllegalArgumentException(expected = "Single relationship type", actual = s"${other.mkString(",")}")
+      }
       val relDf = relDataFramesWithIds(edgeViewKey)
       val startNodeViewKey = edgeToViewMapping.startNode.nodeViewKey
       val endNodeViewKey = edgeToViewMapping.endNode.nodeViewKey
@@ -311,7 +325,7 @@ case class SqlPropertyGraphDataSource(
     }
   }
 
-  override def schema(name: GraphName): Option[CAPSSchema] = graphDdl.graphs.get(name).map(_.graphType.asCaps)
+  override def schema(name: GraphName): Option[CAPSSchema] = graphDdl.graphs.get(name).map(_.graphType.asOkapiSchema.asCaps)
 
   override def store(name: GraphName, graph: PropertyGraph): Unit = unsupported("storing a graph")
 
