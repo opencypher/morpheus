@@ -74,55 +74,55 @@ object SparkSQLExprMapper {
     private def convert(convertedChildren: Seq[Column])
       (implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
 
-      def c0: Column = convertedChildren.head
+      def child0: Column = convertedChildren.head
 
-      def c1: Column = convertedChildren(1)
+      def child1: Column = convertedChildren(1)
 
-      def c2: Column = convertedChildren(2)
+      def child2: Column = convertedChildren(2)
 
       expr match {
         case _: ListLit => array(convertedChildren: _*)
         case l: Lit[_] => lit(l.v)
-        case _: AliasExpr => c0
+        case _: AliasExpr => child0
         case Param(name) => parameters(name).toSparkLiteral
 
         // Predicates
-        case _: Equals => c0 === c1
-        case _: Not => !c0
+        case _: Equals => child0 === child1
+        case _: Not => !child0
         case Size(e) => {
           e.cypherType match {
-            case CTString => length(c0)
-            case _ => size(c0) // it's a list
+            case CTString => length(child0)
+            case _ => size(child0) // it's a list
           }
         }.cast(LongType)
         case _: Ands => convertedChildren.foldLeft(TRUE_LIT)(_ && _)
         case _: Ors => convertedChildren.foldLeft(FALSE_LIT)(_ || _)
-        case _: IsNull => c0.isNull
-        case _: IsNotNull => c0.isNotNull
-        case _: Exists => c0.isNotNull
-        case _: LessThan => c0 < c1
-        case _: LessThanOrEqual => c0 <= c1
-        case _: GreaterThanOrEqual => c0 >= c1
-        case _: GreaterThan => c0 > c1
+        case _: IsNull => child0.isNull
+        case _: IsNotNull => child0.isNotNull
+        case _: Exists => child0.isNotNull
+        case _: LessThan => child0 < child1
+        case _: LessThanOrEqual => child0 <= child1
+        case _: GreaterThanOrEqual => child0 >= child1
+        case _: GreaterThan => child0 > child1
 
-        case _: StartsWith => c0.startsWith(c1)
-        case _: EndsWith => c0.endsWith(c1)
-        case _: Contains => c0.contains(c1)
-        case _: RegexMatch => regex_match(c0, c1)
+        case _: StartsWith => child0.startsWith(child1)
+        case _: EndsWith => child0.endsWith(child1)
+        case _: Contains => child0.contains(child1)
+        case _: RegexMatch => regex_match(child0, child1)
 
         // Other
         case Explode(list) => list.cypherType match {
           case CTNull => explode(NULL_LIT.cast(ArrayType(NullType)))
-          case _ => explode(c0)
+          case _ => explode(child0)
         }
 
         case Property(e, PropertyKey(key)) =>
           // TODO: Convert property lookups into separate specific lookups instead of overloading
           e.cypherType.material match {
-            case CTMap(inner) => if (inner.keySet.contains(key)) c0.getField(key) else NULL_LIT
-            case CTDate => temporalAccessor[java.sql.Date](c0, key)
-            case CTLocalDateTime => temporalAccessor[java.sql.Timestamp](c0, key)
-            case CTDuration => TemporalUdfs.durationAccessor(key.toLowerCase).apply(c0)
+            case CTMap(inner) => if (inner.keySet.contains(key)) child0.getField(key) else NULL_LIT
+            case CTDate => temporalAccessor[java.sql.Date](child0, key)
+            case CTLocalDateTime => temporalAccessor[java.sql.Timestamp](child0, key)
+            case CTDuration => TemporalUdfs.durationAccessor(key.toLowerCase).apply(child0)
             case _ =>
               if (!header.contains(expr)) {
                 NULL_LIT
@@ -170,7 +170,7 @@ object SparkSQLExprMapper {
 
         case In(lhs, rhs) => rhs.cypherType.material match {
           case CTList(CTVoid) => FALSE_LIT
-          case CTList(inner) if inner.couldBeSameTypeAs(lhs.cypherType) => array_contains(c1, c0)
+          case CTList(inner) if inner.couldBeSameTypeAs(lhs.cypherType) => array_contains(child1, child0)
           case _ => NULL_LIT
         }
 
@@ -181,35 +181,35 @@ object SparkSQLExprMapper {
           lhsCT -> rhsCT match {
             case (CTList(lhInner), CTList(rhInner)) =>
               if (lhInner.material == rhInner.material || lhInner == CTVoid || rhInner == CTVoid) {
-                concat(c0, c1)
+                concat(child0, child1)
               } else {
                 throw SparkSQLMappingException(s"Lists of different inner types are not supported (${lhInner.material}, ${rhInner.material})")
               }
-            case (CTList(inner), nonListType) if nonListType == inner.material || inner.material == CTVoid => concat(c0, array(c1))
-            case (nonListType, CTList(inner)) if inner.material == nonListType || inner.material == CTVoid => concat(array(c0), c1)
-            case (CTString, _) if rhsCT.subTypeOf(CTNumber) => concat(c0, c1.cast(StringType))
-            case (_, CTString) if lhsCT.subTypeOf(CTNumber) => concat(c0.cast(StringType), c1)
-            case (CTString, CTString) => concat(c0, c1)
-            case (CTDate, CTDuration) => TemporalUdfs.dateAdd(c0, c1)
-            case _ => c0 + c1
+            case (CTList(inner), nonListType) if nonListType == inner.material || inner.material == CTVoid => concat(child0, array(child1))
+            case (nonListType, CTList(inner)) if inner.material == nonListType || inner.material == CTVoid => concat(array(child0), child1)
+            case (CTString, _) if rhsCT.subTypeOf(CTNumber) => concat(child0, child1.cast(StringType))
+            case (_, CTString) if lhsCT.subTypeOf(CTNumber) => concat(child0.cast(StringType), child1)
+            case (CTString, CTString) => concat(child0, child1)
+            case (CTDate, CTDuration) => TemporalUdfs.dateAdd(child0, child1)
+            case _ => child0 + child1
           }
 
         case Subtract(lhs, rhs) if lhs.cypherType.material.subTypeOf(CTDate) && rhs.cypherType.material.subTypeOf(CTDuration) =>
-          TemporalUdfs.dateSubtract(c0, c1)
+          TemporalUdfs.dateSubtract(child0, child1)
 
-        case _: Subtract => c0 - c1
+        case _: Subtract => child0 - child1
 
-        case _: Multiply => c0 * c1
-        case div: Divide => (c0 / c1).cast(div.cypherType.getSparkType)
+        case _: Multiply => child0 * child1
+        case div: Divide => (child0 / child1).cast(div.cypherType.getSparkType)
 
         // Id functions
-        case _: Id => c0
-        case PrefixId(_, prefix) => c0.addPrefix(lit(prefix))
+        case _: Id => child0
+        case PrefixId(_, prefix) => child0.addPrefix(lit(prefix))
         case ToId(e) =>
           e.cypherType.material match {
-            case CTInteger => c0.encodeLongAsCAPSId
+            case CTInteger => child0.encodeLongAsCAPSId
             // TODO: Remove this call; we shouldn't have nodes or rels as concrete types here
-            case _: CTNode | _: CTRelationship | CTIdentity => c0
+            case _: CTNode | _: CTRelationship | CTIdentity => child0
             case other => throw IllegalArgumentException("a type that may be converted to an ID", other)
           }
 
@@ -237,7 +237,7 @@ object SparkSQLExprMapper {
               filter_not_null(propertyNames, propertyValues)
 
             case CTMap(inner) =>
-              val mapColumn = c0
+              val mapColumn = child0
               val (propertyKeys, propertyValues) = inner.keys.map { e =>
                 // Whe have to make sure that every column has the same type (true or null)
                 e -> when(mapColumn.getField(e).isNotNull, TRUE_LIT).otherwise(NULL_LIT)
@@ -254,7 +254,7 @@ object SparkSQLExprMapper {
               val propertyColumns = propertyExpressions
                 .map(propertyExpression => propertyExpression.asSparkSQLExpr.as(propertyExpression.key.name))
               create_struct(propertyColumns)
-            case _: CTMap => c0
+            case _: CTMap => child0
             case other =>
               throw IllegalArgumentException("a node, relationship or map", other, "Invalid input to properties function")
           }
@@ -262,62 +262,62 @@ object SparkSQLExprMapper {
         case StartNodeFunction(e) => header.startNodeFor(e.owner.get).asSparkSQLExpr
         case EndNodeFunction(e) => header.endNodeFor(e.owner.get).asSparkSQLExpr
 
-        case _: ToFloat => c0.cast(DoubleType)
-        case _: ToInteger => c0.cast(IntegerType)
-        case _: ToString => c0.cast(StringType)
-        case _: ToBoolean => c0.cast(BooleanType)
+        case _: ToFloat => child0.cast(DoubleType)
+        case _: ToInteger => child0.cast(IntegerType)
+        case _: ToString => child0.cast(StringType)
+        case _: ToBoolean => child0.cast(BooleanType)
 
-        case _: Trim => trim(c0)
-        case _: LTrim => ltrim(c0)
-        case _: RTrim => rtrim(c0)
-        case _: ToUpper => upper(c0)
-        case _: ToLower => lower(c0)
+        case _: Trim => trim(child0)
+        case _: LTrim => ltrim(child0)
+        case _: RTrim => rtrim(child0)
+        case _: ToUpper => upper(child0)
+        case _: ToLower => lower(child0)
 
         case _: Range =>
           val stepCol = convertedChildren.applyOrElse(2, (_: Int) => ONE_LIT)
-          sequence(c0, c1, stepCol)
+          sequence(child0, child1, stepCol)
 
-        case _: Replace => translate(c0, c1, c2)
+        case _: Replace => translate(child0, child1, child2)
 
         case _: Substring =>
-          val lengthCol = convertedChildren.applyOrElse(2, (_: Int) => length(c0) - c1)
-          c0.substr(c1 + ONE_LIT, lengthCol)
+          val lengthCol = convertedChildren.applyOrElse(2, (_: Int) => length(child0) - child1)
+          child0.substr(child1 + ONE_LIT, lengthCol)
 
         // Mathematical functions
         case E => E_LIT
         case Pi => PI_LIT
 
-        case _: Sqrt => sqrt(c0)
-        case _: Log => log(c0)
-        case _: Log10 => log(10.0, c0)
-        case _: Exp => exp(c0)
-        case _: Abs => abs(c0)
-        case _: Ceil => ceil(c0).cast(DoubleType)
-        case _: Floor => floor(c0).cast(DoubleType)
+        case _: Sqrt => sqrt(child0)
+        case _: Log => log(child0)
+        case _: Log10 => log(10.0, child0)
+        case _: Exp => exp(child0)
+        case _: Abs => abs(child0)
+        case _: Ceil => ceil(child0).cast(DoubleType)
+        case _: Floor => floor(child0).cast(DoubleType)
         case Rand => rand()
-        case _: Round => round(c0).cast(DoubleType)
-        case _: Sign => signum(c0).cast(IntegerType)
+        case _: Round => round(child0).cast(DoubleType)
+        case _: Sign => signum(child0).cast(IntegerType)
 
-        case _: Acos => acos(c0)
-        case _: Asin => asin(c0)
-        case _: Atan => atan(c0)
-        case _: Atan2 => atan2(c0, c1)
-        case _: Cos => cos(c0)
+        case _: Acos => acos(child0)
+        case _: Asin => asin(child0)
+        case _: Atan => atan(child0)
+        case _: Atan2 => atan2(child0, child1)
+        case _: Cos => cos(child0)
         case Cot(e) => Divide(IntegerLit(1), Tan(e))(CTFloat).asSparkSQLExpr
-        case _: Degrees => degrees(c0)
+        case _: Degrees => degrees(child0)
         case Haversin(e) => Divide(Subtract(IntegerLit(1), Cos(e))(CTFloat), IntegerLit(2))(CTFloat).asSparkSQLExpr
-        case _: Radians => radians(c0)
-        case _: Sin => sin(c0)
-        case _: Tan => tan(c0)
+        case _: Radians => radians(child0)
+        case _: Sin => sin(child0)
+        case _: Tan => tan(child0)
 
         // Time functions
         case Timestamp => current_timestamp().cast(LongType)
 
         // Bit operations
-        case _: BitwiseAnd => c0.bitwiseAND(c1)
-        case _: BitwiseOr => c0.bitwiseOR(c1)
-        case ShiftLeft(_, IntegerLit(shiftBits)) => shiftLeft(c0, shiftBits.toInt)
-        case ShiftRightUnsigned(_, IntegerLit(shiftBits)) => shiftRightUnsigned(c0, shiftBits.toInt)
+        case _: BitwiseAnd => child0.bitwiseAND(child1)
+        case _: BitwiseOr => child0.bitwiseOR(child1)
+        case ShiftLeft(_, IntegerLit(shiftBits)) => shiftLeft(child0, shiftBits.toInt)
+        case ShiftRightUnsigned(_, IntegerLit(shiftBits)) => shiftRightUnsigned(child0, shiftBits.toInt)
 
         // Pattern Predicate
         case ep: ExistsPatternExpr => ep.targetField.asSparkSQLExpr
@@ -363,18 +363,18 @@ object SparkSQLExprMapper {
 
         // Aggregators
         case Count(_, distinct) =>
-          if (distinct) countDistinct(c0)
-          else count(c0)
+          if (distinct) countDistinct(child0)
+          else count(child0)
 
         case Collect(_, distinct) =>
-          if (distinct) collect_set(c0)
-          else collect_list(c0)
+          if (distinct) collect_set(child0)
+          else collect_list(child0)
 
         case CountStar => count(ONE_LIT)
-        case _: Avg => avg(c0)
-        case _: Max => max(c0)
-        case _: Min => min(c0)
-        case _: Sum => sum(c0)
+        case _: Avg => avg(child0)
+        case _: Max => max(child0)
+        case _: Min => min(child0)
+        case _: Sum => sum(child0)
 
         case _ =>
           throw NotImplementedException(s"No support for converting Cypher expression $expr to a Spark SQL expression")
