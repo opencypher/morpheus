@@ -195,9 +195,9 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
       g1 -> GraphType.empty
         .withElementType("A", "name" -> CTString, "type" -> CTString.nullable, "size" -> CTInteger.nullable, "date" -> CTDate.nullable)
         .withElementType("B", "name" -> CTString.nullable, "type" -> CTString, "size" -> CTInteger.nullable, "datetime" -> CTLocalDateTime.nullable)
-        .withElementType("C", parents = Set("A"))
+        .withElementType("C", "name" -> CTString)
         .withElementType("R", "since" -> CTInteger, "before" -> CTBoolean.nullable)
-        .withElementType("S", parents = Set("R"))
+        .withElementType("S", "since" -> CTInteger)
         .withElementType("T")
         .withNodeType("A")
         .withNodeType("B")
