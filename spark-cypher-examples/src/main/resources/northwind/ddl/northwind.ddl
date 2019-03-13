@@ -283,5 +283,5 @@ CREATE GRAPH Northwind (
                   JOIN ON start_nodes.EMPLOYEEID = edge.EMPLOYEEID
           END NODES (Employee)
               FROM VIEW_EMPLOYEES end_nodes
-                  JOIN ON end_nodes.REPORTSTO = edge.REPORTSTO
+                  JOIN ON end_nodes.EMPLOYEEID = edge.REPORTSTO
 )
