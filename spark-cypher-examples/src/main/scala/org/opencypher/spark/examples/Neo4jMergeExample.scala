@@ -32,14 +32,14 @@ import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
 import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.util.ConsoleApp
+import org.opencypher.spark.util.App
 
 /**
   * Demonstrates merging a graph into an existing Neo4j database.
   *
   * This merge requires node and relationship keys to identify same entities in the merge graph and the Neo4j database.
   */
-object Neo4jMergeExample extends ConsoleApp {
+object Neo4jMergeExample extends App {
   // Create CAPS session
   implicit val session: CAPSSession = CAPSSession.local()
 

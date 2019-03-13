@@ -32,14 +32,14 @@ import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport
 import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.util.ConsoleApp
+import org.opencypher.spark.util.App
 
 /**
   * Demonstrates how to initialise a Neo4j PGDS with a pre-written schema.
   *
   * Also shows how to get the schema out of the Neo4j PGDS and store it in a filesystem.
   */
-object Neo4jCustomSchemaExample extends ConsoleApp {
+object Neo4jCustomSchemaExample extends App {
   // Create CAPS session
   implicit val session: CAPSSession = CAPSSession.local()
 
