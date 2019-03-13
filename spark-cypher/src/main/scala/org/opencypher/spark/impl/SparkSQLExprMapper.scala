@@ -117,14 +117,13 @@ object SparkSQLExprMapper {
         }
 
         case Property(e, PropertyKey(key)) =>
-          // Convert property lookups into separate specific lookups instead of overloading
+          // TODO: Convert property lookups into separate specific lookups instead of overloading
           e.cypherType.material match {
             case CTMap(inner) => if (inner.keySet.contains(key)) c0.getField(key) else NULL_LIT
             case CTDate => temporalAccessor[java.sql.Date](c0, key)
             case CTLocalDateTime => temporalAccessor[java.sql.Timestamp](c0, key)
             case CTDuration => TemporalUdfs.durationAccessor(key.toLowerCase).apply(c0)
             case _ =>
-              // TODO: Investigate this case
               if (!header.contains(expr)) {
                 NULL_LIT
               } else {
@@ -372,7 +371,7 @@ object SparkSQLExprMapper {
           else collect_list(c0)
 
         case CountStar => count(ONE_LIT)
-        case _: Avg => avg(c0) //.cast(cypherType.getSparkType)
+        case _: Avg => avg(c0)
         case _: Max => max(c0)
         case _: Min => min(c0)
         case _: Sum => sum(c0)
