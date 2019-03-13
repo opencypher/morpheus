@@ -116,7 +116,6 @@ object RecommendationExample extends ConsoleApp {
   neo4jServerUS.close()
   neo4jServerEU.close()
 
-
   def socialNetworkUS =
     """
        CREATE (nyc:City {name: "New York City"})

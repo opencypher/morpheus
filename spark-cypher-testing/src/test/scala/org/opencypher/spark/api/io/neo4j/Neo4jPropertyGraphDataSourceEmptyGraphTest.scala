@@ -36,7 +36,6 @@ class Neo4jPropertyGraphDataSourceEmptyGraphTest extends CAPSTestSuite with Neo4
 
   override def dataFixture: String = ""
 
-
   it("can read an empty graph") {
     val graph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
 

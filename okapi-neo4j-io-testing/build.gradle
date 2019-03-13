@@ -63,9 +63,3 @@ task neo4jStopDouble(type: ch.kk7.gradle.spawn.KillTask) {
 
 tasks.test.dependsOn(tasks.neo4jStart)
 tasks.test.finalizedBy(tasks.neo4jStop)
-
-task bar {
-    doLast {
-        println foo()
-    }
-}
