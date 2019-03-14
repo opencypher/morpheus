@@ -849,13 +849,21 @@ sealed trait Lit[T] extends Expr {
 
 final case class ListLit(v: List[Expr])(val cypherType: CypherType = CTList(CTVoid)) extends Lit[List[Expr]]
 
-final case class ListSlice(list: Expr, maybeFrom: Option[Expr], maybeTo: Option[Expr]) extends Expr {
+sealed abstract class ListSlice(maybeFrom: Option[Expr], maybeTo: Option[Expr]) extends Expr {
+
+  def list: Expr
 
   override def withoutType: String = s"${list.withoutType}[${maybeFrom.map(_.withoutType).getOrElse("")}..${maybeTo.map(_.withoutType).getOrElse("")}]"
 
   override val cypherType: CypherType = list.cypherType
 
 }
+
+final case class ListSliceFromTo(list: Expr, from: Expr, to: Expr) extends ListSlice(Some(from), Some(to))
+
+final case class ListSliceFrom(list: Expr, from: Expr) extends ListSlice(Some(from), None)
+
+final case class ListSliceTo(list: Expr, to: Expr) extends ListSlice(None, Some(to))
 
 final case class ContainerIndex(container: Expr, index: Expr)(val cypherType: CypherType) extends Expr {
 

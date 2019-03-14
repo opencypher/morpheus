@@ -343,9 +343,9 @@ object SparkSQLExprMapper {
             case other => throw NotImplementedException(s"Accessing $other by index is not supported")
           }
 
-        case ListSlice(_, maybeFrom, maybeTo) =>
-          require(maybeFrom.isDefined || maybeTo.isDefined)
-          list_slice(child0, if (maybeFrom.isDefined) Some(child1) else None, if (maybeFrom.isDefined) convertedChildren.lift(2) else Some(child1))
+        case _: ListSliceFromTo => list_slice(child0, Some(child1), Some(child2))
+        case _: ListSliceFrom => list_slice(child0, Some(child1), None)
+        case _: ListSliceTo => list_slice(child0, None, Some(child1))
 
         case MapExpression(items) => expr.cypherType.material match {
           case CTMap(_) =>

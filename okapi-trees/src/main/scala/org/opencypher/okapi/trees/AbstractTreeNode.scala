@@ -135,7 +135,7 @@ abstract class AbstractTreeNode[T <: AbstractTreeNode[T] : TypeTag] extends Tree
     val (unassignedChildren, constructorParams) = currentValuesAndTypes.foldLeft(newChildren.toList -> Vector.empty[Any]) {
       case ((remainingChildren, currentConstructorParams), nextValueAndType) =>
         nextValueAndType match {
-          case (c: T, tpe) =>
+          case (c: T, _) =>
             remainingChildren match {
               case Nil => throw new IllegalArgumentException(
                 s"""|When updating with new children: Did not have a child left to assign to the child that was previously $c
