@@ -45,8 +45,8 @@ object RecommendationExample extends App {
 
   // Connect to two Neo4j instances and populate them with social network data
   // To run two test instances you may use
-  //  ./gradlew :okapi-neo4j-io-testing:neo4jStartDouble
-  //  ./gradlew :okapi-neo4j-io-testing:neo4jStopDouble
+  //  ./gradlew :okapi-neo4j-io-testing:neo4jStartTwoInstances
+  //  ./gradlew :okapi-neo4j-io-testing:neo4jStopTwoInstances
   val neo4jServerUS = connectNeo4j(socialNetworkUS, "bolt://localhost:7687")
   val neo4jServerEU = connectNeo4j(socialNetworkEU, "bolt://localhost:7688")
 
