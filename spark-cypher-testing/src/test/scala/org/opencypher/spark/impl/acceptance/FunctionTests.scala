@@ -1630,31 +1630,6 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
   }
 
-  describe("list slice") {
-
-    it("slice") {
-      val result = caps.cypher("RETURN ['a', 'b', 'c', 'd'][0..3] as r")
-      result.records.toMaps should equal(Bag(
-        CypherMap("r" -> CypherList("a", "b", "c"))
-      ))
-    }
-
-    it("slice without from") {
-      val result = caps.cypher("RETURN ['a', 'b', 'c', 'd'][..3] as r")
-      result.records.toMaps should equal(Bag(
-        CypherMap("r" -> CypherList("a", "b", "c"))
-      ))
-    }
-
-    it("slice without to") {
-      val result = caps.cypher("RETURN ['a', 'b', 'c', 'd'][0..] as r")
-      result.records.toMaps should equal(Bag(
-        CypherMap("r" -> CypherList("a", "b", "c", "d"))
-      ))
-    }
-
-  }
-
   describe("negative tests") {
     it("should give a good error message on unimplemented functions") {
       val unimplementedFunction = "tail"
