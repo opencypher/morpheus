@@ -5,3 +5,16 @@ dependencies {
     testCompile project(':okapi-tck')
     testCompile project(':spark-cypher-testing')
 }
+
+
+task debugTCKScenarios() {
+    dependsOn sourceSets.test.runtimeClasspath
+    doLast {
+        javaexec {
+            classpath =  sourceSets.test.runtimeClasspath
+            main = 'org.opencypher.spark.testing.AcceptanceTestGenerator'
+            //todo: get list via project.getProperty( ; possible extra parameter for path
+            args = ['src/test/scala/org/opencypher/spark/testing/','Distinct on null','`exists()` with dynamic property lookup'] 
+        }
+    }
+}
