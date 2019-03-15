@@ -47,12 +47,12 @@ object AcceptanceTestGenerator extends App {
   private val failureReportingBlacklistFile = getClass.getResource("/failure_reporting_blacklist").getFile
   private val scenarios: ScenariosFor = ScenariosFor(failingBlacklist, temporalBlacklist, wontFixBlacklistFile, failureReportingBlacklistFile)
   private val escapeStringMarks = "\"\"\""
-  private val path = s"spark-cypher-tck/src/test/scala/org/opencypher/spark/testing/"
+  //private val path = s"spark-cypher-tck/src/test/scala/org/opencypher/spark/testing/"
   private val packageNames = Map("white" -> "whiteList", "black" -> "blackList")
 
   case class ResultRows(queryResult: String, expected: List[Map[String, TCKCypherValue]])
 
-  private def generateClassFile(featureName: String, scenarios: TableFor1[Scenario], black: Boolean) = {
+  private def generateClassFile(featureName: String, scenarios: TableFor1[Scenario], black: Boolean, path : String) = {
     val packageName = if (black) packageNames.get("black") else packageNames.get("white")
     val className = featureName
     val classHeader =
@@ -168,7 +168,7 @@ object AcceptanceTestGenerator extends App {
     steps.map {
       case (Parameters(p, _), stepNr) => contextParameterStepNrs.push(stepNr)
         s"val parameter$stepNr = ${tckCypherMapToOkapiCreateString(p)}"
-      case (ex@Execute(query, querytype, _), nr) =>
+      case (Execute(query, querytype, _), nr) =>
         querytype match {
           case ExecQuery =>
             contextExecQueryStack.push(nr)
@@ -245,7 +245,7 @@ object AcceptanceTestGenerator extends App {
   }
 
   //checks if package directories exists clears them or creates new
-  private def setUpDirectories(): Unit = {
+  private def setUpDirectories(path : String): Unit = {
     packageNames.values.map(packageName => {
       val directory = new File(path + packageName)
       if (directory.exists()) {
@@ -256,6 +256,8 @@ object AcceptanceTestGenerator extends App {
         directory.mkdir()
       }
       val gitIgnoreFile = new File(path + packageName + "/.gitignore")
+      //println(gitIgnoreFile.getAbsolutePath)
+      //println(System.getProperty("user.dir"))
       val writer = new PrintWriter(gitIgnoreFile)
       writer.println("*")
       writer.close()
@@ -265,33 +267,41 @@ object AcceptanceTestGenerator extends App {
   }
 
   //generates test-cases for given scenario names
-  def generateGivenScenarios(names: Array[String] = Array.empty): Unit = {
-    setUpDirectories()
+  def generateGivenScenarios(path : String, names: Array[String] = Array.empty): Unit = {
+    setUpDirectories(path)
     val wantedWhiteScenarios = scenarios.whiteList.filter(s => names.contains(s.name))
     val wantedBlackScenarios = scenarios.blackList.filter(s => names.contains(s.name))
-    generateClassFile("specialWhiteCases",wantedWhiteScenarios, black = false)
-    generateClassFile("specialBlackCases",wantedBlackScenarios, black = true)
+    generateClassFile("specialWhiteCases",wantedWhiteScenarios, black = false, path)
+    generateClassFile("specialBlackCases",wantedBlackScenarios, black = true, path)
   }
 
-  def generateAllScenarios() : Unit = {
-    setUpDirectories()
+  def generateAllScenarios(path: String) : Unit = {
+    setUpDirectories(path)
     val blackFeatures = scenarios.blackList.groupBy(_.featureName)
     val whiteFeatures = scenarios.whiteList.groupBy(_.featureName)
 
     whiteFeatures.map { feature => {
-      generateClassFile(feature._1, feature._2, black = false)
+      generateClassFile(feature._1, feature._2, black = false, path)
     }
     }
 
     blackFeatures.map { feature => {
-      generateClassFile(feature._1, feature._2, black = true)
+      generateClassFile(feature._1, feature._2, black = true, path)
     }
     }
   }
 
-  if(args.isEmpty)
-    generateAllScenarios()
-  else
-    generateGivenScenarios(args)
+  //in gradle only "src/test/scala/org/opencypher/spark/testing/" is needed as a path
+  if(args.isEmpty) {
+    val defaultPath = s"spark-cypher-tck/src/test/scala/org/opencypher/spark/testing/"
+    generateAllScenarios(defaultPath)
+  }
+  else {
+    val (path,scenarioNames) = args.splitAt(1)
+    if(scenarioNames.nonEmpty)
+      generateGivenScenarios(path.head, scenarioNames)
+    else
+      generateAllScenarios(path.head)
+  }
 
 }
