@@ -47,7 +47,6 @@ object AcceptanceTestGenerator extends App {
   private val failureReportingBlacklistFile = getClass.getResource("/failure_reporting_blacklist").getFile
   private val scenarios: ScenariosFor = ScenariosFor(failingBlacklist, temporalBlacklist, wontFixBlacklistFile, failureReportingBlacklistFile)
   private val escapeStringMarks = "\"\"\""
-  //private val path = s"spark-cypher-tck/src/test/scala/org/opencypher/spark/testing/"
   private val packageNames = Map("white" -> "whiteList", "black" -> "blackList")
 
   case class ResultRows(queryResult: String, expected: List[Map[String, TCKCypherValue]])
@@ -82,7 +81,7 @@ object AcceptanceTestGenerator extends App {
       else
         generateTest(scenario, black)).mkString("\n")
 
-    val file = new File(s"$path/${packageName.get}/$className.scala")
+    val file = new File(s"$path${packageName.get}/$className.scala")
 
     val fileString =
       s"""$classHeader
@@ -256,8 +255,6 @@ object AcceptanceTestGenerator extends App {
         directory.mkdir()
       }
       val gitIgnoreFile = new File(path + packageName + "/.gitignore")
-      //println(gitIgnoreFile.getAbsolutePath)
-      //println(System.getProperty("user.dir"))
       val writer = new PrintWriter(gitIgnoreFile)
       writer.println("*")
       writer.close()
@@ -269,7 +266,7 @@ object AcceptanceTestGenerator extends App {
   //generates test-cases for given scenario names
   def generateGivenScenarios(path : String, keyWords: Array[String] = Array.empty): Unit = {
     setUpDirectories(path)
-    val wantedWhiteScenarios = scenarios.whiteList.filter(scen => keyWords.map(keyWord => scen.name.contains(keyWord)).reduce(_ || _)) //better naming
+    val wantedWhiteScenarios = scenarios.whiteList.filter(scen => keyWords.map(keyWord => scen.name.contains(keyWord)).reduce(_ || _))
     val wantedBlackScenarios = scenarios.blackList.filter(scen => keyWords.map(keyWord => scen.name.contains(keyWord)).reduce(_ || _))
     generateClassFile("specialWhiteCases",wantedWhiteScenarios, black = false, path)
     generateClassFile("specialBlackCases",wantedBlackScenarios, black = true, path)
