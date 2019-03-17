@@ -8,7 +8,7 @@ dependencies {
 
 // split scenario name with | --> debugTCKScenarios -Pscenarios = 'sc1|sc2|..'
 task debugTCKScenarios() {
-    description "generates scala-test from TCK scenarios"
+    description "generates scala-test from TCK scenarios (keywords of the scenario names suffice)"
     def outPath = project.findProperty("outPath") ?: 'src/test/scala/org/opencypher/spark/testing/'
     def scenarios = project.findProperty("scenarios") ?: ""
     dependsOn sourceSets.test.runtimeClasspath
