@@ -269,7 +269,7 @@ object AcceptanceTestGenerator extends App {
   //generates test-cases for given scenario names
   def generateGivenScenarios(path : String, names: Array[String] = Array.empty): Unit = {
     setUpDirectories(path)
-    val wantedWhiteScenarios = scenarios.whiteList.filter(s => names.contains(s.name))
+    val wantedWhiteScenarios = scenarios.whiteList.filter(s => names.contains(s.name)) //todo allow part test name
     val wantedBlackScenarios = scenarios.blackList.filter(s => names.contains(s.name))
     generateClassFile("specialWhiteCases",wantedWhiteScenarios, black = false, path)
     generateClassFile("specialBlackCases",wantedBlackScenarios, black = true, path)
@@ -279,7 +279,6 @@ object AcceptanceTestGenerator extends App {
     setUpDirectories(path)
     val blackFeatures = scenarios.blackList.groupBy(_.featureName)
     val whiteFeatures = scenarios.whiteList.groupBy(_.featureName)
-
     whiteFeatures.map { feature => {
       generateClassFile(feature._1, feature._2, black = false, path)
     }
@@ -297,11 +296,11 @@ object AcceptanceTestGenerator extends App {
     generateAllScenarios(defaultPath)
   }
   else {
-    val (path,scenarioNames) = args.splitAt(1)
+    val (path,scenarioNames) = (args(0),args(1))
     if(scenarioNames.nonEmpty)
-      generateGivenScenarios(path.head, scenarioNames)
+      generateGivenScenarios(path, scenarioNames.split('|'))
     else
-      generateAllScenarios(path.head)
+      generateAllScenarios(path)
   }
 
 }
