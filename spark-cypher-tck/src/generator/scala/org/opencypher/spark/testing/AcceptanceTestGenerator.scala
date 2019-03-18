@@ -47,15 +47,42 @@ object AcceptanceTestGenerator extends App {
   private val failureReportingBlacklistFile = getClass.getResource("/failure_reporting_blacklist").getFile
   private val scenarios: ScenariosFor = ScenariosFor(failingBlacklist, temporalBlacklist, wontFixBlacklistFile, failureReportingBlacklistFile)
   private val escapeStringMarks = "\"\"\""
+  private val tabs = "\t\t"
   private val packageNames = Map("white" -> "whiteList", "black" -> "blackList")
 
   case class ResultRows(queryResult: String, expected: List[Map[String, TCKCypherValue]])
 
-  private def generateClassFile(featureName: String, scenarios: TableFor1[Scenario], black: Boolean, path : String) = {
+  private def generateClassFile(featureName: String, scenarios: TableFor1[Scenario], black: Boolean, path: String) = {
     val packageName = if (black) packageNames.get("black") else packageNames.get("white")
     val className = featureName
     val classHeader =
-      s"""|package org.opencypher.spark.testing.${packageName.get}
+      s"""|/*
+          | * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
+          | *
+          | * Licensed under the Apache License, Version 2.0 (the "License");
+          | * you may not use this file except in compliance with the License.
+          | * You may obtain a copy of the License at
+          | *
+          | *     http://www.apache.org/licenses/LICENSE-2.0
+          | *
+          | * Unless required by applicable law or agreed to in writing, software
+          | * distributed under the License is distributed on an "AS IS" BASIS,
+          | * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+          | * See the License for the specific language governing permissions and
+          | * limitations under the License.
+          | *
+          | * Attribution Notice under the terms of the Apache License 2.0
+          | *
+          | * This work was created by the collective efforts of the openCypher community.
+          | * Without limiting the terms of Section 6, any Derivative Work that is not
+          | * approved by the public consensus process of the openCypher Implementers Group
+          | * should not be described as “Cypher” (and Cypher® is a registered trademark of
+          | * Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
+          | * proposals for change that have been documented or implemented should only be
+          | * described as "implementation extensions to Cypher" or as "proposed changes to
+          | * Cypher that are not yet approved by the openCypher community".
+          | */
+          |package org.opencypher.spark.testing.${packageName.get}
           |
           |import org.scalatest.junit.JUnitRunner
           |import org.junit.runner.RunWith
@@ -185,25 +212,26 @@ object AcceptanceTestGenerator extends App {
 
         s"""
            |    val result${resultNumber}ValueRecords = CypherToTCKConverter.convertToTckStrings(result$resultNumber.records).asValueRecords
-           |    val expected${resultNumber}ValueRecords = CypherValueRecords(List(${expectedResult.header.map(escapeString).mkString(",")}), List(${expectedResult.rows.map(tckCypherMapToTCKCreateString).mkString(s", \n						")}))
+           |    val expected${resultNumber}ValueRecords = CypherValueRecords(List(${expectedResult.header.map(escapeString).mkString(",")}),
+           |      List(${expectedResult.rows.map(tckCypherMapToTCKCreateString).mkString(s", \n$tabs$tabs$tabs")}))
            |    result${resultNumber}ValueRecords.$equalMethod(expected${resultNumber}ValueRecords)
            """.stripMargin
       case (ExpectError(errorType, errorPhase, detail, _), _) =>
         val stepNumber = contextExecQueryStack.head
         //todo: check for errorType and detail (when coresponding errors exist like SyntaxError, TypeError, ParameterMissing, ...)
         s"""
-           |		val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{result$stepNumber}
+           |$tabs val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{result$stepNumber}
            """.stripMargin
 
       case (SideEffects(expected, _), _) =>
         val relevantEffects = expected.v.filter(_._2 > 0) //check if relevant Side-Effects exist
         if (relevantEffects.nonEmpty)
         //SideEffects not relevant in CAPS
-          s"		fail() //TODO: side effects not handled yet"
+          s"$tabs fail() //TODO: side effects not handled yet"
         else
           ""
       case _ => ""
-    }.filter(_.nonEmpty).mkString(s"\n 		")
+    }.filter(_.nonEmpty).mkString(s"\n$tabs")
   }
 
 
@@ -214,7 +242,7 @@ object AcceptanceTestGenerator extends App {
     }
 
     val initQuery = escapeStringMarks + initSteps.foldLeft("")((combined, x) => x match {
-      case Execute(query, InitQuery, _) => combined + s"\n				  ${alignQuery(query)}"
+      case Execute(query, InitQuery, _) => combined + s"\n$tabs$tabs  ${alignQuery(query)}"
       case _ => combined
     }) + escapeStringMarks
 
@@ -244,7 +272,7 @@ object AcceptanceTestGenerator extends App {
   }
 
   //checks if package directories exists clears them or creates new
-  private def setUpDirectories(path : String): Unit = {
+  private def setUpDirectories(path: String): Unit = {
     packageNames.values.map(packageName => {
       val directory = new File(path + packageName)
       if (directory.exists()) {
@@ -264,15 +292,15 @@ object AcceptanceTestGenerator extends App {
   }
 
   //generates test-cases for given scenario names
-  def generateGivenScenarios(path : String, keyWords: Array[String] = Array.empty): Unit = {
+  def generateGivenScenarios(path: String, keyWords: Array[String] = Array.empty): Unit = {
     setUpDirectories(path)
     val wantedWhiteScenarios = scenarios.whiteList.filter(scen => keyWords.map(keyWord => scen.name.contains(keyWord)).reduce(_ || _))
     val wantedBlackScenarios = scenarios.blackList.filter(scen => keyWords.map(keyWord => scen.name.contains(keyWord)).reduce(_ || _))
-    generateClassFile("specialWhiteCases",wantedWhiteScenarios, black = false, path)
-    generateClassFile("specialBlackCases",wantedBlackScenarios, black = true, path)
+    generateClassFile("specialWhiteCases", wantedWhiteScenarios, black = false, path)
+    generateClassFile("specialBlackCases", wantedBlackScenarios, black = true, path)
   }
 
-  def generateAllScenarios(path: String) : Unit = {
+  def generateAllScenarios(path: String): Unit = {
     setUpDirectories(path)
     val blackFeatures = scenarios.blackList.groupBy(_.featureName)
     val whiteFeatures = scenarios.whiteList.groupBy(_.featureName)
@@ -288,13 +316,13 @@ object AcceptanceTestGenerator extends App {
   }
 
   //in gradle only "src/test/scala/org/opencypher/spark/testing/" is needed as a path
-  if(args.isEmpty) {
+  if (args.isEmpty) {
     val defaultPath = s"spark-cypher-tck/src/test/scala/org/opencypher/spark/testing/"
     generateAllScenarios(defaultPath)
   }
   else {
-    val (path,scenarioNames) = (args(0),args(1))
-    if(scenarioNames.nonEmpty)
+    val (path, scenarioNames) = (args(0), args(1))
+    if (scenarioNames.nonEmpty)
       generateGivenScenarios(path, scenarioNames.split('|'))
     else
       generateAllScenarios(path)
