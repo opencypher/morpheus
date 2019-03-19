@@ -975,27 +975,4 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
       CypherMap("n" -> CAPSNode(0, Set("FOO")))
     )
   }
-
-  // TODO: Requires COPY OF to be able to express original intent
-  ignore("should set multiple properties") {
-    val query =
-      """|MATCH (a)
-         |CONSTRUCT
-         |  CLONE a as newA
-         |  CREATE (newA :A:B)
-         |  SET newA.name = 'Donald'
-         |  SET newA.age = 100
-         |RETURN GRAPH""".stripMargin
-
-    val result = testGraph1.cypher(query)
-
-    result.records.toMaps shouldBe empty
-    result.graph.schema.labels should equal(Set("A", "B"))
-    result.graph.schema should equal(
-      Schema.empty
-        .withNodePropertyKeys(Set("A", "B"), PropertyKeys("name" -> CTString, "age" -> CTInteger)))
-    result.graph.cypher("MATCH (a:A:B) RETURN a.name").records.toMaps should equal(Bag(
-      CypherMap("a.name" -> "Donald")
-    ))
-  }
 }
