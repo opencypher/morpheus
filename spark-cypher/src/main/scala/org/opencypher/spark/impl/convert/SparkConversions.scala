@@ -32,30 +32,13 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.CalendarInterval
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue, CypherValueConverter}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 import org.opencypher.spark.impl.SparkSQLMappingException
+import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 
 object SparkConversions {
-
-  // Spark data types that are supported within the Cypher type system
-  val supportedTypes: Seq[DataType] = Seq(
-    // numeric
-    ByteType,
-    ShortType,
-    IntegerType,
-    LongType,
-    FloatType,
-    DoubleType,
-    // other
-    StringType,
-    BooleanType,
-    DateType,
-    TimestampType,
-    NullType
-  )
 
   implicit class CypherTypeOps(val ct: CypherType) extends AnyVal {
 
@@ -169,12 +152,7 @@ object SparkConversions {
       *
       * @return true, iff the data type is supported
       */
-    def isCypherCompatible: Boolean = dt match {
-      case ArrayType(internalType, _) => internalType.isCypherCompatible
-      case StructType(fields) => fields.forall(_.dataType.isCypherCompatible)
-      case _: DecimalType => true
-      case other => supportedTypes.contains(other)
-    }
+    def isCypherCompatible: Boolean = cypherCompatibleDataType.isDefined
 
     /**
       * Converts the given Spark data type into a Cypher type system compatible Spark data type.

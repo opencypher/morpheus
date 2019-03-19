@@ -219,15 +219,6 @@ class EntityTableTest extends CAPSTestSuite {
     }
   }
 
-  it("NodeTable should not accept wrong source property key type") {
-    assert(!SparkConversions.supportedTypes.contains(DecimalType))
-    an[IllegalArgumentException] should be thrownBy {
-      val df = sparkSession.createDataFrame(Seq((1L, true, BigDecimal(13.37)))).toDF("ID", "IS_A", "PROP")
-      val nodeMapping = NodeMappingBuilder.on("ID").withImpliedLabel("A").withPropertyKey("PROP").build
-      CAPSEntityTable.create(nodeMapping, df)
-    }
-  }
-
   it("NodeTable should infer the correct schema") {
     val df = sparkSession.createDataFrame(Seq((1L, "Alice", 1984, true, 13.37)))
       .toDF("id", "name", "birthYear", "isGood", "luckyNumber")
