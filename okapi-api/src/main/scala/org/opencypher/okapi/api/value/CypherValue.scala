@@ -516,12 +516,9 @@ object CypherValue {
 
   object CypherBigDecimal extends UnapplyValue[BigDecimal, CypherBigDecimal] {
 
-    def apply(v: Any, precision: Int, scale: Int, roundingMode: String = "UNNECESSARY"): CypherBigDecimal = {
+    def apply(v: Any, precision: Int, scale: Int): CypherBigDecimal = {
 
-      println(roundingMode)
-      val context = new MathContext(precision, RoundingMode.valueOf(roundingMode))
-
-      println((v, precision, scale))
+      val context = new MathContext(precision)
 
       val bigDecimal = v match {
         case i: Int => BigDecimal(i, context)
@@ -531,7 +528,7 @@ object CypherValue {
         case s: String => BigDecimal(s, context)
       }
 
-      bigDecimal.setScale(scale, scala.BigDecimal.RoundingMode.withName(roundingMode))
+      bigDecimal.setScale(scale)
     }
   }
 

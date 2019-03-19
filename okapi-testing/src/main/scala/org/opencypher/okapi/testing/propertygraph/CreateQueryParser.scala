@@ -253,17 +253,12 @@ object CreateGraphFactory extends InMemoryGraphFactory {
             res <- pure[ParsingContext, Any](Duration(durationMap.asInstanceOf[Map[String, Long]]))
           } yield res
 
-        case f@ FunctionInvocation(_, FunctionName("bigdecimal"), _, Seq(n: Literal, p: NumberLiteral, s: NumberLiteral)) =>
-          val r = StringLiteral("UNNECESSARY")(f.position)
-          processExpr(FunctionInvocation(f.namespace, f.functionName, f.distinct, f.args :+ r )(f.position))
-
-        case FunctionInvocation(_, FunctionName("bigdecimal"), _, Seq(n: Literal, p: NumberLiteral, s: NumberLiteral, r: StringLiteral)) =>
+        case FunctionInvocation(_, FunctionName("bigdecimal"), _, Seq(n: Literal, p: NumberLiteral, s: NumberLiteral)) =>
           for {
             number <- processExpr(n)
             precision <- pure[ParsingContext, Int](p.stringVal.toInt)
             scale <- pure[ParsingContext, Int](s.stringVal.toInt)
-            roundingMode <- pure[ParsingContext, String](r.value)
-            res <- pure[ParsingContext, Any](CypherBigDecimal(number, precision, scale, roundingMode))
+            res <- pure[ParsingContext, Any](CypherBigDecimal(number, precision, scale))
           } yield res
 
         case Property(variable: Variable, propertyKey) =>
