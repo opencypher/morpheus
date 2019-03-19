@@ -313,10 +313,14 @@ final class ExpressionConverter(context: IRBuilderContext) {
 
     case ast.MapExpression(items) =>
       val convertedMap = items.map { case (key, value) => key.name -> convert(value) }.toMap
-      val mapType = CTMap(convertedMap.map { case(key, value) => key -> value.cypherType })
+      val mapType = CTMap(convertedMap.map { case (key, value) => key -> value.cypherType })
       MapExpression(convertedMap)(mapType)
 
     // Expression
+    case ast.ListSlice(list, Some(from), Some(to)) => ListSliceFromTo(convert(list), convert(from), convert(to))
+    case ast.ListSlice(list, None, Some(to)) => ListSliceTo(convert(list), convert(to))
+    case ast.ListSlice(list, Some(from), None) => ListSliceFrom(convert(list), convert(from))
+
     case ast.ContainerIndex(container, index) =>
       val convertedContainer = convert(container)
       val elementType = convertedContainer.cypherType.material match {

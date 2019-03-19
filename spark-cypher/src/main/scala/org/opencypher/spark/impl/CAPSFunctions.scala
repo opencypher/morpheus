@@ -78,6 +78,12 @@ object CAPSFunctions {
   def partitioned_id_assignment(partitionStartDelta: Int): Column =
     monotonically_increasing_id() + (partitionStartDelta.toLong << rowIdSpaceBitsUsedByMonotonicallyIncreasingId)
 
+  def list_slice(list: Column, maybeFrom: Option[Column], maybeTo: Option[Column]): Column = {
+    val start = maybeFrom.map(_ + ONE_LIT).getOrElse(ONE_LIT)
+    val length = (maybeTo.getOrElse(size(list)) - start) + ONE_LIT
+    new Column(Slice(list.expr, start.expr, length.expr))
+  }
+
   /**
     * Alternative version of `array_contains` that takes a column as the value.
     */
@@ -125,6 +131,10 @@ object CAPSFunctions {
   def create_struct(structColumns: Seq[Column]): Column = {
     if (structColumns.isEmpty) EMPTY_STRUCT
     else struct(structColumns: _*)
+  }
+
+  def switch(branches: Seq[(Column, Column)], maybeDefault: Option[Column]): Column = {
+    new Column(CaseWhen(branches.map { case (c, v) => c.expr -> v.expr } , maybeDefault.map(_.expr)))
   }
 
   /**

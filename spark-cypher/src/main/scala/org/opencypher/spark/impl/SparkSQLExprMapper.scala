@@ -28,7 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.functions.{array_contains => _, translate => _, _}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Column, DataFrame}
+import org.apache.spark.sql.{Column, DataFrame, functions}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception._
@@ -273,15 +273,11 @@ object SparkSQLExprMapper {
         case _: ToUpper => upper(child0)
         case _: ToLower => lower(child0)
 
-        case _: Range =>
-          val stepCol = convertedChildren.applyOrElse(2, (_: Int) => ONE_LIT)
-          sequence(child0, child1, stepCol)
+        case _: Range => sequence(child0, child1, convertedChildren.lift(2).getOrElse(ONE_LIT))
 
         case _: Replace => translate(child0, child1, child2)
 
-        case _: Substring =>
-          val lengthCol = convertedChildren.applyOrElse(2, (_: Int) => length(child0) - child1)
-          child0.substr(child1 + ONE_LIT, lengthCol)
+        case _: Substring => child0.substr(child1 + ONE_LIT, convertedChildren.lift(2).getOrElse(length(child0) - child1))
 
         // Mathematical functions
         case E => E_LIT
@@ -326,22 +322,17 @@ object SparkSQLExprMapper {
           val columns = es.map(_.asSparkSQLExpr)
           coalesce(columns: _*)
 
-        case CaseExpr(alternatives, default) =>
-          val convertedAlternatives = alternatives.map {
-            case (predicate, action) => when(predicate.asSparkSQLExpr, action.asSparkSQLExpr)
+        case CaseExpr(_, maybeDefault) =>
+          val (maybeConvertedDefault, convertedAlternatives) = if (maybeDefault.isDefined) {
+            Some(convertedChildren.head) -> convertedChildren.tail
+          } else {
+            None -> convertedChildren
           }
-
-          val alternativesWithDefault = default match {
-            case Some(inner) => convertedAlternatives :+ inner.asSparkSQLExpr
-            case None => convertedAlternatives
-          }
-
-          val reversedColumns = alternativesWithDefault.reverse
-
-          val caseColumn = reversedColumns.tail.foldLeft(reversedColumns.head) {
-            case (tmpCol, whenCol) => whenCol.otherwise(tmpCol)
-          }
-          caseColumn
+          val indexed = convertedAlternatives.zipWithIndex
+          val conditions = indexed.collect { case (c, i) if i % 2 == 0 => c}
+          val values = indexed.collect { case (c, i) if i % 2 == 1 => c}
+          val branches = conditions.zip(values)
+          switch(branches, maybeConvertedDefault)
 
         case ContainerIndex(container, index) =>
           val indexCol = index.asSparkSQLExpr
@@ -351,6 +342,10 @@ object SparkSQLExprMapper {
             case _: CTList | _: CTMap => containerCol.get(indexCol)
             case other => throw NotImplementedException(s"Accessing $other by index is not supported")
           }
+
+        case _: ListSliceFromTo => list_slice(child0, Some(child1), Some(child2))
+        case _: ListSliceFrom => list_slice(child0, Some(child1), None)
+        case _: ListSliceTo => list_slice(child0, None, Some(child1))
 
         case MapExpression(items) => expr.cypherType.material match {
           case CTMap(_) =>

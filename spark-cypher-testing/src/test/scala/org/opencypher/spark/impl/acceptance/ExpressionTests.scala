@@ -46,6 +46,31 @@ import org.scalatest.prop.Checkers
 @RunWith(classOf[JUnitRunner])
 class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
+  describe("list slice") {
+
+    it("slice") {
+      val result = caps.cypher("RETURN ['a', 'b', 'c', 'd'][0..3] as r")
+      result.records.toMaps should equal(Bag(
+        CypherMap("r" -> CypherList("a", "b", "c"))
+      ))
+    }
+
+    it("slice without from") {
+      val result = caps.cypher("RETURN ['a', 'b', 'c', 'd'][..3] as r")
+      result.records.toMaps should equal(Bag(
+        CypherMap("r" -> CypherList("a", "b", "c"))
+      ))
+    }
+
+    it("slice without to") {
+      val result = caps.cypher("RETURN ['a', 'b', 'c', 'd'][0..] as r")
+      result.records.toMaps should equal(Bag(
+        CypherMap("r" -> CypherList("a", "b", "c", "d"))
+      ))
+    }
+
+  }
+
   describe("CASE") {
     it("should evaluate a generic CASE expression with default") {
       // Given
@@ -205,31 +230,33 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
     it("filter rels on property regular expression") {
       // Given
-      val given = initGraph("""CREATE (rachel:Person:Actor {name: 'Rachel Kempson', birthyear: 1910})
-                              |CREATE (michael:Person:Actor {name: 'Michael Redgrave', birthyear: 1908})
-                              |CREATE (corin:Person:Actor {name: 'Corin Redgrave', birthyear: 1939})
-                              |CREATE (liam:Person:Actor {name: 'Liam Neeson', birthyear: 1952})
-                              |CREATE (richard:Person:Actor {name: 'Richard Harris', birthyear: 1930})
-                              |CREATE (dennis:Person:Actor {name: 'Dennis Quaid', birthyear: 1954})
-                              |CREATE (lindsay:Person:Actor {name: 'Lindsay Lohan', birthyear: 1986})
-                              |CREATE (jemma:Person:Actor {name: 'Jemma Redgrave', birthyear: 1965})
-                              |
-                              |CREATE (mrchips:Film {title: 'Goodbye, Mr. Chips'})
-                              |CREATE (batmanbegins:Film {title: 'Batman Begins'})
-                              |CREATE (harrypotter:Film {title: 'Harry Potter and the Sorcerer\'s Stone'})
-                              |CREATE (parent:Film {title: 'The Parent Trap'})
-                              |CREATE (camelot:Film {title: 'Camelot'})
-                              |
-                              |CREATE (michael)-[:ACTED_IN {charactername: 'The Headmaster'}]->(mrchips),
-                              |       (richard)-[:ACTED_IN {charactername: 'King Arthur'}]->(camelot),
-                              |       (richard)-[:ACTED_IN {charactername: 'Albus Dumbledore'}]->(harrypotter),
-                              |       (dennis)-[:ACTED_IN {charactername: 'Nick Parker'}]->(parent),
-                              |       (lindsay)-[:ACTED_IN {charactername: 'Halle/Annie'}]->(parent),
-                              |       (liam)-[:ACTED_IN {charactername: 'Henri Ducard'}]->(batmanbegins)
-                            """.stripMargin)
+      val given = initGraph(
+        """CREATE (rachel:Person:Actor {name: 'Rachel Kempson', birthyear: 1910})
+          |CREATE (michael:Person:Actor {name: 'Michael Redgrave', birthyear: 1908})
+          |CREATE (corin:Person:Actor {name: 'Corin Redgrave', birthyear: 1939})
+          |CREATE (liam:Person:Actor {name: 'Liam Neeson', birthyear: 1952})
+          |CREATE (richard:Person:Actor {name: 'Richard Harris', birthyear: 1930})
+          |CREATE (dennis:Person:Actor {name: 'Dennis Quaid', birthyear: 1954})
+          |CREATE (lindsay:Person:Actor {name: 'Lindsay Lohan', birthyear: 1986})
+          |CREATE (jemma:Person:Actor {name: 'Jemma Redgrave', birthyear: 1965})
+          |
+          |CREATE (mrchips:Film {title: 'Goodbye, Mr. Chips'})
+          |CREATE (batmanbegins:Film {title: 'Batman Begins'})
+          |CREATE (harrypotter:Film {title: 'Harry Potter and the Sorcerer\'s Stone'})
+          |CREATE (parent:Film {title: 'The Parent Trap'})
+          |CREATE (camelot:Film {title: 'Camelot'})
+          |
+          |CREATE (michael)-[:ACTED_IN {charactername: 'The Headmaster'}]->(mrchips),
+          |       (richard)-[:ACTED_IN {charactername: 'King Arthur'}]->(camelot),
+          |       (richard)-[:ACTED_IN {charactername: 'Albus Dumbledore'}]->(harrypotter),
+          |       (dennis)-[:ACTED_IN {charactername: 'Nick Parker'}]->(parent),
+          |       (lindsay)-[:ACTED_IN {charactername: 'Halle/Annie'}]->(parent),
+          |       (liam)-[:ACTED_IN {charactername: 'Henri Ducard'}]->(batmanbegins)
+        """.stripMargin)
 
       // When
-      val query = """MATCH (a:Actor)-[r:ACTED_IN]->() WHERE r.charactername =~ '(\\w+\\s*)*Du\\w+' RETURN r.charactername"""
+      val query =
+        """MATCH (a:Actor)-[r:ACTED_IN]->() WHERE r.charactername =~ '(\\w+\\s*)*Du\\w+' RETURN r.charactername"""
       val result = given.cypher(query)
 
       // Then
@@ -240,31 +267,33 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
     it("filter nodes on property regular expression") {
       // Given
-      val given = initGraph("""CREATE (rachel:Person:Actor {name: 'Rachel Kempson', birthyear: 1910})
-                              |CREATE (michael:Person:Actor {name: 'Michael Redgrave', birthyear: 1908})
-                              |CREATE (corin:Person:Actor {name: 'Corin Redgrave', birthyear: 1939})
-                              |CREATE (liam:Person:Actor {name: 'Liam Neeson', birthyear: 1952})
-                              |CREATE (richard:Person:Actor {name: 'Richard Harris', birthyear: 1930})
-                              |CREATE (dennis:Person:Actor {name: 'Dennis Quaid', birthyear: 1954})
-                              |CREATE (lindsay:Person:Actor {name: 'Lindsay Lohan', birthyear: 1986})
-                              |CREATE (jemma:Person:Actor {name: 'Jemma Redgrave', birthyear: 1965})
-                              |
-                              |CREATE (mrchips:Film {title: 'Goodbye, Mr. Chips'})
-                              |CREATE (batmanbegins:Film {title: 'Batman Begins'})
-                              |CREATE (harrypotter:Film {title: 'Harry Potter and the Sorcerer\'s Stone'})
-                              |CREATE (parent:Film {title: 'The Parent Trap'})
-                              |CREATE (camelot:Film {title: 'Camelot'})
-                              |
-                              |CREATE (michael)-[:ACTED_IN {charactername: 'The Headmaster'}]->(mrchips),
-                              |       (richard)-[:ACTED_IN {charactername: 'King Arthur'}]->(camelot),
-                              |       (richard)-[:ACTED_IN {charactername: 'Albus Dumbledore'}]->(harrypotter),
-                              |       (dennis)-[:ACTED_IN {charactername: 'Nick Parker'}]->(parent),
-                              |       (lindsay)-[:ACTED_IN {charactername: 'Halle/Annie'}]->(parent),
-                              |       (liam)-[:ACTED_IN {charactername: 'Henri Ducard'}]->(batmanbegins)
-                            """.stripMargin)
+      val given = initGraph(
+        """CREATE (rachel:Person:Actor {name: 'Rachel Kempson', birthyear: 1910})
+          |CREATE (michael:Person:Actor {name: 'Michael Redgrave', birthyear: 1908})
+          |CREATE (corin:Person:Actor {name: 'Corin Redgrave', birthyear: 1939})
+          |CREATE (liam:Person:Actor {name: 'Liam Neeson', birthyear: 1952})
+          |CREATE (richard:Person:Actor {name: 'Richard Harris', birthyear: 1930})
+          |CREATE (dennis:Person:Actor {name: 'Dennis Quaid', birthyear: 1954})
+          |CREATE (lindsay:Person:Actor {name: 'Lindsay Lohan', birthyear: 1986})
+          |CREATE (jemma:Person:Actor {name: 'Jemma Redgrave', birthyear: 1965})
+          |
+          |CREATE (mrchips:Film {title: 'Goodbye, Mr. Chips'})
+          |CREATE (batmanbegins:Film {title: 'Batman Begins'})
+          |CREATE (harrypotter:Film {title: 'Harry Potter and the Sorcerer\'s Stone'})
+          |CREATE (parent:Film {title: 'The Parent Trap'})
+          |CREATE (camelot:Film {title: 'Camelot'})
+          |
+          |CREATE (michael)-[:ACTED_IN {charactername: 'The Headmaster'}]->(mrchips),
+          |       (richard)-[:ACTED_IN {charactername: 'King Arthur'}]->(camelot),
+          |       (richard)-[:ACTED_IN {charactername: 'Albus Dumbledore'}]->(harrypotter),
+          |       (dennis)-[:ACTED_IN {charactername: 'Nick Parker'}]->(parent),
+          |       (lindsay)-[:ACTED_IN {charactername: 'Halle/Annie'}]->(parent),
+          |       (liam)-[:ACTED_IN {charactername: 'Henri Ducard'}]->(batmanbegins)
+        """.stripMargin)
 
       // When
-      val query = """MATCH (p:Person) WHERE p.name =~ '\\w+ Redgrave' RETURN p.name"""
+      val query =
+        """MATCH (p:Person) WHERE p.name =~ '\\w+ Redgrave' RETURN p.name"""
       val result = given.cypher(query)
 
       // Then
@@ -310,7 +339,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       val result = given.cypher("MATCH (a) RETURN a.val")
 
       // Then
-      val e = the [IllegalArgumentException] thrownBy result.records.size
+      val e = the[IllegalArgumentException] thrownBy result.records.size
       e.getMessage should include("Equal column data types")
     }
   }
@@ -1084,7 +1113,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       val e = the[SparkSQLMappingException] thrownBy
         caps.cypher("RETURN $listParam AS res", CypherMap("listParam" -> CypherList(1, "string")))
           .records.toMaps
-      e.getMessage should(include("LIST(ANY)") and include ("unsupported"))
+      e.getMessage should (include("LIST(ANY)") and include("unsupported"))
     }
 
     it("can support empty list parameter") {
@@ -1097,7 +1126,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
   }
 
   describe("STARTS WITH") {
-    it("returns true for matching strings"){
+    it("returns true for matching strings") {
       caps.cypher(
         """
           |RETURN "foobar" STARTS WITH "foo" as x
@@ -1107,7 +1136,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       ))
     }
 
-    it("returns false for not matching strings"){
+    it("returns false for not matching strings") {
       caps.cypher(
         """
           |RETURN "foobar" STARTS WITH "bar" as x
@@ -1137,7 +1166,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
   }
 
   describe("ENDS WITH") {
-    it("returns true for matching strings"){
+    it("returns true for matching strings") {
       caps.cypher(
         """
           |RETURN "foobar" ENDS WITH "bar" as x
@@ -1147,7 +1176,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       ))
     }
 
-    it("returns false for not matching strings"){
+    it("returns false for not matching strings") {
       caps.cypher(
         """
           |RETURN "foobar" ENDS WITH "foo" as x
@@ -1177,7 +1206,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
   }
 
   describe("CONTAINS") {
-    it("returns true for matching strings"){
+    it("returns true for matching strings") {
       caps.cypher(
         """
           |RETURN "foobarbaz" CONTAINS "baz" as x
@@ -1187,7 +1216,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       ))
     }
 
-    it("returns false for not matching strings"){
+    it("returns false for not matching strings") {
       caps.cypher(
         """
           |RETURN "foobarbaz" CONTAINS "abc" as x

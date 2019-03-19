@@ -849,6 +849,22 @@ sealed trait Lit[T] extends Expr {
 
 final case class ListLit(v: List[Expr])(val cypherType: CypherType = CTList(CTVoid)) extends Lit[List[Expr]]
 
+sealed abstract class ListSlice(maybeFrom: Option[Expr], maybeTo: Option[Expr]) extends Expr {
+
+  def list: Expr
+
+  override def withoutType: String = s"${list.withoutType}[${maybeFrom.map(_.withoutType).getOrElse("")}..${maybeTo.map(_.withoutType).getOrElse("")}]"
+
+  override val cypherType: CypherType = list.cypherType
+
+}
+
+final case class ListSliceFromTo(list: Expr, from: Expr, to: Expr) extends ListSlice(Some(from), Some(to))
+
+final case class ListSliceFrom(list: Expr, from: Expr) extends ListSlice(Some(from), None)
+
+final case class ListSliceTo(list: Expr, to: Expr) extends ListSlice(None, Some(to))
+
 final case class ContainerIndex(container: Expr, index: Expr)(val cypherType: CypherType) extends Expr {
 
   override def withoutType: String = s"${container.withoutType}[${index.withoutType}]"
@@ -916,6 +932,22 @@ final case class ExistsPatternExpr(targetField: Var, ir: CypherQuery)
 
 final case class CaseExpr(alternatives: List[(Expr, Expr)], default: Option[Expr])
   (val cypherType: CypherType) extends Expr {
+
+  override val children: Array[Expr] = (default ++ alternatives.flatMap { case (cond, value) => Seq(cond, value) }).toArray
+
+  override def withNewChildren(newChildren: Array[Expr]): CaseExpr = {
+    val hasDefault = newChildren.length % 2 == 1
+    val (newDefault, as) = if (hasDefault) {
+      Some(newChildren.head) -> newChildren.tail
+    } else {
+      None -> newChildren
+    }
+    val indexed = as.zipWithIndex
+    val conditions = indexed.collect { case (c, i) if i % 2 == 0 => c}
+    val values = indexed.collect { case (c, i) if i % 2 == 1 => c}
+    val newAlternatives = conditions.zip(values).toList
+    CaseExpr(newAlternatives, newDefault)(cypherType)
+  }
 
   override def toString: String = s"$withoutType($cypherType)"
 

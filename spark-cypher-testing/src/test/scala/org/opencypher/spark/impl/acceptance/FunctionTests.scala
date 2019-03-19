@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.junit.runner.RunWith
-import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
+import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
