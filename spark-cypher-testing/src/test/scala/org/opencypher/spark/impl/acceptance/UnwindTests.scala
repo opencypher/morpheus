@@ -110,7 +110,10 @@ class UnwindTests extends CAPSTestSuite with ScanGraphInit {
       ))
   }
 
-  // TODO: activate once https://issues.apache.org/jira/browse/SPARK-23610 is resolved
+  // https://issues.apache.org/jira/browse/SPARK-23610
+  // TODO: Issue is that empty lists are Array(String) in Spark
+  // We lack a way of encoding empty lists in a way that expands to a specific list type in Spark
+  // Like putting it in a column with Array(Integer) as in this test
   ignore("unwind from expression with empty and null lists") {
     val graph = initGraph("CREATE (:A {v: [1, 2]}), (:A:B {v: [-4]}), (:A:C {v: []}), (:A)")
 
