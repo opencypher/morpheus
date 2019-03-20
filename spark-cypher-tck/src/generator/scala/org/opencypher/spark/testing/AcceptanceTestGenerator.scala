@@ -35,10 +35,15 @@ import org.opencypher.tools.tck.api._
 import org.scalatest.prop.TableFor1
 import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue}
 import scala.collection.mutable
-import org.opencypher.spark.testing.ConstructStringGenerator._
+import org.opencypher.spark.testing.CreatetStringGenerator._
 
 
+//todo: fix nullpointerException bug at .getResource (generator resources only in build not in out)
+//todo: extract resourcespath to parameter (could solve first problem
+//todo: maybe also ConstructStringGenerator as a parameter (for other use cases)
+//todo: refactor testGenerator into okapi-tck and create instance in spark-cypher-tck
 object AcceptanceTestGenerator extends App {
+  //todo: get files not via resource
   private val failingBlacklist = getClass.getResource("/failing_blacklist").getFile
   private val temporalBlacklist = getClass.getResource("/temporal_blacklist").getFile
   private val wontFixBlacklistFile = getClass.getResource("/wont_fix_blacklist").getFile
@@ -53,6 +58,13 @@ object AcceptanceTestGenerator extends App {
   private def generateClassFile(featureName: String, scenarios: TableFor1[Scenario], black: Boolean, path: String) = {
     val packageName = if (black) packageNames.get("black") else packageNames.get("white")
     val className = featureName
+    val specificImports =
+      s"""
+         |import org.opencypher.spark.testing.CAPSTestSuite
+         |import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory => GraphFactory}
+         |import org.opencypher.spark.impl.graph.CAPSGraphFactory
+         |import org.opencypher.okapi.api.value.CypherValue._
+      """
     val classHeader =
       s"""|/*
           | * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
@@ -84,18 +96,14 @@ object AcceptanceTestGenerator extends App {
           |
           |import org.scalatest.junit.JUnitRunner
           |import org.junit.runner.RunWith
-          |import org.opencypher.okapi.tck.test.CypherToTCKConverter
-          |import org.opencypher.spark.testing.CAPSTestSuite
-          |import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory
-          |import org.opencypher.spark.impl.graph.CAPSGraphFactory
-          |import org.opencypher.okapi.api.value.CypherValue._
           |import scala.util.{Failure, Success, Try}
+          |import org.opencypher.okapi.tck.test.CypherToTCKConverter
           |import org.opencypher.tools.tck.api.CypherValueRecords
           |import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, CypherString => TCKCypherString, CypherOrderedList => TCKCypherOrderedList,
-          |   CypherNode => TCKCypherNode, CypherRelationship => TCKCypherRelationship, Connection, Forward => TCKForward, Backward => TCKBackward,
-          |   CypherInteger => TCKCypherInteger, CypherFloat => TCKCypherFloat, CypherBoolean => TCKCypherBoolean, CypherProperty => TCKCypherProperty,
-          |   CypherPropertyMap => TCKCypherPropertyMap, CypherNull => TCKCypherNull, CypherPath => TCKCypherPath}
-          |
+          |           CypherNode => TCKCypherNode, CypherRelationship => TCKCypherRelationship, Connection, Forward => TCKForward, Backward => TCKBackward,
+          |           CypherInteger => TCKCypherInteger, CypherFloat => TCKCypherFloat, CypherBoolean => TCKCypherBoolean, CypherProperty => TCKCypherProperty,
+          |           CypherPropertyMap => TCKCypherPropertyMap, CypherNull => TCKCypherNull, CypherPath => TCKCypherPath}
+          |$specificImports
           |
           |@RunWith(classOf[JUnitRunner])
           |class $className extends CAPSTestSuite{""".stripMargin
@@ -154,7 +162,8 @@ object AcceptanceTestGenerator extends App {
            """.stripMargin
       case (ExpectError(errorType, errorPhase, detail, _), _) =>
         val stepNumber = contextExecQueryStack.head
-        //todo: check for errorType and detail (when coresponding errors exist like SyntaxError, TypeError, ParameterMissing, ...)
+        //todo: check for errorType and detail (when corresponding errors exist in CAPS like SyntaxError, TypeError, ParameterMissing, ...)
+        //todo: maybe check if they get imported?
         s"""
            |$tabs val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{result$stepNumber}
            """.stripMargin
@@ -177,6 +186,7 @@ object AcceptanceTestGenerator extends App {
       case _ => false
     }
 
+    //combine multiple initQueries into one
     val initQuery = escapeStringMarks + initSteps.foldLeft("")((combined, x) => x match {
       case Execute(query, InitQuery, _) => combined + s"\n$tabs$tabs  ${alignQuery(query)}"
       case _ => combined
@@ -184,8 +194,9 @@ object AcceptanceTestGenerator extends App {
 
     val execString = stepsToString(execSteps.zipWithIndex)
     val testString =
+    //todo: problematic ... with method calls for other implementations?
       s"""
-         |    val graph = ${if (initSteps.nonEmpty) s"CAPSScanGraphFactory.initGraph($initQuery)" else "CAPSGraphFactory.apply().empty"}
+         |    val graph = ${if (initSteps.nonEmpty) s"GraphFactory.initGraph($initQuery)" else "GraphFactory.apply().empty"}
          |    $execString
        """.stripMargin
 
