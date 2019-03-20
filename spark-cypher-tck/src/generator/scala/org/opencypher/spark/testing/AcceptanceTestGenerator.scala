@@ -28,41 +28,54 @@ package org.opencypher.spark.testing
 
 import java.io.{File, PrintWriter}
 
-
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.tck.test.ScenariosFor
+import org.opencypher.spark.testing.CreateStringGenerator._
 import org.opencypher.tools.tck.api._
-import org.scalatest.prop.TableFor1
 import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue}
+import org.scalatest.prop.TableFor1
+
 import scala.collection.mutable
-import org.opencypher.spark.testing.CreatetStringGenerator._
 
 
-//todo: fix nullpointerException bug at .getResource (generator resources only in build not in out)
-//todo: extract resourcespath to parameter (could solve first problem
-//todo: maybe also ConstructStringGenerator as a parameter (for other use cases)
-//todo: refactor testGenerator into okapi-tck and create instance in spark-cypher-tck
+//todo: maybe also ConstructStringGenerator as a parameter (making it replaceable for other use cases)
+//todo: refactor testGenerator into okapi-tck and create instance in CAPS-tck
 object AcceptanceTestGenerator extends App {
-  //todo: get files not via resource
-  private val failingBlacklist = getClass.getResource("/failing_blacklist").getFile
-  private val temporalBlacklist = getClass.getResource("/temporal_blacklist").getFile
-  private val wontFixBlacklistFile = getClass.getResource("/wont_fix_blacklist").getFile
-  private val failureReportingBlacklistFile = getClass.getResource("/failure_reporting_blacklist").getFile
-  private val scenarios: ScenariosFor = ScenariosFor(failingBlacklist, temporalBlacklist, wontFixBlacklistFile, failureReportingBlacklistFile)
+  case class ResultRows(queryResult: String, expected: List[Map[String, TCKCypherValue]])
+
   private val escapeStringMarks = "\"\"\""
   private val tabs = "\t\t"
   private val packageNames = Map("white" -> "whiteList", "black" -> "blackList")
 
-  case class ResultRows(queryResult: String, expected: List[Map[String, TCKCypherValue]])
+  def getScenarios(resDir : String) : ScenariosFor = {
+    val resFiles = new File(resDir).listFiles().map(_.getPath).filterNot(_.contains(".feature"))
+    ScenariosFor(resFiles:_*)
+  }
+
+  //in gradle only "src/test/scala/org/opencypher/spark/testing/" is needed as a path
+  //todo: this part only relevant for sparkAcceptanceTestGenerator (not general gradle task)
+  if (args.isEmpty) {
+    val defaultOutPath = s"spark-cypher-tck/src/test/scala/org/opencypher/spark/testing/"
+    val defaultResDir = s"spark-cypher-tck/src/test/resources"
+    generateAllScenarios(defaultOutPath, defaultResDir)
+  }
+  else {
+    val (path, resDir, scenarioNames) = (args(0), args(1), args(2))
+    if (scenarioNames.nonEmpty)
+      generateGivenScenarios(path, resDir, scenarioNames.split('|'))
+    else
+      generateAllScenarios(path, resDir)
+  }
 
   private def generateClassFile(featureName: String, scenarios: TableFor1[Scenario], black: Boolean, path: String) = {
     val packageName = if (black) packageNames.get("black") else packageNames.get("white")
     val className = featureName
+    //todo: candidate for class parameter
     val specificImports =
       s"""
-         |import org.opencypher.spark.testing.CAPSTestSuite
+         |import org.opencypher.spark.testing.{CAPSTestSuite => TestSuite}
          |import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory => GraphFactory}
-         |import org.opencypher.spark.impl.graph.CAPSGraphFactory
+         |import org.opencypher.spark.impl.graph.{CAPSGraphFactory => EmptyGraphFactory}
          |import org.opencypher.okapi.api.value.CypherValue._
       """
     val classHeader =
@@ -106,7 +119,7 @@ object AcceptanceTestGenerator extends App {
           |$specificImports
           |
           |@RunWith(classOf[JUnitRunner])
-          |class $className extends CAPSTestSuite{""".stripMargin
+          |class $className extends TestSuite{""".stripMargin
 
 
     val testCases = scenarios.map(scenario =>
@@ -196,7 +209,7 @@ object AcceptanceTestGenerator extends App {
     val testString =
     //todo: problematic ... with method calls for other implementations?
       s"""
-         |    val graph = ${if (initSteps.nonEmpty) s"GraphFactory.initGraph($initQuery)" else "GraphFactory.apply().empty"}
+         |    val graph = ${if (initSteps.nonEmpty) s"GraphFactory.initGraph($initQuery)" else "EmptyGraphFactory.apply().empty"}
          |    $execString
        """.stripMargin
 
@@ -239,40 +252,28 @@ object AcceptanceTestGenerator extends App {
   }
 
   //generates test-cases for given scenario names
-  def generateGivenScenarios(path: String, keyWords: Array[String] = Array.empty): Unit = {
-    setUpDirectories(path)
+  def generateGivenScenarios(outPath: String, resDir :String,  keyWords: Array[String] = Array.empty): Unit = {
+    setUpDirectories(resDir)
+    val scenarios = getScenarios(outPath)
     val wantedWhiteScenarios = scenarios.whiteList.filter(scen => keyWords.map(keyWord => scen.name.contains(keyWord)).reduce(_ || _))
     val wantedBlackScenarios = scenarios.blackList.filter(scen => keyWords.map(keyWord => scen.name.contains(keyWord)).reduce(_ || _))
-    generateClassFile("specialWhiteCases", wantedWhiteScenarios, black = false, path)
-    generateClassFile("specialBlackCases", wantedBlackScenarios, black = true, path)
+    generateClassFile("specialWhiteCases", wantedWhiteScenarios, black = false, outPath)
+    generateClassFile("specialBlackCases", wantedBlackScenarios, black = true, outPath)
   }
 
-  def generateAllScenarios(path: String): Unit = {
-    setUpDirectories(path)
+  def generateAllScenarios(outPath: String, resDir: String): Unit = {
+    setUpDirectories(outPath)
+    val scenarios = getScenarios(resDir)
     val blackFeatures = scenarios.blackList.groupBy(_.featureName)
     val whiteFeatures = scenarios.whiteList.groupBy(_.featureName)
     whiteFeatures.map { feature => {
-      generateClassFile(feature._1, feature._2, black = false, path)
+      generateClassFile(feature._1, feature._2, black = false, outPath)
     }
     }
 
     blackFeatures.map { feature => {
-      generateClassFile(feature._1, feature._2, black = true, path)
+      generateClassFile(feature._1, feature._2, black = true, outPath)
     }
     }
   }
-
-  //in gradle only "src/test/scala/org/opencypher/spark/testing/" is needed as a path
-  if (args.isEmpty) {
-    val defaultPath = s"spark-cypher-tck/src/test/scala/org/opencypher/spark/testing/"
-    generateAllScenarios(defaultPath)
-  }
-  else {
-    val (path, scenarioNames) = (args(0), args(1))
-    if (scenarioNames.nonEmpty)
-      generateGivenScenarios(path, scenarioNames.split('|'))
-    else
-      generateAllScenarios(path)
-  }
-
 }

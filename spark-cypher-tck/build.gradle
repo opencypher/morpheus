@@ -2,11 +2,7 @@
 description = 'Cypher for Apache Spark - TCK'
 
 sourceSets{
-    generator{
-        resources{
-            srcDir "src/test/resources"
-        }
-    }
+    generator{}
 }
 
 dependencies {
@@ -18,16 +14,17 @@ dependencies {
 
 // split scenario name / key-words with | --> debugTCKScenarios -Pscenarios = 'sc1|sc2|..'
 task debugTCKScenarios() {
-    description "generates scala-test from TCK scenarios (keywords of the scenario names suffice)"
+    description 'Generates scala-test from TCK scenarios (keywords of the scenario names suffice)'
     group 'generator' 
-    def outPath = project.findProperty("outPath") ?: 'src/test/scala/org/opencypher/spark/testing/'
-    def scenarios = project.findProperty("scenarios") ?: ""
+    def outPath = project.findProperty('outPath') ?: 'src/test/scala/org/opencypher/spark/testing/'
+    def resDir = project.findProperty('outPath') ?: 'src/test/resources'
+    def scenarios = project.findProperty('scenarios') ?: ''
     dependsOn sourceSets.generator.runtimeClasspath
     doLast {
         javaexec {
             classpath =  sourceSets.generator.runtimeClasspath
             main = 'org.opencypher.spark.testing.AcceptanceTestGenerator'
-            args = [outPath,scenarios]
+            args = [outPath,resDir,scenarios]
         }
     }
 }

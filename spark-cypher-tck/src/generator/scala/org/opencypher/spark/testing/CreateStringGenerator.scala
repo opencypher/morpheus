@@ -8,7 +8,7 @@ import org.opencypher.tools.tck.values.{Backward => TCKBackward, CypherBoolean =
 
 
 
-object CreatetStringGenerator {
+object CreateStringGenerator {
   def tckCypherValueToCreateString(value: TCKCypherValue): String = {
     value match {
       case TCKCypherString(v) => s"TCKCypherString(${escapeString(v)})"
