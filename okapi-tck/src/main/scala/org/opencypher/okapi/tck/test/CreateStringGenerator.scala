@@ -24,15 +24,14 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.testing
+package org.opencypher.okapi.tck.test
 
-import org.apache.commons.lang.StringEscapeUtils
+
+import org.apache.commons.lang3.StringEscapeUtils
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.tck.test.TckToCypherConverter.tckValueToCypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherList => OKAPICypherList, CypherMap => OKAPICypherMap, CypherNull => OKAPICypherNull, CypherString => OKAPICypherString, CypherValue => OKAPICypherValue}
 import org.opencypher.tools.tck.values.{Backward => TCKBackward, CypherBoolean => TCKCypherBoolean, CypherFloat => TCKCypherFloat, CypherInteger => TCKCypherInteger, CypherList => TCKCypherList, CypherNode => TCKCypherNode, CypherNull => TCKCypherNull, CypherOrderedList => TCKCypherOrderedList, CypherPath => TCKCypherPath, CypherProperty => TCKCypherProperty, CypherPropertyMap => TCKCypherPropertyMap, CypherRelationship => TCKCypherRelationship, CypherString => TCKCypherString, CypherUnorderedList => TCKUnorderedList, CypherValue => TCKCypherValue, Forward => TCKForward}
-
-
 
 object CreateStringGenerator {
   def tckCypherValueToCreateString(value: TCKCypherValue): String = {

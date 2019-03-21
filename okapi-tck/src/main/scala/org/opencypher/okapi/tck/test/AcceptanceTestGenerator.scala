@@ -24,60 +24,28 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.testing
+package org.opencypher.okapi.tck.test
 
 import java.io.{File, PrintWriter}
 
 import org.opencypher.okapi.impl.exception.NotImplementedException
-import org.opencypher.okapi.tck.test.ScenariosFor
-import org.opencypher.spark.testing.CreateStringGenerator._
+import org.opencypher.okapi.tck.test.CreateStringGenerator._
 import org.opencypher.tools.tck.api._
-import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue}
 import org.scalatest.prop.TableFor1
 
 import scala.collection.mutable
 
+case class SpecificNamings(createGraph : String, emptyGraph : String, TestSuite : String, targetPackage: String)
 
-//todo: maybe also ConstructStringGenerator as a parameter (making it replaceable for other use cases)
-//todo: refactor testGenerator into okapi-tck and create instance in CAPS-tck
-object AcceptanceTestGenerator extends App {
-  case class ResultRows(queryResult: String, expected: List[Map[String, TCKCypherValue]])
 
+case class AcceptanceTestGenerator(specificImports: List[String], specificNames : SpecificNamings, addGitIgnore : Boolean) {
   private val escapeStringMarks = "\"\"\""
   private val tabs = "\t\t"
   private val packageNames = Map("white" -> "whiteList", "black" -> "blackList")
 
-  def getScenarios(resDir : String) : ScenariosFor = {
-    val resFiles = new File(resDir).listFiles().map(_.getPath).filterNot(_.contains(".feature"))
-    ScenariosFor(resFiles:_*)
-  }
-
-  //in gradle only "src/test/scala/org/opencypher/spark/testing/" is needed as a path
-  //todo: this part only relevant for sparkAcceptanceTestGenerator (not general gradle task)
-  if (args.isEmpty) {
-    val defaultOutPath = s"spark-cypher-tck/src/test/scala/org/opencypher/spark/testing/"
-    val defaultResDir = s"spark-cypher-tck/src/test/resources"
-    generateAllScenarios(defaultOutPath, defaultResDir)
-  }
-  else {
-    val (path, resDir, scenarioNames) = (args(0), args(1), args(2))
-    if (scenarioNames.nonEmpty)
-      generateGivenScenarios(path, resDir, scenarioNames.split('|'))
-    else
-      generateAllScenarios(path, resDir)
-  }
-
-  private def generateClassFile(featureName: String, scenarios: TableFor1[Scenario], black: Boolean, path: String) = {
+  private def generateClassFile(className: String, scenarios: TableFor1[Scenario], black: Boolean, outDir: File) = {
     val packageName = if (black) packageNames.get("black") else packageNames.get("white")
-    val className = featureName
-    //todo: candidate for class parameter
-    val specificImports =
-      s"""
-         |import org.opencypher.spark.testing.{CAPSTestSuite => TestSuite}
-         |import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory => GraphFactory}
-         |import org.opencypher.spark.impl.graph.{CAPSGraphFactory => EmptyGraphFactory}
-         |import org.opencypher.okapi.api.value.CypherValue._
-      """
+    //renaming to allow generalization of the rest of the code (renaming via Map?
     val classHeader =
       s"""|/*
           | * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
@@ -105,21 +73,22 @@ object AcceptanceTestGenerator extends App {
           | * described as "implementation extensions to Cypher" or as "proposed changes to
           | * Cypher that are not yet approved by the openCypher community".
           | */
-          |package org.opencypher.spark.testing.${packageName.get}
+          |package ${specificNames.targetPackage}.${packageName.get}
           |
           |import org.scalatest.junit.JUnitRunner
           |import org.junit.runner.RunWith
           |import scala.util.{Failure, Success, Try}
+          |import org.opencypher.okapi.api.value.CypherValue._
           |import org.opencypher.okapi.tck.test.CypherToTCKConverter
           |import org.opencypher.tools.tck.api.CypherValueRecords
           |import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, CypherString => TCKCypherString, CypherOrderedList => TCKCypherOrderedList,
           |           CypherNode => TCKCypherNode, CypherRelationship => TCKCypherRelationship, Connection, Forward => TCKForward, Backward => TCKBackward,
           |           CypherInteger => TCKCypherInteger, CypherFloat => TCKCypherFloat, CypherBoolean => TCKCypherBoolean, CypherProperty => TCKCypherProperty,
           |           CypherPropertyMap => TCKCypherPropertyMap, CypherNull => TCKCypherNull, CypherPath => TCKCypherPath}
-          |$specificImports
+          |${specificImports.mkString("\n")}
           |
           |@RunWith(classOf[JUnitRunner])
-          |class $className extends TestSuite{""".stripMargin
+          |class $className extends ${specificNames.TestSuite}{""".stripMargin
 
 
     val testCases = scenarios.map(scenario =>
@@ -127,7 +96,7 @@ object AcceptanceTestGenerator extends App {
       else
         generateTest(scenario, black)).mkString("\n")
 
-    val file = new File(s"$path${packageName.get}/$className.scala")
+    val file = new File(s"$outDir/${packageName.get}/$className.scala")
 
     val fileString =
       s"""$classHeader
@@ -185,6 +154,7 @@ object AcceptanceTestGenerator extends App {
         val relevantEffects = expected.v.filter(_._2 > 0) //check if relevant Side-Effects exist
         if (relevantEffects.nonEmpty)
         //SideEffects not relevant in CAPS
+        //todo for other implementations probably necessary
           s"$tabs fail() //TODO: side effects not handled yet"
         else
           ""
@@ -207,9 +177,8 @@ object AcceptanceTestGenerator extends App {
 
     val execString = stepsToString(execSteps.zipWithIndex)
     val testString =
-    //todo: problematic ... with method calls for other implementations?
       s"""
-         |    val graph = ${if (initSteps.nonEmpty) s"GraphFactory.initGraph($initQuery)" else "EmptyGraphFactory.apply().empty"}
+         |    val graph = ${if (initSteps.nonEmpty) s"${specificNames.createGraph}($initQuery)" else specificNames.emptyGraph}
          |    $execString
        """.stripMargin
 
@@ -232,9 +201,9 @@ object AcceptanceTestGenerator extends App {
   }
 
   //checks if package directories exists clears them or creates new
-  private def setUpDirectories(path: String): Unit = {
+  private def setUpDirectories(outDir: File): Unit = {
     packageNames.values.map(packageName => {
-      val directory = new File(path + packageName)
+      val directory = new File(outDir + "/" + packageName)
       if (directory.exists()) {
         val files = directory.listFiles()
         files.map(_.delete())
@@ -242,7 +211,7 @@ object AcceptanceTestGenerator extends App {
       else {
         directory.mkdir()
       }
-      val gitIgnoreFile = new File(path + packageName + "/.gitignore")
+      val gitIgnoreFile = new File(outDir + "/" + packageName + "/.gitignore")
       val writer = new PrintWriter(gitIgnoreFile)
       writer.println("*")
       writer.close()
@@ -251,29 +220,36 @@ object AcceptanceTestGenerator extends App {
     )
   }
 
-  //generates test-cases for given scenario names
-  def generateGivenScenarios(outPath: String, resDir :String,  keyWords: Array[String] = Array.empty): Unit = {
-    setUpDirectories(resDir)
-    val scenarios = getScenarios(outPath)
-    val wantedWhiteScenarios = scenarios.whiteList.filter(scen => keyWords.map(keyWord => scen.name.contains(keyWord)).reduce(_ || _))
-    val wantedBlackScenarios = scenarios.blackList.filter(scen => keyWords.map(keyWord => scen.name.contains(keyWord)).reduce(_ || _))
-    generateClassFile("specialWhiteCases", wantedWhiteScenarios, black = false, outPath)
-    generateClassFile("specialBlackCases", wantedBlackScenarios, black = true, outPath)
+  private def getScenarios(resDir: File): ScenariosFor = {
+    //todo: only take .txt or files with no suffix?
+    val resFileNames = resDir.listFiles().map(_.getPath).filterNot{case name => name.contains(".feature") || name.contains(".scala") }
+    ScenariosFor(resFileNames: _*)
   }
 
-  def generateAllScenarios(outPath: String, resDir: String): Unit = {
-    setUpDirectories(outPath)
+  //generates test-cases for given scenario names
+  def generateGivenScenarios(outDir: File, resDir: File, keyWords: Array[String] = Array.empty): Unit = {
+    setUpDirectories(outDir)
+    val scenarios = getScenarios(resDir)
+    val wantedWhiteScenarios = scenarios.whiteList.filter(scen => keyWords.map(keyWord => scen.name.contains(keyWord)).reduce(_ || _))
+    val wantedBlackScenarios = scenarios.blackList.filter(scen => keyWords.map(keyWord => scen.name.contains(keyWord)).reduce(_ || _))
+    generateClassFile("specialWhiteCases", wantedWhiteScenarios, black = false, outDir)
+    generateClassFile("specialBlackCases", wantedBlackScenarios, black = true, outDir)
+  }
+
+  def generateAllScenarios(outDir: File, resDir: File): Unit = {
+    setUpDirectories(outDir)
     val scenarios = getScenarios(resDir)
     val blackFeatures = scenarios.blackList.groupBy(_.featureName)
     val whiteFeatures = scenarios.whiteList.groupBy(_.featureName)
     whiteFeatures.map { feature => {
-      generateClassFile(feature._1, feature._2, black = false, outPath)
+      generateClassFile(feature._1, feature._2, black = false, outDir)
     }
     }
 
     blackFeatures.map { feature => {
-      generateClassFile(feature._1, feature._2, black = true, outPath)
+      generateClassFile(feature._1, feature._2, black = true, outDir)
     }
     }
   }
+
 }

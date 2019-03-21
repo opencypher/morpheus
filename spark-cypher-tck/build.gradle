@@ -16,14 +16,14 @@ dependencies {
 task debugTCKScenarios() {
     description 'Generates scala-test from TCK scenarios (keywords of the scenario names suffice)'
     group 'generator' 
-    def outPath = project.findProperty('outPath') ?: 'src/test/scala/org/opencypher/spark/testing/'
-    def resDir = project.findProperty('outPath') ?: 'src/test/resources'
+    def outPath = project.findProperty('outDir') ?: 'src/test/scala/org/opencypher/spark/testing/'
+    def resDir = project.findProperty('resDir') ?: 'src/test/resources/'
     def scenarios = project.findProperty('scenarios') ?: ''
     dependsOn sourceSets.generator.runtimeClasspath
     doLast {
         javaexec {
             classpath =  sourceSets.generator.runtimeClasspath
-            main = 'org.opencypher.spark.testing.AcceptanceTestGenerator'
+            main = 'org.opencypher.spark.testing.CAPSTestGenerator'
             args = [outPath,resDir,scenarios]
         }
     }
