@@ -32,14 +32,17 @@ import java.util.Objects
 import org.opencypher.okapi.api.graph.{CypherSession, PropertyGraph}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue.{CypherDate => OKAPICypherDate, CypherList => OKAPICypherList, CypherLocalDateTime => OKAPICypherLocalDateTime, CypherMap => OKAPICypherMap, CypherNode => OKAPICypherNode, CypherRelationship => OKAPICypherRelationship, CypherString => OKAPICypherString, CypherValue => OKAPICypherValue}
+import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.ir.impl.exception.TypingException
 import org.opencypher.okapi.tck.test.TCKFixture._
 import org.opencypher.okapi.testing.propertygraph.{CreateGraphFactory, CypherTestGraphFactory}
 import org.opencypher.tools.tck.api._
 import org.opencypher.tools.tck.constants.{TCKErrorDetails, TCKErrorPhases, TCKErrorTypes}
-import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, _}
+import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, CypherString => TCKCypherString, CypherList => TCKCypherList, CypherOrderedList => TCKCypherOrderedList,
+  CypherNode => TCKCypherNode, CypherRelationship => TCKCypherRelationship,
+  CypherInteger => TCKCypherInteger, CypherFloat => TCKCypherFloat, CypherBoolean => TCKCypherBoolean, CypherProperty => TCKCypherProperty,
+  CypherPropertyMap => TCKCypherPropertyMap, CypherNull => TCKCypherNull, CypherPath => TCKCypherPath}
 import org.scalatest.Tag
 import org.scalatest.prop.TableDrivenPropertyChecks._
 
@@ -151,15 +154,15 @@ object Tags {
 }
 
 object TckToCypherConverter {
-  def tckValueToCypherValue(cypherValue: TCKCypherValue): OKAPICypherValue = cypherValue match {
-    case CypherString(v) => CypherValue(v)
-    case CypherInteger(v) => CypherValue(v)
-    case CypherFloat(v) => CypherValue(v)
-    case CypherBoolean(v) => CypherValue(v)
-    case CypherProperty(key, value) => OKAPICypherMap(key -> tckValueToCypherValue(value))
-    case CypherPropertyMap(properties) => OKAPICypherMap(properties.mapValues(tckValueToCypherValue))
-    case l: CypherList => OKAPICypherList(l.elements.map(tckValueToCypherValue))
-    case CypherNull => CypherValue(null)
+  def tckValueToCypherValue(cypherValue: TCKCypherValue): CypherValue = cypherValue match {
+    case TCKCypherString(v) => CypherValue(v)
+    case TCKCypherInteger(v) => CypherValue(v)
+    case TCKCypherFloat(v) => CypherValue(v)
+    case TCKCypherBoolean(v) => CypherValue(v)
+    case TCKCypherProperty(key, value) => CypherMap(key -> tckValueToCypherValue(value))
+    case TCKCypherPropertyMap(properties) => CypherMap(properties.mapValues(tckValueToCypherValue))
+    case l: TCKCypherList => CypherList(l.elements.map(tckValueToCypherValue))
+    case TCKCypherNull => CypherValue(null)
     case other =>
       throw NotImplementedException(s"Converting Cypher value $cypherValue of type `${other.getClass.getSimpleName}`")
   }
@@ -169,29 +172,43 @@ object CypherToTCKConverter {
 
   def convertToTckStrings(records: CypherRecords): StringRecords = {
     val header = records.logicalColumns.getOrElse(records.physicalColumns).toList
-    val rows: List[Map[String, String]] = records.collect.map { cypherMap: OKAPICypherMap =>
+    val rows: List[Map[String, String]] = records.collect.map { cypherMap: CypherMap =>
       cypherMap.keys.map(k => k -> cypherMap(k).toTCKString).toMap
     }.toList
     StringRecords(header, rows)
   }
 
-  implicit class RichTCKCypherValue(value: OKAPICypherValue) {
+  implicit class RichTCKCypherValue(value: CypherValue) {
+    //todo: complete list for nodes
+    def toTCKCypherValue : TCKCypherValue = {
+      value match {
+        case CypherNull => TCKCypherNull
+        case CypherString(s) => TCKCypherString(s)
+        case CypherInteger(i) => TCKCypherInteger(i)
+        case CypherFloat(f) => TCKCypherFloat(f)
+        case CypherBoolean(b) => TCKCypherBoolean(b)
+        case CypherList(l) => TCKCypherOrderedList(l.map(_.toTCKCypherValue))
+        case CypherNode(_,labels, props) => TCKCypherNode(labels, TCKCypherPropertyMap(props.value.map{case (key, v) => key -> v.toTCKCypherValue}))
+        case CypherRelationship(_,_,_, rType, props) => TCKCypherRelationship(rType, TCKCypherPropertyMap(props.value.map{case (key, v) => key -> v.toTCKCypherValue}))
+        case x => TCKCypherValue.apply(x.unwrap.toString)
+      }
+    }
 
     def toTCKString: String = {
       value match {
-        case OKAPICypherString(s) => s"'${escape(s)}'"
-        case OKAPICypherList(l) => l.map(_.toTCKString).mkString("[", ", ", "]")
-        case OKAPICypherMap(m) =>
+        case CypherString(s) => s"'${escape(s)}'"
+        case CypherList(l) => l.map(_.toTCKString).mkString("[", ", ", "]")
+        case CypherMap(m) =>
           m.toSeq
             .sortBy(_._1)
             .map { case (k, v) => s"$k: ${v.toTCKString}" }
             .mkString("{", ", ", "}")
-        case OKAPICypherRelationship(_, _, _, relType, props) =>
+        case CypherRelationship(_, _, _, relType, props) =>
           s"[:$relType${
             if (props.isEmpty) ""
             else s" ${props.toTCKString}"
           }]"
-        case OKAPICypherNode(_, labels, props) =>
+        case CypherNode(_, labels, props) =>
           val labelString =
             if (labels.isEmpty) ""
             else labels.toSeq.sorted.mkString(":", ":", "")
@@ -200,9 +217,9 @@ object CypherToTCKConverter {
           Seq(labelString, propertyString)
             .filter(_.nonEmpty)
             .mkString("(", " ", ")")
-        case OKAPICypherDate(date) =>
+        case CypherDate(date) =>
           s"'${DateTimeFormatter.ISO_DATE.format(date)}'"
-        case OKAPICypherLocalDateTime(localDateTime) =>
+        case CypherLocalDateTime(localDateTime) =>
           s"'$localDateTime'"
         case _ => Objects.toString(value)
       }

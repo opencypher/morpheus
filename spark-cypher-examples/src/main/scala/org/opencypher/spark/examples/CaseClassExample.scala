@@ -51,7 +51,9 @@ object CaseClassExample extends App {
   )
 
   // 4) Print result to console
-  results.show
+  val what = socialNetwork.relationships("r").collect.toSet
+
+  "test" < "what"
 }
 
 /**

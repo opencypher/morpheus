@@ -83,7 +83,8 @@ case class AcceptanceTestGenerator(
           |import org.junit.runner.RunWith
           |import scala.util.{Failure, Success, Try}
           |import org.opencypher.okapi.api.value.CypherValue._
-          |import org.opencypher.okapi.tck.test.CypherToTCKConverter
+          |import org.opencypher.okapi.tck.test.CypherToTCKConverter._
+          |import org.opencypher.tools.tck.SideEffectOps.{Diff, State}
           |import org.opencypher.tools.tck.api.CypherValueRecords
           |import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, CypherString => TCKCypherString, CypherOrderedList => TCKCypherOrderedList,
           |           CypherNode => TCKCypherNode, CypherRelationship => TCKCypherRelationship, Connection, Forward => TCKForward, Backward => TCKBackward,
@@ -120,6 +121,7 @@ case class AcceptanceTestGenerator(
   private def stepsToString(steps: List[(Step, Int)]): String = {
     val contextExecQueryStack = mutable.Stack[Int]()
     val contextParameterStepNrs = mutable.Stack[Int]()
+    val contextGraphState = mutable.Stack[Int]()
 
     steps.map {
       case (Parameters(p, _), stepNr) => contextParameterStepNrs.push(stepNr)
@@ -141,7 +143,7 @@ case class AcceptanceTestGenerator(
         val equalMethod = if (sorted) "equals" else "equalsUnordered"
 
         s"""
-           |    val result${resultNumber}ValueRecords = CypherToTCKConverter.convertToTckStrings(result$resultNumber.records).asValueRecords
+           |    val result${resultNumber}ValueRecords = convertToTckStrings(result$resultNumber.records).asValueRecords
            |    val expected${resultNumber}ValueRecords = CypherValueRecords(List(${expectedResult.header.map(escapeString).mkString(",")}),
            |      List(${expectedResult.rows.map(tckCypherMapToTCKCreateString).mkString(s", \n$tabs$tabs$tabs")}))
            |    result${resultNumber}ValueRecords.$equalMethod(expected${resultNumber}ValueRecords)
@@ -154,14 +156,29 @@ case class AcceptanceTestGenerator(
            |$tabs val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{result$stepNumber}
            """.stripMargin
 
-      case (SideEffects(expected, _), _) =>
+      case (SideEffects(expected, _), stepNr) =>
         val relevantEffects = expected.v.filter(_._2 > 0) //check if relevant Side-Effects exist
+        val contextStep = contextGraphState.head
         if (relevantEffects.nonEmpty)
         //SideEffects not relevant in CAPS
-        //todo for other implementations probably necessary
-          s"$tabs fail() //TODO: side effects not handled yet"
+        //todo: handle properties and check? (make it optional via boolean)
+          s"""
+             |    val labels$stepNr = graph.schema.labels.map(TCKCypherString).asInstanceOf[Set[TCKCypherValue]]
+             |    val nodes$stepNr = graph.nodes("n").collect.map(m => m.value.values.toList.head.toTCKCypherValue).toSet
+             |    val relationships$stepNr = graph.relationships("n").collect.map(m => m.value.values.toList.head.toTCKCypherValue).toSet
+             |    val afterState$contextStep = State(labels$stepNr,nodes$stepNr, relationships$stepNr)
+             |    (beforeState$contextStep diff afterState$contextStep) shouldEqual ${diffToCreateString(expected)}
+           """.stripMargin
         else
           ""
+      case (x: Measure, stepNr) =>
+        contextGraphState.push(stepNr)
+          s"""
+             |    val labels$stepNr = graph.schema.labels.map(TCKCypherString).asInstanceOf[Set[TCKCypherValue]]
+             |    val nodes$stepNr = graph.nodes("n").collect.map(m => m.value.values.toList.head.toTCKCypherValue).toSet
+             |    val relationships$stepNr = graph.relationships("n").collect.map(m => m.value.values.toList.head.toTCKCypherValue).toSet
+             |    val beforeState$stepNr = State(labels$stepNr,nodes$stepNr, relationships$stepNr)
+           """.stripMargin
       case _ => ""
     }.filter(_.nonEmpty).mkString(s"\n$tabs")
   }

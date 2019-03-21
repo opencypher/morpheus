@@ -31,6 +31,7 @@ import org.apache.commons.lang3.StringEscapeUtils
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.tck.test.TckToCypherConverter.tckValueToCypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherList => OKAPICypherList, CypherMap => OKAPICypherMap, CypherNull => OKAPICypherNull, CypherString => OKAPICypherString, CypherValue => OKAPICypherValue}
+import org.opencypher.tools.tck.SideEffectOps.Diff
 import org.opencypher.tools.tck.values.{Backward => TCKBackward, CypherBoolean => TCKCypherBoolean, CypherFloat => TCKCypherFloat, CypherInteger => TCKCypherInteger, CypherList => TCKCypherList, CypherNode => TCKCypherNode, CypherNull => TCKCypherNull, CypherOrderedList => TCKCypherOrderedList, CypherPath => TCKCypherPath, CypherProperty => TCKCypherProperty, CypherPropertyMap => TCKCypherPropertyMap, CypherRelationship => TCKCypherRelationship, CypherString => TCKCypherString, CypherUnorderedList => TCKUnorderedList, CypherValue => TCKCypherValue, Forward => TCKForward}
 
 object CreateStringGenerator {
@@ -90,6 +91,10 @@ object CreateStringGenerator {
       case (key, tckCypherValue) => escapeString(key) -> cypherValueToCreateString(tckValueToCypherValue(tckCypherValue))
     }
     s"CypherMap(${mapElementsString.mkString(",")})"
+  }
+
+  def diffToCreateString(diff : Diff): String = {
+    s"Diff(Map(${diff.v.map{case (s,i) => escapeString(s) -> i}.mkString(",")}))"
   }
 
   def escapeString(s: String): String = {
