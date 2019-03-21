@@ -35,10 +35,14 @@ import org.scalatest.prop.TableFor1
 
 import scala.collection.mutable
 
-case class SpecificNamings(createGraph : String, emptyGraph : String, TestSuite : String, targetPackage: String)
+case class SpecificNamings(createGraph: String, emptyGraph: String, TestSuite: String, targetPackage: String)
 
-
-case class AcceptanceTestGenerator(specificImports: List[String], specificNames : SpecificNamings, addGitIgnore : Boolean) {
+//todo: do side-effects !(needs measure step to be considered) (before and after query vals)
+case class AcceptanceTestGenerator(
+  specificImports: List[String],
+  specificNames: SpecificNamings,
+  addGitIgnore: Boolean
+) {
   private val escapeStringMarks = "\"\"\""
   private val tabs = "\t\t"
   private val packageNames = Map("white" -> "whiteList", "black" -> "blackList")
@@ -145,7 +149,7 @@ case class AcceptanceTestGenerator(specificImports: List[String], specificNames 
       case (ExpectError(errorType, errorPhase, detail, _), _) =>
         val stepNumber = contextExecQueryStack.head
         //todo: check for errorType and detail (when corresponding errors exist in CAPS like SyntaxError, TypeError, ParameterMissing, ...)
-        //todo: maybe check if they get imported?
+        //todo: maybe check if they get imported? (or modify specificNamings case class with optional parameter
         s"""
            |$tabs val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{result$stepNumber}
            """.stripMargin
@@ -202,43 +206,44 @@ case class AcceptanceTestGenerator(specificImports: List[String], specificNames 
 
   //checks if package directories exists clears them or creates new
   private def setUpDirectories(outDir: File): Unit = {
-    packageNames.values.map(packageName => {
-      val directory = new File(outDir + "/" + packageName)
-      if (directory.exists()) {
-        val files = directory.listFiles()
-        files.map(_.delete())
+    if (outDir.exists() || outDir.mkdir())
+      packageNames.values.map(packageName => {
+        val directory = new File(outDir + "/" + packageName)
+        if (directory.exists()) {
+          val files = directory.listFiles()
+          files.map(_.delete())
+        }
+        else {
+          directory.mkdir()
+        }
+        val gitIgnoreFile = new File(outDir + "/" + packageName + "/.gitignore")
+        val writer = new PrintWriter(gitIgnoreFile)
+        writer.println("*")
+        writer.close()
+        gitIgnoreFile.createNewFile()
       }
-      else {
-        directory.mkdir()
-      }
-      val gitIgnoreFile = new File(outDir + "/" + packageName + "/.gitignore")
-      val writer = new PrintWriter(gitIgnoreFile)
-      writer.println("*")
-      writer.close()
-      gitIgnoreFile.createNewFile()
-    }
-    )
+      )
   }
 
-  private def getScenarios(resDir: File): ScenariosFor = {
+  private def getScenarios(resFiles: Array[File]): ScenariosFor = {
     //todo: only take .txt or files with no suffix?
-    val resFileNames = resDir.listFiles().map(_.getPath).filterNot{case name => name.contains(".feature") || name.contains(".scala") }
+    val resFileNames = resFiles.map(_.getPath).filterNot { case name => name.contains(".feature") || name.contains(".scala") }
     ScenariosFor(resFileNames: _*)
   }
 
   //generates test-cases for given scenario names
-  def generateGivenScenarios(outDir: File, resDir: File, keyWords: Array[String] = Array.empty): Unit = {
+  def generateGivenScenarios(outDir: File, resFiles: Array[File], keyWords: Array[String] = Array.empty): Unit = {
     setUpDirectories(outDir)
-    val scenarios = getScenarios(resDir)
+    val scenarios = getScenarios(resFiles)
     val wantedWhiteScenarios = scenarios.whiteList.filter(scen => keyWords.map(keyWord => scen.name.contains(keyWord)).reduce(_ || _))
     val wantedBlackScenarios = scenarios.blackList.filter(scen => keyWords.map(keyWord => scen.name.contains(keyWord)).reduce(_ || _))
     generateClassFile("specialWhiteCases", wantedWhiteScenarios, black = false, outDir)
     generateClassFile("specialBlackCases", wantedBlackScenarios, black = true, outDir)
   }
 
-  def generateAllScenarios(outDir: File, resDir: File): Unit = {
+  def generateAllScenarios(outDir: File, resFiles: Array[File]): Unit = {
     setUpDirectories(outDir)
-    val scenarios = getScenarios(resDir)
+    val scenarios = getScenarios(resFiles)
     val blackFeatures = scenarios.blackList.groupBy(_.featureName)
     val whiteFeatures = scenarios.whiteList.groupBy(_.featureName)
     whiteFeatures.map { feature => {

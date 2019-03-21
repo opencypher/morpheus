@@ -40,21 +40,21 @@ object CAPSTestGenerator extends App {
 
   if (args.isEmpty) {
     val defaultOutDir = new File("spark-cypher-tck/src/test/scala/org/opencypher/spark/testing/")
-    val defaultResDir = new File("spark-cypher-tck/src/test/resources/")
-    generator.generateAllScenarios(defaultOutDir, defaultResDir)
+    val defaultResFiles = new File("spark-cypher-tck/src/test/resources/").listFiles()
+    generator.generateAllScenarios(defaultOutDir, defaultResFiles)
   }
-    //parameter names specified in gradle task
   else {
-    val (outDir, resDir) = (new File(args(0)), new File(args(1)))
+    //parameter names specified in gradle task
+    val (outDir, resFiles) = (new File(args(0)), Option(new File(args(1)).listFiles()))
 
-    //todo: scala way? (option was seemed to much overhead)
-    if (!outDir.exists()) throw IllegalArgumentException("target Directory does not exist")
-    if (!resDir.exists()) throw IllegalArgumentException("resource Dir does not exist")
-
-    val scenarioNames = args(2)
-    if (scenarioNames.nonEmpty)
-      generator.generateGivenScenarios(outDir, resDir, scenarioNames.split('|'))
-    else
-      generator.generateAllScenarios(outDir, resDir)
+    resFiles match {
+      case Some(files) =>
+        val scenarioNames = args(2)
+        if (scenarioNames.nonEmpty)
+          generator.generateGivenScenarios(outDir, files, scenarioNames.split('|'))
+        else
+          generator.generateAllScenarios(outDir, files)
+      case None => throw IllegalArgumentException("resource Dir does not exist")
+    }
   }
 }
