@@ -37,10 +37,11 @@ import scala.collection.mutable
 
 case class SpecificNamings(createGraph: String, emptyGraph: String, TestSuite: String, targetPackage: String)
 
-//todo: do side-effects !(needs measure step to be considered) (before and after query vals)
+//SideEffects not relevant in CAPS
 case class AcceptanceTestGenerator(
   specificImports: List[String],
   specificNames: SpecificNamings,
+  checkSideEffects: Boolean = false,
   addGitIgnore: Boolean
 ) {
   private val escapeStringMarks = "\"\"\""
@@ -84,8 +85,10 @@ case class AcceptanceTestGenerator(
           |import scala.util.{Failure, Success, Try}
           |import org.opencypher.okapi.api.value.CypherValue._
           |import org.opencypher.okapi.tck.test.CypherToTCKConverter._
-          |import org.opencypher.tools.tck.SideEffectOps.{Diff, State}
+          |import org.opencypher.okapi.tck.test.TCKGraph
+          |import org.opencypher.tools.tck.SideEffectOps.Diff
           |import org.opencypher.tools.tck.api.CypherValueRecords
+          |import org.opencypher.tools.tck.SideEffectOps
           |import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, CypherString => TCKCypherString, CypherOrderedList => TCKCypherOrderedList,
           |           CypherNode => TCKCypherNode, CypherRelationship => TCKCypherRelationship, Connection, Forward => TCKForward, Backward => TCKBackward,
           |           CypherInteger => TCKCypherInteger, CypherFloat => TCKCypherFloat, CypherBoolean => TCKCypherBoolean, CypherProperty => TCKCypherProperty,
@@ -96,10 +99,8 @@ case class AcceptanceTestGenerator(
           |class $className extends ${specificNames.TestSuite}{""".stripMargin
 
 
-    val testCases = scenarios.map(scenario =>
-      if (scenario.name.equals("Failing on incorrect unicode literal")) "" //this fails at scala-compilation
-      else
-        generateTest(scenario, black)).mkString("\n")
+    val testCases = scenarios.filterNot(_.name.equals("Failing on incorrect unicode literal"))
+      .map(scenario => generateTest(scenario, black)).mkString("\n")
 
     val file = new File(s"$outDir/${packageName.get}/$className.scala")
 
@@ -157,28 +158,23 @@ case class AcceptanceTestGenerator(
            """.stripMargin
 
       case (SideEffects(expected, _), stepNr) =>
-        val relevantEffects = expected.v.filter(_._2 > 0) //check if relevant Side-Effects exist
-        val contextStep = contextGraphState.head
-        if (relevantEffects.nonEmpty)
-        //SideEffects not relevant in CAPS
-        //todo: handle properties and check? (make it optional via boolean)
-          s"""
-             |    val labels$stepNr = graph.schema.labels.map(TCKCypherString).asInstanceOf[Set[TCKCypherValue]]
-             |    val nodes$stepNr = graph.nodes("n").collect.map(m => m.value.values.toList.head.toTCKCypherValue).toSet
-             |    val relationships$stepNr = graph.relationships("n").collect.map(m => m.value.values.toList.head.toTCKCypherValue).toSet
-             |    val afterState$contextStep = State(labels$stepNr,nodes$stepNr, relationships$stepNr)
-             |    (beforeState$contextStep diff afterState$contextStep) shouldEqual ${diffToCreateString(expected)}
+        if (checkSideEffects) {
+          val relevantEffects = expected.v.filter(_._2 > 0) //check if relevant Side-Effects exist
+          val contextStep = contextGraphState.head
+          if (relevantEffects.nonEmpty)
+            s"""
+               |    val afterState$contextStep = SideEffectOps.measureState(TCKGraph(CAPSScanGraphFactory,graph))
+               |    (beforeState$contextStep diff afterState$contextStep) shouldEqual ${diffToCreateString(expected)}
            """.stripMargin
-        else
-          ""
+          else ""
+        }
+        else ""
       case (x: Measure, stepNr) =>
-        contextGraphState.push(stepNr)
-          s"""
-             |    val labels$stepNr = graph.schema.labels.map(TCKCypherString).asInstanceOf[Set[TCKCypherValue]]
-             |    val nodes$stepNr = graph.nodes("n").collect.map(m => m.value.values.toList.head.toTCKCypherValue).toSet
-             |    val relationships$stepNr = graph.relationships("n").collect.map(m => m.value.values.toList.head.toTCKCypherValue).toSet
-             |    val beforeState$stepNr = State(labels$stepNr,nodes$stepNr, relationships$stepNr)
-           """.stripMargin
+        if (checkSideEffects) {
+          contextGraphState.push(stepNr)
+          s"val beforeState$stepNr = SideEffectOps.measureState(TCKGraph(CAPSScanGraphFactory,graph))"
+        }
+        else ""
       case _ => ""
     }.filter(_.nonEmpty).mkString(s"\n$tabs")
   }

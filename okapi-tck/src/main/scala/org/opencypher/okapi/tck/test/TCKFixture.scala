@@ -179,21 +179,6 @@ object CypherToTCKConverter {
   }
 
   implicit class RichTCKCypherValue(value: CypherValue) {
-    //todo: complete list for nodes
-    def toTCKCypherValue : TCKCypherValue = {
-      value match {
-        case CypherNull => TCKCypherNull
-        case CypherString(s) => TCKCypherString(s)
-        case CypherInteger(i) => TCKCypherInteger(i)
-        case CypherFloat(f) => TCKCypherFloat(f)
-        case CypherBoolean(b) => TCKCypherBoolean(b)
-        case CypherList(l) => TCKCypherOrderedList(l.map(_.toTCKCypherValue))
-        case CypherNode(_,labels, props) => TCKCypherNode(labels, TCKCypherPropertyMap(props.value.map{case (key, v) => key -> v.toTCKCypherValue}))
-        case CypherRelationship(_,_,_, rType, props) => TCKCypherRelationship(rType, TCKCypherPropertyMap(props.value.map{case (key, v) => key -> v.toTCKCypherValue}))
-        case x => TCKCypherValue.apply(x.unwrap.toString)
-      }
-    }
-
     def toTCKString: String = {
       value match {
         case CypherString(s) => s"'${escape(s)}'"
