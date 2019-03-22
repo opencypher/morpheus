@@ -34,8 +34,9 @@ import org.opencypher.okapi.tck.test.{AcceptanceTestGenerator, SpecificNamings}
 object CAPSTestGenerator extends App {
   val imports = List("import org.opencypher.spark.testing.CAPSTestSuite",
     "import org.opencypher.spark.testing.support.creation.caps.CAPSScanGraphFactory")
-  val renamings = SpecificNamings("CAPSScanGraphFactory.initGraph", "CAPSScanGraphFactory.apply(InMemoryTestGraph.empty)", "CAPSTestSuite", "org.opencypher.spark.testing")
-  val generator = AcceptanceTestGenerator(imports, renamings, addGitIgnore = true)
+  val renamings = SpecificNamings("CAPSScanGraphFactory", "initGraph", "apply(InMemoryTestGraph.empty)",
+    "CAPSTestSuite", "org.opencypher.spark.testing")
+  val generator = AcceptanceTestGenerator(imports, renamings, addGitIgnore = true, checkSideEffects = false)
 
   if (args.isEmpty) {
     val defaultOutDir = new File("spark-cypher-tck/src/test/scala/org/opencypher/spark/testing/")

@@ -35,13 +35,19 @@ import org.scalatest.prop.TableFor1
 
 import scala.collection.mutable
 
-case class SpecificNamings(createGraph: String, emptyGraph: String, TestSuite: String, targetPackage: String)
+case class SpecificNamings(
+  graphFactory: String,
+  createGraphMethod: String,
+  emptyGraphMethod: String,
+  TestSuite: String,
+  targetPackage: String
+)
 
 //SideEffects not relevant in CAPS
 case class AcceptanceTestGenerator(
   specificImports: List[String],
   specificNames: SpecificNamings,
-  checkSideEffects: Boolean = false,
+  checkSideEffects: Boolean,
   addGitIgnore: Boolean
 ) {
   private val escapeStringMarks = "\"\"\""
@@ -158,23 +164,22 @@ case class AcceptanceTestGenerator(
            |$tabs val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{result$stepNumber}
            """.stripMargin
 
-      case (SideEffects(expected, _), stepNr) =>
-        if (checkSideEffects) {
-          val relevantEffects = expected.v.filter(_._2 > 0) //check if relevant Side-Effects exist
+      case (SideEffects(expected, _), _) =>
+        val relevantSideEffects = expected.v.filter(_._2 > 0)
+        if(checkSideEffects)
+         {
           val contextStep = contextGraphState.head
-          if (relevantEffects.nonEmpty)
-            s"""
-               |    val afterState$contextStep = SideEffectOps.measureState(TCKGraph(CAPSScanGraphFactory,graph))
-               |    (beforeState$contextStep diff afterState$contextStep) shouldEqual ${diffToCreateString(expected)}
+          s"""
+             |    val afterState$contextStep = SideEffectOps.measureState(TCKGraph(${specificNames.graphFactory},graph))
+             |    (beforeState$contextStep diff afterState$contextStep) shouldEqual ${diffToCreateString(expected)}
            """.stripMargin
-          else ""
         }
+        else if(relevantSideEffects.nonEmpty) s"fail //due to ${relevantSideEffects.mkString(" ")} sideEffects expected"
         else ""
-      case (x: Measure, stepNr) =>
+      case (_: Measure, stepNr) =>
         if (checkSideEffects) {
           contextGraphState.push(stepNr)
-          s"val beforeState$stepNr = SideEffectOps.measureState(TCKGraph(CAPSScanGraphFactory,graph))"
-        }
+          s"val beforeState$stepNr = SideEffectOps.measureState(TCKGraph(CAPSScanGraphFactory,graph))" }
         else ""
       case _ => ""
     }.filter(_.nonEmpty).mkString(s"\n$tabs")
@@ -196,7 +201,10 @@ case class AcceptanceTestGenerator(
     val execString = stepsToString(execSteps.zipWithIndex)
     val testString =
       s"""
-         |    val graph = ${if (initSteps.nonEmpty) s"${specificNames.createGraph}($initQuery)" else specificNames.emptyGraph}
+         |    val graph = ${
+        if (initSteps.nonEmpty) s"${specificNames.graphFactory}.${specificNames.createGraphMethod}($initQuery)"
+        else specificNames.graphFactory + '.' + specificNames.emptyGraphMethod
+      }
          |    $execString
        """.stripMargin
 
