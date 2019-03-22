@@ -84,6 +84,7 @@ case class AcceptanceTestGenerator(
           |import org.junit.runner.RunWith
           |import scala.util.{Failure, Success, Try}
           |import org.opencypher.okapi.api.value.CypherValue._
+          |import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
           |import org.opencypher.okapi.tck.test.CypherToTCKConverter._
           |import org.opencypher.okapi.tck.test.TCKGraph
           |import org.opencypher.tools.tck.SideEffectOps.Diff
