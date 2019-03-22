@@ -154,7 +154,7 @@ case class AcceptanceTestGenerator(
            |    val result${resultNumber}ValueRecords = convertToTckStrings(result$resultNumber.records).asValueRecords
            |    val expected${resultNumber}ValueRecords = CypherValueRecords(List(${expectedResult.header.map(escapeString).mkString(",")}),
            |      List(${expectedResult.rows.map(tckCypherMapToTCKCreateString).mkString(s", \n$tabs$tabs$tabs")}))
-           |    result${resultNumber}ValueRecords.$equalMethod(expected${resultNumber}ValueRecords)
+           |    result${resultNumber}ValueRecords.$equalMethod(expected${resultNumber}ValueRecords) shouldBe true
            """.stripMargin
       case (ExpectError(errorType, errorPhase, detail, _), _) =>
         val stepNumber = contextExecQueryStack.head
@@ -166,20 +166,20 @@ case class AcceptanceTestGenerator(
 
       case (SideEffects(expected, _), _) =>
         val relevantSideEffects = expected.v.filter(_._2 > 0)
-        if(checkSideEffects)
-         {
+        if (checkSideEffects) {
           val contextStep = contextGraphState.head
           s"""
              |    val afterState$contextStep = SideEffectOps.measureState(TCKGraph(${specificNames.graphFactory},graph))
              |    (beforeState$contextStep diff afterState$contextStep) shouldEqual ${diffToCreateString(expected)}
            """.stripMargin
         }
-        else if(relevantSideEffects.nonEmpty) s"fail //due to ${relevantSideEffects.mkString(" ")} sideEffects expected"
+        else if (relevantSideEffects.nonEmpty) s"fail //due to ${relevantSideEffects.mkString(" ")} sideEffects expected"
         else ""
       case (_: Measure, stepNr) =>
         if (checkSideEffects) {
           contextGraphState.push(stepNr)
-          s"val beforeState$stepNr = SideEffectOps.measureState(TCKGraph(CAPSScanGraphFactory,graph))" }
+          s"val beforeState$stepNr = SideEffectOps.measureState(TCKGraph(CAPSScanGraphFactory,graph))"
+        }
         else ""
       case _ => ""
     }.filter(_.nonEmpty).mkString(s"\n$tabs")
@@ -208,13 +208,18 @@ case class AcceptanceTestGenerator(
          |    $execString
        """.stripMargin
 
+    val expectsError = scenario.steps.exists {
+      case _: ExpectError => true
+      case _ => false
+    }
+
     if (black)
       s"""  it("${scenario.name}") {
          |    Try({
          |     ${testString.replaceAll("\n    ", "\n     ")}
          |    }) match{
          |      case Success(_) =>
-         |        throw new RuntimeException(s"A blacklisted scenario may work (cases with expected error probably are false-positives)")
+         |        throw new RuntimeException("${if(expectsError) "False-positive as probably wrong error" else "A blacklisted scenario works"}")
          |      case Failure(_) =>
          |    }
          |   }
@@ -249,7 +254,7 @@ case class AcceptanceTestGenerator(
 
   private def getScenarios(resFiles: Array[File]): ScenariosFor = {
     //todo: only take .txt or files with no suffix?
-    val resFileNames = resFiles.map(_.getPath).filterNot { case name => name.contains(".feature") || name.contains(".scala") }
+    val resFileNames = resFiles.map(_.getPath).filterNot(name => name.contains(".feature") || name.contains(".scala"))
     ScenariosFor(resFileNames: _*)
   }
 
