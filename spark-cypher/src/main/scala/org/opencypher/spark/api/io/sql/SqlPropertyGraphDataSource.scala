@@ -28,13 +28,14 @@ package org.opencypher.spark.api.io.sql
 
 import java.net.URI
 
-import org.apache.spark.sql.{DataFrame, DataFrameReader, functions}
+import org.apache.spark.sql.types.{DataType, IntegerType, LongType}
+import org.apache.spark.sql.{Column, DataFrame, DataFrameReader, functions}
 import org.opencypher.graphddl.GraphDdl.PropertyMappings
 import org.opencypher.graphddl._
-import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
+import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.schema.Schema
-import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CTVoid, CypherType}
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
@@ -42,13 +43,16 @@ import org.opencypher.spark.api.io.AbstractPropertyGraphDataSource._
 import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io._
+import org.opencypher.spark.api.io.sql.GraphDdlConversions._
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy._
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.{File, Hive, Jdbc}
+import org.opencypher.spark.impl.CAPSFunctions
+import org.opencypher.spark.impl.convert.SparkConversions._
+import org.opencypher.spark.impl.expressions.EncodeLong._
 import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
-import GraphDdlConversions._
 
 import scala.reflect.io.Path
 
@@ -131,7 +135,9 @@ case class SqlPropertyGraphDataSource (
       CAPSEntityTable.create(normalizedMapping, normalizedDf)
     }
 
-    caps.graphs.create(Some(schema), nodeTables.head, nodeTables.tail ++ relationshipTables: _*)
+    val patternTables = extractNodeRelPatterns(ddlGraph, schema, idGenerationStrategy)
+
+    caps.graphs.create(Some(schema), nodeTables.head, nodeTables.tail ++ relationshipTables ++ patternTables: _*)
   }
 
   private def readTable(viewId: ViewId): DataFrame = {
@@ -149,6 +155,7 @@ case class SqlPropertyGraphDataSource (
       case file: File => readFile(viewId, file)
     }
 
+    //TODO do we need that??
     inputTable.safeRenameColumns(inputTable.columns.map(col => col -> col.toPropertyColumnName).toMap)
   }
 
@@ -322,6 +329,130 @@ case class SqlPropertyGraphDataSource (
         case _: EdgeViewKey => dataFrame.columns.toList
       }
       elementViewKey -> createIdForTable(dataFrame, elementViewKey, idColumnNames, newIdColumn, strategy, schema)
+    }
+  }
+
+
+  private def extractNodeRelPatterns(ddlGraph: Graph, schema: Schema, strategy: IdGenerationStrategy): Seq[CAPSEntityTable] = {
+    ddlGraph.edgeToViewMappings
+      .filter(evm => evm.view == evm.startNode.nodeViewKey.viewId)
+      .map(evm => evm -> readTable(evm.view))
+      .map {
+        case(evm, df) =>
+          val nodeViewKey = evm.startNode.nodeViewKey
+          val nodeViewMapping = ddlGraph.nodeToViewMappings(nodeViewKey)
+
+          val nodeIdColumn = generateNodeIdColumn(nodeViewKey, df, strategy, schema, ddlGraph)
+          val nodeProperties = generatePropertyColumns(nodeViewMapping, df, ddlGraph, schema)
+          val nodePropertyColumns = nodeProperties.map { case (_, _, col) => col }
+
+          val relSourceIdKey = "rel_" + sourceIdKey
+          val relIdColumn = generateIdColumn(df, evm.key, df.columns.toList, relSourceIdKey, strategy, schema)
+          val relSourceIdColumn = nodeIdColumn.as(sourceStartNodeKey)
+          val relTargetIdColumn = generateIdColumn(df, evm.endNode.nodeViewKey, evm.endNode.joinPredicates.map(_.edgeColumn.toPropertyColumnName), sourceEndNodeKey, strategy, schema)
+          val relProperties = generatePropertyColumns(evm, df, ddlGraph, schema)
+          val relPropertyColumns = relProperties.map { case (_, _, col) => col }
+
+
+          val patternColumns = Set(nodeIdColumn) ++ nodePropertyColumns ++ Set(relIdColumn, relSourceIdColumn, relTargetIdColumn) ++ relPropertyColumns
+          val patternDf = df.select(patternColumns.toSeq: _*)
+          val pattern = NodeRelPattern(CTNode(nodeViewMapping.nodeType.labels), CTRelationship(evm.relType.labels))
+          val patternMapping = EntityMapping(
+            pattern,
+            Map(
+              pattern.nodeEntity -> nodeProperties.map { case (property, columnName, _) => property -> columnName}.toMap,
+              pattern.relEntity -> relProperties.map { case (property, columnName, _) => property -> columnName}.toMap
+            ),
+            Map(
+              pattern.nodeEntity -> Map(SourceIdKey -> sourceIdKey),
+              pattern.relEntity -> Map(SourceIdKey -> relSourceIdKey, SourceStartNodeKey -> sourceStartNodeKey, SourceEndNodeKey -> sourceEndNodeKey)
+            )
+          )
+
+          CAPSEntityTable.create(patternMapping, patternDf)
+      }
+  }
+
+  private def generatePropertyColumns(
+    mapping: ElementToViewMapping,
+    df: DataFrame,
+    ddlGraph: Graph,
+    schema: Schema
+  ) = {
+
+    val viewKey = mapping.key
+
+    val elementTypes = viewKey match {
+      case n: NodeViewKey => n.nodeType.labels
+      case r: EdgeViewKey => r.relType.labels
+    }
+
+    def getTargetType(elementTypes: Set[String], property: String): DataType = {
+      val maybeCT = viewKey match {
+        case _: NodeViewKey => schema.nodePropertyKeyType(elementTypes, property)
+        case _: EdgeViewKey => schema.relationshipPropertyKeyType(elementTypes, property)
+      }
+
+      maybeCT.getOrElse(CTVoid).getSparkType
+    }
+
+    val propertyMappings = mapping.propertyMappings
+
+    propertyMappings.map {
+      case (property, colName) =>
+        val sourceColumn = df.col(colName.toPropertyColumnName)
+        val sourceType = df.schema.apply(colName.toPropertyColumnName).dataType
+        val targetType = getTargetType(elementTypes, property)
+
+        val withCorrectType = (sourceType, targetType) match {
+          case (IntegerType, LongType) => sourceColumn.cast(targetType)
+          case _ if sourceType == targetType => sourceColumn
+          case other => ??? // TODO throw exception
+        }
+
+        (property, property.toPropertyColumnName, withCorrectType.as(property.toPropertyColumnName))
+    }
+  }
+
+  private def generateNodeIdColumn(
+    nodeViewKey: NodeViewKey,
+    df: DataFrame,
+    strategy: IdGenerationStrategy,
+    schema: Schema,
+    ddlGraph: Graph
+  ) = {
+    val inputNodeIdColumns = ddlGraph.nodeIdColumnsFor(nodeViewKey) match {
+      case Some(columnNames) => columnNames.map(_.toPropertyColumnName)
+      case None => df.columns.toList
+    }
+
+    generateIdColumn(df, nodeViewKey, inputNodeIdColumns, sourceIdKey, strategy, schema)
+  }
+
+  private def generateIdColumn(
+    dataFrame: DataFrame,
+    elementViewKey: ElementViewKey,
+    idColumnNames: List[String],
+    newIdColumn: String,
+    strategy: IdGenerationStrategy,
+    schema: Schema
+  ): Column = {
+    val idColumns = idColumnNames.map(dataFrame.col)
+    strategy match {
+      case HashedId =>
+        val viewLiteral = functions.lit(elementViewKey.viewId.parts.mkString("."))
+        val elementTypeLiterals = elementViewKey.elementType.toSeq.sorted.map(functions.lit)
+        val columnsToHash = Seq(viewLiteral) ++ elementTypeLiterals ++ idColumns
+        CAPSFunctions.hash64(columnsToHash: _*).encodeLongAsCAPSId(newIdColumn)
+      case SerializedId =>
+        val typeToId: Map[List[String], Int] =
+          (schema.labelCombinations.combos.map(_.toList.sorted) ++ schema.relationshipTypes.map(List(_)))
+            .toList
+            .sortBy(s => s.mkString)
+            .zipWithIndex.toMap
+        val elementTypeToIntegerId = typeToId(elementViewKey.elementType.toList.sorted)
+        val columnsToSerialize = functions.lit(elementTypeToIntegerId) :: idColumns
+        CAPSFunctions.serialize(columnsToSerialize: _*).as(newIdColumn)
     }
   }
 
