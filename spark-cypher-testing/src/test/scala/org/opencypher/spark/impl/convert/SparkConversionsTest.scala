@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.testing.impl.convert
+package org.opencypher.spark.impl.convert
 
 import org.apache.spark.sql.types._
 import org.opencypher.okapi.api.types._
@@ -33,7 +33,6 @@ import org.opencypher.spark.impl.convert.SparkConversions._
 
 class SparkConversionsTest extends BaseTestSuite {
 
-  //TODO: tests fail here, without change, do they run?
   it("should produce the correct StructField for non-nested types") {
     CTInteger.toStructField("foo") should equal(StructField("foo", LongType, nullable = false))
     CTIntegerOrNull.toStructField("foo") should equal(StructField("foo", LongType, nullable = true))
