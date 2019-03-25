@@ -40,6 +40,9 @@ import scala.language.higherKinds
 
 object GraphDdl {
 
+  /**
+    * Type definition for a mapping from property name to source column name
+    */
   type PropertyMappings = Map[String, String]
 
   def apply(ddl: String): GraphDdl =
@@ -584,14 +587,17 @@ case class ViewId(maybeSetSchema: Option[SetSchemaDefinition], parts: List[Strin
   }
 }
 
-sealed trait ElementToViewMapping
+sealed trait ElementToViewMapping {
+  def key: ElementViewKey
+  def propertyMappings: PropertyMappings
+}
 
 case class NodeToViewMapping(
   nodeType: NodeType,
   view: ViewId,
-  propertyMappings: PropertyMappings
+  override val propertyMappings: PropertyMappings
 ) extends ElementToViewMapping {
-  def key: NodeViewKey = NodeViewKey(nodeType, view)
+  override def key: NodeViewKey = NodeViewKey(nodeType, view)
 }
 
 case class EdgeToViewMapping(
@@ -599,9 +605,9 @@ case class EdgeToViewMapping(
   view: ViewId,
   startNode: StartNode,
   endNode: EndNode,
-  propertyMappings: PropertyMappings
+  override val propertyMappings: PropertyMappings
 ) extends ElementToViewMapping {
-  def key: EdgeViewKey = EdgeViewKey(relType, view)
+  override def key: EdgeViewKey = EdgeViewKey(relType, view)
 
   def startNodeJoinColumns: List[String] = startNode.joinPredicates.map(_.nodeColumn)
 
