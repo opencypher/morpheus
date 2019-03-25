@@ -35,16 +35,76 @@ import org.scalatest.junit.JUnitRunner
 @RunWith(classOf[JUnitRunner])
 class BigDecimalTests extends CAPSTestSuite with ScanGraphInit {
 
-  describe("big decimal") {
+  describe("general") {
 
     it("returns a big decimal") {
-      caps.cypher("RETURN bigdecimal(1234, 4, 2) AS decimal").records.toMaps should equal(
+      caps.cypher("RETURN bigdecimal(1234, 2) AS decimal").records.toMaps should equal(
         Bag(
-          CypherMap("decimal" -> BigDecimal("12.34"))
+          CypherMap("decimal" -> BigDecimal(1234, 2))
+        )
+      )
+    }
+  }
+
+  describe("arithmetics") {
+
+    it("adds two big decimals") {
+      caps.cypher("RETURN bigdecimal(1234, 2) + bigdecimal(12, 1) AS decimal").records.toMaps should equal(
+        Bag(
+          CypherMap("decimal" -> BigDecimal(1354, 2))
         )
       )
     }
 
+    it("adds a big decimal and an integer") {
+      caps.cypher("RETURN bigdecimal(1234, 2) + 10 AS decimal").records.toMaps should equal(
+        Bag(
+          CypherMap("decimal" -> BigDecimal(2234, 2))
+        )
+      )
+
+      caps.cypher("RETURN 10 + bigdecimal(1234, 2) AS decimal").records.toMaps should equal(
+        Bag(
+          CypherMap("decimal" -> BigDecimal(2234, 2))
+        )
+      )
+    }
+
+    it("adds a big decimal and a float") {
+      caps.cypher("RETURN bigdecimal(1234, 2) + 10.2 AS decimal").records.toMaps should equal(
+        Bag(
+          CypherMap("decimal" -> 22.54)
+        )
+      )
+
+      caps.cypher("RETURN 10.2 + bigdecimal(1234, 2) AS decimal").records.toMaps should equal(
+        Bag(
+          CypherMap("decimal" -> 22.54)
+        )
+      )
+    }
+
+    it("subtracts a big decimal and an integer") {
+      caps.cypher("RETURN bigdecimal(1234, 2) - 10 AS decimal").records.toMaps should equal(
+        Bag(
+          CypherMap("decimal" -> BigDecimal(234, 2))
+        )
+      )
+
+      caps.cypher("RETURN 10 - bigdecimal(1234, 2) AS decimal").records.toMaps should equal(
+        Bag(
+          CypherMap("decimal" -> BigDecimal(-234, 2))
+        )
+      )
+    }
+
+    it("subtracts a big decimal and a float") {
+      caps.cypher("RETURN bigdecimal(1234, 2) - 10.2 AS decimal").records.toMaps should equal(
+        Bag(
+          CypherMap("decimal" -> 2.1400000000000006) // this is crazy! this is why it should be BigDecimal and not float
+        )
+      )
+    }
   }
 
 }

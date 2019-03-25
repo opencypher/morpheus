@@ -101,6 +101,48 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     all
   )
 
+  describe("bigdecimal") {
+    it("should convert bigdecimal") {
+      convert(parseExpr("bigdecimal(INTEGER, 1)")) shouldEqual
+        BigDecimal('INTEGER, 1)
+    }
+
+    it("should convert bigdecimal addition (preserve scale) int") {
+      convert(parseExpr("bigdecimal(INTEGER, 2) + 2")) shouldEqual
+        Add(BigDecimal('INTEGER, 2), IntegerLit(2))(CTBigDecimal(2))
+    }
+
+    it("should convert bigdecimal addition (preserve scale) float") {
+      convert(parseExpr("bigdecimal(FLOAT, 2) + 2.5")) shouldEqual
+        Add(BigDecimal('FLOAT, 2), FloatLit(2.5))(CTBigDecimal(2))
+    }
+
+    it("should convert bigdecimal division (preserve scale) float") {
+      convert(parseExpr("bigdecimal(FLOAT, 2) / 2.5")) shouldEqual
+        Divide(BigDecimal('FLOAT, 2), FloatLit(2.5))(CTBigDecimal(2))
+    }
+
+    it("should convert bigdecimal addition (max scale)") {
+      convert(parseExpr("bigdecimal(INTEGER, 2) + bigdecimal(INTEGER, 6)")) shouldEqual
+        Add(BigDecimal('INTEGER, 2), BigDecimal('INTEGER, 6))(CTBigDecimal(6))
+    }
+
+    it("should convert bigdecimal subtraction (max scale)") {
+      convert(parseExpr("bigdecimal(INTEGER, 2) - bigdecimal(INTEGER, 6)")) shouldEqual
+        Subtract(BigDecimal('INTEGER, 2), BigDecimal('INTEGER, 6))(CTBigDecimal(6))
+    }
+
+    it("should convert bigdecimal multiplication (add scales)") {
+      convert(parseExpr("bigdecimal(INTEGER, 2) * bigdecimal(INTEGER, 6)")) shouldEqual
+        Multiply(BigDecimal('INTEGER, 2), BigDecimal('INTEGER, 6))(CTBigDecimal(8))
+    }
+
+    it("should convert bigdecimal division (subtract scales)") {
+      convert(parseExpr("bigdecimal(INTEGER, 2) / bigdecimal(INTEGER, 6)")) shouldEqual
+        Divide(BigDecimal('INTEGER, 2), BigDecimal('INTEGER, 6))(CTBigDecimal(-4))
+    }
+  }
+
   it("should convert CASE") {
     convert(parseExpr("CASE WHEN INTEGER > INTEGER THEN INTEGER ELSE FLOAT END")) should equal(
       CaseExpr(List((GreaterThan('INTEGER, 'INTEGER), 'INTEGER)), Some('FLOAT))(CTNumber)

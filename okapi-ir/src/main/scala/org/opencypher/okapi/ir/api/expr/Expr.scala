@@ -569,8 +569,12 @@ final case class ToBoolean(expr: Expr) extends UnaryFunctionExpr {
   override val cypherType: CypherType = CTBoolean.asNullableAs(expr.cypherType)
 }
 
-final case class BigDecimal(expr: Expr, precision: Long, scale: Long) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTBigDecimal(precision.toInt, scale.toInt).asNullableAs(expr.cypherType)
+object BigDecimal {
+  val name: String = "bigdecimal"
+}
+
+final case class BigDecimal(expr: Expr, scale: Long) extends UnaryFunctionExpr {
+  override val cypherType: CypherType = CTBigDecimal(scale.toInt).asNullableAs(expr.cypherType)
 }
 
 final case class Coalesce(exprs: List[Expr])(val cypherType: CypherType) extends FunctionExpr {

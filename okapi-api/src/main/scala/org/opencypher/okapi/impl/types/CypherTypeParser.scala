@@ -69,7 +69,7 @@ object CypherTypeParser extends Logging {
   def DATE[_: P]: P[CTDate.type] = IgnoreCase("DATE").map(_ => CTDate)
   def LOCALDATETIME[_: P]: P[CTLocalDateTime.type] = IgnoreCase("LOCALDATETIME").map(_ => CTLocalDateTime)
   def BIGDECIMAL[_: P]: P[CTBigDecimal] =
-    (IgnoreCase("BIGDECIMAL") ~/ "(" ~/ integer ~/ "," ~/ integer ~/ ")").map { case (s, p) => CTBigDecimal(s, p) }
+    (IgnoreCase("BIGDECIMAL") ~/ "(" ~/ integer ~/ ")").map(s => CTBigDecimal(s))
 
   // element types
   def NODE[_: P]: P[CTNode] = P(
