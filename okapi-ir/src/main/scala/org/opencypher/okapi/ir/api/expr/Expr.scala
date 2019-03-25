@@ -879,6 +879,10 @@ final case class IntegerLit(v: Long) extends Lit[Long] {
   override val cypherType: CypherType = CTInteger
 }
 
+final case class FloatLit(v: Double) extends Lit[Double] {
+  override val cypherType: CypherType = CTFloat
+}
+
 final case class StringLit(v: String) extends Lit[String] {
   override val cypherType: CypherType = CTString
 }

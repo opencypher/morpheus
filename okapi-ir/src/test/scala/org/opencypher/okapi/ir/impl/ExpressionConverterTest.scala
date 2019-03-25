@@ -278,10 +278,13 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   it("can convert literals") {
-    convert(literalInt(1)) should equal(IntegerLit(1L))
-    convert(ast.StringLiteral("Hello") _) should equal(StringLit("Hello"))
-    convert(parseExpr("false")) should equal(FalseLit)
-    convert(parseExpr("true")) should equal(TrueLit)
+    convert(literalInt(1)) shouldEqual IntegerLit(1L)
+    convert(ast.StringLiteral("Hello") _) shouldEqual StringLit("Hello")
+    convert(parseExpr("false")) shouldEqual FalseLit
+    convert(parseExpr("true")) shouldEqual TrueLit
+    convert(parseExpr("2.5")) shouldEqual FloatLit(2.5)
+    convert(parseExpr("1e10")) shouldEqual FloatLit(1e10)
+    convert(parseExpr("-1.4e-3")) shouldEqual FloatLit(-1.4e-3)
   }
 
   it("can convert property access") {
@@ -307,7 +310,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
     it("can convert single has-labels") {
       val given = ast.HasLabels(varFor("NODE"), Seq(ast.LabelName("Person") _)) _
-      convert(given) shouldEqual(HasLabel('NODE, Label("Person")))
+      convert(given) shouldEqual HasLabel('NODE, Label("Person"))
     }
   }
 
@@ -327,7 +330,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   it("can convert negation") {
     val given = ast.Not(ast.HasLabels(varFor("NODE"), Seq(ast.LabelName("Person") _)) _) _
 
-    convert(given) shouldEqual(Not(HasLabel('NODE, Label("Person"))))
+    convert(given) shouldEqual Not(HasLabel('NODE, Label("Person")))
   }
 
   it("can convert id function") {

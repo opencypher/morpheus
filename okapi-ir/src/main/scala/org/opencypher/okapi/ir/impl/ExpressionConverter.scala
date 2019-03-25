@@ -105,6 +105,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
 
     // Literals
     case astExpr: ast.IntegerLiteral => IntegerLit(astExpr.value)
+    case astExpr: ast.DecimalDoubleLiteral => FloatLit(astExpr.value)
     case ast.StringLiteral(value) => StringLit(value)
     case _: ast.True => TrueLit
     case _: ast.False => FalseLit
