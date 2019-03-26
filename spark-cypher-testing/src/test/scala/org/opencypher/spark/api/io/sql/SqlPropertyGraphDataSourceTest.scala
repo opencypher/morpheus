@@ -574,7 +574,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
           ))
         )
       }
-      e.getMessage should(include(FileFormat.csv.toString) and include("IllegalDataSource"))
+      e.getMessage should (include(FileFormat.csv.toString) and include("IllegalDataSource"))
     }
 
     it("does not support relationship types with more than one label") {
@@ -599,30 +599,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
     val personView = "person_view"
     val cityView = "city_view"
 
-    val ddlString =
-      s"""
-         |SET SCHEMA $dataSourceName.$databaseName
-         |
-         |CREATE GRAPH TYPE fooSchema (
-         | Person ( name STRING ) ,
-         | City   ( name STRING ) ,
-         | LIVES_IN  ( since INTEGER ) ,
-         | (Person),
-         | (City),
-         | (Person)-[LIVES_IN]->(City)
-         |)
-         |
-         |CREATE GRAPH fooGraph OF fooSchema (
-         |  (Person) FROM $personView ( person_name AS name ),
-         |  (City)   FROM $cityView (city_name AS name ),
-         |  (Person)-[LIVES_IN]->(City)
-         |    FROM $personView edge
-         |      START NODES (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person_id
-         |      END NODES   (City)   FROM $cityView   alias_city   JOIN ON edge.city_id = alias_city.city_id
-         |)
-     """.stripMargin
-
-    def prepareData = {
+    def prepareData(): Unit = {
       sparkSession
         .createDataFrame(Seq((0L, "Alice", 1L, 2010)))
         .toDF("person_id", "person_name", "city_id", "since")
@@ -633,9 +610,31 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
         .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$cityView")
     }
 
-
     it("reads NodeRelPatterns") {
-      prepareData
+      val ddlString =
+        s"""
+           |SET SCHEMA $dataSourceName.$databaseName
+           |
+           |CREATE GRAPH TYPE fooSchema (
+           | Person ( name STRING ) ,
+           | City   ( name STRING ) ,
+           | LIVES_IN  ( since INTEGER ) ,
+           | (Person),
+           | (City),
+           | (Person)-[LIVES_IN]->(City)
+           |)
+           |
+           |CREATE GRAPH fooGraph OF fooSchema (
+           |  (Person) FROM $personView ( person_name AS name ),
+           |  (City)   FROM $cityView (city_name AS name ),
+           |  (Person)-[LIVES_IN]->(City)
+           |    FROM $personView edge
+           |      START NODES (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person_id
+           |      END NODES   (City)   FROM $cityView   alias_city   JOIN ON edge.city_id = alias_city.city_id
+           |)
+     """.stripMargin
+
+      prepareData()
 
       val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
 
@@ -643,7 +642,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
       val pattern = NodeRelPattern(CTNode("Person"), CTRelationship("LIVES_IN"))
 
-      graph.patterns should contain( pattern )
+      graph.patterns should contain(pattern)
 
       import org.opencypher.spark.impl.CAPSConverters._
       graph.asCaps.scanOperator(pattern, true).table.df.count() should be(1)
@@ -656,6 +655,47 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
       result.records.toMaps should equal(Bag(
         CypherMap("p.name" -> "Alice", "l.since" -> 2010, "c.name" -> "Leipzig")
+      ))
+    }
+
+    it("handles naming conflicts") {
+      val ddlString =
+        s"""
+           |SET SCHEMA $dataSourceName.$databaseName
+           |
+           |CREATE GRAPH TYPE fooSchema (
+           | Person ( name STRING, since Integer ) ,
+           | City   ( name STRING ) ,
+           | LIVES_IN  ( since INTEGER ) ,
+           | (Person),
+           | (City),
+           | (Person)-[LIVES_IN]->(City)
+           |)
+           |
+           |CREATE GRAPH fooGraph OF fooSchema (
+           |  (Person) FROM $personView ( person_name AS name, since as since ),
+           |  (City)   FROM $cityView (city_name AS name ),
+           |  (Person)-[LIVES_IN]->(City)
+           |    FROM $personView edge
+           |      START NODES (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person_id
+           |      END NODES   (City)   FROM $cityView   alias_city   JOIN ON edge.city_id = alias_city.city_id
+           |)
+     """.stripMargin
+
+      prepareData()
+
+      val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
+
+      val graph = ds.graph(fooGraphName)
+
+      val result = graph.cypher(
+        """
+          |MATCH (p:Person)-[l:LIVES_IN]->(c:City)
+          |RETURN p.since, l.since
+        """.stripMargin)
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("p.since" -> 2010, "l.since" -> 2010)
       ))
     }
   }

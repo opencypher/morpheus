@@ -56,9 +56,11 @@ import scala.reflect.io.Path
 
 object SqlPropertyGraphDataSource {
 
-  def apply(graphDdl: GraphDdl,
+  def apply(
+    graphDdl: GraphDdl,
     sqlDataSourceConfigs: Map[String, SqlDataSourceConfig],
-    idGenerationStrategy: IdGenerationStrategy = SerializedId)(implicit caps: CAPSSession): SqlPropertyGraphDataSource = {
+    idGenerationStrategy: IdGenerationStrategy = SerializedId
+  )(implicit caps: CAPSSession): SqlPropertyGraphDataSource = {
 
     val unsupportedDataSources = sqlDataSourceConfigs.filter { case (_, config) => config.format == FileFormat.csv }
     if (unsupportedDataSources.nonEmpty) throw IllegalArgumentException(
@@ -69,7 +71,7 @@ object SqlPropertyGraphDataSource {
   }
 }
 
-case class SqlPropertyGraphDataSource (
+case class SqlPropertyGraphDataSource(
   graphDdl: GraphDdl,
   sqlDataSourceConfigs: Map[String, SqlDataSourceConfig],
   idGenerationStrategy: IdGenerationStrategy
@@ -201,12 +203,16 @@ case class SqlPropertyGraphDataSource (
     }
   }
 
-  private def extractNodeRelTables(ddlGraph: Graph, schema: Schema, strategy: IdGenerationStrategy): Seq[CAPSEntityTable] = {
+  private def extractNodeRelTables(
+    ddlGraph: Graph,
+    schema: Schema,
+    strategy: IdGenerationStrategy
+  ): Seq[CAPSEntityTable] = {
     ddlGraph.edgeToViewMappings
       .filter(evm => evm.view == evm.startNode.nodeViewKey.viewId)
       .map(evm => evm -> readTable(evm.view))
       .map {
-        case(evm, df) =>
+        case (evm, df) =>
           val nodeViewKey = evm.startNode.nodeViewKey
           val nodeViewMapping = ddlGraph.nodeToViewMappings(nodeViewKey)
 
@@ -268,7 +274,7 @@ case class SqlPropertyGraphDataSource (
     val relIdColumn = generateIdColumn(df, evm.key, df.columns.toList, relSourceIdKey, schema)
     val relSourceIdColumn = generateIdColumn(df, evm.startNode.nodeViewKey, evm.startNode.joinPredicates.map(_.edgeColumn), sourceStartNodeKey, schema)
     val relTargetIdColumn = generateIdColumn(df, evm.endNode.nodeViewKey, evm.endNode.joinPredicates.map(_.edgeColumn), sourceEndNodeKey, schema)
-    val relProperties = generatePropertyColumns(evm, df, ddlGraph, schema)
+    val relProperties = generatePropertyColumns(evm, df, ddlGraph, schema, Some("relationship"))
     val relPropertyColumns = relProperties.map { case (_, _, col) => col }
 
     val relColumns = Seq(relIdColumn, relSourceIdColumn, relTargetIdColumn) ++ relPropertyColumns
@@ -281,7 +287,8 @@ case class SqlPropertyGraphDataSource (
     mapping: ElementToViewMapping,
     df: DataFrame,
     ddlGraph: Graph,
-    schema: Schema
+    schema: Schema,
+    maybePrefix: Option[String] = None
   ): Iterable[(String, String, Column)] = {
     val viewKey = mapping.key
 
@@ -316,7 +323,9 @@ case class SqlPropertyGraphDataSource (
           )
         }
 
-        (property, property.toPropertyColumnName, withCorrectType.as(property.toPropertyColumnName))
+        val targetColumnName = maybePrefix.getOrElse("") + property.toPropertyColumnName
+
+        (property, targetColumnName, withCorrectType.as(targetColumnName))
     }
   }
 
