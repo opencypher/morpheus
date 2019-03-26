@@ -39,7 +39,6 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CTVoid, CypherTyp
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.AbstractPropertyGraphDataSource._
 import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io._
@@ -85,55 +84,96 @@ case class SqlPropertyGraphDataSource (
     val schema = ddlGraph.graphType.asOkapiSchema
 
     // Build CAPS node tables
-    val nodeDataFrames = ddlGraph.nodeToViewMappings.mapValues(nvm => readTable(nvm.view))
+    val nodeTables = ddlGraph.nodeToViewMappings.mapValues(nvm => readTable(nvm.view)).map {
+      case (nodeViewKey, df) =>
+        val nodeViewMapping = ddlGraph.nodeToViewMappings(nodeViewKey)
 
-    // Generate node identifiers
-    val nodeDataFramesWithIds = createIdForTables(nodeDataFrames, ddlGraph, sourceIdKey, idGenerationStrategy, schema)
+        val nodeIdColumn = generateNodeIdColumn(nodeViewKey, df, idGenerationStrategy, schema, ddlGraph)
+        val nodeProperties = generatePropertyColumns(nodeViewMapping, df, ddlGraph, schema)
+        val nodePropertyColumns = nodeProperties.map { case (_, _, col) => col }.toSeq
 
-    val nodeTables = nodeDataFramesWithIds.map {
-      case (nodeViewKey, nodeDf) =>
-        val nodeElementTypes = nodeViewKey.nodeType.labels
-        val columnsWithType = nodeColsWithCypherType(schema, nodeElementTypes)
-        val inputNodeMapping = createNodeMapping(nodeElementTypes, ddlGraph.nodeToViewMappings(nodeViewKey).propertyMappings)
-        val normalizedDf = normalizeDataFrame(nodeDf, inputNodeMapping, columnsWithType).castToLong
-        val normalizedMapping = normalizeMapping(inputNodeMapping)
+        val selectColumns = nodeIdColumn +: nodePropertyColumns
+        val nodeDf = df.select(selectColumns: _*)
 
-        normalizedDf.validateColumnTypes(columnsWithType)
+        val mapping = NodeMappingBuilder.on(sourceIdKey)
+          .withImpliedLabels(nodeViewMapping.nodeType.labels.toSeq: _*)
+          .withPropertyKeyMappings(nodeProperties.map { case (property, columnName, _) => property -> columnName}.toSeq: _*)
+          .build
 
-        CAPSEntityTable.create(normalizedMapping, normalizedDf)
+        CAPSEntityTable.create(mapping, nodeDf)
     }.toSeq
 
+//    // Generate node identifiers
+//    val nodeDataFramesWithIds = createIdForTables(nodeDataFrames, ddlGraph, sourceIdKey, idGenerationStrategy, schema)
+//
+//    val nodeTables = nodeDataFramesWithIds.map {
+//      case (nodeViewKey, nodeDf) =>
+//        val nodeElementTypes = nodeViewKey.nodeType.labels
+//        val columnsWithType = nodeColsWithCypherType(schema, nodeElementTypes)
+//        val inputNodeMapping = createNodeMapping(nodeElementTypes, ddlGraph.nodeToViewMappings(nodeViewKey).propertyMappings)
+//        val normalizedDf = normalizeDataFrame(nodeDf, inputNodeMapping, columnsWithType).castToLong
+//        val normalizedMapping = normalizeMapping(inputNodeMapping)
+//
+//        normalizedDf.validateColumnTypes(columnsWithType)
+//
+//        CAPSEntityTable.create(normalizedMapping, normalizedDf)
+//    }.toSeq
+
     // Build CAPS relationship tables
-    val relDataFrames = ddlGraph.edgeToViewMappings.map(evm => evm.key -> readTable(evm.view)).toMap
+    val relationshipTables = ddlGraph.edgeToViewMappings.map(evm => evm -> readTable(evm.view)).map {
+      case (evm, df) =>
+        val relSourceIdKey = sourceIdKey
+        val relIdColumn = generateIdColumn(df, evm.key, df.columns.toList, relSourceIdKey, idGenerationStrategy, schema)
+        val relSourceIdColumn = generateIdColumn(df, evm.startNode.nodeViewKey, evm.startNode.joinPredicates.map(_.edgeColumn.toPropertyColumnName), sourceStartNodeKey, idGenerationStrategy, schema)
+        val relTargetIdColumn = generateIdColumn(df, evm.endNode.nodeViewKey, evm.endNode.joinPredicates.map(_.edgeColumn.toPropertyColumnName), sourceEndNodeKey, idGenerationStrategy, schema)
+        val relProperties = generatePropertyColumns(evm, df, ddlGraph, schema)
+        val relPropertyColumns = relProperties.map { case (_, _, col) => col }
 
-    // Generate relationship identifiers
-    val relDataFramesWithIds = createIdForTables(relDataFrames, ddlGraph, sourceIdKey, idGenerationStrategy, schema)
+        val selectColumns = Seq(relIdColumn, relSourceIdColumn, relTargetIdColumn) ++ relPropertyColumns
+        val relDf = df.select(selectColumns: _*)
 
-    val relationshipTables = ddlGraph.edgeToViewMappings.map { edgeToViewMapping =>
-      val edgeViewKey = edgeToViewMapping.key
-      val relElementType = edgeViewKey.relType.labels.toList match {
-        case relType :: Nil => relType
-        case other => throw IllegalArgumentException(expected = "Single relationship type", actual = s"${other.mkString(",")}")
-      }
-      val relDf = relDataFramesWithIds(edgeViewKey)
-      val startNodeViewKey = edgeToViewMapping.startNode.nodeViewKey
-      val endNodeViewKey = edgeToViewMapping.endNode.nodeViewKey
+        val relElementType = evm.key.relType.labels.toList match {
+          case relType :: Nil => relType
+          case other => throw IllegalArgumentException(expected = "Single relationship type", actual = s"${other.mkString(",")}")
+        }
 
-      // generate the start/end node id using the same parameters as for the corresponding node table
-      val idColumnNamesStartNode = edgeToViewMapping.startNode.joinPredicates.map(_.edgeColumn).map(_.toPropertyColumnName)
-      val relsWithStartNodeId = createIdForTable(relDf, startNodeViewKey, idColumnNamesStartNode, sourceStartNodeKey, idGenerationStrategy, schema)
-      val idColumnNamesEndNode = edgeToViewMapping.endNode.joinPredicates.map(_.edgeColumn).map(_.toPropertyColumnName)
-      val relsWithEndNodeId = createIdForTable(relsWithStartNodeId, endNodeViewKey, idColumnNamesEndNode, sourceEndNodeKey, idGenerationStrategy, schema)
+        val mapping = RelationshipMappingBuilder
+          .on(sourceIdKey).from(sourceStartNodeKey).to(sourceEndNodeKey)
+          .relType(relElementType)
+          .withPropertyKeyMappings(relProperties.map { case (property, columnName, _) => property -> columnName}.toSeq: _*)
+          .build
 
-      val columnsWithType = relColsWithCypherType(schema, relElementType)
-      val inputRelMapping = createRelationshipMapping(relElementType, edgeToViewMapping.propertyMappings)
-      val normalizedDf = normalizeDataFrame(relsWithEndNodeId, inputRelMapping, columnsWithType).castToLong
-      val normalizedMapping = normalizeMapping(inputRelMapping)
-
-      normalizedDf.validateColumnTypes(columnsWithType)
-
-      CAPSEntityTable.create(normalizedMapping, normalizedDf)
+        CAPSEntityTable.create(mapping, relDf)
     }
+
+//    // Generate relationship identifiers
+//    val relDataFramesWithIds = createIdForTables(relDataFrames, ddlGraph, sourceIdKey, idGenerationStrategy, schema)
+//
+//    val relationshipTables = ddlGraph.edgeToViewMappings.map { edgeToViewMapping =>
+//      val edgeViewKey = edgeToViewMapping.key
+//      val relElementType = edgeViewKey.relType.labels.toList match {
+//        case relType :: Nil => relType
+//        case other => throw IllegalArgumentException(expected = "Single relationship type", actual = s"${other.mkString(",")}")
+//      }
+//      val relDf = relDataFramesWithIds(edgeViewKey)
+//      val startNodeViewKey = edgeToViewMapping.startNode.nodeViewKey
+//      val endNodeViewKey = edgeToViewMapping.endNode.nodeViewKey
+//
+//      // generate the start/end node id using the same parameters as for the corresponding node table
+//      val idColumnNamesStartNode = edgeToViewMapping.startNode.joinPredicates.map(_.edgeColumn).map(_.toPropertyColumnName)
+//      val relsWithStartNodeId = createIdForTable(relDf, startNodeViewKey, idColumnNamesStartNode, sourceStartNodeKey, idGenerationStrategy, schema)
+//      val idColumnNamesEndNode = edgeToViewMapping.endNode.joinPredicates.map(_.edgeColumn).map(_.toPropertyColumnName)
+//      val relsWithEndNodeId = createIdForTable(relsWithStartNodeId, endNodeViewKey, idColumnNamesEndNode, sourceEndNodeKey, idGenerationStrategy, schema)
+//
+//      val columnsWithType = relColsWithCypherType(schema, relElementType)
+//      val inputRelMapping = createRelationshipMapping(relElementType, edgeToViewMapping.propertyMappings)
+//      val normalizedDf = normalizeDataFrame(relsWithEndNodeId, inputRelMapping, columnsWithType).castToLong
+//      val normalizedMapping = normalizeMapping(inputRelMapping)
+//
+//      normalizedDf.validateColumnTypes(columnsWithType)
+//
+//      CAPSEntityTable.create(normalizedMapping, normalizedDf)
+//    }
 
     val patternTables = extractNodeRelPatterns(ddlGraph, schema, idGenerationStrategy)
 
