@@ -29,7 +29,8 @@ package org.opencypher.spark.api.io.sql
 import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
 import org.apache.spark.sql.{Row, SaveMode}
 import org.opencypher.graphddl.GraphDdl
-import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.graph.{GraphName, NodeRelPattern}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.testing.Bag
@@ -593,4 +594,69 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
     }
   }
 
+
+  describe("NodeRelPattern support") {
+    val personView = "person_view"
+    val cityView = "city_view"
+
+    val ddlString =
+      s"""
+         |SET SCHEMA $dataSourceName.$databaseName
+         |
+         |CREATE GRAPH TYPE fooSchema (
+         | Person ( name STRING ) ,
+         | City   ( name STRING ) ,
+         | LIVES_IN  ( since INTEGER ) ,
+         | (Person),
+         | (City),
+         | (Person)-[LIVES_IN]->(City)
+         |)
+         |
+         |CREATE GRAPH fooGraph OF fooSchema (
+         |  (Person) FROM $personView ( person_name AS name ),
+         |  (City)   FROM $cityView (city_name AS name ),
+         |  (Person)-[LIVES_IN]->(City)
+         |    FROM $personView edge
+         |      START NODES (Person) FROM $personView alias_person JOIN ON alias_person.person_id = edge.person_id
+         |      END NODES   (City)   FROM $cityView   alias_city   JOIN ON edge.city_id = alias_city.city_id
+         |)
+     """.stripMargin
+
+    def prepareData = {
+      sparkSession
+        .createDataFrame(Seq((0L, "Alice", 1L, 2010)))
+        .toDF("person_id", "person_name", "city_id", "since")
+        .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$personView")
+      sparkSession
+        .createDataFrame(Seq((1L, "Leipzig")))
+        .toDF("city_id", "city_name")
+        .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$cityView")
+    }
+
+
+    it("reads NodeRelPatterns") {
+      prepareData
+
+      val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
+
+      val graph = ds.graph(fooGraphName)
+
+      val pattern = NodeRelPattern(CTNode("Person"), CTRelationship("LIVES_IN"))
+
+      graph.patterns should contain( pattern )
+
+      import org.opencypher.spark.impl.CAPSConverters._
+      graph.asCaps.scanOperator(pattern, true).table.df.count() should be(1)
+
+      val result = graph.cypher(
+        """
+          |MATCH (p:Person)-[l:LIVES_IN]->(c:City)
+          |RETURN p.name, l.since, c.name
+        """.stripMargin)
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("p.name" -> "Alice", "l.since" -> 2010, "c.name" -> "Leipzig")
+      ))
+    }
+  }
 }
