@@ -112,14 +112,14 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
         Add(BigDecimal('INTEGER, 2), IntegerLit(2))(CTBigDecimal(2))
     }
 
-    it("should convert bigdecimal addition (preserve scale) float") {
+    it("should lose bigdecimal when adding with float") {
       convert(parseExpr("bigdecimal(FLOAT, 2) + 2.5")) shouldEqual
-        Add(BigDecimal('FLOAT, 2), FloatLit(2.5))(CTBigDecimal(2))
+        Add(BigDecimal('FLOAT, 2), FloatLit(2.5))(CTFloat)
     }
 
-    it("should convert bigdecimal division (preserve scale) float") {
+    it("should lose bigdecimal when dividing by float") {
       convert(parseExpr("bigdecimal(FLOAT, 2) / 2.5")) shouldEqual
-        Divide(BigDecimal('FLOAT, 2), FloatLit(2.5))(CTBigDecimal(2))
+        Divide(BigDecimal('FLOAT, 2), FloatLit(2.5))(CTFloat)
     }
 
     it("should convert bigdecimal addition (max scale)") {
