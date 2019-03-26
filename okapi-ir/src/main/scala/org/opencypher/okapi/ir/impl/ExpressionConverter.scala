@@ -386,6 +386,7 @@ object BigDecimalSignatures {
     case Seq(CTInteger, x: CTBigDecimal) => Some(x)
     case Seq(_: CTBigDecimal, CTFloat) => Some(CTFloat) // Spark does this; does it make sense?
     case Seq(CTFloat, _: CTBigDecimal) => Some(CTFloat) // Spark does this; does it make sense?
+    case _ => None
   }
 }
 
