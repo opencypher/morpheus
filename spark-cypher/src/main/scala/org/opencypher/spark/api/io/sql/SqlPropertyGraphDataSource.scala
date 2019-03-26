@@ -80,7 +80,6 @@ case class SqlPropertyGraphDataSource (
   override def hasGraph(graphName: GraphName): Boolean = graphDdl.graphs.contains(graphName)
 
   override def graph(graphName: GraphName): PropertyGraph = {
-
     val ddlGraph = graphDdl.graphs.getOrElse(graphName, throw GraphNotFoundException(s"Graph $graphName not found"))
     val schema = ddlGraph.graphType.asOkapiSchema
 
@@ -108,8 +107,7 @@ case class SqlPropertyGraphDataSource (
       case file: File => readFile(viewId, file)
     }
 
-    //TODO do we need that??
-    inputTable.safeRenameColumns(inputTable.columns.map(col => col -> col.toPropertyColumnName).toMap)
+    inputTable
   }
 
   private def readSqlTable(viewId: ViewId, sqlDataSourceConfig: SqlDataSourceConfig) = {
@@ -244,7 +242,7 @@ case class SqlPropertyGraphDataSource (
 
     val nodeIdColumn = {
       val inputNodeIdColumns = ddlGraph.nodeIdColumnsFor(nodeViewMapping.key) match {
-        case Some(columnNames) => columnNames.map(_.toPropertyColumnName)
+        case Some(columnNames) => columnNames
         case None => df.columns.toList
       }
 
@@ -268,8 +266,8 @@ case class SqlPropertyGraphDataSource (
   ): (Map[String, String], Seq[Column]) = {
 
     val relIdColumn = generateIdColumn(df, evm.key, df.columns.toList, relSourceIdKey, schema)
-    val relSourceIdColumn = generateIdColumn(df, evm.startNode.nodeViewKey, evm.startNode.joinPredicates.map(_.edgeColumn.toPropertyColumnName), sourceStartNodeKey, schema)
-    val relTargetIdColumn = generateIdColumn(df, evm.endNode.nodeViewKey, evm.endNode.joinPredicates.map(_.edgeColumn.toPropertyColumnName), sourceEndNodeKey, schema)
+    val relSourceIdColumn = generateIdColumn(df, evm.startNode.nodeViewKey, evm.startNode.joinPredicates.map(_.edgeColumn), sourceStartNodeKey, schema)
+    val relTargetIdColumn = generateIdColumn(df, evm.endNode.nodeViewKey, evm.endNode.joinPredicates.map(_.edgeColumn), sourceEndNodeKey, schema)
     val relProperties = generatePropertyColumns(evm, df, ddlGraph, schema)
     val relPropertyColumns = relProperties.map { case (_, _, col) => col }
 
@@ -305,14 +303,17 @@ case class SqlPropertyGraphDataSource (
 
     propertyMappings.map {
       case (property, colName) =>
-        val sourceColumn = df.col(colName.toPropertyColumnName)
-        val sourceType = df.schema.apply(colName.toPropertyColumnName).dataType
+        val sourceColumn = df.col(colName)
+        val sourceType = df.schema.apply(colName).dataType
         val targetType = getTargetType(elementTypes, property)
 
         val withCorrectType = (sourceType, targetType) match {
           case (IntegerType, LongType) => sourceColumn.cast(targetType)
           case _ if sourceType == targetType => sourceColumn
-          case other => ??? // TODO throw exception
+          case _ => throw IllegalArgumentException(
+            s"Property `$property` to have type $targetType",
+            sourceColumn
+          )
         }
 
         (property, property.toPropertyColumnName, withCorrectType.as(property.toPropertyColumnName))
