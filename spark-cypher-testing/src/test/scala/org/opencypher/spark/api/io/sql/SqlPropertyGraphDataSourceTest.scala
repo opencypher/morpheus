@@ -118,6 +118,36 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       Bag(CypherMap("labels" -> List("Foo"), "key1" -> 42L, "key2" -> "Alice")))
   }
 
+  it("is case insensitive on the column names") {
+    val fooView = "foo_view"
+
+    val ddlString =
+      s"""
+         |SET SCHEMA $dataSourceName.$databaseName
+         |
+         |CREATE GRAPH TYPE fooSchema (
+         | Foo ( key1 INTEGER, key2 String ),
+         | (Foo)
+         |)
+         |
+         |CREATE GRAPH fooGraph OF fooSchema (
+         |  (Foo) FROM $fooView (col1 AS key2, col2 AS key1)
+         |)
+     """.stripMargin
+
+    sparkSession
+      .createDataFrame(Seq(Tuple2("Alice", 42L)))
+      .toDF("COL1", "COL2")
+      .write.mode(SaveMode.Overwrite).mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
+
+    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
+
+    ds.graph(fooGraphName)
+      .cypher("MATCH (n) RETURN labels(n) AS labels, n.key1 AS key1, n.key2 as key2")
+      .records.toMaps should equal(
+      Bag(CypherMap("labels" -> List("Foo"), "key1" -> 42L, "key2" -> "Alice")))
+  }
+
   it("reads nodes from multiple tables") {
     val fooView = "foo_view"
     val barView = "bar_view"

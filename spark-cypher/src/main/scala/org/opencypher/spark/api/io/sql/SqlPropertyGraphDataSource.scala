@@ -109,7 +109,8 @@ case class SqlPropertyGraphDataSource(
       case file: File => readFile(viewId, file)
     }
 
-    inputTable
+    val normalizedCols = inputTable.columns.map(col => inputTable.col(col).as(col.toLowerCase)).toSeq
+    inputTable.select(normalizedCols: _*)
   }
 
   private def readSqlTable(viewId: ViewId, sqlDataSourceConfig: SqlDataSourceConfig) = {
@@ -310,8 +311,9 @@ case class SqlPropertyGraphDataSource(
 
     propertyMappings.map {
       case (property, colName) =>
-        val sourceColumn = df.col(colName)
-        val sourceType = df.schema.apply(colName).dataType
+        val normalizedColName = colName.toLowerCase()
+        val sourceColumn = df.col(normalizedColName)
+        val sourceType = df.schema.apply(normalizedColName).dataType
         val targetType = getTargetType(elementTypes, property)
 
         val withCorrectType = (sourceType, targetType) match {
@@ -336,7 +338,7 @@ case class SqlPropertyGraphDataSource(
     newIdColumn: String,
     schema: Schema
   ): Column = {
-    val idColumns = idColumnNames.map(dataFrame.col)
+    val idColumns = idColumnNames.map(_.toLowerCase).map(dataFrame.col)
     idGenerationStrategy match {
       case HashedId =>
         val viewLiteral = functions.lit(elementViewKey.viewId.parts.mkString("."))
