@@ -35,7 +35,11 @@ case class Neo4jConfig(
   uri: URI,
   user: String = "neo4j",
   password: Option[String] = None,
-  encrypted: Boolean = true
+  encrypted: Boolean = true,
+  createNodeBatchSize: Int = 100000,
+  createRelationshipBatchSize: Int = 100000,
+  mergeNodeBatchSize: Int = 1000,
+  mergeRelationshipBatchSize: Int = 10
 ) {
 
   def driver(): Driver = password match {

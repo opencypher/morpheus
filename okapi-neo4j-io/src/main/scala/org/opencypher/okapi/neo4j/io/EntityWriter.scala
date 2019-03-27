@@ -46,8 +46,7 @@ object EntityWriter extends Logging {
     rowMapping: Array[String],
     config: Neo4jConfig,
     labels: Set[String],
-    nodeKeys: Set[String],
-    batchSize: Int = 1000
+    nodeKeys: Set[String]
   )(rowToListValue: T => Value): Unit = {
     val labelString = labels.cypherLabelPredicate
 
@@ -70,7 +69,7 @@ object EntityWriter extends Logging {
          |$setStatements
          """.stripMargin
 
-    writeEntities(nodes, rowMapping, createQ, config, batchSize)(rowToListValue)
+    writeEntities(nodes, rowMapping, createQ, config, config.mergeNodeBatchSize)(rowToListValue)
   }
 
   // TODO: Share more code with `createRelationships`
@@ -82,8 +81,7 @@ object EntityWriter extends Logging {
     rowMapping: Array[String],
     config: Neo4jConfig,
     relType: String,
-    relKeys: Set[String],
-    batchSize: Int = 10
+    relKeys: Set[String]
   )(rowToListValue: T => Value): Unit = {
 
     val relKeyProperties = relKeys.map { relKey =>
@@ -109,15 +107,14 @@ object EntityWriter extends Logging {
          |$setStatements
          """.stripMargin
 
-    writeEntities(relationships, rowMapping, createQ, config, batchSize)(rowToListValue)
+    writeEntities(relationships, rowMapping, createQ, config, config.mergeRelationshipBatchSize)(rowToListValue)
   }
 
   def createNodes[T](
     nodes: Iterator[T],
     rowMapping: Array[String],
     config: Neo4jConfig,
-    labels: Set[String],
-    batchSize: Int = 1000
+    labels: Set[String]
   )(rowToListValue: T => Value): Unit = {
     val labelString = labels.cypherLabelPredicate
 
@@ -134,7 +131,7 @@ object EntityWriter extends Logging {
          |$setStatements
          """.stripMargin
 
-    writeEntities(nodes, rowMapping, createQ, config, batchSize)(rowToListValue)
+    writeEntities(nodes, rowMapping, createQ, config, config.createNodeBatchSize)(rowToListValue)
   }
 
   def createRelationships[T](
@@ -144,8 +141,7 @@ object EntityWriter extends Logging {
     rowMapping: Array[String],
     config: Neo4jConfig,
     relType: String,
-    nodeLabel: Option[String],
-    batchSize: Int = 1000
+    nodeLabel: Option[String]
   )(rowToListValue: T => Value): Unit = {
     val setStatements = rowMapping
       .zipWithIndex
@@ -164,7 +160,7 @@ object EntityWriter extends Logging {
          |$setStatements
          """.stripMargin
 
-    writeEntities(relationships, rowMapping, createQ, config, batchSize)(rowToListValue)
+    writeEntities(relationships, rowMapping, createQ, config, config.createRelationshipBatchSize)(rowToListValue)
   }
 
   private def writeEntities[T](
@@ -172,7 +168,7 @@ object EntityWriter extends Logging {
     rowMapping: Array[String],
     query: String,
     config: Neo4jConfig,
-    batchSize: Int = 1000
+    batchSize: Int
   )(rowToListValue: T => Value): Unit = {
     val reuseMap = new java.util.HashMap[String, Value]
     val reuseParameters = new MapValue(reuseMap)

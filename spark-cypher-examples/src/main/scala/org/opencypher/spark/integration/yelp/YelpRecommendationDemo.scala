@@ -43,10 +43,15 @@ object YelpRecommendationDemo extends App {
   implicit val spark: SparkSession = caps.sparkSession
 
   private val neo4jConfig = Neo4jConfig(new URI("bolt://localhost:7687"), "neo4j", Some("yelp"))
+  neo4jConfig.withSession{session =>
+    session.run("MATCH (n) DETACH DELETE n").consume()
+    session.run("DROP CONSTRAINT ON ( ___yelp:___yelp ) ASSERT ___yelp.___capsID IS UNIQUE").consume()
+  }
 
   Measurement.printTiming("Analytical workflow")(run(inputPath))
 
   def run(path: String): Unit = {
+
 
     // Create Property Graph Data Sources
     val parquetPgds = GraphSources.fs(path).parquet
@@ -82,7 +87,6 @@ object YelpRecommendationDemo extends App {
         |YIELD nodes, iterations, loadMillis, computeMillis, writeMillis, dampingFactor, write, writeProperty
       """.stripMargin)
 
-    println(pageRankStats)
 
     // Read updated graph from Neo4j
     val phoenixGraphWithPageRank = GraphSources.cypher.neo4j(neo4jConfig).graph(yelpGraphName)
@@ -97,5 +101,6 @@ object YelpRecommendationDemo extends App {
       """.stripMargin)
 
     topBusinesses.show
+    println(pageRankStats)
   }
 }

@@ -30,7 +30,6 @@ import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport.entireGraphName
 import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
 import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge
-import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge.Batches
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Hive
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
@@ -121,7 +120,7 @@ object Customer360Example extends App {
 //  Neo4jGraphMerge.createIndexes(entireGraphName, neo4j.dataSourceConfig, c360Seed.schema.nodeKeys)
 
   // Seed Neo4j with the customer 360 graph
-  Neo4jGraphMerge.merge(entireGraphName, c360Seed, neo4j.config, batches = Batches(relBatchSize = 1))
+  Neo4jGraphMerge.merge(entireGraphName, c360Seed, neo4j.config)
 
   println("Graph merged to Neo4j")
 
@@ -174,8 +173,7 @@ object Customer360Example extends App {
   Neo4jGraphMerge.merge(
     entireGraphName,
     session.catalog.graph("c360.interactions_delta"),
-    neo4j.config,
-    batches = Batches(relBatchSize = 1)
+    neo4j.config
   )
 
   println("Delta merged")
