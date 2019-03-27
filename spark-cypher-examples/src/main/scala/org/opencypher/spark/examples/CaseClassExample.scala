@@ -51,9 +51,7 @@ object CaseClassExample extends App {
   )
 
   // 4) Print result to console
-  val what = socialNetwork.relationships("r").collect.toSet
-
-  "test" < "what"
+  results.show
 }
 
 /**
