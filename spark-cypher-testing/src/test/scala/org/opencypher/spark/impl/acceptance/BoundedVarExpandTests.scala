@@ -156,7 +156,7 @@ class BoundedVarExpandTests extends CAPSTestSuite with ScanGraphInit {
   // We could do that better by pre-filtering candidate relationships prior to the iterate step
   ignore("var expand with property filter") {
     // Given
-    val given = initGraph("CREATE (a:Node {v: 'a'})-[{v: 1L}]->(:Node {v: 'b'})-[{v: 2L}]->(:Node {v: 'c'})-[{v: 2L}]->(a)")
+    val given = initGraph("CREATE (a:Node {v: 'a'})-[:R {v: 1}]->(:Node {v: 'b'})-[:R {v: 2}]->(:Node {v: 'c'})-[:R {v: 2}]->(a)")
 
     // When
     val result = given.cypher("MATCH (a:Node)-[r*..6 {v: 2}]->(b:Node) RETURN b.v")

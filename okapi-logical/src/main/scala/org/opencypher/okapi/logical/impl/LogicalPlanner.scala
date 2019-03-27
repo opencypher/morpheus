@@ -155,20 +155,11 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           case None => skipOp
         }
 
-      case AggregationBlock(_, a@Aggregations(pairs), group, _) =>
-        // plan projection of aggregation argument
-        val prev = pairs.foldLeft(plan) {
-          case (prevPlan, (_, agg)) =>
-            agg match {
-              case a: Aggregator => a.inner.map(e => planInnerExpr(e, prevPlan)).getOrElse(prevPlan)
-              case _ => throw IllegalArgumentException("an aggregator", agg)
-            }
-        }
-        producer.aggregate(a, group, prev)
+      case AggregationBlock(_, a, group, _) =>
+        producer.aggregate(a, group, plan)
 
       case UnwindBlock(_, UnwoundList(list, variable), _) =>
-        val withList = planInnerExpr(list, plan)
-        producer.planUnwind(list, variable, withList)
+        producer.planUnwind(list, variable, plan)
 
       case GraphResultBlock(_, graph) =>
         producer.planReturnGraph(producer.planFromGraph(resolveGraph(graph, plan.fields), plan))
@@ -191,7 +182,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         if (acc.solved.solves(f)) {
           acc
         } else {
-          producer.projectField(expr, f, expr.children.foldLeft(acc)((op, e) => planInnerExpr(e, op)))
+          producer.projectField(expr, f, expr.children.foldLeft(acc)((op, e) => planInnerSubquery(e, op)))
         }
 
     }
@@ -207,7 +198,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.planFilter(ex, predicate)
 
       case (acc, predicate) =>
-        val withInnerExpressions = predicate.children.foldLeft(acc)((acc, e) => planInnerExpr(e, acc))
+        val withInnerExpressions = predicate.children.foldLeft(acc)((acc, e) => planInnerSubquery(e, acc))
         producer.planFilter(predicate, withInnerExpressions)
 
     }
@@ -215,7 +206,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     filtersAndProjections
   }
 
-  private def planInnerExpr(expr: Expr, in: LogicalOperator)(
+  private def planInnerSubquery(expr: Expr, in: LogicalOperator)(
     implicit context: LogicalPlannerContext
   ): LogicalOperator = {
     expr match {
@@ -224,7 +215,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.planExistsSubQuery(ex, in, this (ex.ir))
 
       case _ =>
-        expr.children.foldLeft(in)((op, e) => planInnerExpr(e, op))
+        expr.children.foldLeft(in)((op, e) => planInnerSubquery(e, op))
 
     }
   }

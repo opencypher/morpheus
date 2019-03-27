@@ -125,10 +125,6 @@ class LogicalOperatorProducer {
     Project(expr -> Some(field), prev, prev.solved.withField(field))
   }
 
-  def projectExpr(expr: Expr, prev: LogicalOperator): Project = {
-    Project(expr -> None, prev, prev.solved)
-  }
-
   def planUnwind(list: Expr, variable: IRField, withList: LogicalOperator): Unwind = {
     Unwind(list, variable, withList, withList.solved.withField(variable))
   }
