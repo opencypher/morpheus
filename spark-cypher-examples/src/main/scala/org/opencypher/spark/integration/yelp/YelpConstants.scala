@@ -53,5 +53,6 @@ object YelpConstants {
   val phoenixGraphName = GraphName("phoenix")
   val pre2017GraphName = GraphName("pre2017")
   val since2017GraphName = GraphName("since2017")
+  val businessTrendsGraphName = GraphName("businessTrends")
 
 }
