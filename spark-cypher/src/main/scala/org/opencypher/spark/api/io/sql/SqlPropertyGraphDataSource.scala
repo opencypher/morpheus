@@ -78,7 +78,7 @@ case class SqlPropertyGraphDataSource(
 )(implicit val caps: CAPSSession) extends CAPSPropertyGraphDataSource {
 
   val relSourceIdKey: String = "rel_" + sourceIdKey
-
+  private val className = getClass.getSimpleName
   override def hasGraph(graphName: GraphName): Boolean = graphDdl.graphs.contains(graphName)
 
   override def graph(graphName: GraphName): PropertyGraph = {
@@ -93,75 +93,22 @@ case class SqlPropertyGraphDataSource(
 
     caps.graphs.create(Some(schema), nodeTables.head, nodeTables.tail ++ relationshipTables ++ patternTables: _*)
   }
+  override def schema(name: GraphName): Option[CAPSSchema] = graphDdl.graphs.get(name).map(_.graphType.asOkapiSchema.asCaps)
 
-  private def readTable(viewId: ViewId): DataFrame = {
-    val sqlDataSourceConfig = sqlDataSourceConfigs.get(viewId.dataSource) match {
-      case None =>
-        val knownDataSources = sqlDataSourceConfigs.keys.mkString("'", "';'", "'")
-        throw SqlDataSourceConfigException(s"Data source '${viewId.dataSource}' not configured; see data sources configuration. Known data sources: $knownDataSources")
-      case Some(config) =>
-        config
-    }
+  override def store(name: GraphName, graph: PropertyGraph): Unit = unsupported("storing a graph")
 
-    val inputTable = sqlDataSourceConfig match {
-      case hive@Hive => readSqlTable(viewId, hive)
-      case jdbc: Jdbc => readSqlTable(viewId, jdbc)
-      case file: File => readFile(viewId, file)
-    }
+  private def unsupported(operation: String): Nothing =
+    throw UnsupportedOperationException(s"$className does not allow $operation")
+  override def delete(name: GraphName): Unit = unsupported("deleting a graph")
 
-    inputTable.toDF(inputTable.columns.map(_.toLowerCase.encodeSpecialCharacters).toSeq: _*)
-  }
+  override def graphNames: Set[GraphName] = graphDdl.graphs.keySet
 
-  private def readSqlTable(viewId: ViewId, sqlDataSourceConfig: SqlDataSourceConfig) = {
-    val spark = caps.sparkSession
-
-    implicit class DataFrameReaderOps(read: DataFrameReader) {
-      def maybeOption(key: String, value: Option[String]): DataFrameReader =
-        value.fold(read)(read.option(key, _))
-    }
-
-    sqlDataSourceConfig match {
-      case Jdbc(url, driver, options) =>
-        spark.read
-          .format("jdbc")
-          .option("url", url)
-          .option("driver", driver)
-          .option("fetchSize", "100") // default value
-          .options(options)
-          .option("dbtable", viewId.tableName)
-          .load()
-
-      case SqlDataSourceConfig.Hive =>
-        spark.table(viewId.tableName)
-
-      case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat))
-    }
-  }
-
-  private def readFile(viewId: ViewId, dataSourceConfig: File): DataFrame = {
-    val spark = caps.sparkSession
-
-    val viewPath = viewId.parts.lastOption.getOrElse(
-      malformed("File names must be defined with the data source", viewId.parts.mkString(".")))
-
-    val filePath = if (new URI(viewPath).isAbsolute) {
-      viewPath
-    } else {
-      dataSourceConfig.basePath match {
-        case Some(rootPath) => (Path(rootPath) / Path(viewPath)).toString()
-        case None => unsupported("Relative view file names require basePath to be set")
-      }
-    }
-
-    spark.read
-      .format(dataSourceConfig.format.name)
-      .options(dataSourceConfig.options)
-      .load(filePath.toString)
-  }
+  def malformed(desc: String, identifier: String): Nothing =
+    throw MalformedIdentifier(s"$desc: $identifier")
 
   private def extractNodeTables(
     ddlGraph: Graph,
-    schema: Schema,
+    schema: Schema
   ): Seq[CAPSEntityTable] = {
     ddlGraph.nodeToViewMappings.mapValues(nvm => readTable(nvm.view)).map {
       case (nodeViewKey, df) =>
@@ -181,7 +128,7 @@ case class SqlPropertyGraphDataSource(
 
   private def extractRelationshipTables(
     ddlGraph: Graph,
-    schema: Schema,
+    schema: Schema
   ): Seq[CAPSEntityTable] = {
     ddlGraph.edgeToViewMappings.map(evm => evm -> readTable(evm.view)).map {
       case (evm, df) =>
@@ -283,6 +230,70 @@ case class SqlPropertyGraphDataSource(
     relPropertyMapping.toMap -> relColumns
   }
 
+  private def readTable(viewId: ViewId): DataFrame = {
+    val sqlDataSourceConfig = sqlDataSourceConfigs.get(viewId.dataSource) match {
+      case None =>
+        val knownDataSources = sqlDataSourceConfigs.keys.mkString("'", "';'", "'")
+        throw SqlDataSourceConfigException(s"Data source '${viewId.dataSource}' not configured; see data sources configuration. Known data sources: $knownDataSources")
+      case Some(config) =>
+        config
+    }
+
+    val inputTable = sqlDataSourceConfig match {
+      case hive@Hive => readSqlTable(viewId, hive)
+      case jdbc: Jdbc => readSqlTable(viewId, jdbc)
+      case file: File => readFile(viewId, file)
+    }
+
+    inputTable.toDF(inputTable.columns.map(_.toLowerCase.encodeSpecialCharacters).toSeq: _*)
+  }
+
+  private def readSqlTable(viewId: ViewId, sqlDataSourceConfig: SqlDataSourceConfig) = {
+    val spark = caps.sparkSession
+
+    implicit class DataFrameReaderOps(read: DataFrameReader) {
+      def maybeOption(key: String, value: Option[String]): DataFrameReader =
+        value.fold(read)(read.option(key, _))
+    }
+
+    sqlDataSourceConfig match {
+      case Jdbc(url, driver, options) =>
+        spark.read
+          .format("jdbc")
+          .option("url", url)
+          .option("driver", driver)
+          .option("fetchSize", "100") // default value
+          .options(options)
+          .option("dbtable", viewId.tableName)
+          .load()
+
+      case SqlDataSourceConfig.Hive =>
+        spark.table(viewId.tableName)
+
+      case otherFormat => notFound(otherFormat, Seq(JdbcFormat, HiveFormat))
+    }
+  }
+  private def readFile(viewId: ViewId, dataSourceConfig: File): DataFrame = {
+    val spark = caps.sparkSession
+
+    val viewPath = viewId.parts.lastOption.getOrElse(
+      malformed("File names must be defined with the data source", viewId.parts.mkString(".")))
+
+    val filePath = if (new URI(viewPath).isAbsolute) {
+      viewPath
+    } else {
+      dataSourceConfig.basePath match {
+        case Some(rootPath) => (Path(rootPath) / Path(viewPath)).toString()
+        case None => unsupported("Relative view file names require basePath to be set")
+      }
+    }
+
+    spark.read
+      .format(dataSourceConfig.format.name)
+      .options(dataSourceConfig.options)
+      .load(filePath.toString)
+  }
+
   private def generatePropertyColumns(
     mapping: ElementToViewMapping,
     df: DataFrame,
@@ -310,7 +321,7 @@ case class SqlPropertyGraphDataSource(
 
     propertyMappings.map {
       case (property, colName) =>
-        val normalizedColName =  colName.toLowerCase().encodeSpecialCharacters
+        val normalizedColName = colName.toLowerCase().encodeSpecialCharacters
         val sourceColumn = df.col(normalizedColName)
         val sourceType = df.schema.apply(normalizedColName).dataType
         val targetType = getTargetType(elementTypes, property)
@@ -356,29 +367,12 @@ case class SqlPropertyGraphDataSource(
     }
   }
 
-  override def schema(name: GraphName): Option[CAPSSchema] = graphDdl.graphs.get(name).map(_.graphType.asOkapiSchema.asCaps)
-
-  override def store(name: GraphName, graph: PropertyGraph): Unit = unsupported("storing a graph")
-
-  override def delete(name: GraphName): Unit = unsupported("deleting a graph")
-
-  override def graphNames: Set[GraphName] = graphDdl.graphs.keySet
-
-  private val className = getClass.getSimpleName
-
-  private def unsupported(operation: String): Nothing =
-    throw UnsupportedOperationException(s"$className does not allow $operation")
-
   private def notFound(needle: Any, haystack: Traversable[Any] = Traversable.empty): Nothing =
     throw IllegalArgumentException(
       expected = if (haystack.nonEmpty) s"one of ${stringList(haystack)}" else "",
       actual = needle
     )
 
-  def malformed(desc: String, identifier: String): Nothing =
-    throw MalformedIdentifier(s"$desc: $identifier")
-
   private def stringList(elems: Traversable[Any]): String =
     elems.mkString("[", ",", "]")
-
 }
