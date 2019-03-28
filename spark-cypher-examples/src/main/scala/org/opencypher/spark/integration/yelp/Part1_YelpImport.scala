@@ -31,26 +31,13 @@ import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.spark.api.io.{CAPSEntityTable, Relationship}
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.integration.yelp.YelpOptions._
+import org.opencypher.spark.integration.yelp.YelpConstants._
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.api.io.GraphEntity._
 import Relationship._
+import org.apache.spark.sql.types.DateType
 
-object YelpImport extends App {
-
-  case class YelpTables(
-    userDf: DataFrame,
-    businessDf: DataFrame,
-    reviewDf: DataFrame,
-    friendDf: DataFrame
-  ) {
-    def show(): Unit = {
-      userDf.show()
-      businessDf.show()
-      reviewDf.show()
-      friendDf.show()
-    }
-  }
+object Part1_YelpImport extends App {
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpJsonFolder)
   lazy val outputPath = args.lift(1).getOrElse(defaultYelpGraphFolder)
@@ -63,7 +50,7 @@ object YelpImport extends App {
   def storeGraph(inputPath: String, outputPath: String): Unit = {
     val yelpTables = loadYelpTables(inputPath)
     val propertyGraph = createPropertyGraph(yelpTables)
-    GraphSources.fs(outputPath).parquet.store(yelpGraphName, propertyGraph)
+    GraphSources.fs(outputPath).parquet.store(yelpFullGraphName, propertyGraph)
   }
 
   def createPropertyGraph(yelpTables: YelpTables): PropertyGraph = {
@@ -76,7 +63,9 @@ object YelpImport extends App {
 
     val businessNodeTable = CAPSEntityTable.create(NodeMappingBuilder.on(sourceIdKey)
       .withImpliedLabel(businessLabel)
+      .withPropertyKey("businessId", "business_id")
       .withPropertyKey("name")
+      .withPropertyKey("address")
       .withPropertyKey("city")
       .withPropertyKey("state")
       .build,
@@ -87,6 +76,7 @@ object YelpImport extends App {
       .withSourceEndNodeKey(sourceEndNodeKey)
       .withRelType(reviewRelType)
       .withPropertyKey("stars")
+      .withPropertyKey("date")
       .build,
       yelpTables.reviewDf
         .prependIdColumn(sourceIdKey, reviewRelType)
@@ -113,8 +103,8 @@ object YelpImport extends App {
 
     import spark.implicits._
 
-    val businessDf = rawBusinessDf.select($"business_id".as(sourceIdKey), $"name", $"city", $"state")
-    val reviewDf = rawReviewDf.select($"review_id".as(sourceIdKey), $"user_id".as(sourceStartNodeKey), $"business_id".as(sourceEndNodeKey), $"stars")
+    val businessDf = rawBusinessDf.select($"business_id".as(sourceIdKey), $"business_id", $"name", $"address", $"city", $"state")
+    val reviewDf = rawReviewDf.select($"review_id".as(sourceIdKey), $"user_id".as(sourceStartNodeKey), $"business_id".as(sourceEndNodeKey), $"stars", $"date".cast(DateType))
     val userDf = rawUserDf.select($"user_id".as(sourceIdKey), $"name".as("name"))
     val friendDf = rawUserDf
       .select($"user_id".as(sourceStartNodeKey), functions.explode(functions.split($"friends", ", ")).as(sourceEndNodeKey))
@@ -126,5 +116,19 @@ object YelpImport extends App {
   implicit class DataFrameOps(df: DataFrame) {
     def prependIdColumn(idColumn: String, prefix: String): DataFrame =
       df.transformColumns(idColumn)(column => functions.concat(functions.lit(prefix), column).as(idColumn))
+  }
+
+  case class YelpTables(
+    userDf: DataFrame,
+    businessDf: DataFrame,
+    reviewDf: DataFrame,
+    friendDf: DataFrame
+  ) {
+    def show(): Unit = {
+      userDf.show()
+      businessDf.show()
+      reviewDf.show()
+      friendDf.show()
+    }
   }
 }

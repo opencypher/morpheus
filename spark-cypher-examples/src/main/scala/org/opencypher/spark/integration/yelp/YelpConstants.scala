@@ -26,11 +26,16 @@
  */
 package org.opencypher.spark.integration.yelp
 
-import org.opencypher.okapi.api.graph.GraphName
+import java.net.URI
 
-object YelpOptions {
+import org.opencypher.okapi.api.graph.{GraphName, Namespace}
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
 
-  val yelpGraphName = GraphName("yelp")
+object YelpConstants {
+
+  val neo4jConfig = Neo4jConfig(new URI("bolt://localhost:7687"), "neo4j", Some("yelp"))
+
+  val yelpFullGraphName = GraphName("yelpFull")
 
   val defaultYelpJsonFolder = "yelp_json"
   val defaultYelpGraphFolder = "yelp_graph"
@@ -39,5 +44,14 @@ object YelpOptions {
   val businessLabel = "Business"
   val reviewRelType = "REVIEWS"
   val friendRelType = "FRIEND"
+
+  val pageRankPre2017 = "pageRankPre2017"
+  val pageRankSince2017 = "pageRankSince2017"
+
+  val fsNamespace = Namespace("fileSystem")
+  val neo4jNamespace = Namespace("neo4j")
+  val phoenixGraphName = GraphName("phoenix")
+  val pre2017GraphName = GraphName("pre2017")
+  val since2017GraphName = GraphName("since2017")
 
 }
