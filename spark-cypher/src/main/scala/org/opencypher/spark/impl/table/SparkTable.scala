@@ -332,7 +332,7 @@ object SparkTable {
       if (renames.isEmpty || renames.forall { case (oldColumn, newColumn) => oldColumn == newColumn }) {
         df
       } else {
-        renames.foreach { case (oldName, newName) => require(!df.columns.contains(newName),
+        renames.foreach { case (oldName, newName) => if (oldName != newName) require(!df.columns.contains(newName),
           s"Cannot rename column `$oldName` to `$newName`. A column with name `$newName` exists already.")
         }
         val newColumns = df.columns.map {

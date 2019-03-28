@@ -26,16 +26,16 @@
  */
 package org.opencypher.spark.integration.yelp
 
+import org.apache.spark.sql.types.DateType
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
-import org.opencypher.spark.api.io.{CAPSEntityTable, Relationship}
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.integration.yelp.YelpConstants._
-import org.opencypher.spark.impl.table.SparkTable._
+import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.api.io.GraphEntity._
-import Relationship._
-import org.apache.spark.sql.types.DateType
+import org.opencypher.spark.api.io.Relationship._
+import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.impl.table.SparkTable._
+import org.opencypher.spark.integration.yelp.YelpConstants._
 
 object Part1_YelpImport extends App {
 
@@ -50,7 +50,7 @@ object Part1_YelpImport extends App {
   def storeGraph(inputPath: String, outputPath: String): Unit = {
     val yelpTables = loadYelpTables(inputPath)
     val propertyGraph = createPropertyGraph(yelpTables)
-    GraphSources.fs(outputPath).parquet.store(yelpFullGraphName, propertyGraph)
+    GraphSources.fs(outputPath).parquet.store(yelpGraphName, propertyGraph)
   }
 
   def createPropertyGraph(yelpTables: YelpTables): PropertyGraph = {
@@ -96,7 +96,7 @@ object Part1_YelpImport extends App {
     caps.graphs.create(businessNodeTable, userNodeTable, reviewRelTable, friendRelTable)
   }
 
-  def loadYelpTables(inputPath: String): YelpTables = {
+  def loadYelpTables(inputPath: String)(implicit spark: SparkSession): YelpTables = {
     val rawBusinessDf = spark.read.json(s"$inputPath/business.json")
     val rawReviewDf = spark.read.json(s"$inputPath/review.json")
     val rawUserDf = spark.read.json(s"$inputPath/user.json")

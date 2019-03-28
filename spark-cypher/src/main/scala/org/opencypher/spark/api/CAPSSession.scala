@@ -108,6 +108,7 @@ object CAPSSession extends Serializable {
       .config(conf)
       .master("local[*]")
       .appName(s"caps-local-${UUID.randomUUID()}")
+      .enableHiveSupport()
       .getOrCreate()
     session.sparkContext.setLogLevel("error")
 

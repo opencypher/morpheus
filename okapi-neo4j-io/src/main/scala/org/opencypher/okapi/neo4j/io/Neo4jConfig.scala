@@ -36,8 +36,8 @@ case class Neo4jConfig(
   user: String = "neo4j",
   password: Option[String] = None,
   encrypted: Boolean = true,
-  createNodeBatchSize: Int = 100000,
-  createRelationshipBatchSize: Int = 100000,
+  createNodeBatchSize: Int = 1000000,
+  createRelationshipBatchSize: Int = 1000000,
   mergeNodeBatchSize: Int = 1000,
   mergeRelationshipBatchSize: Int = 10
 ) {
