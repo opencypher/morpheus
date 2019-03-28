@@ -154,8 +154,8 @@ object EntityWriter extends Logging {
     val createQ =
       s"""
          |UNWIND $$batch AS $ROW_IDENTIFIER
-         |MATCH (from$nodeLabelString {$metaPropertyKey : $ROW_IDENTIFIER[$startNodeIndex]}) USING INDEX from$nodeLabelString ($metaPropertyKey)
-         |MATCH (to$nodeLabelString {$metaPropertyKey : $ROW_IDENTIFIER[$endNodeIndex]}) USING INDEX to$nodeLabelString ($metaPropertyKey)
+         |MATCH (from$nodeLabelString {$metaPropertyKey : $ROW_IDENTIFIER[$startNodeIndex]})
+         |MATCH (to$nodeLabelString {$metaPropertyKey : $ROW_IDENTIFIER[$endNodeIndex]})
          |CREATE (from)-[rel:$relType]->(to)
          |$setStatements
          """.stripMargin
