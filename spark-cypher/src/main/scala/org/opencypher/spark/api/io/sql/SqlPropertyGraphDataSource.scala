@@ -109,8 +109,7 @@ case class SqlPropertyGraphDataSource(
       case file: File => readFile(viewId, file)
     }
 
-    val normalizedCols = inputTable.columns.map(col => inputTable.col(col).as(col.toLowerCase)).toSeq
-    inputTable.select(normalizedCols: _*)
+    inputTable.toDF(inputTable.columns.map(_.toLowerCase.encodeSpecialCharacters).toSeq: _*)
   }
 
   private def readSqlTable(viewId: ViewId, sqlDataSourceConfig: SqlDataSourceConfig) = {
@@ -250,7 +249,7 @@ case class SqlPropertyGraphDataSource(
     val nodeIdColumn = {
       val inputNodeIdColumns = ddlGraph.nodeIdColumnsFor(nodeViewMapping.key) match {
         case Some(columnNames) => columnNames
-        case None => df.columns.toList
+        case None => df.columns.map(_.decodeSpecialCharacters).toList
       }
 
       generateIdColumn(df, nodeViewMapping.key, inputNodeIdColumns, sourceIdKey, schema)
@@ -272,7 +271,7 @@ case class SqlPropertyGraphDataSource(
     df: DataFrame
   ): (Map[String, String], Seq[Column]) = {
 
-    val relIdColumn = generateIdColumn(df, evm.key, df.columns.toList, relSourceIdKey, schema)
+    val relIdColumn = generateIdColumn(df, evm.key, df.columns.map(_.decodeSpecialCharacters).toList, relSourceIdKey, schema)
     val relSourceIdColumn = generateIdColumn(df, evm.startNode.nodeViewKey, evm.startNode.joinPredicates.map(_.edgeColumn), sourceStartNodeKey, schema)
     val relTargetIdColumn = generateIdColumn(df, evm.endNode.nodeViewKey, evm.endNode.joinPredicates.map(_.edgeColumn), sourceEndNodeKey, schema)
     val relProperties = generatePropertyColumns(evm, df, ddlGraph, schema, Some("relationship"))
@@ -311,7 +310,7 @@ case class SqlPropertyGraphDataSource(
 
     propertyMappings.map {
       case (property, colName) =>
-        val normalizedColName = colName.toLowerCase()
+        val normalizedColName =  colName.toLowerCase().encodeSpecialCharacters
         val sourceColumn = df.col(normalizedColName)
         val sourceType = df.schema.apply(normalizedColName).dataType
         val targetType = getTargetType(elementTypes, property)
@@ -338,7 +337,7 @@ case class SqlPropertyGraphDataSource(
     newIdColumn: String,
     schema: Schema
   ): Column = {
-    val idColumns = idColumnNames.map(_.toLowerCase).map(dataFrame.col)
+    val idColumns = idColumnNames.map(_.toLowerCase.encodeSpecialCharacters).map(dataFrame.col)
     idGenerationStrategy match {
       case HashedId =>
         val viewLiteral = functions.lit(elementViewKey.viewId.parts.mkString("."))
