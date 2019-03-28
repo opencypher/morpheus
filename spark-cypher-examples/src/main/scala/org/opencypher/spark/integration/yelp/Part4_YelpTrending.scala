@@ -29,7 +29,7 @@ object Part4_YelpTrending extends App {
 
   cypher(s"FROM GRAPH $businessTrendsGraphName MATCH (n) RETURN n LIMIT 10").show
 
-  // Trendy
+  // Increasing popularity
   cypher(
     s"""
        |FROM GRAPH $businessTrendsGraphName
@@ -39,7 +39,7 @@ object Part4_YelpTrending extends App {
        |LIMIT 10
      """.stripMargin).show
 
-  // Un-Trendy
+  // Decreasing popularity
   cypher(
     s"""
        |FROM GRAPH $businessTrendsGraphName
