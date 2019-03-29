@@ -48,14 +48,14 @@ object Part5_YelpHive extends App {
 
     cypher(
       s"""
-         |FROM $hiveNamespace.$pre2017GraphName
+         |FROM $hiveNamespace.${yearGraphName(2017)}
          |MATCH ()-[r]->()
          |RETURN COUNT(r)
        """.stripMargin).show
 
     cypher(
       s"""
-         |FROM $hiveNamespace.$since2017GraphName
+         |FROM $hiveNamespace.${yearGraphName(2018)}
          |MATCH ()-[r]->()
          |RETURN COUNT(r)
        """.stripMargin).show
@@ -71,18 +71,18 @@ object Part5_YelpHive extends App {
     // Create Hive views
     spark.sql(
       s"""
-         |CREATE VIEW $yelpGraphName.$pre2017View AS
+         |CREATE VIEW $yelpGraphName.$view2017 AS
          |SELECT *
          |FROM $yelpGraphName.review
-         |WHERE year(date) < 2017
+         |WHERE year(date) = 2017
      """.stripMargin)
 
     spark.sql(
       s"""
-         |CREATE VIEW $yelpGraphName.$since2017View AS
+         |CREATE VIEW $yelpGraphName.$view2018 AS
          |SELECT *
          |FROM $yelpGraphName.review
-         |WHERE year(date) >= 2017
+         |WHERE year(date) = 2018
      """.stripMargin)
   }
 }

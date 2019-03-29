@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.integration.yelp
 
+import org.opencypher.okapi.api.value.CypherValue.CypherFloat
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants._
 
@@ -40,12 +41,12 @@ object Part4_YelpTrending extends App {
   cypher(
     s"""
        |CATALOG CREATE GRAPH $businessTrendsGraphName {
-       |  FROM GRAPH $neo4jNamespace.$pre2017GraphName
+       |  FROM GRAPH $neo4jNamespace.${yearGraphName(2017)}
        |  MATCH (b1:Business)
-       |  FROM GRAPH $neo4jNamespace.$since2017GraphName
+       |  FROM GRAPH $neo4jNamespace.${yearGraphName(2018)}
        |  MATCH (b2:Business)
        |  WHERE b1.businessId = b2.businessId
-       |  WITH b1 AS b, b2.$pageRankSince2017 - b1.$pageRankPre2017 AS trendRank
+       |  WITH b1 AS b, (b2.pageRank2018 / ${normalizationFactor(2018)}) - (b1.pageRank2017 / ${normalizationFactor(2017)}) AS trendRank
        |  CONSTRUCT
        |    CREATE (newB COPY OF b)
        |    SET newB.trendRank = trendRank
@@ -72,4 +73,12 @@ object Part4_YelpTrending extends App {
        |ORDER BY trendRank ASC
        |LIMIT 10
      """.stripMargin).show
+
+  def normalizationFactor(year: Int): Double = cypher(
+    s"""
+       |FROM GRAPH $neo4jNamespace.${yearGraphName(year)}
+       |MATCH (b:Business)
+       |RETURN sum(b.pageRank$year) AS nf
+     """.stripMargin)
+    .records.collect.head("nf").cast[CypherFloat].value
 }

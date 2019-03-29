@@ -26,38 +26,45 @@
  */
 package org.opencypher.spark.integration.yelp
 
-import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
-import org.opencypher.spark.integration.yelp.YelpConstants._
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
+import org.opencypher.okapi.neo4j.io.Neo4jHelpers.{cypher => neo4jCypher, _}
+import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.integration.yelp.YelpConstants._
 
 object Part3_YelpRanking extends App {
 
-  // Compute PageRank using Neo4j Graph Algorithms
-  neo4jConfig.withSession { implicit session =>
-    println(cypher(
-      s"""
-         |CALL algo.pageRank('${pre2017GraphName.metaLabel}', null, {
-         |  iterations:20,
-         |  dampingFactor:0.85,
-         |  direction: "BOTH",
-         |  write: true,
-         |  writeProperty:"$pageRankPre2017",
-         |  weightProperty: "stars"
-         |})
-         |YIELD nodes, iterations, loadMillis, computeMillis, writeMillis, dampingFactor, write, writeProperty
-    """.stripMargin))
+  lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
-   println(cypher(
+  implicit val caps: CAPSSession = CAPSSession.local()
+
+  import caps._
+
+  registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
+  registerSource(neo4jNamespace, GraphSources.cypher.neo4j(neo4jConfig))
+
+  (2017 to 2018) foreach { year =>
+    cypher(
       s"""
-         |CALL algo.pageRank('${since2017GraphName.metaLabel}', null, {
-         |  iterations:20,
-         |  dampingFactor:0.85,
-         |  direction: "BOTH",
-         |  write: true,
-         |  writeProperty:"$pageRankSince2017",
-         |  weightProperty: "stars"
-         |})
-         |YIELD nodes, iterations, loadMillis, computeMillis, writeMillis, dampingFactor, write, writeProperty
+         |CATALOG CREATE GRAPH $neo4jNamespace.${yearGraphName(year)} {
+         |  FROM $fsNamespace.${yearGraphName(year)}
+         |  RETURN GRAPH
+         |}
+     """.stripMargin)
+
+    // Compute PageRank using Neo4j Graph Algorithms
+    neo4jConfig.withSession { implicit session =>
+      println(neo4jCypher(
+        s"""
+           |CALL algo.pageRank('${yearGraphName(year).metaLabel}', null, {
+           |  iterations:20,
+           |  dampingFactor:0.85,
+           |  direction: "BOTH",
+           |  write: true,
+           |  writeProperty:"pageRank$year",
+           |  weightProperty: "stars"
+           |})
+           |YIELD nodes, iterations, loadMillis, computeMillis, writeMillis, dampingFactor, write, writeProperty
     """.stripMargin))
+    }
   }
 }

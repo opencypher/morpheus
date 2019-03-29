@@ -45,19 +45,16 @@ object YelpConstants {
   val reviewRelType = "REVIEWS"
   val friendRelType = "FRIEND"
 
-  val pageRankPre2017 = "pageRankPre2017"
-  val pageRankSince2017 = "pageRankSince2017"
-
   val fsNamespace = Namespace("fileSystem")
   val neo4jNamespace = Namespace("neo4j")
   val hiveNamespace = Namespace("hive")
 
   val phoenixGraphName = GraphName("phoenix")
-  val pre2017GraphName = GraphName("pre2017")
-  val since2017GraphName = GraphName("since2017")
   val businessTrendsGraphName = GraphName("businessTrends")
 
-  val pre2017View: String = pre2017GraphName.value
-  val since2017View: String = since2017GraphName.value
+  val view2017: String = yearGraphName(2017).value
+  val view2018: String = yearGraphName(2018).value
+
+  def yearGraphName(year: Int) = GraphName(s"year$year")
 
 }

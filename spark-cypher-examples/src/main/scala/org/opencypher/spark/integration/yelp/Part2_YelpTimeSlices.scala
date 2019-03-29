@@ -26,7 +26,6 @@
  */
 package org.opencypher.spark.integration.yelp
 
-import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants.{defaultYelpGraphFolder, yelpGraphName, _}
 
@@ -36,12 +35,9 @@ object Part2_YelpTimeSlices extends App {
 
   implicit val caps: CAPSSession = CAPSSession.local()
 
-  neo4jConfig.cypherWithNewSession("MATCH (n) DETACH DELETE n")
-
   import caps._
 
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
-  registerSource(neo4jNamespace, GraphSources.cypher.neo4j(neo4jConfig))
 
   // Construct Phoenix sub graph
   cypher(
@@ -56,29 +52,18 @@ object Part2_YelpTimeSlices extends App {
        |}
       """.stripMargin)
 
-  // Construct reviews before 2017
-  cypher(
-    s"""
-       |CATALOG CREATE GRAPH $neo4jNamespace.$pre2017GraphName {
-       |  FROM GRAPH $phoenixGraphName
-       |  MATCH (b:Business)<-[r:REVIEWS]-(user:User)
-       |  WHERE r.date.year < 2017
-       |  CONSTRUCT
-       |   CREATE (user)-[r]->(b)
-       |  RETURN GRAPH
-       |}
+  // Slice graph into buckets and store in file system
+  (2015 to 2018) foreach { year =>
+    cypher(
+      s"""
+         |CATALOG CREATE GRAPH $fsNamespace.year$year {
+         |  FROM GRAPH $phoenixGraphName
+         |  MATCH (b:Business)<-[r:REVIEWS]-(user:User)
+         |  WHERE r.date.year = $year
+         |  CONSTRUCT
+         |   CREATE (user)-[r]->(b)
+         |  RETURN GRAPH
+         |}
      """.stripMargin)
-
-  // Construct reviews since 2017
-  cypher(
-    s"""
-       |CATALOG CREATE GRAPH $neo4jNamespace.$since2017GraphName {
-       |  FROM GRAPH $phoenixGraphName
-       |  MATCH (b:Business)<-[r:REVIEWS]-(user:User)
-       |  WHERE r.date.year >= 2017
-       |  CONSTRUCT
-       |   CREATE (user)-[r]->(b)
-       |  RETURN GRAPH
-       |}
-     """.stripMargin)
+  }
 }
