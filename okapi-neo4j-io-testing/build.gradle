@@ -1,3 +1,6 @@
+import ch.kk7.gradle.spawn.KillTask
+import ch.kk7.gradle.spawn.SpawnTask
+
 apply plugin: 'ch.kk7.spawn'
 
 description = 'Okapi - Neo4j IO test utils'
@@ -16,50 +19,45 @@ dependencies {
     servicesCompile group: 'org.neo4j.test', name: 'neo4j-harness-enterprise', version: ver.neo4j.harness
 }
 
+def neo4jLauncher(String launcher, int instances, String starter, String stopper, String status) {
+    task(starter, type: SpawnTask) {
+        description "Launches $launcher (x$instances) in a separate JVM"
+        group "services"
 
-def neo4jStartedMarker() { 'neo4j started' }
+        dependsOn project.sourceSets.services.runtimeClasspath
 
-def neo4jCommandLine(int instances) {
-    def java = System.getProperty('java.home') + '/bin/java'
-    def classpath = sourceSets.services.runtimeClasspath.collect { it.absolutePath }.join(':')
-    def main = 'org.opencypher.testing.services.Neo4j'
-    return [java, '-cp', classpath, main, neo4jStartedMarker(), instances.toString()]
+        String java = System.getProperty('java.home') + '/bin/java'
+        String classpath = project.sourceSets.services.runtimeClasspath.collect { it.absolutePath }.join(':')
+        String main = "org.opencypher.testing.services.$launcher"
+        String marker = 'neo4j started'
+
+        commandLine = [java, '-cp', classpath, main, marker, instances.toString()]
+        waitFor     = marker
+        doLast { println getStdoutFile().text }
+    }
+
+    task(stopper, type: KillTask) {
+        description "Stops $launcher"
+        group "services"
+        kills tasks[starter]
+    }
+
+    task(status) {
+        description "Prints status on $launcher"
+        group "services"
+        doLast {
+            def res = [pid: 'unknown', status: 'unknown']
+            if (tasks[starter].pidFile.exists()) {
+                res.pid    = tasks[starter].pidFile.text
+                res.status = tasks[starter].kill('-0', res.pid) ? 'running' : 'stopped'
+            }
+            println res
+        }
+    }
 }
 
-task neo4jStart(type: ch.kk7.gradle.spawn.SpawnTask) {
-    description "Launches a Neo4j instance in a separate JVM."
-    group "services"
-
-    dependsOn sourceSets.services.runtimeClasspath
-
-    commandLine = neo4jCommandLine(1)
-    waitFor     = neo4jStartedMarker()
-    doLast { println getStdoutFile().text }
-}
-
-task neo4jStop(type: ch.kk7.gradle.spawn.KillTask) {
-    description "Stops Neo4j instances started by 'neo4jStart'."
-    group "services"
-    kills tasks.neo4jStart
-}
-
-
-task neo4jStartTwoInstances(type: ch.kk7.gradle.spawn.SpawnTask) {
-    description "Launches two Neo4j instances in a separate JVM (used for examples)."
-    group "services"
-
-    dependsOn sourceSets.services.runtimeClasspath
-
-    commandLine = neo4jCommandLine(2)
-    waitFor     = neo4jStartedMarker()
-    doLast { println getStdoutFile().text }
-}
-
-task neo4jStopTwoInstances(type: ch.kk7.gradle.spawn.KillTask) {
-    description "Stops Neo4j instances started by 'neo4jStartTwoInstances'."
-    group "services"
-    kills tasks.neo4jStartTwoInstances
-}
+neo4jLauncher('Neo4jEnterprise', 1, 'neo4jStart', 'neo4jStop', 'neo4jStatus')
+neo4jLauncher('Neo4jCommunity', 2, 'neo4jStartTwoInstances', 'neo4jStopTwoInstances', 'neo4jStatusTwoInstances')
 
 tasks.test.dependsOn(tasks.neo4jStart)
 tasks.test.finalizedBy(tasks.neo4jStop)
