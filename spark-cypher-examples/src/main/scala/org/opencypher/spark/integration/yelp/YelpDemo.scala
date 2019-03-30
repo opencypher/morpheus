@@ -31,6 +31,5 @@ object YelpDemo extends App {
 
   Part1_YelpImport.main(emptyArgs)
   Part2_YelpTimeSlices.main(emptyArgs)
-  Part3_YelpRanking.main(emptyArgs)
-  Part4_YelpTrending.main(emptyArgs)
+  Part3_YelpBusinessTrends.main(emptyArgs)
 }

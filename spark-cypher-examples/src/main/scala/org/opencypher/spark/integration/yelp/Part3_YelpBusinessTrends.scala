@@ -26,12 +26,13 @@
  */
 package org.opencypher.spark.integration.yelp
 
+import org.opencypher.okapi.api.value.CypherValue.CypherFloat
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.{cypher => neo4jCypher, _}
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants._
 
-object Part3_YelpRanking extends App {
+object Part3_YelpBusinessTrends extends App {
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
@@ -56,15 +57,61 @@ object Part3_YelpRanking extends App {
       println(neo4jCypher(
         s"""
            |CALL algo.pageRank('${yearGraphName(year).metaLabel}', null, {
-           |  iterations:20,
-           |  dampingFactor:0.85,
-           |  direction: "BOTH",
-           |  write: true,
-           |  writeProperty:"pageRank$year",
+           |  iterations:     20,
+           |  dampingFactor:  0.85,
+           |  direction:      "BOTH",
+           |  write:          true,
+           |  writeProperty:  "pageRank$year",
            |  weightProperty: "stars"
            |})
            |YIELD nodes, iterations, loadMillis, computeMillis, writeMillis, dampingFactor, write, writeProperty
     """.stripMargin))
     }
   }
+
+  // Reset schema cache to enable loading new properties
+  catalog.source(neo4jNamespace).reset()
+
+  // Load graphs from Neo4j into Spark and compute trend rank for each business based on their page ranks.
+  cypher(
+    s"""
+       |CATALOG CREATE GRAPH $businessTrendsGraphName {
+       |  FROM GRAPH $neo4jNamespace.${yearGraphName(2017)}
+       |  MATCH (b1:Business)
+       |  FROM GRAPH $neo4jNamespace.${yearGraphName(2018)}
+       |  MATCH (b2:Business)
+       |  WHERE b1.businessId = b2.businessId
+       |  WITH b1 AS b, (b2.pageRank2018 / ${normalizationFactor(2018)}) - (b1.pageRank2017 / ${normalizationFactor(2017)}) AS trendRank
+       |  CONSTRUCT
+       |    CREATE (newB COPY OF b)
+       |    SET newB.trendRank = trendRank
+       |  RETURN GRAPH
+       |}
+     """.stripMargin)
+
+  // Increasing popularity
+  cypher(
+    s"""
+       |FROM GRAPH $businessTrendsGraphName
+       |MATCH (b:Business)
+       |RETURN b.name AS name, b.address AS address, b.trendRank AS trendRank
+       |ORDER BY trendRank DESC
+       |LIMIT 10
+     """.stripMargin).show
+
+  // Decreasing popularity
+  cypher(
+    s"""
+       |FROM GRAPH $businessTrendsGraphName
+       |MATCH (b:Business)
+       |RETURN b.name AS name, b.address AS address, b.trendRank AS trendRank
+       |ORDER BY trendRank ASC
+       |LIMIT 10
+     """.stripMargin).show
+
+  def normalizationFactor(year: Int): Double = neo4jConfig.cypherWithNewSession(
+    s"""
+       |MATCH (b:Business)
+       |RETURN sum(b.pageRank$year) AS nf
+     """.stripMargin).head("nf").cast[CypherFloat].value
 }
