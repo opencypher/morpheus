@@ -236,6 +236,7 @@ case object Writers {
 
   private def rowToListValue(row: Row): Value = {
     def castValue(v: Any): Any = v match {
+      case a: mutable.WrappedArray[_] if a.size == 1 && a.head == null => null
       case a: mutable.WrappedArray[_] => a.array.map(o => castValue(o))
       case d: java.sql.Date => d.toLocalDate
       case ts: java.sql.Timestamp => ts.toLocalDateTime
