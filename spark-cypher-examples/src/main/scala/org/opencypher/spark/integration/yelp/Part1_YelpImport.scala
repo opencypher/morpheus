@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.integration.yelp
 
-import org.apache.spark.sql.types.DateType
+import org.apache.spark.sql.types.{ArrayType, DateType, LongType}
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import org.opencypher.okapi.api.graph.PropertyGraph
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
@@ -58,6 +58,7 @@ object Part1_YelpImport extends App {
     val userNodeTable = CAPSEntityTable.create(NodeMappingBuilder.on(sourceIdKey)
       .withImpliedLabel(userLabel)
       .withPropertyKey("name")
+      .withPropertyKey("elite")
       .build,
       yelpTables.userDf.prependIdColumn(sourceIdKey, userLabel))
 
@@ -105,7 +106,7 @@ object Part1_YelpImport extends App {
 
     val businessDf = rawBusinessDf.select($"business_id".as(sourceIdKey), $"business_id", $"name", $"address", $"city", $"state")
     val reviewDf = rawReviewDf.select($"review_id".as(sourceIdKey), $"user_id".as(sourceStartNodeKey), $"business_id".as(sourceEndNodeKey), $"stars", $"date".cast(DateType))
-    val userDf = rawUserDf.select($"user_id".as(sourceIdKey), $"name".as("name"))
+    val userDf = rawUserDf.select($"user_id".as(sourceIdKey), $"name", functions.split($"elite", ",").cast(ArrayType(LongType)).as("elite"))
     val friendDf = rawUserDf
       .select($"user_id".as(sourceStartNodeKey), functions.explode(functions.split($"friends", ", ")).as(sourceEndNodeKey))
       .withColumn(sourceIdKey, functions.monotonically_increasing_id())

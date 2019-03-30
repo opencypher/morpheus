@@ -29,7 +29,7 @@ package org.opencypher.spark.integration.yelp
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants.{defaultYelpGraphFolder, yelpGraphName, _}
 
-object Part2_YelpTimeSlices extends App {
+object Part2_YelpGraphLibrary extends App {
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
@@ -54,14 +54,28 @@ object Part2_YelpTimeSlices extends App {
 
   // Slice graph into buckets and store in file system
   (2015 to 2018) foreach { year =>
+    // Compute (:User)-[:REVIEWS]->(:Business) graph
     cypher(
       s"""
-         |CATALOG CREATE GRAPH $fsNamespace.year$year {
+         |CATALOG CREATE GRAPH $fsNamespace.${yearGraphName(year)} {
          |  FROM GRAPH $phoenixGraphName
          |  MATCH (b:Business)<-[r:REVIEWS]-(user:User)
          |  WHERE r.date.year = $year
          |  CONSTRUCT
          |   CREATE (user)-[r]->(b)
+         |  RETURN GRAPH
+         |}
+     """.stripMargin)
+
+    // Compute (:User)-[:CO_REVIEWS]->(:User) graph
+    cypher(
+      s"""
+         |CATALOG CREATE GRAPH $fsNamespace.${coReviewGraphName(year)} {
+         |  FROM GRAPH $fsNamespace.${yearGraphName(year)}
+         |  MATCH (b:Business)<-[r:REVIEWS]-(user1:User),
+         |        (b)<-[:REVIEWS]-(user2:User)
+         |  CONSTRUCT
+         |    CREATE (user1)-[:CO_REVIEWS]->(user2)
          |  RETURN GRAPH
          |}
      """.stripMargin)

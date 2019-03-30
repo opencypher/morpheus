@@ -56,5 +56,9 @@ object YelpConstants {
   val view2018: String = yearGraphName(2018).value
 
   def yearGraphName(year: Int) = GraphName(s"year$year")
+  def coReviewGraphName(year: Int) = GraphName(s"coReviewYear$year")
+
+  def pageRankProp(year: Int) = s"pageRank$year"
+  def pageRankCoReviewProp(year: Int) = s"pageRankCoReview$year"
 
 }

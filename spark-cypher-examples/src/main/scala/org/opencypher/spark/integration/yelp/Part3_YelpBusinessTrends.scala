@@ -81,7 +81,7 @@ object Part3_YelpBusinessTrends extends App {
        |  FROM GRAPH $neo4jNamespace.${yearGraphName(2018)}
        |  MATCH (b2:Business)
        |  WHERE b1.businessId = b2.businessId
-       |  WITH b1 AS b, (b2.pageRank2018 / ${normalizationFactor(2018)}) - (b1.pageRank2017 / ${normalizationFactor(2017)}) AS trendRank
+       |  WITH b1 AS b, (b2.${pageRankProp(2018)} / ${normalizationFactor(2018)}) - (b1.${pageRankProp(2017)} / ${normalizationFactor(2017)}) AS trendRank
        |  CONSTRUCT
        |    CREATE (newB COPY OF b)
        |    SET newB.trendRank = trendRank
@@ -112,6 +112,6 @@ object Part3_YelpBusinessTrends extends App {
   def normalizationFactor(year: Int): Double = neo4jConfig.cypherWithNewSession(
     s"""
        |MATCH (b:Business)
-       |RETURN sum(b.pageRank$year) AS nf
+       |RETURN sum(b.${pageRankProp(year)}) AS nf
      """.stripMargin).head("nf").cast[CypherFloat].value
 }

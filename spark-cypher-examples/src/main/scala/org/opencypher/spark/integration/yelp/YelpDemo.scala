@@ -30,6 +30,6 @@ object YelpDemo extends App {
   private val emptyArgs: Array[String] = Array.empty
 
   Part1_YelpImport.main(emptyArgs)
-  Part2_YelpTimeSlices.main(emptyArgs)
+  Part2_YelpGraphLibrary.main(emptyArgs)
   Part3_YelpBusinessTrends.main(emptyArgs)
 }
