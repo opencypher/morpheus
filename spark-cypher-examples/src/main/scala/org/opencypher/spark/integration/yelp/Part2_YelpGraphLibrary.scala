@@ -58,8 +58,9 @@ object Part2_YelpGraphLibrary extends App {
   // Cache graph before performing multiple projections
   catalog.source(catalog.sessionNamespace).graph(cityGraphName).asCaps.cache()
 
-  // Slice graph into buckets and store in file system
+  // Create multiple projections of the City graph and store them in yearly buckets
   (2015 to 2018) foreach { year =>
+
     // Compute (:User)-[:FRIEND]->(:User) graph
     cypher(
       s"""

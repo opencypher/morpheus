@@ -49,13 +49,19 @@ object Part1_YelpImport extends App {
 //  yelpStats(inputPath)
 
   def storeGraph(inputPath: String, outputPath: String): Unit = {
+    // Load Yelp data into DataFrames
     val yelpTables = loadYelpTables(inputPath)
+    // Create a Property Graph from DataFrames
     val propertyGraph = createPropertyGraph(yelpTables)
-    GraphSources.fs(outputPath).parquet.store(yelpGraphName, propertyGraph)
+    // Init Property Graph Data Source (PGDS)
+    val parquetPGDS = GraphSources.fs(outputPath).parquet
+    // Store graph in PGDS
+    parquetPGDS.store(yelpGraphName, propertyGraph)
   }
 
   def createPropertyGraph(yelpTables: YelpTables): PropertyGraph = {
-
+    // Define node tables
+    // (:User)
     val userNodeTable = CAPSEntityTable.create(NodeMappingBuilder.on(sourceIdKey)
       .withImpliedLabel(userLabel)
       .withPropertyKey("name")
@@ -64,6 +70,7 @@ object Part1_YelpImport extends App {
       .build,
       yelpTables.userDf.prependIdColumn(sourceIdKey, userLabel))
 
+    // (:Business)
     val businessNodeTable = CAPSEntityTable.create(NodeMappingBuilder.on(sourceIdKey)
       .withImpliedLabel(businessLabel)
       .withPropertyKey("businessId", "business_id")
@@ -74,6 +81,8 @@ object Part1_YelpImport extends App {
       .build,
       yelpTables.businessDf.prependIdColumn(sourceIdKey, businessLabel))
 
+    // Define relationship tables
+    // (:User)-[:REVIEWS]->(:Business)
     val reviewRelTable = CAPSEntityTable.create(RelationshipMappingBuilder.on(sourceIdKey)
       .withSourceStartNodeKey(sourceStartNodeKey)
       .withSourceEndNodeKey(sourceEndNodeKey)
@@ -86,6 +95,7 @@ object Part1_YelpImport extends App {
         .prependIdColumn(sourceStartNodeKey, userLabel)
         .prependIdColumn(sourceEndNodeKey, businessLabel))
 
+    // (:User)-[:FRIEND]->(:User)
     val friendRelTable = CAPSEntityTable.create(RelationshipMappingBuilder.on(sourceIdKey)
       .withSourceStartNodeKey(sourceStartNodeKey)
       .withSourceEndNodeKey(sourceEndNodeKey)
@@ -96,6 +106,7 @@ object Part1_YelpImport extends App {
         .prependIdColumn(sourceStartNodeKey, userLabel)
         .prependIdColumn(sourceEndNodeKey, userLabel))
 
+    // Create property graph
     caps.graphs.create(businessNodeTable, userNodeTable, reviewRelTable, friendRelTable)
   }
 
