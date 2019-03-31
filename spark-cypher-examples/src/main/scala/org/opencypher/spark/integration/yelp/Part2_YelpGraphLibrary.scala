@@ -28,6 +28,7 @@ package org.opencypher.spark.integration.yelp
 
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants.{defaultYelpGraphFolder, yelpGraphName, _}
+import org.opencypher.spark.impl.CAPSConverters._
 
 object Part2_YelpGraphLibrary extends App {
 
@@ -39,28 +40,46 @@ object Part2_YelpGraphLibrary extends App {
 
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
 
-  // Construct Phoenix sub graph
+  // Construct City sub graph
   cypher(
     s"""
-       |CATALOG CREATE GRAPH $phoenixGraphName {
+       |CATALOG CREATE GRAPH $cityGraphName {
        |  FROM GRAPH $fsNamespace.$yelpGraphName
-       |  MATCH (b:Business)<-[r:REVIEWS]-(user:User)
-       |  WHERE b.city = 'Phoenix'
+       |  MATCH (b:Business)<-[r:REVIEWS]-(user1:User),
+       |        (user1)-[f:FRIEND]->(user2:User)
+       |  WHERE b.city = '$city'
        |  CONSTRUCT
-       |   CREATE (user)-[r]->(b)
+       |   CREATE (user1)-[r]->(b)
+       |   CREATE (user1)-[f]->(user2)
        |  RETURN GRAPH
        |}
       """.stripMargin)
 
+  // Cache graph before performing multiple projections
+  catalog.source(catalog.sessionNamespace).graph(cityGraphName).asCaps.cache()
+
   // Slice graph into buckets and store in file system
   (2015 to 2018) foreach { year =>
+    // Compute (:User)-[:FRIEND]->(:User) graph
+    cypher(
+      s"""
+         |CATALOG CREATE GRAPH $fsNamespace.${friendGraphName(year)} {
+         |  FROM GRAPH $cityGraphName
+         |  MATCH (user1:User)-[f:FRIEND]->(user2:User)
+         |  WHERE user1.yelping_since.year <= $year AND user2.yelping_since.year <= $year
+         |  CONSTRUCT
+         |   CREATE (user1)-[f]->(user2)
+         |  RETURN GRAPH
+         |}
+     """.stripMargin)
+
     // Compute (:User)-[:REVIEWS]->(:Business) graph
     cypher(
       s"""
-         |CATALOG CREATE GRAPH $fsNamespace.${yearGraphName(year)} {
-         |  FROM GRAPH $phoenixGraphName
+         |CATALOG CREATE GRAPH $fsNamespace.${reviewGraphName(year)} {
+         |  FROM GRAPH $cityGraphName
          |  MATCH (b:Business)<-[r:REVIEWS]-(user:User)
-         |  WHERE r.date.year = $year
+         |  WHERE r.date.year = $year AND user.yelping_since.year <= $year
          |  CONSTRUCT
          |   CREATE (user)-[r]->(b)
          |  RETURN GRAPH
@@ -71,9 +90,10 @@ object Part2_YelpGraphLibrary extends App {
     cypher(
       s"""
          |CATALOG CREATE GRAPH $fsNamespace.${coReviewGraphName(year)} {
-         |  FROM GRAPH $fsNamespace.${yearGraphName(year)}
+         |  FROM GRAPH $fsNamespace.${reviewGraphName(year)}
          |  MATCH (b:Business)<-[r:REVIEWS]-(user1:User),
          |        (b)<-[:REVIEWS]-(user2:User)
+         |  WHERE user1.yelping_since.year <= $year AND user2.yelping_since.year <= $year
          |  CONSTRUCT
          |    CREATE (user1)-[:CO_REVIEWS]->(user2)
          |  RETURN GRAPH

@@ -79,7 +79,7 @@ object Neo4jGraphMerge extends Logging {
     config: Neo4jConfig,
     nodeKeys: NodeKeys
   ): Unit = {
-    val maybeMetaLabel = graphName.metaLabel
+    val maybeMetaLabel = graphName.getMetaLabel
 
     config.withSession { session =>
       maybeMetaLabel match {
@@ -138,7 +138,7 @@ object Neo4jGraphMerge extends Logging {
   )(implicit caps: CAPSSession): Unit = {
     val updatedSchema = combineEntityKeys(graph.schema, nodeKeys, relationshipKeys)
 
-    val maybeMetaLabel = graphName.metaLabel
+    val maybeMetaLabel = graphName.getMetaLabel
     val maybeMetaLabelString = maybeMetaLabel.toSet[String].cypherLabelPredicate
 
     val writesCompleted = for {

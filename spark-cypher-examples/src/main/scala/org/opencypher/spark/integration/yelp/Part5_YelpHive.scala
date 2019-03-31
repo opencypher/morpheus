@@ -48,14 +48,14 @@ object Part5_YelpHive extends App {
 
     cypher(
       s"""
-         |FROM $hiveNamespace.${yearGraphName(2017)}
+         |FROM $hiveNamespace.${reviewGraphName(2017)}
          |MATCH ()-[r]->()
          |RETURN COUNT(r)
        """.stripMargin).show
 
     cypher(
       s"""
-         |FROM $hiveNamespace.${yearGraphName(2018)}
+         |FROM $hiveNamespace.${reviewGraphName(2018)}
          |MATCH ()-[r]->()
          |RETURN COUNT(r)
        """.stripMargin).show

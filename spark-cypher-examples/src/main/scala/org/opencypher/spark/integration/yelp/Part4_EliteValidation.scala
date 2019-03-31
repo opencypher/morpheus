@@ -31,7 +31,7 @@ object Part4_EliteValidation extends App {
     neo4jConfig.withSession { implicit session =>
       println(neo4jCypher(
         s"""
-           |CALL algo.pageRank('${coReviewGraphName(year).metaLabel}', ':CO_REVIEWS', {
+           |CALL algo.pageRank('${coReviewGraphName(year).metaLabel}', null, {
            |  iterations:     20,
            |  dampingFactor:  0.85,
            |  direction:      "BOTH",

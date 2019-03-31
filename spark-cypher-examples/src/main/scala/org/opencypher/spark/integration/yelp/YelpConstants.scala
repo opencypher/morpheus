@@ -49,14 +49,16 @@ object YelpConstants {
   val neo4jNamespace = Namespace("neo4j")
   val hiveNamespace = Namespace("hive")
 
-  val phoenixGraphName = GraphName("phoenix")
+  val city = "Boulder City"
+  val cityGraphName = GraphName(city.replace(" ", "").toLowerCase)
   val businessTrendsGraphName = GraphName("businessTrends")
 
-  val view2017: String = yearGraphName(2017).value
-  val view2018: String = yearGraphName(2018).value
+  val view2017: String = reviewGraphName(2017).value
+  val view2018: String = reviewGraphName(2018).value
 
-  def yearGraphName(year: Int) = GraphName(s"year$year")
+  def reviewGraphName(year: Int) = GraphName(s"review$year")
   def coReviewGraphName(year: Int) = GraphName(s"coReviewYear$year")
+  def friendGraphName(year: Int) = GraphName(s"friendYear$year")
 
   def pageRankProp(year: Int) = s"pageRank$year"
   def pageRankCoReviewProp(year: Int) = s"pageRankCoReview$year"

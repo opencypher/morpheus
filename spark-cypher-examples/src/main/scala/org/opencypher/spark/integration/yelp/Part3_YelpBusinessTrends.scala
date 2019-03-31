@@ -46,8 +46,8 @@ object Part3_YelpBusinessTrends extends App {
   (2017 to 2018) foreach { year =>
     cypher(
       s"""
-         |CATALOG CREATE GRAPH $neo4jNamespace.${yearGraphName(year)} {
-         |  FROM $fsNamespace.${yearGraphName(year)}
+         |CATALOG CREATE GRAPH $neo4jNamespace.${reviewGraphName(year)} {
+         |  FROM $fsNamespace.${reviewGraphName(year)}
          |  RETURN GRAPH
          |}
      """.stripMargin)
@@ -56,7 +56,7 @@ object Part3_YelpBusinessTrends extends App {
     neo4jConfig.withSession { implicit session =>
       println(neo4jCypher(
         s"""
-           |CALL algo.pageRank('${yearGraphName(year).metaLabel}', null, {
+           |CALL algo.pageRank('${reviewGraphName(year).metaLabel}', null, {
            |  iterations:     20,
            |  dampingFactor:  0.85,
            |  direction:      "BOTH",
@@ -76,9 +76,9 @@ object Part3_YelpBusinessTrends extends App {
   cypher(
     s"""
        |CATALOG CREATE GRAPH $businessTrendsGraphName {
-       |  FROM GRAPH $neo4jNamespace.${yearGraphName(2017)}
+       |  FROM GRAPH $neo4jNamespace.${reviewGraphName(2017)}
        |  MATCH (b1:Business)
-       |  FROM GRAPH $neo4jNamespace.${yearGraphName(2018)}
+       |  FROM GRAPH $neo4jNamespace.${reviewGraphName(2018)}
        |  MATCH (b2:Business)
        |  WHERE b1.businessId = b2.businessId
        |  WITH b1 AS b, (b2.${pageRankProp(2018)} / ${normalizationFactor(2018)}) - (b1.${pageRankProp(2017)} / ${normalizationFactor(2017)}) AS trendRank

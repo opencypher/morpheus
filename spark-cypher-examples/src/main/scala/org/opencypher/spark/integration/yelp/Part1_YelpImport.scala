@@ -46,6 +46,7 @@ object Part1_YelpImport extends App {
   implicit val spark: SparkSession = caps.sparkSession
 
   storeGraph(inputPath, outputPath)
+//  yelpStats(inputPath)
 
   def storeGraph(inputPath: String, outputPath: String): Unit = {
     val yelpTables = loadYelpTables(inputPath)
@@ -58,6 +59,7 @@ object Part1_YelpImport extends App {
     val userNodeTable = CAPSEntityTable.create(NodeMappingBuilder.on(sourceIdKey)
       .withImpliedLabel(userLabel)
       .withPropertyKey("name")
+      .withPropertyKey("yelping_since")
       .withPropertyKey("elite")
       .build,
       yelpTables.userDf.prependIdColumn(sourceIdKey, userLabel))
@@ -106,12 +108,31 @@ object Part1_YelpImport extends App {
 
     val businessDf = rawBusinessDf.select($"business_id".as(sourceIdKey), $"business_id", $"name", $"address", $"city", $"state")
     val reviewDf = rawReviewDf.select($"review_id".as(sourceIdKey), $"user_id".as(sourceStartNodeKey), $"business_id".as(sourceEndNodeKey), $"stars", $"date".cast(DateType))
-    val userDf = rawUserDf.select($"user_id".as(sourceIdKey), $"name", functions.split($"elite", ",").cast(ArrayType(LongType)).as("elite"))
+    val userDf = rawUserDf.select(
+      $"user_id".as(sourceIdKey),
+      $"name",
+      $"yelping_since".cast(DateType),
+      functions.split($"elite", ",").cast(ArrayType(LongType)).as("elite"))
     val friendDf = rawUserDf
       .select($"user_id".as(sourceStartNodeKey), functions.explode(functions.split($"friends", ", ")).as(sourceEndNodeKey))
       .withColumn(sourceIdKey, functions.monotonically_increasing_id())
 
     YelpTables(userDf, businessDf, reviewDf, friendDf)
+  }
+
+  def yelpStats(inputPath: String): Unit = {
+    val rawBusinessDf = spark.read.json(s"$inputPath/business.json")
+    val rawReviewDf = spark.read.json(s"$inputPath/review.json")
+
+    import spark.implicits._
+
+    rawBusinessDf.select($"city", $"state").distinct().show()
+    rawBusinessDf.withColumnRenamed("business_id", "id")
+      .join(rawReviewDf, $"id" === $"business_id")
+      .groupBy($"city", $"state")
+      .count().as("count")
+      .orderBy($"count".desc, $"state".asc)
+      .show(100)
   }
 
   implicit class DataFrameOps(df: DataFrame) {
