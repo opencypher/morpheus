@@ -83,7 +83,6 @@ case class Neo4jPropertyGraphDataSource(
     val metaLabelGraphNames = allLabels
       .filter(_.startsWith(metaPrefix))
       .map(_.drop(metaPrefix.length))
-      .map(_.replace(dotEscapeString, "."))
       .distinct
 
     metaLabelGraphNames
@@ -164,8 +163,8 @@ case class Neo4jPropertyGraphDataSource(
     }
 
     config.withSession { session =>
-      logger.info(s"Creating database uniqueness constraint on $metaLabel.$metaPropertyKey")
-      session.run(s"CREATE CONSTRAINT ON (n:$metaLabel) ASSERT n.$metaPropertyKey IS UNIQUE").consume()
+      logger.info(s"Creating database uniqueness constraint on ${metaLabel.cypherLabelPredicate}.$metaPropertyKey")
+      session.run(s"CREATE CONSTRAINT ON (n${metaLabel.cypherLabelPredicate}) ASSERT n.$metaPropertyKey IS UNIQUE").consume()
     }
 
     val writesCompleted = for {
