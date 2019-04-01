@@ -152,9 +152,22 @@ case class CTBigDecimal(precision: Int = 10, scale: Int = 0) extends MaterialDef
 
   override def name: String = s"BIGDECIMAL($precision,$scale)"
 
+  override def superTypeOf(other: CypherType): Boolean = other match {
+    case CTVoid => true
+    case CTBigDecimal(p, s) =>
+      val myIntegerPartSize = precision - scale
+      val otherIntegerPartSize = p - s
+
+      (precision >= p) && (scale >= s) && (myIntegerPartSize >= otherIntegerPartSize)
+    case _ => false
+  }
+
   override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
     case CTNumber | CTInteger | CTFloat => CTNumber
-    case CTBigDecimal(p, s) => CTBigDecimal(Math.max(precision, p), Math.min(scale, s))
+    case CTBigDecimal(p, s) =>
+      val maxScale = Math.max(scale, s)
+      val maxDiff = Math.max(precision - scale, p - s)
+      CTBigDecimal(maxDiff + maxScale, maxScale)
     case CTVoid => self
     case _ => CTAny
   }
