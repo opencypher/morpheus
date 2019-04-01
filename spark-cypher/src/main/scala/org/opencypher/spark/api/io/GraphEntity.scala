@@ -36,6 +36,8 @@ sealed trait GraphEntity extends Product {
 
 object GraphEntity {
   val sourceIdKey: String = SourceIdKey.name
+  val nodeSourceIdKey: String = s"node_${SourceIdKey.name}"
+  val relationshipSourceIdKey: String = s"relationship_${SourceIdKey.name}"
 }
 
 /**
