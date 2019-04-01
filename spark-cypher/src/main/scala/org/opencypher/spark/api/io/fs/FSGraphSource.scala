@@ -33,6 +33,7 @@ import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{BinaryType, NullType, StringType, StructType}
 import org.opencypher.okapi.api.graph.{GraphName, Node, Relationship}
 import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure._
 import org.opencypher.spark.api.io.fs.HadoopFSHelpers._
 import org.opencypher.spark.api.io.json.JsonSerialization
 import org.opencypher.spark.api.io.util.HiveTableName
@@ -46,10 +47,10 @@ import org.opencypher.spark.impl.table.SparkTable._
   * By default Spark is used to write tables and the Hadoop filesystem configured in Spark is used to write files.
   * The file/folder/table structure into which the graphs are stored is defined in [[DefaultGraphDirectoryStructure]].
   *
-  * @param rootPath           path where the graphs are stored
+  * @param rootPath path where the graphs are stored
   * @param tableStorageFormat Spark configuration parameter for the table format
-  * @param customFileSystem   optional alternative filesystem to use for writing files
-  * @param filesPerTable      optional parameter that specifies how many files a table is coalesced into, by default 1
+  * @param hiveDatabaseName optional Hive database to write tables to
+  * @param filesPerTable optional parameter that specifies how many files a table is coalesced into, by default 1
   */
 class FSGraphSource(
   val rootPath: String,
@@ -93,7 +94,19 @@ class FSGraphSource(
   }
 
   override protected def listGraphNames: List[String] = {
-    listDirectories(rootPath)
+    def traverse(parent: String): List[String] = {
+      val children = listDirectories(parent)
+      if (children.contains(nodeTablesDirectoryName) || children.contains(relationshipTablesDirectoryName)) {
+        List(parent)
+      } else {
+        children.flatMap(child => traverse(parent / child))
+      }
+    }
+
+    traverse(rootPath)
+      .map(_.substring(rootPath.length))
+      .map(_.replace(pathSeparator, "."))
+      .map(_.substring(1))
   }
 
   override protected def deleteGraph(graphName: GraphName): Unit = {

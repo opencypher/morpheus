@@ -210,7 +210,9 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
         .withRelationshipType(Set("A"), Set("R"), Set("B"))
         .withRelationshipType(Set("B"), Set("R"), Set("A", "B"))
         .withRelationshipType(Set("A", "B"), Set("S"), Set("A", "B"))
-        .withRelationshipType(Set("A", "C"), Set("T"), Set("A", "B"))
+        .withRelationshipType(Set("A", "C"), Set("T"), Set("A", "B")),
+      g3 -> GraphType.empty.withElementType("A").withNodeType("A"),
+      g4 -> GraphType.empty.withElementType("A").withNodeType("A")
     )
 
     def writeTable(df: DataFrame, tableName: String): Unit
