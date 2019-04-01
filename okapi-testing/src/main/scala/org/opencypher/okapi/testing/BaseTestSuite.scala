@@ -37,10 +37,11 @@ import org.scalatest.junit.JUnitRunner
 import org.scalatest.mockito.MockitoSugar
 import org.scalatest.{FunSpec, Matchers, Tag}
 
+import scala.collection.convert.DecorateAsJava
 import scala.util.Random
 
 @RunWith(classOf[JUnitRunner])
-abstract class BaseTestSuite extends FunSpec with Matchers with MockitoSugar {
+abstract class BaseTestSuite extends FunSpec with Matchers with MockitoSugar with DecorateAsJava {
 
   /* Shared test objects */
   val testNamespace = Namespace("testNamespace")

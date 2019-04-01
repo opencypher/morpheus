@@ -39,6 +39,7 @@ import org.opencypher.v9_0.{expressions => ast}
 import org.scalatest.Assertion
 
 import scala.language.implicitConversions
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
@@ -103,43 +104,58 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   describe("bigdecimal") {
     it("should convert bigdecimal") {
-      convert(parseExpr("bigdecimal(INTEGER, 1)")) shouldEqual
-        BigDecimal('INTEGER, 1)
+      convert(parseExpr("bigdecimal(INTEGER, 2, 1)")) shouldEqual
+        BigDecimal('INTEGER, 2, 1)
     }
 
-    it("should convert bigdecimal addition (preserve scale) int") {
-      convert(parseExpr("bigdecimal(INTEGER, 2) + 2")) shouldEqual
-        Add(BigDecimal('INTEGER, 2), IntegerLit(2))(CTBigDecimal(2))
+    it("should convert bigdecimal addition") {
+      convert(parseExpr("bigdecimal(INTEGER, 4, 2) + bigdecimal(INTEGER, 10, 6)")) shouldEqual
+        Add(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))(CTBigDecimal(11, 6))
+    }
+
+    it("should convert bigdecimal subtraction") {
+      convert(parseExpr("bigdecimal(INTEGER, 4, 2) - bigdecimal(INTEGER, 10, 6)")) shouldEqual
+        Subtract(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))(CTBigDecimal(11, 6))
+    }
+
+    it("should convert bigdecimal multiplication") {
+      convert(parseExpr("bigdecimal(INTEGER, 4, 2) * bigdecimal(INTEGER, 10, 6)")) shouldEqual
+        Multiply(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))(CTBigDecimal(15, 8))
+    }
+
+    it("should convert bigdecimal division") {
+      convert(parseExpr("bigdecimal(INTEGER, 4, 2) / bigdecimal(INTEGER, 10, 6)")) shouldEqual
+        Divide(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))(CTBigDecimal(21, 13))
+    }
+
+    it("should convert bigdecimal division (magic number 6)") {
+      convert(parseExpr("bigdecimal(INTEGER, 3, 1) / bigdecimal(INTEGER, 2, 1)")) shouldEqual
+        Divide(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))(CTBigDecimal(9, 6))
+    }
+
+    it("should convert bigdecimal addition with int") {
+      convert(parseExpr("bigdecimal(INTEGER, 2, 2) + 2")) shouldEqual
+        Add(BigDecimal('INTEGER, 2, 2), IntegerLit(2))(CTBigDecimal(23, 2))
+    }
+
+    it("should convert bigdecimal multiplication with int") {
+      convert(parseExpr("bigdecimal(INTEGER, 2, 2) + 2")) shouldEqual
+        Add(BigDecimal('INTEGER, 2, 2), IntegerLit(2))(CTBigDecimal(23, 2))
     }
 
     it("should lose bigdecimal when adding with float") {
-      convert(parseExpr("bigdecimal(FLOAT, 2) + 2.5")) shouldEqual
-        Add(BigDecimal('FLOAT, 2), FloatLit(2.5))(CTFloat)
+      convert(parseExpr("bigdecimal(FLOAT, 4, 2) + 2.5")) shouldEqual
+        Add(BigDecimal('FLOAT, 4, 2), FloatLit(2.5))(CTFloat)
     }
 
     it("should lose bigdecimal when dividing by float") {
-      convert(parseExpr("bigdecimal(FLOAT, 2) / 2.5")) shouldEqual
-        Divide(BigDecimal('FLOAT, 2), FloatLit(2.5))(CTFloat)
+      convert(parseExpr("bigdecimal(FLOAT, 4, 2) / 2.5")) shouldEqual
+        Divide(BigDecimal('FLOAT, 4, 2), FloatLit(2.5))(CTFloat)
     }
 
-    it("should convert bigdecimal addition (max scale)") {
-      convert(parseExpr("bigdecimal(INTEGER, 2) + bigdecimal(INTEGER, 6)")) shouldEqual
-        Add(BigDecimal('INTEGER, 2), BigDecimal('INTEGER, 6))(CTBigDecimal(6))
-    }
-
-    it("should convert bigdecimal subtraction (max scale)") {
-      convert(parseExpr("bigdecimal(INTEGER, 2) - bigdecimal(INTEGER, 6)")) shouldEqual
-        Subtract(BigDecimal('INTEGER, 2), BigDecimal('INTEGER, 6))(CTBigDecimal(6))
-    }
-
-    it("should convert bigdecimal multiplication (add scales)") {
-      convert(parseExpr("bigdecimal(INTEGER, 2) * bigdecimal(INTEGER, 6)")) shouldEqual
-        Multiply(BigDecimal('INTEGER, 2), BigDecimal('INTEGER, 6))(CTBigDecimal(8))
-    }
-
-    it("should convert bigdecimal division (subtract scales)") {
-      convert(parseExpr("bigdecimal(INTEGER, 2) / bigdecimal(INTEGER, 6)")) shouldEqual
-        Divide(BigDecimal('INTEGER, 2), BigDecimal('INTEGER, 6))(CTBigDecimal(-4))
+    it("should not allow scale to be greater than precision") {
+      val a = the [IllegalArgumentException] thrownBy convert(parseExpr("bigdecimal(INTEGER, 2, 3)"))
+      a.getMessage should(include("Greater precision than scale") and include("precision: 2") and include("scale: 3"))
     }
   }
 

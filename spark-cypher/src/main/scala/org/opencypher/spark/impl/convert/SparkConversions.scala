@@ -57,7 +57,7 @@ object SparkConversions {
         ct.material match {
           case CTString => Some(StringType)
           case CTInteger => Some(LongType)
-          case CTBigDecimal(s) => Some(DataTypes.createDecimalType(DEFAULT_PRECISION, s))
+          case CTBigDecimal(p, s) => Some(DataTypes.createDecimalType(p, s))
           case CTBoolean => Some(BooleanType)
           case CTFloat => Some(DoubleType)
           case CTLocalDateTime => Some(TimestampType)
@@ -127,7 +127,7 @@ object SparkConversions {
         case LongType => Some(CTInteger)
         case BooleanType => Some(CTBoolean)
         case DoubleType => Some(CTFloat)
-        case dt: DecimalType => Some(CTBigDecimal(dt.scale))
+        case dt: DecimalType => Some(CTBigDecimal(dt.precision, dt.scale))
         case TimestampType => Some(CTLocalDateTime)
         case DateType => Some(CTDate)
         case CalendarIntervalType => Some(CTDuration)

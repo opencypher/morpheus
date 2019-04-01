@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.api.io.sql
 
-import org.apache.spark.sql.types.{IntegerType, LongType, StructField, StructType}
+import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, SaveMode}
 import org.opencypher.graphddl.GraphDdl
 import org.opencypher.okapi.api.graph.{GraphName, NodeRelPattern}
@@ -36,10 +36,10 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.FileFormat
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.{File, Hive, Jdbc}
+import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{H2Fixture, HiveFixture}
 
-import scala.collection.JavaConverters._
 
 class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with H2Fixture {
 

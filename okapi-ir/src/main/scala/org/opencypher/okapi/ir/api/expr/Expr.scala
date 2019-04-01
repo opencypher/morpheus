@@ -573,8 +573,11 @@ object BigDecimal {
   val name: String = "bigdecimal"
 }
 
-final case class BigDecimal(expr: Expr, scale: Long) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTBigDecimal(scale.toInt).asNullableAs(expr.cypherType)
+final case class BigDecimal(expr: Expr, precision: Long, scale: Long) extends UnaryFunctionExpr {
+  if (scale > precision) {
+    throw IllegalArgumentException("Greater precision than scale", s"precision: $precision, scale: $scale")
+  }
+  override val cypherType: CypherType = CTBigDecimal(precision.toInt, scale.toInt).asNullableAs(expr.cypherType)
 }
 
 final case class Coalesce(exprs: List[Expr])(val cypherType: CypherType) extends FunctionExpr {

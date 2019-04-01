@@ -32,6 +32,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherInteger
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.impl.BigDecimalSignatures.{Addition, Division, Multiplication}
 import org.opencypher.okapi.ir.impl.SignatureTyping._
 import org.opencypher.okapi.ir.impl.parse.functions.FunctionExtensions
 import org.opencypher.okapi.ir.impl.parse.{functions => f}
@@ -71,7 +72,7 @@ object AddType {
       case Seq(CTFloat, CTFloat) => Some(CTFloat)
       case _ => None
     }
-    val sigs = Set(addSignature, BigDecimalSignatures.arithmeticSignature(Math.max))
+    val sigs = Set(addSignature, BigDecimalSignatures.arithmeticSignature(Addition))
 
     returnTypeFor(Seq.empty, Seq(lhs, rhs), sigs)
   }
@@ -178,7 +179,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
       val convertedRhs = convert(rhs)
 
       val exprType = s.returnTypeFor(
-        BigDecimalSignatures.arithmeticSignature(Math.max),
+        BigDecimalSignatures.arithmeticSignature(Addition),
         convertedLhs.cypherType, convertedRhs.cypherType
       )
 
@@ -189,7 +190,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
       val convertedRhs = convert(rhs)
 
       val exprType = m.returnTypeFor(
-        BigDecimalSignatures.arithmeticSignature(_ + _),
+        BigDecimalSignatures.arithmeticSignature(Multiplication),
         convertedLhs.cypherType, convertedRhs.cypherType
       )
 
@@ -200,7 +201,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
       val convertedRhs = convert(rhs)
 
       val exprType = d.returnTypeFor(
-        BigDecimalSignatures.arithmeticSignature(_ - _),
+        BigDecimalSignatures.arithmeticSignature(Division),
         convertedLhs.cypherType, convertedRhs.cypherType
       )
 
@@ -312,8 +313,8 @@ final class ExpressionConverter(context: IRBuilderContext) {
           case f.Date.name => Date(convertedArgs.headOption)
           case f.Duration.name => Duration(arg0)
           case BigDecimal.name =>
-            e.checkNbrArgs(2, convertedArgs.length)
-            BigDecimal(arg0, extractLong(arg1))
+            e.checkNbrArgs(3, convertedArgs.length)
+            BigDecimal(arg0, extractLong(arg1), extractLong(arg2))
           case name => throw NotImplementedException(s"Support for converting function '$name' is not yet implemented")
         }
 
@@ -380,13 +381,44 @@ final class ExpressionConverter(context: IRBuilderContext) {
 }
 
 object BigDecimalSignatures {
-  def arithmeticSignature(scaleOp: (Int, Int) => Int): Signature = {
-    case Seq(CTBigDecimal(s1), CTBigDecimal(s2)) => Some(CTBigDecimal(scaleOp(s1, s2)))
-    case Seq(x: CTBigDecimal, CTInteger) => Some(x)
-    case Seq(CTInteger, x: CTBigDecimal) => Some(x)
-    case Seq(_: CTBigDecimal, CTFloat) => Some(CTFloat) // Spark does this; does it make sense?
-    case Seq(CTFloat, _: CTBigDecimal) => Some(CTFloat) // Spark does this; does it make sense?
+
+  /**
+    * Signature for BigDecimal arithmetics on the type level. The semantics are based on Spark SQL, which in turn
+    * is based on Hive and SQL Server. See DecimalPrecision in Apache Spark
+    * @param precisionScaleOp
+    * @return
+    */
+  def arithmeticSignature(precisionScaleOp: PrecisionScaleOp): Signature = {
+    case Seq(CTBigDecimal(p1, s1), CTBigDecimal(p2, s2)) => Some(CTBigDecimal(precisionScaleOp(p1, s1, p2, s2)))
+    case Seq(CTBigDecimal(p, s), CTInteger) => Some(CTBigDecimal(precisionScaleOp(p, s, 20, 0)))
+    case Seq(CTInteger, CTBigDecimal(p, s)) => Some(CTBigDecimal(precisionScaleOp(20, 0, p, s)))
+    case Seq(_: CTBigDecimal, CTFloat) => Some(CTFloat)
+    case Seq(CTFloat, _: CTBigDecimal) => Some(CTFloat)
     case _ => None
+  }
+
+  trait PrecisionScaleOp {
+    def apply(p1: Int, s1: Int, p2: Int, s2: Int): (Int, Int)
+  }
+
+  import Math.max
+
+  case object Addition extends PrecisionScaleOp {
+    override def apply(p1: Int, s1: Int, p2: Int, s2: Int): (Int, Int) = {
+      max(s1, s2) + max(p1 - s1, p2 - s2) + 1 -> max(s1, s2)
+    }
+  }
+
+  case object Multiplication extends PrecisionScaleOp {
+    override def apply(p1: Int, s1: Int, p2: Int, s2: Int): (Int, Int) = {
+      p1 + p2 + 1 -> (s1 + s2)
+    }
+  }
+
+  case object Division extends PrecisionScaleOp {
+    override def apply(p1: Int, s1: Int, p2: Int, s2: Int): (Int, Int) = {
+      p1 - s1 + s2 + max(6, s1 + p2 + 1) -> max(6, s1 + p2 + 1)
+    }
   }
 }
 

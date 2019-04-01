@@ -60,7 +60,7 @@ object CypherType {
         case CypherFloat(_) => CTFloat
         case CypherInteger(_) => CTInteger
         case CypherString(_) => CTString
-        case CypherBigDecimal(b) => CTBigDecimal(b.scale)
+        case CypherBigDecimal(b) => CTBigDecimal(b.precision, b.scale)
         case CypherLocalDateTime(_) => CTLocalDateTime
         case CypherDate(_) => CTDate
         case CypherDuration(_) => CTDuration
@@ -141,15 +141,20 @@ case object CTFloat extends MaterialDefiniteCypherLeafType {
   }
 }
 
-case class CTBigDecimal(scale: Int = 0) extends MaterialDefiniteCypherLeafType {
+object CTBigDecimal {
+  def apply(precisionAndScale: (Int, Int)): CTBigDecimal =
+    CTBigDecimal(precisionAndScale._1, precisionAndScale._2)
+}
+
+case class CTBigDecimal(precision: Int = 10, scale: Int = 0) extends MaterialDefiniteCypherLeafType {
 
   self =>
 
-  override def name: String = s"BIGDECIMAL($scale)"
+  override def name: String = s"BIGDECIMAL($precision,$scale)"
 
   override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
     case CTNumber | CTInteger | CTFloat => CTNumber
-    case CTBigDecimal(s) => CTBigDecimal(Math.min(scale, s)) // TODO: or max()?
+    case CTBigDecimal(p, s) => CTBigDecimal(Math.max(precision, p), Math.min(scale, s))
     case CTVoid => self
     case _ => CTAny
   }
@@ -525,7 +530,7 @@ private[okapi] object MaterialDefiniteCypherType {
       // equal to another instance of itself
       case CTString => CTStringOrNull
       case CTInteger => CTIntegerOrNull
-      case CTBigDecimal(s) => CTBigDecimalOrNull(s)
+      case CTBigDecimal(p, s) => CTBigDecimalOrNull(p, s)
       case CTBoolean => CTBooleanOrNull
       case CTAny => CTAnyOrNull
       case CTNumber => CTNumberOrNull
@@ -546,9 +551,9 @@ case object CTIntegerOrNull extends NullableDefiniteCypherType {
   override def material: CTInteger.type = CTInteger
 }
 
-case class CTBigDecimalOrNull(scale: Int) extends NullableDefiniteCypherType {
+case class CTBigDecimalOrNull(precision: Int, scale: Int) extends NullableDefiniteCypherType {
   override def name: String = material.name + "?"
-  override def material: CTBigDecimal = CTBigDecimal(scale)
+  override def material: CTBigDecimal = CTBigDecimal(precision, scale)
 }
 
 case object CTStringOrNull extends NullableDefiniteCypherType {
