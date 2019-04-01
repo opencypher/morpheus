@@ -88,6 +88,115 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
       ))
   }
 
+  describe("bigdecimal specifics") {
+    val fooView = "foo_view"
+
+    def graphDdl(precision: Int, scale: Int): GraphDdl = GraphDdl(
+      s"""
+         |SET SCHEMA $dataSourceName.$databaseName
+         |
+         |CREATE GRAPH TYPE fooSchema (
+         | Foo ( num BIGDECIMAL($precision, $scale) ),
+         | (Foo)
+         |)
+         |CREATE GRAPH fooGraph OF fooSchema (
+         |  (Foo) FROM $fooView
+         |)
+     """.stripMargin
+    )
+
+    it("reads bigdecimals as standard properties") {
+
+      val value = BigDecimal(314159, 5)
+      val typ = DecimalType(10, 5)
+
+      sparkSession.createDataFrame(List(Row(value)).asJava, StructType(Seq(StructField("num", typ))))
+        .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
+
+      val ds = SqlPropertyGraphDataSource(graphDdl(10, 5), Map(dataSourceName -> Hive))
+
+      val records = ds.graph(fooGraphName)
+        .cypher("MATCH (n) RETURN labels(n) AS labels, n.num AS num")
+        .records
+      records.toMaps should equal(
+        Bag(
+          CypherMap("labels" -> List("Foo"), "num" -> value)
+        ))
+      records.asCaps.table.df.schema.fields(1) should equal(
+        StructField("num", typ)
+      )
+    }
+
+    it("lifts bigdecimals with lower precision, same scale") {
+      val value = BigDecimal(31415, 4)
+      val typ = DecimalType(14, 4)
+
+      sparkSession.createDataFrame(List(Row(value)).asJava, StructType(Seq(StructField("num", typ))))
+        .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
+
+      val ds = SqlPropertyGraphDataSource(graphDdl(15, 4), Map(dataSourceName -> Hive))
+
+      val records = ds.graph(fooGraphName)
+        .cypher("MATCH (n) RETURN labels(n) AS labels, n.num AS num")
+        .records
+      records.toMaps should equal(
+        Bag(
+          CypherMap("labels" -> List("Foo"), "num" -> value)
+        ))
+      records.asCaps.table.df.schema.fields(1) should equal(
+        StructField("num", DecimalType(15, 4))
+      )
+    }
+
+    it("lifts bigdecimals with lower precision, lower scale") {
+      val value = BigDecimal(31415, 3)
+      val typ = DecimalType(14, 3)
+
+      sparkSession.createDataFrame(List(Row(value)).asJava, StructType(Seq(StructField("num", typ))))
+        .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
+
+      val ds = SqlPropertyGraphDataSource(graphDdl(15, 4), Map(dataSourceName -> Hive))
+
+      val records = ds.graph(fooGraphName)
+        .cypher("MATCH (n) RETURN labels(n) AS labels, n.num AS num")
+        .records
+      records.toMaps should equal(
+        Bag(
+          CypherMap("labels" -> List("Foo"), "num" -> value)
+        ))
+      records.asCaps.table.df.schema.fields(1) should equal(
+        StructField("num", DecimalType(15, 4))
+      )
+    }
+
+    it("prevents bigdecimals with greater precision") {
+      val value1 = BigDecimal(12345, 2)
+      val value2 = BigDecimal(123456, 2)
+      val typ = DecimalType(6, 2)
+
+      sparkSession.createDataFrame(List(Row(value1), Row(value2)).asJava, StructType(Seq(StructField("num", typ))))
+        .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
+
+      val ds = SqlPropertyGraphDataSource(graphDdl(5, 2), Map(dataSourceName -> Hive))
+
+      val e = the [IllegalArgumentException] thrownBy ds.graph(fooGraphName)
+      e.getMessage should (include("subtype of DecimalType(5,2)") and include("DecimalType(6,2)"))
+    }
+
+    it("prevents bigdecimals with greater scale") {
+      val value = BigDecimal(12345, 3)
+      val typ = DecimalType(5, 3)
+
+      sparkSession.createDataFrame(List(Row(value)).asJava, StructType(Seq(StructField("num", typ))))
+        .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
+
+      val ds = SqlPropertyGraphDataSource(graphDdl(5, 2), Map(dataSourceName -> Hive))
+
+      val e = the [IllegalArgumentException] thrownBy ds.graph(fooGraphName)
+      e.getMessage should (include("subtype of DecimalType(5,2)") and include("DecimalType(5,3)"))
+    }
+  }
+
   it("reads nodes from a table with custom column mapping") {
     val fooView = "foo_view"
 

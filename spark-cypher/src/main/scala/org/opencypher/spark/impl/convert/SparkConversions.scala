@@ -149,6 +149,12 @@ object SparkConversions {
       if (nullable) result.map(_.nullable) else result.map(_.material)
     }
 
+    def getCypherType(nullable: Boolean = false): CypherType =
+      toCypherType(nullable) match {
+        case Some(ct) => ct
+        case None => throw SparkSQLMappingException(s"Mapping of Spark type $dt to Cypher type is unsupported")
+      }
+
     /**
       * Checks if the given data type is supported within the Cypher type system.
       *
