@@ -35,7 +35,7 @@ class BigDecimalTests extends CAPSTestSuite with ScanGraphInit {
   describe("general") {
 
     it("returns a big decimal") {
-      caps.cypher("RETURN bigdecimal(1234, 2) AS decimal").records.toMaps should equal(
+      caps.cypher("RETURN bigdecimal(1234, 4, 2) AS decimal").records.toMaps should equal(
         Bag(
           CypherMap("decimal" -> BigDecimal(1234, 2))
         )
@@ -60,7 +60,7 @@ class BigDecimalTests extends CAPSTestSuite with ScanGraphInit {
         )
       )
 
-      caps.cypher("RETURN 10 + bigdecimal(1234, 2) AS decimal").records.toMaps should equal(
+      caps.cypher("RETURN 10 + bigdecimal(1234, 2, 10) AS decimal").records.toMaps should equal(
         Bag(
           CypherMap("decimal" -> BigDecimal(2234, 2))
         )

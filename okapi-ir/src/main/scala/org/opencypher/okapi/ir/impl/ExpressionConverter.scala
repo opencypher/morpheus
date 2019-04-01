@@ -430,6 +430,7 @@ object SignatureTyping {
     * Signatures from the frontend may be extended with additional signatures.
     */
   def returnTypeFor(signatures: Seq[ast.TypeSignature], args: Seq[CypherType], extensions: Set[Signature] = Set.empty): Option[CypherType] = {
+    // TODO: shrink signature of this call to just take in one collection of Signature
     val expandedSignatures = SignatureConverter.from(signatures)
       .expandWithNulls
       .expandWithSubstitutions(CTFloat, CTInteger)

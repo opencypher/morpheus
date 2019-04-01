@@ -40,6 +40,8 @@ import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{H2Fixture, HiveFixture}
 
+import scala.math.BigDecimal.RoundingMode
+
 
 class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with H2Fixture {
 
@@ -105,68 +107,40 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
      """.stripMargin
     )
 
-    it("reads bigdecimals as standard properties") {
+    def testBigDecimalConversion(sourcePrecision: Int, sourceScale: Int, targetPrecision: Int, targetScale: Int): Unit = {
+      val sourceValue = BigDecimal(1*Math.pow(10, sourcePrecision).toInt, sourceScale)
+      val sourceType = DecimalType(sourcePrecision, sourceScale)
 
-      val value = BigDecimal(314159, 5)
-      val typ = DecimalType(10, 5)
+      val targetValue = sourceValue.setScale(targetScale, RoundingMode.HALF_UP)
+      val targetType = DecimalType(targetPrecision, targetScale)
 
-      sparkSession.createDataFrame(List(Row(value)).asJava, StructType(Seq(StructField("num", typ))))
+      sparkSession.createDataFrame(List(Row(sourceValue)).asJava, StructType(Seq(StructField("num", sourceType))))
         .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
 
-      val ds = SqlPropertyGraphDataSource(graphDdl(10, 5), Map(dataSourceName -> Hive))
+      val ds = SqlPropertyGraphDataSource(graphDdl(targetPrecision, targetScale), Map(dataSourceName -> Hive))
 
       val records = ds.graph(fooGraphName)
         .cypher("MATCH (n) RETURN labels(n) AS labels, n.num AS num")
         .records
       records.toMaps should equal(
         Bag(
-          CypherMap("labels" -> List("Foo"), "num" -> value)
+          CypherMap("labels" -> List("Foo"), "num" -> targetValue)
         ))
       records.asCaps.table.df.schema.fields(1) should equal(
-        StructField("num", typ)
+        StructField("num", targetType)
       )
+    }
+
+    it("reads bigdecimals as standard properties") {
+      testBigDecimalConversion(10,5, 10,5)
     }
 
     it("lifts bigdecimals with lower precision, same scale") {
-      val value = BigDecimal(31415, 4)
-      val typ = DecimalType(14, 4)
-
-      sparkSession.createDataFrame(List(Row(value)).asJava, StructType(Seq(StructField("num", typ))))
-        .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
-
-      val ds = SqlPropertyGraphDataSource(graphDdl(15, 4), Map(dataSourceName -> Hive))
-
-      val records = ds.graph(fooGraphName)
-        .cypher("MATCH (n) RETURN labels(n) AS labels, n.num AS num")
-        .records
-      records.toMaps should equal(
-        Bag(
-          CypherMap("labels" -> List("Foo"), "num" -> value)
-        ))
-      records.asCaps.table.df.schema.fields(1) should equal(
-        StructField("num", DecimalType(15, 4))
-      )
+      testBigDecimalConversion(14,4, 15,4)
     }
 
     it("lifts bigdecimals with lower precision, lower scale") {
-      val value = BigDecimal(31415, 3)
-      val typ = DecimalType(14, 3)
-
-      sparkSession.createDataFrame(List(Row(value)).asJava, StructType(Seq(StructField("num", typ))))
-        .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
-
-      val ds = SqlPropertyGraphDataSource(graphDdl(15, 4), Map(dataSourceName -> Hive))
-
-      val records = ds.graph(fooGraphName)
-        .cypher("MATCH (n) RETURN labels(n) AS labels, n.num AS num")
-        .records
-      records.toMaps should equal(
-        Bag(
-          CypherMap("labels" -> List("Foo"), "num" -> value)
-        ))
-      records.asCaps.table.df.schema.fields(1) should equal(
-        StructField("num", DecimalType(15, 4))
-      )
+      testBigDecimalConversion(14,3, 15,4)
     }
 
     it("prevents bigdecimals with greater precision") {
