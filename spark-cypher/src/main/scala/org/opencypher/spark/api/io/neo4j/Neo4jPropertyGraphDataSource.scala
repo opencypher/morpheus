@@ -83,6 +83,7 @@ case class Neo4jPropertyGraphDataSource(
     val metaLabelGraphNames = allLabels
       .filter(_.startsWith(metaPrefix))
       .map(_.drop(metaPrefix.length))
+      .map(_.replace(dotEscapeString, "."))
       .distinct
 
     metaLabelGraphNames

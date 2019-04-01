@@ -35,6 +35,8 @@ import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults.{metaPrefix, met
 object MetaLabelSupport {
   val entireGraphName = GraphName("graph")
 
+  val dotEscapeString = s"${metaPrefix}DOT$metaPrefix"
+
   implicit class RichGraphName(val graphName: GraphName) {
     def getMetaLabel: Option[String] =
       if (graphName == entireGraphName) None
@@ -42,7 +44,7 @@ object MetaLabelSupport {
 
     def metaLabel: String = getMetaLabel.get
 
-    def metaLabelForSubgraph = s"$metaPrefix$graphName"
+    def metaLabelForSubgraph = s"$metaPrefix${graphName.value.replaceAll("\\.", dotEscapeString)}"
   }
 
   implicit class RichPropertyKeys(val keys: PropertyKeys) extends AnyVal {
