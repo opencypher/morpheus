@@ -93,12 +93,14 @@ case class SqlPropertyGraphDataSource(
 
     caps.graphs.create(Some(schema), nodeTables.head, nodeTables.tail ++ relationshipTables ++ patternTables: _*)
   }
+
   override def schema(name: GraphName): Option[CAPSSchema] = graphDdl.graphs.get(name).map(_.graphType.asOkapiSchema.asCaps)
 
   override def store(name: GraphName, graph: PropertyGraph): Unit = unsupported("storing a graph")
 
   private def unsupported(operation: String): Nothing =
     throw UnsupportedOperationException(s"$className does not allow $operation")
+
   override def delete(name: GraphName): Unit = unsupported("deleting a graph")
 
   override def graphNames: Set[GraphName] = graphDdl.graphs.keySet
