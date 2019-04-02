@@ -30,16 +30,17 @@ import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.v9_0.ast.semantics.SemanticState
 import org.opencypher.v9_0.{expressions => ast}
 import org.scalatest.Assertion
 
 import scala.language.implicitConversions
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
@@ -130,7 +131,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
     it("should convert bigdecimal division (magic number 6)") {
       convert(parseExpr("bigdecimal(INTEGER, 3, 1) / bigdecimal(INTEGER, 2, 1)")) shouldEqual
-        Divide(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))(CTBigDecimal(9, 6))
+        Divide(BigDecimal('INTEGER, 3, 1), BigDecimal('INTEGER, 2, 1))(CTBigDecimal(9, 6))
     }
 
     it("should convert bigdecimal addition with int") {
@@ -404,7 +405,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   implicit class TestExpr(expr: Expr) {
     def shouldEqual(other: Expr): Assertion = {
-      expr should equal(other)
+      expr should equalWithTracing(other)
       expr.cypherType should equal(other.cypherType)
     }
     def shouldEqual(other: Expr, typ: CypherType): Assertion = {
