@@ -190,8 +190,7 @@ object SparkSQLExprMapper {
         case ToId(e) =>
           e.cypherType.material match {
             case CTInteger => child0.encodeLongAsCAPSId
-            // TODO: Remove this call; we shouldn't have nodes or rels as concrete types here
-            case _: CTNode | _: CTRelationship | CTIdentity => child0
+            case ct if ct.toSparkType.contains(BinaryType) => child0
             case other => throw IllegalArgumentException("a type that may be converted to an ID", other)
           }
 
