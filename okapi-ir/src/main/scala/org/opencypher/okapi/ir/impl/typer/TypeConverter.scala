@@ -58,9 +58,6 @@ object TypeConverter {
   }
 }
 
-
-
-
 object SignatureConverter {
 
   trait Signature {

@@ -53,28 +53,32 @@ object AddType {
   }
 
   def apply(lhs: CypherType, rhs: CypherType): Option[CypherType] = {
-    val addSignature: Signature = {
-      case Seq(CTVoid, _) => Some(CTNull)
-      case Seq(_, CTVoid) => Some(CTNull)
-      case Seq(left: CTList, _) => Some(left listConcatJoin rhs)
-      case Seq(_, right: CTList) => Some(right listConcatJoin lhs)
-      case Seq(CTString, _) if rhs.subTypeOf(CTNumber) => Some(CTString)
-      case Seq(_, CTString) if lhs.subTypeOf(CTNumber) => Some(CTString)
-      case Seq(CTString, CTString) => Some(CTString)
-      case Seq(CTDuration, CTDuration) => Some(CTDuration)
-      case Seq(CTLocalDateTime, CTDuration) => Some(CTLocalDateTime)
-      case Seq(CTDuration, CTLocalDateTime) => Some(CTLocalDateTime)
-      case Seq(CTDate, CTDuration) => Some(CTDate)
-      case Seq(CTDuration, CTDate) => Some(CTDate)
-      case Seq(CTInteger, CTInteger) => Some(CTInteger)
-      case Seq(CTFloat, CTInteger) => Some(CTFloat)
-      case Seq(CTInteger, CTFloat) => Some(CTFloat)
-      case Seq(CTFloat, CTFloat) => Some(CTFloat)
-      case _ => None
+    val addSignature: Signature = args => {
+      val result = args.map(_.material) match {
+        case Seq(CTVoid, _) | Seq(_, CTVoid) => Some(CTNull)
+        case Seq(left: CTList, _) => Some(left listConcatJoin rhs)
+        case Seq(_, right: CTList) => Some(right listConcatJoin lhs)
+        case Seq(CTString, _) if rhs.subTypeOf(CTNumber) => Some(CTString)
+        case Seq(_, CTString) if lhs.subTypeOf(CTNumber) => Some(CTString)
+        case Seq(CTString, CTString) => Some(CTString)
+        case Seq(CTDuration, CTDuration) => Some(CTDuration)
+        case Seq(CTLocalDateTime, CTDuration) => Some(CTLocalDateTime)
+        case Seq(CTDuration, CTLocalDateTime) => Some(CTLocalDateTime)
+        case Seq(CTDate, CTDuration) => Some(CTDate)
+        case Seq(CTDuration, CTDate) => Some(CTDate)
+        case Seq(CTInteger, CTInteger) => Some(CTInteger)
+        case Seq(CTFloat, CTInteger) => Some(CTFloat)
+        case Seq(CTInteger, CTFloat) => Some(CTFloat)
+        case Seq(CTFloat, CTFloat) => Some(CTFloat)
+        case _ => None
+      }
+
+      result.map(_.asNullableAs(rhs join lhs))
     }
     val sigs = Set(addSignature, BigDecimalSignatures.arithmeticSignature(Addition))
 
-    returnTypeFor(Seq.empty, Seq(lhs, rhs), sigs)
+    val foo = returnTypeFor(Seq.empty, Seq(lhs, rhs), sigs)
+    foo
   }
 
 }

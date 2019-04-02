@@ -49,10 +49,10 @@ class SparkConversionsTest extends BaseTestSuite {
     CTDate.toStructField("foo") should equal(StructField("foo", DateType, nullable = false))
     CTDateOrNull.toStructField("foo") should equal(StructField("foo", DateType, nullable = true))
 
-    CTNode(Set("A")).toStructField("foo") should equal(StructField("foo", LongType, nullable = false))
-    CTNodeOrNull(Set("A")).toStructField("foo") should equal(StructField("foo", LongType, nullable = true))
-    CTRelationship("A").toStructField("foo") should equal(StructField("foo", LongType, nullable = false))
-    CTRelationshipOrNull("A").toStructField("foo") should equal(StructField("foo", LongType, nullable = true))
+    CTNode(Set("A")).toStructField("foo") should equal(StructField("foo", BinaryType, nullable = false))
+    CTNodeOrNull(Set("A")).toStructField("foo") should equal(StructField("foo", BinaryType, nullable = true))
+    CTRelationship("A").toStructField("foo") should equal(StructField("foo", BinaryType, nullable = false))
+    CTRelationshipOrNull("A").toStructField("foo") should equal(StructField("foo", BinaryType, nullable = true))
   }
 
   it("should produce the correct StructField for nested types") {
@@ -81,7 +81,7 @@ class SparkConversionsTest extends BaseTestSuite {
       StructField("myMap", StructType(Seq(
         StructField("foo", LongType, nullable = false),
         StructField("bar", StringType, nullable = true)
-      )))
+      )), nullable = false)
     )
   }
 }
