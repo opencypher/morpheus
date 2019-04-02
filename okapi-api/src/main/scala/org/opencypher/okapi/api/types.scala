@@ -90,8 +90,15 @@ package object types {
   ) extends CypherType {
     override def withGraph(qgn: QualifiedGraphName): CTNode = copy(graph = Some(qgn))
     override def withoutGraph: CypherType = CTNode(labels)
-    override def name: String = s"NODE(${labels.map(l => s":$l").mkString})${graph.map(g => s" @ $g").getOrElse("")}"
-    override def toString: String = s"CTNode(${labels.map(l => "\"" + l + "\"").mkString(", ")})"
+
+    override def name: String =
+      if (this == CTNode) {
+        "NODE"
+      } else {
+        s"NODE(${labels.map(l => s":$l").mkString})${graph.map(g => s" @ $g").getOrElse("")}"
+      }
+
+    override def toString: String = if (this == CTNode) "CTNode" else s"CTNode(${labels.map(l => "\"" + l + "\"").mkString(", ")})"
   }
 
   object CTRelationship extends CTRelationship(Set.empty, None) {
@@ -180,7 +187,7 @@ package object types {
   object CTUnion {
     def apply(ts: CypherType*): CypherType = {
       val flattened = ts.flatMap {
-        case CTUnion(as) => as
+        case u: CTUnion => u.alternatives
         case p => Set(p)
       }.distinct.toList
 
@@ -198,12 +205,12 @@ package object types {
 
   case object CTPath extends CypherType
 
-  val CTNumber: CypherType = CTUnion(CTFloat, CTInteger)
+  val CTNumber: CTUnion = CTUnion(Set[CypherType](CTFloat, CTInteger))
 
-  val CTBoolean: CypherType = CTUnion(CTTrue, CTFalse)
+  val CTBoolean: CTUnion = CTUnion(Set[CypherType](CTTrue, CTFalse))
 
-  val CTEntity: CypherType = CTUnion(CTNode, CTRelationship)
+  val CTEntity: CTUnion = CTUnion(Set[CypherType](CTNode, CTRelationship))
 
-  val CTAny: CypherType = CTUnion(CTAnyMaterial, CTNull)
+  val CTAny: CTUnion = CTUnion(Set[CypherType](CTAnyMaterial, CTNull))
 
 }
