@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.api
 
-import org.opencypher.okapi.api.types.{CTAny, CTNode, CTRelationship}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.testing.BaseTestSuite
 
 class IRFieldTest extends BaseTestSuite {
