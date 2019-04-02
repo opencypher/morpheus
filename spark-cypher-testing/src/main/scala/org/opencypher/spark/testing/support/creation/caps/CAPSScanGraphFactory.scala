@@ -43,7 +43,7 @@ import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
-import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
+import org.opencypher.spark.impl.temporal.TemporalConversions._
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.support.EntityTableCreationSupport
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
