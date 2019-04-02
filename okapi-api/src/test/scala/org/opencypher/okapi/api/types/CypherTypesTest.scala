@@ -132,7 +132,7 @@ class CypherTypesTest extends ApiBaseTest {
       CTNumber -> ("NUMBER" -> "NUMBER?"),
       CTInteger -> ("INTEGER" -> "INTEGER?"),
       CTFloat -> ("FLOAT" -> "FLOAT?"),
-      CTBigDecimal(12) -> ("BIGDECIMAL(12)" -> "BIGDECIMAL(12)?"),
+      CTBigDecimal(12,6) -> ("BIGDECIMAL(12,6)" -> "BIGDECIMAL(12,6)?"),
       CTMap(Map("foo" -> CTString, "bar" -> CTInteger)) -> ("MAP(foo: STRING, bar: INTEGER)" -> "MAP(foo: STRING, bar: INTEGER)?"),
       CTNode -> ("NODE" -> "NODE?"),
       CTNode("Person") -> ("NODE(:Person)" -> "NODE(:Person)?"),
