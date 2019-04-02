@@ -40,7 +40,7 @@ import scala.util.{Failure, Success, Try}
 
 class TckSparkCypherTest extends CAPSTestSuite {
 
-  object TckCapsTag extends Tag("TckSparkCypher")
+  val tckCapsTag: Tag = Tag("TckSparkCypher")
 
   // Defines the graphs to run on
   private val factories = Table(
@@ -60,7 +60,7 @@ class TckSparkCypherTest extends CAPSTestSuite {
   forAll(factories) { (factory, additional_blacklist) =>
     forAll(scenarios.whiteList) { scenario =>
       if (!additional_blacklist.contains(scenario.toString)) {
-        test(s"[${factory.name}, ${WhiteList.name}] $scenario", WhiteList, TckCapsTag, Tag(factory.name)) {
+        test(s"[${factory.name}, ${WhiteList.name}] $scenario", WhiteList, tckCapsTag, Tag(factory.name)) {
           scenario(TCKGraph(factory, caps.graphs.empty)).execute()
         }
       }
@@ -69,7 +69,7 @@ class TckSparkCypherTest extends CAPSTestSuite {
 
   // black list tests are run on default factory
   forAll(scenarios.blackList) { scenario =>
-    test(s"[${defaultFactory.name}, ${BlackList.name}] $scenario", BlackList, TckCapsTag) {
+    test(s"[${defaultFactory.name}, ${BlackList.name}] $scenario", BlackList, tckCapsTag) {
       val tckGraph = TCKGraph(defaultFactory, caps.graphs.empty)
 
       Try(scenario(tckGraph).execute()) match {
@@ -82,12 +82,14 @@ class TckSparkCypherTest extends CAPSTestSuite {
   }
 
   it("computes the TCK coverage") {
-    val failingScenarios = Source.fromFile(failingBlacklist).getLines().size
-    val failingTemporalScenarios = Source.fromFile(temporalBlacklist).getLines().size
-    val failureReportingScenarios = Source.fromFile(failureReportingBlacklistFile).getLines().size
-
     val white = scenarios.whiteList.groupBy(_.featureName).mapValues(_.size)
     val black = scenarios.blackList.groupBy(_.featureName).mapValues(_.size)
+
+    def withSource[T](s: Source)(f: Source => T) = try { f(s) } finally { s.close() }
+
+    val failingScenarios = withSource(Source.fromFile(failingBlacklist))(_.getLines().size)
+    val failingTemporalScenarios = withSource(Source.fromFile(temporalBlacklist))(_.getLines().size)
+    val failureReportingScenarios = withSource(Source.fromFile(failureReportingBlacklistFile))(_.getLines().size)
 
     val allFeatures = white.keySet ++ black.keySet
     val perFeatureCoverage = allFeatures.foldLeft(Map.empty[String, Float]) {
