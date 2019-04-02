@@ -203,19 +203,19 @@ object SparkTable {
 
       val originalColNames = df.columns
 
-      val renamings = originalColNames.map { c =>
+      val renames = originalColNames.map { c =>
         if (colNames.contains(c)) c -> s"$c$uniqueSuffix"
         else c -> c
       }.toMap
 
-      val renamedDf = df.safeRenameColumns(colNames.map(c => c -> renamings(c)): _*)
+      val renamedDf = df.safeRenameColumns(colNames.map(c => c -> renames(c)): _*)
 
-      val extractRowFromGrouping = originalColNames.map(c => functions.first(renamings(c)) as c)
+      val extractRowFromGrouping = originalColNames.map(c => functions.first(renames(c)) as c)
       val groupedDf = renamedDf
-        .groupBy(colNames.map(c => functions.col(renamings(c))): _*)
+        .groupBy(colNames.map(c => functions.col(renames(c))): _*)
         .agg(extractRowFromGrouping.head, extractRowFromGrouping.tail: _*)
 
-      groupedDf.safeDropColumns(colNames.map(renamings): _*)
+      groupedDf.safeDropColumns(colNames.map(renames): _*)
     }
 
     override def cache(): DataFrameTable = {
@@ -324,19 +324,19 @@ object SparkTable {
       df.safeAddColumn(name, newColumn)
     }
 
-    def safeRenameColumns(renamings: (String, String)*): DataFrame = {
-      safeRenameColumns(renamings.toMap)
+    def safeRenameColumns(renames: (String, String)*): DataFrame = {
+      safeRenameColumns(renames.toMap)
     }
 
-    def safeRenameColumns(renamings: Map[String, String]): DataFrame = {
-      if (renamings.isEmpty || renamings.forall { case (oldColumn, newColumn) => oldColumn == newColumn }) {
+    def safeRenameColumns(renames: Map[String, String]): DataFrame = {
+      if (renames.isEmpty || renames.forall { case (oldColumn, newColumn) => oldColumn == newColumn }) {
         df
       } else {
-        renamings.foreach { case (oldName, newName) => require(!df.columns.contains(newName),
+        renames.foreach { case (oldName, newName) => require(!df.columns.contains(newName),
           s"Cannot rename column `$oldName` to `$newName`. A column with name `$newName` exists already.")
         }
         val newColumns = df.columns.map {
-          case col if renamings.contains(col) => renamings(col)
+          case col if renames.contains(col) => renames(col)
           case col => col
         }
         df.toDF(newColumns: _*)
@@ -368,10 +368,10 @@ object SparkTable {
       df.safeRenameColumns(df.columns.map(column => column -> s"$prefix$column").toMap)
 
     def removePrefix(prefix: String): DataFrame = {
-      val columnRenamings = df.columns.collect {
+      val columnRenames = df.columns.collect {
         case column if column.startsWith(prefix) => column -> column.substring(prefix.length)
       }
-      df.safeRenameColumns(columnRenamings.toMap)
+      df.safeRenameColumns(columnRenames.toMap)
     }
 
     def encodeBinaryToHexString: DataFrame = {

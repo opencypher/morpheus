@@ -72,11 +72,11 @@ object CAPSGraphExport {
       val nodeRecords = graph.nodes(v.name, ct, exactLabelMatch = true)
       val header = nodeRecords.header
 
-      val idRenaming = header.column(v) -> GraphEntity.sourceIdKey
+      val idRename = header.column(v) -> GraphEntity.sourceIdKey
       val properties: Set[Property] = header.propertiesFor(v)
-      val propertyRenamings = properties.map { p => header.column(p) -> p.key.name.toPropertyColumnName }
+      val propertyRenames = properties.map { p => header.column(p) -> p.key.name.toPropertyColumnName }
 
-      val selectColumns = (idRenaming :: propertyRenamings.toList.sortBy(_._2)).map {
+      val selectColumns = (idRename :: propertyRenames.toList.sortBy(_._2)).map {
         case (oldName, newName) => nodeRecords.table.df.col(oldName).as(newName)
       }
 
@@ -89,13 +89,13 @@ object CAPSGraphExport {
       val relRecords = graph.relationships(v.name, ct)
       val header = relRecords.header
 
-      val idRenaming = header.column(v) -> GraphEntity.sourceIdKey
-      val sourceIdRenaming = header.column(header.startNodeFor(v)) -> Relationship.sourceStartNodeKey
-      val targetIdRenaming = header.column(header.endNodeFor(v)) -> Relationship.sourceEndNodeKey
+      val idRename = header.column(v) -> GraphEntity.sourceIdKey
+      val sourceIdRename = header.column(header.startNodeFor(v)) -> Relationship.sourceStartNodeKey
+      val targetIdRename = header.column(header.endNodeFor(v)) -> Relationship.sourceEndNodeKey
       val properties: Set[Property] = relRecords.header.propertiesFor(v)
-      val propertyRenamings = properties.map { p => relRecords.header.column(p) -> p.key.name.toPropertyColumnName }
+      val propertyRenames = properties.map { p => relRecords.header.column(p) -> p.key.name.toPropertyColumnName }
 
-      val selectColumns = (idRenaming :: sourceIdRenaming :: targetIdRenaming :: propertyRenamings.toList.sorted).map {
+      val selectColumns = (idRename :: sourceIdRename :: targetIdRename :: propertyRenames.toList.sorted).map {
         case (oldName, newName) => relRecords.table.df.col(oldName).as(newName)
       }
 
