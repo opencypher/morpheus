@@ -116,20 +116,12 @@ object SparkSQLExprMapper {
           case _ => explode(child0)
         }
 
-        case Property(e, PropertyKey(key)) =>
-          // TODO: Convert property lookups into separate specific lookups instead of overloading
-          e.cypherType.material match {
-            case CTMap(inner) => if (inner.keySet.contains(key)) child0.getField(key) else NULL_LIT
-            case CTDate => temporalAccessor[java.sql.Date](child0, key)
-            case CTLocalDateTime => temporalAccessor[java.sql.Timestamp](child0, key)
-            case CTDuration => TemporalUdfs.durationAccessor(key.toLowerCase).apply(child0)
-            case _ =>
-              if (!header.contains(expr)) {
-                NULL_LIT
-              } else {
-                column_for(expr)
-              }
-          }
+        case _: EntityProperty => if (!header.contains(expr)) NULL_LIT else column_for(expr)
+        case MapProperty(_, key) => if (expr.cypherType.material == CTVoid) NULL_LIT else child0.getField(key.name)
+        case DateProperty(_, key) => temporalAccessor[java.sql.Date](child0, key.name)
+        case LocalDateTimeProperty(_, key) => temporalAccessor[java.sql.Timestamp](child0, key.name)
+        case DurationProperty(_, key) => TemporalUdfs.durationAccessor(key.name.toLowerCase).apply(child0)
+
         case LocalDateTime(dateExpr) =>
           // TODO: Move code outside of expr mapper
           dateExpr match {
@@ -329,8 +321,8 @@ object SparkSQLExprMapper {
             None -> convertedChildren
           }
           val indexed = convertedAlternatives.zipWithIndex
-          val conditions = indexed.collect { case (c, i) if i % 2 == 0 => c}
-          val values = indexed.collect { case (c, i) if i % 2 == 1 => c}
+          val conditions = indexed.collect { case (c, i) if i % 2 == 0 => c }
+          val values = indexed.collect { case (c, i) if i % 2 == 1 => c }
           val branches = conditions.zip(values)
           switch(branches, maybeConvertedDefault)
 

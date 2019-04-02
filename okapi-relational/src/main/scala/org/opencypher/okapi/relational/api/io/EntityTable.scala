@@ -79,7 +79,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
           val idMapping = Map(nodeVar -> mapping.idKeys(entity).head._2)
 
           val propertyMapping = mapping.properties(entity).map {
-            case (key, source) => Property(nodeVar, PropertyKey(key))(table.columnType(source)) -> source
+            case (key, source) => EntityProperty(nodeVar, PropertyKey(key))(table.columnType(source)) -> source
           }
 
           RecordHeader(idMapping ++ propertyMapping)
@@ -94,7 +94,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
           }
 
           val propertyMapping = mapping.properties(entity).map {
-            case (key, source) => Property(relVar, PropertyKey(key))(table.columnType(source)) -> source
+            case (key, source) => EntityProperty(relVar, PropertyKey(key))(table.columnType(source)) -> source
           }
 
           RecordHeader(idMapping ++ propertyMapping)

@@ -197,7 +197,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
     it("can convert") {
       convert(parseExpr("exists(NODE.name)")) shouldEqual(
-        Exists(Property('NODE, PropertyKey("name"))(CTString)), CTBoolean
+        Exists(EntityProperty('NODE, PropertyKey("name"))(CTString)), CTBoolean
       )
     }
   }
@@ -348,7 +348,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   it("can convert property access") {
     convert(prop("NODE", "age")) shouldEqual
-      Property('NODE, PropertyKey("age"))(CTInteger)
+      EntityProperty('NODE, PropertyKey("age"))(CTInteger)
   }
 
   it("can convert equals") {
@@ -382,6 +382,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     convert(given) shouldEqual(
       Ands(
         HasLabel('NODE, Label("Person")),
+        Equals(EntityProperty('NODE, PropertyKey("name"))(CTAny), StringLit("Mats"))), CTBoolean
         Equals(Property('NODE, PropertyKey("name"))(CTAnyMaterial), StringLit("Mats"))), CTBoolean
     )
   }

@@ -156,7 +156,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
     records.header.expressions should equal(
       Set(
         entityVar,
-        Property(entityVar, PropertyKey("name"))(CTString.nullable)
+        EntityProperty(entityVar, PropertyKey("name"))(CTString.nullable)
       ))
   }
 
@@ -188,7 +188,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
         entityVar,
         StartNode(entityVar)(CTNode),
         EndNode(entityVar)(CTNode),
-        Property(entityVar, PropertyKey("color"))(CTString.nullable)
+        EntityProperty(entityVar, PropertyKey("color"))(CTString.nullable)
       )
     )
   }

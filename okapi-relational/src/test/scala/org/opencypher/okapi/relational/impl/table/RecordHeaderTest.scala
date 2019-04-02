@@ -51,8 +51,8 @@ class RecordHeaderTest extends BaseTestSuite {
 
   val nLabelA: HasLabel = HasLabel(n, Label("A"))
   val nLabelB: HasLabel = HasLabel(n, Label("B"))
-  val nPropFoo: Property = Property(n, PropertyKey("foo"))(CTString)
-  val mPropFoo: Property = Property(m, PropertyKey("foo"))(CTString)
+  val nPropFoo: Property = EntityProperty(n, PropertyKey("foo"))(CTString)
+  val mPropFoo: Property = EntityProperty(m, PropertyKey("foo"))(CTString)
   val nExprs: Set[Expr] = Set(n, nLabelA, nLabelB, nPropFoo)
   val mExprs: Set[Expr] = nExprs.map(_.withOwner(m))
   val oExprs: Set[Expr] = nExprs.map(_.withOwner(o))
@@ -61,7 +61,7 @@ class RecordHeaderTest extends BaseTestSuite {
   val rStart: StartNode = StartNode(r)(CTNode)
   val rEnd: EndNode = EndNode(r)(CTNode)
   val rRelType: HasType = HasType(r, RelType("R"))
-  val rPropFoo: Property = Property(r, PropertyKey("foo"))(CTString)
+  val rPropFoo: Property = EntityProperty(r, PropertyKey("foo"))(CTString)
   val rExprs: Set[Expr] = Set(r, rStart, rEnd, rRelType, rPropFoo)
   val relListExprs: Set[Expr] = Set(relListSegment) ++ Set(rStart, rEnd, rRelType, rPropFoo).map(_.withOwner(relListSegment))
 
@@ -220,7 +220,7 @@ class RecordHeaderTest extends BaseTestSuite {
   }
 
   it("can modify alias and original expression") {
-    val prop2 = Property(n, PropertyKey("bar"))(CTString)
+    val prop2 = EntityProperty(n, PropertyKey("bar"))(CTString)
     val aliasHeader = nHeader.withAlias(n as m)
     val withNewProp = aliasHeader.withExpr(prop2)
 
@@ -244,7 +244,7 @@ class RecordHeaderTest extends BaseTestSuite {
   }
 
   it("adds a new child expr for all aliases of owner") {
-    val prop2 = Property(n, PropertyKey("bar"))(CTString)
+    val prop2 = EntityProperty(n, PropertyKey("bar"))(CTString)
     val aliasHeader = nHeader
       .withAlias(n as m)
       .withExpr(prop2)
