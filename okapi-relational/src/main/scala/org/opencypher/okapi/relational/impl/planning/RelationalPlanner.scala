@@ -355,8 +355,8 @@ object RelationalPlanner {
       relational.Select(op, selectExprs, renames)
     }
 
-    def renameColumns(columnRenamings: Map[Expr, String]): RelationalOperator[T] = {
-      if (columnRenamings.isEmpty) op else relational.Select(op, op.header.expressions.toList, columnRenamings)
+    def renameColumns(columnRenames: Map[Expr, String]): RelationalOperator[T] = {
+      if (columnRenames.isEmpty) op else relational.Select(op, op.header.expressions.toList, columnRenames)
     }
 
     def join(other: RelationalOperator[T], joinExprs: Seq[(Expr, Expr)], joinType: JoinType): RelationalOperator[T] = {
@@ -548,10 +548,10 @@ object RelationalPlanner {
       if (op.header.expressions.forall(expr => op.header.column(expr) == targetHeader.column(expr))) {
         op
       } else {
-        val columnRenamings = op.header.expressions.foldLeft(Map.empty[Expr, String]) {
+        val columnRenames = op.header.expressions.foldLeft(Map.empty[Expr, String]) {
           case (currentMap, expr) => currentMap + (expr -> targetHeader.column(expr))
         }
-        op.renameColumns(columnRenamings)
+        op.renameColumns(columnRenames)
       }
     }
 
