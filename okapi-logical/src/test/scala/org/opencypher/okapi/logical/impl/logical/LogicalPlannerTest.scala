@@ -104,13 +104,13 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
   }
 
   it("converts project block") {
-    val fields = Fields(Map(toField('a) -> Property('n, PropertyKey("prop"))(CTFloat)))
+    val fields = Fields(Map(toField('a) -> EntityProperty('n, PropertyKey("prop"))(CTFloat)))
     val block = project(fields)
 
     val result = plan(irFor(block))
 
     val expected = Project(
-      Property('n, PropertyKey("prop"))(CTFloat) -> Some('a), // n is a dangling reference here
+      EntityProperty('n, PropertyKey("prop"))(CTFloat) -> Some('a), // n is a dangling reference here
       leafPlan,
       emptySqm.withFields('a))
     result should equalWithoutResult(expected)
@@ -122,9 +122,9 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
     val result = plan(ir)
 
     val expected = Project(
-      Property(varA, PropertyKey("name"))(CTNull) -> Some(Var("a.name")(CTNull)),
+      EntityProperty(varA, PropertyKey("name"))(CTNull) -> Some(Var("a.name")(CTNull)),
       Filter(
-        Equals(Property(varG, PropertyKey("name"))(CTNull), Param("foo")(CTString)),
+        Equals(EntityProperty(varG, PropertyKey("name"))(CTNull), Param("foo")(CTString)),
         Expand(
           varA,
           varR,
@@ -153,7 +153,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
           Set(
             HasLabel(varA, Label("Administrator")),
             HasLabel(varG, Label("Group")),
-            Equals(Property(varG, PropertyKey("name"))(CTNull), Param("foo")(CTString))
+            Equals(EntityProperty(varG, PropertyKey("name"))(CTNull), Param("foo")(CTString))
           )
         )
       ),
@@ -162,7 +162,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
         Set(
           HasLabel(varA, Label("Administrator")),
           HasLabel(varG, Label("Group")),
-          Equals(Property(varG, PropertyKey("name"))(CTNull), Param("foo")(CTString))
+          Equals(EntityProperty(varG, PropertyKey("name"))(CTNull), Param("foo")(CTString))
         )
       )
     )
@@ -180,9 +180,9 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
     val result = plan(ir, schema)
 
     val expected = Project(
-      Property(Var("a")(CTNode(Set("Administrator"))), PropertyKey("name"))(CTFloat) -> Some(Var("a.name")(CTFloat)),
+      EntityProperty(Var("a")(CTNode(Set("Administrator"))), PropertyKey("name"))(CTFloat) -> Some(Var("a.name")(CTFloat)),
       Filter(
-        Equals(Property(varG, PropertyKey("name"))(CTString), Param("foo")(CTString)),
+        Equals(EntityProperty(varG, PropertyKey("name"))(CTString), Param("foo")(CTString)),
         Expand(
           varA,
           Var("r")(CTRelationship),
@@ -220,7 +220,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
           Set(
             HasLabel(varA, Label("Administrator")),
             HasLabel(varG, Label("Group")),
-            Equals(Property(varG, PropertyKey("name"))(CTString), Param("foo")(CTString))
+            Equals(EntityProperty(varG, PropertyKey("name"))(CTString), Param("foo")(CTString))
           )
         )
       ),
@@ -229,7 +229,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
         Set(
           HasLabel(varA, Label("Administrator")),
           HasLabel(varG, Label("Group")),
-          Equals(Property(varG, PropertyKey("name"))(CTString), Param("foo")(CTString))
+          Equals(EntityProperty(varG, PropertyKey("name"))(CTString), Param("foo")(CTString))
         )
       )
     )
@@ -246,7 +246,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
     val varA2: Var = Var("a")(CTNode(Set.empty[String], Some(testQualifiedGraphName)))
 
     val expected = Project(
-      Property(varA2, PropertyKey("prop"))(CTNull) -> Some(Var("a.prop")(CTNull)),
+      EntityProperty(varA2, PropertyKey("prop"))(CTNull) -> Some(Var("a.prop")(CTNull)),
       Filter(
         Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))),
         PatternScan.nodeScan(

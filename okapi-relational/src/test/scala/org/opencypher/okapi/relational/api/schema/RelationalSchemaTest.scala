@@ -46,7 +46,7 @@ class RelationalSchemaTest extends BaseTestSuite {
       .withExpr(n)
       .withExpr(HasLabel(n, Label("A")))
       .withExpr(HasLabel(n, Label("B")))
-      .withExpr(Property(n, PropertyKey("foo"))(CTBoolean)))
+      .withExpr(EntityProperty(n, PropertyKey("foo"))(CTBoolean)))
   }
 
   it("creates a header for a given node and changes nullability if necessary") {
@@ -61,7 +61,7 @@ class RelationalSchemaTest extends BaseTestSuite {
       .withExpr(HasLabel(n, Label("A")))
       .withExpr(HasLabel(n, Label("B")))
       .withExpr(HasLabel(n, Label("C")))
-      .withExpr(Property(n, PropertyKey("foo"))(CTString.nullable)))
+      .withExpr(EntityProperty(n, PropertyKey("foo"))(CTString.nullable)))
   }
 
   it("creates a header for given node with implied labels") {
@@ -75,8 +75,8 @@ class RelationalSchemaTest extends BaseTestSuite {
       .withExpr(n)
       .withExpr(HasLabel(n, Label("A")))
       .withExpr(HasLabel(n, Label("B")))
-      .withExpr(Property(n, PropertyKey("foo"))(CTBoolean.nullable))
-      .withExpr(Property(n, PropertyKey("bar"))(CTBoolean.nullable)))
+      .withExpr(EntityProperty(n, PropertyKey("foo"))(CTBoolean.nullable))
+      .withExpr(EntityProperty(n, PropertyKey("bar"))(CTBoolean.nullable)))
   }
 
   it("creates a header for a given relationship") {
@@ -90,6 +90,6 @@ class RelationalSchemaTest extends BaseTestSuite {
       .withExpr(StartNode(r)(CTNode))
       .withExpr(EndNode(r)(CTNode))
       .withExpr(HasType(r, RelType("A")))
-      .withExpr(Property(r, PropertyKey("foo"))(CTBoolean)))
+      .withExpr(EntityProperty(r, PropertyKey("foo"))(CTBoolean)))
   }
 }

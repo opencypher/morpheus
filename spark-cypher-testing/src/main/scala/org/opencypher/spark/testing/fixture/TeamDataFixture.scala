@@ -50,11 +50,11 @@ trait TeamDataFixture extends TestDataFixture {
   val nHasLabelPerson: Expr = HasLabel(n, Label("Person"))
   val nHasLabelProgrammer: Expr = HasLabel(n, Label("Programmer"))
   val nHasLabelBrogrammer: Expr = HasLabel(n, Label("Brogrammer"))
-  val nHasPropertyLanguage: Expr = Property(n, PropertyKey("language"))(CTString)
-  val nHasPropertyLuckyNumber: Expr = Property(n, PropertyKey("luckyNumber"))(CTInteger)
-  val nHasPropertyTitle: Expr = Property(n, PropertyKey("title"))(CTString)
-  val nHasPropertyYear: Expr = Property(n, PropertyKey("year"))(CTInteger)
-  val nHasPropertyName: Expr = Property(n, PropertyKey("name"))(CTString)
+  val nHasPropertyLanguage: Expr = EntityProperty(n, PropertyKey("language"))(CTString)
+  val nHasPropertyLuckyNumber: Expr = EntityProperty(n, PropertyKey("luckyNumber"))(CTInteger)
+  val nHasPropertyTitle: Expr = EntityProperty(n, PropertyKey("title"))(CTString)
+  val nHasPropertyYear: Expr = EntityProperty(n, PropertyKey("year"))(CTInteger)
+  val nHasPropertyName: Expr = EntityProperty(n, PropertyKey("name"))(CTString)
 
   val r: Var = Var("r")(CTRelationship)
   val rStart: Expr = StartNode(r)(CTNode)
@@ -62,8 +62,8 @@ trait TeamDataFixture extends TestDataFixture {
   val rHasTypeKnows: Expr = HasType(r, RelType("KNOWS"))
   val rHasTypeReads: Expr = HasType(r, RelType("READS"))
   val rHasTypeInfluences: Expr = HasType(r, RelType("INFLUENCES"))
-  val rHasPropertyRecommends: Expr = Property(r, PropertyKey("recommends"))(CTBoolean)
-  val rHasPropertySince: Expr = Property(r, PropertyKey("since"))(CTInteger)
+  val rHasPropertyRecommends: Expr = EntityProperty(r, PropertyKey("recommends"))(CTBoolean)
+  val rHasPropertySince: Expr = EntityProperty(r, PropertyKey("since"))(CTInteger)
 
   override lazy val dataFixture =
     """

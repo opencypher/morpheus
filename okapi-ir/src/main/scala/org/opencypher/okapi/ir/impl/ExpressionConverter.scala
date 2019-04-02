@@ -102,26 +102,33 @@ final class ExpressionConverter(context: IRBuilderContext) {
       ListLit(elements)(CTList(elementType))
 
     case ast.Property(m, ast.PropertyKeyName(name)) =>
-      val mapLike = convert(m)
-      val propertyType = mapLike.cypherType.material match {
-        case CTVoid => CTNull
+      val entity = convert(m)
+      val key = PropertyKey(name)
+      entity.cypherType.material match {
+        case CTVoid => NullLit
         // This means that the node can have any possible label combination, as the user did not specify any constraints
         case n: CTNode if n.labels.isEmpty =>
-          schema.allCombinations
+          val propertyType = schema.allCombinations
             .map(l => schema.nodePropertyKeyType(l, name).getOrElse(CTNull))
             .foldLeft(CTVoid: CypherType)(_ join _)
-        // User specified label constraints - we can use those for type inference
+          // User specified label constraints - we can use those for type inference
+          EntityProperty(entity, key)(propertyType)
         case CTNode(labels, _) =>
-          schema.nodePropertyKeyType(labels, name).getOrElse(CTNull)
+          val propertyType = schema.nodePropertyKeyType(labels, name).getOrElse(CTNull)
+          EntityProperty(entity, key)(propertyType)
         case CTRelationship(types, _) =>
-          schema.relationshipPropertyKeyType(types, name).getOrElse(CTNull)
-        case CTMap(inner) =>
-          inner.getOrElse(name, CTVoid)
-        case _: TemporalValueCypherType =>
-          CTInteger.asNullableAs(mapLike.cypherType)
+          val propertyType = schema.relationshipPropertyKeyType(types, name).getOrElse(CTNull)
+          EntityProperty(entity, key)(propertyType)
+        case _: CTMap =>
+          MapProperty(entity, key)
+        case CTDate =>
+          DateProperty(entity, key)
+        case CTLocalDateTime =>
+          LocalDateTimeProperty(entity, key)
+        case CTDuration =>
+          DurationProperty(entity, key)
         case _ => throw InvalidContainerAccess(e)
       }
-      Property(mapLike, PropertyKey(name))(propertyType)
 
     // Predicates
     case ast.Ands(expressions) => Ands(expressions.map(convert))
@@ -179,6 +186,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
 
     case funcInv: ast.FunctionInvocation =>
       val convertedArgs = funcInv.args.map(convert).toList
+
       def returnType: CypherType = funcInv.returnTypeFor(convertedArgs.map(_.cypherType): _*)
 
       val distinct = funcInv.distinct

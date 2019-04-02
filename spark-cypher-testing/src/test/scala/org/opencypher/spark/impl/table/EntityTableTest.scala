@@ -125,8 +125,8 @@ class EntityTableTest extends CAPSTestSuite {
 
     nodeTable.header should equal(RecordHeader(Map(
       v -> "ID",
-      Property(v, PropertyKey("foo"))(CTString) -> "FOO",
-      Property(v, PropertyKey("bar"))(CTInteger) -> "BAR"
+      EntityProperty(v, PropertyKey("foo"))(CTString) -> "FOO",
+      EntityProperty(v, PropertyKey("bar"))(CTInteger) -> "BAR"
     )
     ))
   }
@@ -157,8 +157,8 @@ class EntityTableTest extends CAPSTestSuite {
         v -> "ID",
         StartNode(v)(CTNode) -> "FROM",
         EndNode(v)(CTNode) -> "TO",
-        Property(v, PropertyKey("foo"))(CTString) -> "FOO",
-        Property(v, PropertyKey("bar"))(CTInteger) -> "BAR"
+        EntityProperty(v, PropertyKey("foo"))(CTString) -> "FOO",
+        EntityProperty(v, PropertyKey("bar"))(CTInteger) -> "BAR"
       )
     ))
   }

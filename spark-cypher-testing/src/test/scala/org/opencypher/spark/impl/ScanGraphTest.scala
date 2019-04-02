@@ -477,15 +477,15 @@ class ScanGraphTest extends CAPSGraphTest with EntityTableCreationSupport {
       val cols = Seq(
         sourceVar,
         HasLabel(sourceVar, Label("Person")),
-        Property(sourceVar, PropertyKey("name"))(CTString),
+        EntityProperty(sourceVar, PropertyKey("name"))(CTString),
         relVar,
         HasType(relVar, RelType("KNOWS")),
         StartNode(relVar)(CTAny),
         EndNode(relVar)(CTAny),
-        Property(relVar, PropertyKey("since"))(CTInteger),
+        EntityProperty(relVar, PropertyKey("since"))(CTInteger),
         targetVar,
         HasLabel(targetVar, Label("Person")),
-        Property(targetVar, PropertyKey("name"))(CTString)
+        EntityProperty(targetVar, PropertyKey("name"))(CTString)
       )
 
       val data = Bag(
@@ -520,16 +520,16 @@ class ScanGraphTest extends CAPSGraphTest with EntityTableCreationSupport {
       val cols = Seq(
         sourceVar,
         HasLabel(sourceVar, Label("Person")),
-        Property(sourceVar, PropertyKey("name"))(CTString),
+        EntityProperty(sourceVar, PropertyKey("name"))(CTString),
         relVar,
         HasType(relVar, RelType("KNOWS")),
         StartNode(relVar)(CTAny),
         EndNode(relVar)(CTAny),
-        Property(relVar, PropertyKey("since"))(CTInteger.nullable),
+        EntityProperty(relVar, PropertyKey("since"))(CTInteger.nullable),
         targetVar,
         HasLabel(targetVar, Label("Person")),
         HasLabel(targetVar, Label("Animal")),
-        Property(targetVar, PropertyKey("name"))(CTString)
+        EntityProperty(targetVar, PropertyKey("name"))(CTString)
       )
 
       val data = Bag(

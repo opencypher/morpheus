@@ -143,7 +143,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
     @scala.annotation.tailrec
     final def toField: Option[IRField] = expr match {
       case v: Var => Some(IRField(v.name)(v.cypherType))
-      case Property(e: Var, _) => e.toField
+      case p: Property => p.entity.toField
       case _ => None
     }
   }

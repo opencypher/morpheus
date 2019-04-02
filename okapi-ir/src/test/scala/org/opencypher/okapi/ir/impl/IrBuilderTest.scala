@@ -813,8 +813,8 @@ class IrBuilderTest extends IrTestSuite {
               deps should equalWithTracing(List(matchBlock))
               map should equal(
                 Map(
-                  toField('name) -> Property(Var("a")(CTNode), PropertyKey("name"))(CTNull),
-                  toField('age) -> Property(Var("a")(CTNode), PropertyKey("age"))(CTNull)
+                  toField('name) -> EntityProperty(Var("a")(CTNode), PropertyKey("name"))(CTNull),
+                  toField('age) -> EntityProperty(Var("a")(CTNode), PropertyKey("age"))(CTNull)
                 ))
           }
 

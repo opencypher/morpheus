@@ -175,7 +175,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     exprToColumn.keys.collect {
       case n: Var if name == n => n
       case h@HasLabel(n: Var, _) if name == n => h
-      case p@Property(n: Var, _) if name == n => p
+      case p@EntityProperty(n: Var, _) if name == n => p
     }.toSet
   }
 
