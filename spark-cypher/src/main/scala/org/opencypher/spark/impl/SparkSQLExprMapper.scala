@@ -33,15 +33,13 @@ import org.apache.spark.sql.{Column, DataFrame}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception._
-import org.opencypher.okapi.impl.temporal.TemporalTypesHelper._
-import org.opencypher.okapi.impl.temporal.{Duration => DurationValue}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSFunctions._
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.expressions.AddPrefix._
 import org.opencypher.spark.impl.expressions.EncodeLong._
-import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
+import org.opencypher.spark.impl.temporal.TemporalConversions._
 import org.opencypher.spark.impl.temporal.TemporalUdfs
 
 final case class SparkSQLMappingException(msg: String) extends InternalException(msg)
@@ -148,43 +146,9 @@ object SparkSQLExprMapper {
         case LocalDateTimeProperty(_, key) => temporalAccessor[java.sql.Timestamp](child0, key.name)
         case DurationProperty(_, key) => TemporalUdfs.durationAccessor(key.name.toLowerCase).apply(child0)
 
-        case LocalDateTime(dateExpr) =>
-          // TODO: Move code outside of expr mapper
-          dateExpr match {
-            case Some(e) =>
-              val localDateTimeValue = resolveTemporalArgument(e)
-                .map(parseLocalDateTime)
-                .map(java.sql.Timestamp.valueOf)
-                .map {
-                  case ts if ts.getNanos % 1000 == 0 => ts
-                  case _ => throw IllegalStateException("Spark does not support nanosecond resolution in 'localdatetime'")
-                }
-                .orNull
-
-              lit(localDateTimeValue).cast(DataTypes.TimestampType)
-            case None => current_timestamp()
-          }
-
-        case Date(dateExpr) =>
-          // TODO: Move code outside of expr mapper
-          dateExpr match {
-            case Some(e) =>
-              val dateValue = resolveTemporalArgument(e)
-                .map(parseDate)
-                .map(java.sql.Date.valueOf)
-                .orNull
-
-              lit(dateValue).cast(DataTypes.DateType)
-            case None => current_timestamp()
-          }
-
-        case Duration(durationExpr) =>
-          // TODO: Move code outside of expr mapper
-          val durationValue = resolveTemporalArgument(durationExpr).map {
-            case Left(m) => DurationValue(m.mapValues(_.toLong)).toCalendarInterval
-            case Right(s) => DurationValue.parse(s).toCalendarInterval
-          }.orNull
-          lit(durationValue)
+        case LocalDateTime(maybeDateExpr) => maybeDateExpr.map(e => lit(e.resolveTimestamp).cast(DataTypes.TimestampType)).getOrElse(current_timestamp())
+        case Date(maybeDateExpr) => maybeDateExpr.map(e => lit(e.resolveDate).cast(DataTypes.DateType)).getOrElse(current_timestamp())
+        case Duration(durationExpr) => lit(durationExpr.resolveInterval)
 
         case In(lhs, rhs) => rhs.cypherType.material match {
           case CTList(CTVoid) => FALSE_LIT

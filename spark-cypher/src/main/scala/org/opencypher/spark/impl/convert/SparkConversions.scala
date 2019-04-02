@@ -35,8 +35,8 @@ import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue, Cyphe
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeader
+import org.opencypher.spark.impl.temporal.TemporalConversions._
 import org.opencypher.spark.impl.SparkSQLMappingException
-import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 
 object SparkConversions {
 
