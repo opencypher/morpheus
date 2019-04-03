@@ -34,6 +34,8 @@ import org.opencypher.spark.integration.yelp.YelpConstants._
 
 object Part3_YelpBusinessTrends extends App {
 
+  log("Part 3 - Business trends")
+
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
   implicit val caps: CAPSSession = CAPSSession.local()
@@ -43,7 +45,9 @@ object Part3_YelpBusinessTrends extends App {
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
   registerSource(neo4jNamespace, GraphSources.cypher.neo4j(neo4jConfig))
 
+  log("write to Neo4j and compute pageRank", 1)
   (2017 to 2018) foreach { year =>
+    log(s"$year", 2)
     cypher(
       s"""
          |CATALOG CREATE GRAPH $neo4jNamespace.${reviewGraphName(year)} {
@@ -73,6 +77,7 @@ object Part3_YelpBusinessTrends extends App {
   catalog.source(neo4jNamespace).reset()
 
   // Load graphs from Neo4j into Spark and compute trend rank for each business based on their page ranks.
+  log("load graphs back to Spark and compute trend rank", 1)
   cypher(
     s"""
        |CATALOG CREATE GRAPH $businessTrendsGraphName {

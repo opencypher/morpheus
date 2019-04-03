@@ -35,6 +35,8 @@ import org.opencypher.spark.integration.yelp.YelpConstants._
 
 object Part4_EliteValidation extends App {
 
+  log("Part 4 - Elite validation")
+
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
   implicit val caps: CAPSSession = CAPSSession.local()

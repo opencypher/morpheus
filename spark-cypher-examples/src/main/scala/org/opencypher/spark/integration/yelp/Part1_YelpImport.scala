@@ -28,7 +28,7 @@ package org.opencypher.spark.integration.yelp
 
 import org.apache.spark.sql.types.{ArrayType, DateType, LongType}
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
-import org.opencypher.okapi.api.graph.PropertyGraph
+import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.api.io.GraphEntity._
@@ -38,6 +38,8 @@ import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.integration.yelp.YelpConstants._
 
 object Part1_YelpImport extends App {
+
+  log("Part 1 - Import")
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpJsonFolder)
   lazy val outputPath = args.lift(1).getOrElse(defaultYelpGraphFolder)
@@ -50,13 +52,24 @@ object Part1_YelpImport extends App {
 
   def storeGraph(inputPath: String, outputPath: String): Unit = {
     // Load Yelp data into DataFrames
+    log("load yelp tables", 1)
     val yelpTables = loadYelpTables(inputPath)
     // Create a Property Graph from DataFrames
+    log("create property graph", 1)
     val propertyGraph = createPropertyGraph(yelpTables)
+    log("store in parquet", 1)
+    storeAsParquet(yelpGraphName, propertyGraph)
+  }
+
+  def storeAsParquet(graphName: GraphName, graph: PropertyGraph): Unit = {
     // Init Property Graph Data Source (PGDS)
     val parquetPGDS = GraphSources.fs(outputPath).parquet
     // Store graph in PGDS
-    parquetPGDS.store(yelpGraphName, propertyGraph)
+    if (parquetPGDS.hasGraph(graphName)) {
+     log(s"Warning: A graph with GraphName $graphName already exists.")
+    } else {
+      parquetPGDS.store(yelpGraphName, graph)
+    }
   }
 
   def createPropertyGraph(yelpTables: YelpTables): PropertyGraph = {
@@ -111,8 +124,11 @@ object Part1_YelpImport extends App {
   }
 
   def loadYelpTables(inputPath: String)(implicit spark: SparkSession): YelpTables = {
+    log("read business.json", 2)
     val rawBusinessDf = spark.read.json(s"$inputPath/business.json")
+    log("read review.json", 2)
     val rawReviewDf = spark.read.json(s"$inputPath/review.json")
+    log("read user.json", 2)
     val rawUserDf = spark.read.json(s"$inputPath/user.json")
 
     import spark.implicits._

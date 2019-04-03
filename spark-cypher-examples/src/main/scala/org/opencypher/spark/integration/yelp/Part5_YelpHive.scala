@@ -33,6 +33,8 @@ import org.opencypher.spark.integration.yelp.YelpConstants.{defaultYelpJsonFolde
 
 object Part5_YelpHive extends App {
 
+  log("Part 5 - Hive")
+
   lazy val inputPath = args.headOption.getOrElse(defaultYelpJsonFolder)
 
   implicit val caps: CAPSSession = CAPSSession.local()
@@ -48,14 +50,14 @@ object Part5_YelpHive extends App {
 
     cypher(
       s"""
-         |FROM $hiveNamespace.${reviewGraphName(2017)}
+         |FROM $hiveNamespace.review2017
          |MATCH ()-[r]->()
          |RETURN COUNT(r)
        """.stripMargin).show
 
     cypher(
       s"""
-         |FROM $hiveNamespace.${reviewGraphName(2018)}
+         |FROM $hiveNamespace.review2018
          |MATCH ()-[r]->()
          |RETURN COUNT(r)
        """.stripMargin).show
@@ -71,7 +73,7 @@ object Part5_YelpHive extends App {
     // Create Hive views
     spark.sql(
       s"""
-         |CREATE VIEW $yelpGraphName.$view2017 AS
+         |CREATE VIEW $yelpGraphName.reviews2017 AS
          |SELECT *
          |FROM $yelpGraphName.review
          |WHERE year(date) = 2017
@@ -79,7 +81,7 @@ object Part5_YelpHive extends App {
 
     spark.sql(
       s"""
-         |CREATE VIEW $yelpGraphName.$view2018 AS
+         |CREATE VIEW $yelpGraphName.reviews2018 AS
          |SELECT *
          |FROM $yelpGraphName.review
          |WHERE year(date) = 2018

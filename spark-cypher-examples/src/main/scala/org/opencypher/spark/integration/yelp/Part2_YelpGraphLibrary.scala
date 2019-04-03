@@ -32,6 +32,8 @@ import org.opencypher.spark.impl.CAPSConverters._
 
 object Part2_YelpGraphLibrary extends App {
 
+  log("Part 2 - Create graphs")
+
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
   implicit val caps: CAPSSession = CAPSSession.local()
@@ -41,6 +43,7 @@ object Part2_YelpGraphLibrary extends App {
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
 
   // Construct City sub graph
+  log("construct city sub graph", 1)
   cypher(
     s"""
        |CATALOG CREATE GRAPH $cityGraphName {
@@ -59,8 +62,9 @@ object Part2_YelpGraphLibrary extends App {
   catalog.source(catalog.sessionNamespace).graph(cityGraphName).asCaps.cache()
 
   // Create multiple projections of the City graph and store them in yearly buckets
+  log(s"create graph projections for '$city'", 1)
   (2015 to 2018) foreach { year =>
-
+    log(s"$year", 2)
     // Compute (:User)-[:FRIEND]->(:User) graph
     cypher(
       s"""
