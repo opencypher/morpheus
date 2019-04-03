@@ -96,9 +96,9 @@ class BigDecimalTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("subtracts a big decimal and a float") {
-      caps.cypher("RETURN bigdecimal(1234, 4, 2) - 10.2 AS decimal").records.toMaps should equal(
+      caps.cypher("RETURN bigdecimal(44, 2, 1) - 0.2 AS decimal").records.toMaps should equal(
         Bag(
-          CypherMap("decimal" -> 2.1400000000000006)
+          CypherMap("decimal" -> 4.2)
         )
       )
     }

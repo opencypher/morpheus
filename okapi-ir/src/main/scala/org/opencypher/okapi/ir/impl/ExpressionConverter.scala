@@ -77,8 +77,7 @@ object AddType {
     }
     val sigs = Set(addSignature, BigDecimalSignatures.arithmeticSignature(Addition))
 
-    val foo = returnTypeFor(Seq.empty, Seq(lhs, rhs), sigs)
-    foo
+    returnTypeFor(Seq.empty, Seq(lhs, rhs), sigs)
   }
 
 }
