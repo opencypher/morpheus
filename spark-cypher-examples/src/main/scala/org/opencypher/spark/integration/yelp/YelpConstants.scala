@@ -45,6 +45,7 @@ object YelpConstants {
   val businessLabel = "Business"
   val reviewRelType = "REVIEWS"
   val friendRelType = "FRIEND"
+  val tipRelType = "TIP"
 
   val fsNamespace = Namespace("fileSystem")
   val neo4jNamespace = Namespace("neo4j")

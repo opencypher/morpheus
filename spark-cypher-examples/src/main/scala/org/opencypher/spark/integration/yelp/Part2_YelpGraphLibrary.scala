@@ -40,21 +40,24 @@ object Part2_YelpGraphLibrary extends App {
 
   import caps._
 
-  registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
+  val parquetPGDS = GraphSources.fs(inputPath).parquet
+  registerSource(fsNamespace, parquetPGDS)
 
   // Construct City sub graph
   log("construct city sub graph", 1)
-  cypher(
-    s"""
-       |CATALOG CREATE GRAPH $cityGraphName {
-       |  FROM GRAPH $fsNamespace.$yelpGraphName
-       |  MATCH (b:Business)<-[r:REVIEWS]-(user1:User)
-       |  WHERE b.city = '$city'
-       |  CONSTRUCT
-       |   CREATE (user1)-[r]->(b)
-       |  RETURN GRAPH
-       |}
+  if (!parquetPGDS.hasGraph(cityGraphName)) {
+      cypher(
+        s"""
+           |CATALOG CREATE GRAPH $cityGraphName {
+           |  FROM GRAPH $fsNamespace.$yelpGraphName
+           |  MATCH (b:Business)<-[r:REVIEWS]-(user1:User)
+           |  WHERE b.city = '$city'
+           |  CONSTRUCT
+           |   CREATE (user1)-[r]->(b)
+           |  RETURN GRAPH
+           |}
       """.stripMargin)
+  }
 
   // Cache graph before performing multiple projections
   catalog.source(catalog.sessionNamespace).graph(cityGraphName).asCaps.cache()
@@ -76,20 +79,38 @@ object Part2_YelpGraphLibrary extends App {
          |}
      """.stripMargin)
 
-    // Compute (:User)-[:CO_REVIEWS]->(:User) graph
-    cypher(
-      s"""
-         |CATALOG CREATE GRAPH $fsNamespace.${coReviewGraphName(year)} {
-         |  FROM GRAPH $fsNamespace.${reviewGraphName(year)}
-         |  MATCH (b:Business)<-[r1:REVIEWS]-(user1:User),
-         |        (b)<-[r2:REVIEWS]-(user2:User)
-         |  WHERE r1.date.year = $year
-         |    AND r2.date.year = $year
-         |    AND user1.yelping_since.year <= $year AND user2.yelping_since.year <= $year
-         |  CONSTRUCT
-         |    CREATE (user1)-[:CO_REVIEWS]->(user2)
-         |  RETURN GRAPH
-         |}
+    if (!parquetPGDS.hasGraph(reviewGraphName(year))) {
+      // Compute (:User)-[:REVIEWS]->(:Business) graph
+      cypher(
+        s"""
+           |CATALOG CREATE GRAPH $fsNamespace.${reviewGraphName(year)} {
+           |  FROM GRAPH $cityGraphName
+           |  MATCH (b:Business)<-[r:REVIEWS]-(user:User)
+           |  WHERE r.date.year = $year AND user.yelping_since.year <= $year
+           |  CONSTRUCT
+           |   CREATE (user)-[r]->(b)
+           |  RETURN GRAPH
+           |}
      """.stripMargin)
+
+    }
+
+    if (!parquetPGDS.hasGraph(coReviewGraphName(year))) {
+      // Compute (:User)-[:CO_REVIEWS]->(:User) graph
+      cypher(
+        s"""
+           |CATALOG CREATE GRAPH $fsNamespace.${coReviewGraphName(year)} {
+           |  FROM GRAPH $fsNamespace.${reviewGraphName(year)}
+           |  MATCH (b:Business)<-[r1:REVIEWS]-(user1:User),
+           |        (b)<-[r2:REVIEWS]-(user2:User)
+           |  WHERE r1.date.year = $year
+           |    AND r2.date.year = $year
+           |    AND user1.yelping_since.year <= $year AND user2.yelping_since.year <= $year
+           |  CONSTRUCT
+           |    CREATE (user1)-[:CO_REVIEWS]->(user2)
+           |  RETURN GRAPH
+           |}
+     """.stripMargin)
+    }
   }
 }

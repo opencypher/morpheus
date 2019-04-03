@@ -106,7 +106,20 @@ object Part1_YelpImport extends App {
         .prependIdColumn(sourceStartNodeKey, userLabel)
         .prependIdColumn(sourceEndNodeKey, businessLabel))
 
+    // (:User)-[:TIP]->(:Business)
+    val tipRelTable =  CAPSEntityTable.create(RelationshipMappingBuilder.on(sourceIdKey)
+      .withSourceStartNodeKey(sourceStartNodeKey)
+      .withSourceEndNodeKey(sourceEndNodeKey)
+      .withRelType(tipRelType)
+      .build,
+      yelpTables.tipDf
+        .prependIdColumn(sourceIdKey, tipRelType)
+        .prependIdColumn(sourceStartNodeKey, userLabel)
+        .prependIdColumn(sourceEndNodeKey, businessLabel))
+
+    //todo: handle checkIn table
+
     // Create property graph
-    caps.graphs.create(businessNodeTable, userNodeTable, reviewRelTable)
+    caps.graphs.create(businessNodeTable, userNodeTable, reviewRelTable, tipRelTable)
   }
 }

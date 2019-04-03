@@ -38,7 +38,8 @@ object YelpHelpers {
   case class YelpTables(
     userDf: DataFrame,
     businessDf: DataFrame,
-    reviewDf: DataFrame
+    reviewDf: DataFrame,
+    tipDf: DataFrame
   )
 
   def loadYelpTables(inputPath: String)(implicit spark: SparkSession): YelpTables = {
