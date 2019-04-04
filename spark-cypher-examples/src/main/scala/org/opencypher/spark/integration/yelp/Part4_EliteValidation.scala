@@ -43,17 +43,22 @@ object Part4_EliteValidation extends App {
 
   import caps._
 
-  registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
+  val parquetPGDS = GraphSources.fs(inputPath).parquet
+
+  registerSource(fsNamespace, parquetPGDS)
   registerSource(neo4jNamespace, GraphSources.cypher.neo4j(neo4jConfig))
 
-  val (eliteRanks, nonEliteRanks) = (2015 to 2018).map { year =>
-    cypher(
-      s"""
-         |CATALOG CREATE GRAPH $neo4jNamespace.${coReviewGraphName(year)} {
-         |  FROM $fsNamespace.${coReviewGraphName(year)}
-         |  RETURN GRAPH
-         |}
+  val (eliteRanks, nonEliteRanks, edgeCounts) = (2015 to 2018).map { year =>
+    if (!parquetPGDS.hasGraph(coReviewGraphName(year))) {
+      cypher(
+        s"""
+           |CATALOG CREATE GRAPH $neo4jNamespace.${coReviewGraphName(year)} {
+           |  FROM $fsNamespace.${coReviewGraphName(year)}
+           |  RETURN GRAPH
+           |}
      """.stripMargin)
+    }
+    else log(s"Warning: A graph with GraphName ${coReviewGraphName(year)} already exists.")
 
     // Compute PageRank using Neo4j Graph Algorithms
     neo4jConfig.withSession { implicit session =>
@@ -83,9 +88,30 @@ object Part4_EliteValidation extends App {
            |RETURN avg(u.${pageRankCoReviewProp(year)}) AS avg
          """.stripMargin).head("avg").cast[CypherFloat].value
 
-      elitePageRank -> noneElitePageRank
-    }
-  }.unzip
+      val avgEliteEdges = neo4jCypher(
+        s"""
+           | MATCH (u:User)-[r]->(b:Business)
+           | WHERE $year IN u.elite
+           | WITH u , count(r) AS countPerUser
+           | RETURN avg(countPerUser) * 1.0 AS avg
+        """.stripMargin).head("avg").cast[CypherFloat].value
 
+      val avgNonEliteEdges = neo4jCypher(
+        s"""
+           | MATCH (u:User)-[r]->(b:Business)
+           | WHERE u.elite IS null OR NOT $year IN u.elite
+           | WITH u , count(r) AS countPerUser
+           | RETURN avg(countPerUser) * 1.0 AS avg
+        """.stripMargin).head("avg").cast[CypherFloat].value
+
+
+      (elitePageRank, noneElitePageRank, (avgEliteEdges, avgNonEliteEdges))
+    }
+  }.unzip3
+
+  val (avgEliteEdges, avgNonEliteEdges) = edgeCounts.unzip
+  println(s"edge-cnt pValue: ${new TTest().tTest(avgEliteEdges.toArray, avgNonEliteEdges.toArray)}")
+  println(avgEliteEdges)
+  println(avgNonEliteEdges)
   println(s"pValue: ${new TTest().tTest(eliteRanks.toArray, nonEliteRanks.toArray)}")
 }
