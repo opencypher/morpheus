@@ -112,4 +112,9 @@ trait PropertyGraphDataSource {
     */
   def graphNames: Set[GraphName]
 
+  /**
+    * Resets the data source to its initial state including potential caches.
+    */
+  def reset(): Unit = ()
+
 }

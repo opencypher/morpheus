@@ -66,17 +66,6 @@ object Neo4jGraphMerge extends Logging {
   type RelationshipKeys = Map[String, Set[String]]
 
   /**
-    * Configuration class for Neo4jGraphMerge
-    *
-    * @param nodeBatchSize size of node batches
-    * @param relBatchSize size of relationship batches
-    */
-  case class Batches(
-    nodeBatchSize: Int = 1000,
-    relBatchSize: Int = 10
-  )
-
-  /**
     * Creates node indexes for the sub-graph specified by `graphName` in the specified Neo4j database.
     * This speeds up the Neo4j merge feature.
     *
@@ -90,7 +79,7 @@ object Neo4jGraphMerge extends Logging {
     config: Neo4jConfig,
     nodeKeys: NodeKeys
   ): Unit = {
-    val maybeMetaLabel = graphName.metaLabel
+    val maybeMetaLabel = graphName.getMetaLabel
 
     config.withSession { session =>
       maybeMetaLabel match {
@@ -145,17 +134,16 @@ object Neo4jGraphMerge extends Logging {
     graph: PropertyGraph,
     config: Neo4jConfig,
     nodeKeys: Option[NodeKeys] = None,
-    relationshipKeys: Option[RelationshipKeys] = None,
-    batches: Batches = Batches()
+    relationshipKeys: Option[RelationshipKeys] = None
   )(implicit caps: CAPSSession): Unit = {
     val updatedSchema = combineEntityKeys(graph.schema, nodeKeys, relationshipKeys)
 
-    val maybeMetaLabel = graphName.metaLabel
+    val maybeMetaLabel = graphName.getMetaLabel
     val maybeMetaLabelString = maybeMetaLabel.toSet[String].cypherLabelPredicate
 
     val writesCompleted = for {
-      _ <- Future.sequence(MergeWriters.writeNodes(maybeMetaLabel, graph, config, updatedSchema.nodeKeys, batches.nodeBatchSize))
-      _ <- Future.sequence(MergeWriters.writeRelationships(maybeMetaLabel, graph, config, updatedSchema.relationshipKeys, batches.relBatchSize))
+      _ <- Future.sequence(MergeWriters.writeNodes(maybeMetaLabel, graph, config, updatedSchema.nodeKeys))
+      _ <- Future.sequence(MergeWriters.writeRelationships(maybeMetaLabel, graph, config, updatedSchema.relationshipKeys))
       _ <- Future {
         config.withSession { session =>
           session.run(s"MATCH (n$maybeMetaLabelString) REMOVE n.$metaPropertyKey").consume()
@@ -186,8 +174,7 @@ case object MergeWriters {
     maybeMetaLabel: Option[String],
     graph: PropertyGraph,
     config: Neo4jConfig,
-    nodeKeys: Map[String, Set[String]],
-    batchSize: Int
+    nodeKeys: Map[String, Set[String]]
   ): Set[Future[Unit]] = {
     val result: Set[Future[Unit]] = graph.schema.labelCombinations.combos.map { combo =>
       val comboWithMetaLabel = combo ++ maybeMetaLabel
@@ -201,7 +188,7 @@ case object MergeWriters {
         .df
         .rdd
         .foreachPartitionAsync { i =>
-          if (i.nonEmpty) EntityWriter.mergeNodes(i, mapping, config, comboWithMetaLabel, keys, batchSize)(rowToListValue)
+          if (i.nonEmpty) EntityWriter.mergeNodes(i, mapping, config, comboWithMetaLabel, keys)(rowToListValue)
         }
     }
     result
@@ -211,8 +198,7 @@ case object MergeWriters {
     maybeMetaLabel: Option[String],
     graph: PropertyGraph,
     config: Neo4jConfig,
-    relKeys: Map[String, Set[String]],
-    batchSize: Int
+    relKeys: Map[String, Set[String]]
   ): Set[Future[Unit]] = {
     graph.schema.relationshipTypes.map { relType =>
       val relScan = graph.relationships("r", CTRelationship(relType)).asCaps
@@ -240,8 +226,7 @@ case object MergeWriters {
               mapping,
               config,
               relType,
-              relKeys.getOrElse(relType, Set.empty),
-              batchSize
+              relKeys.getOrElse(relType, Set.empty)
             )(rowToListValue)
           }
         }

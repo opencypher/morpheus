@@ -24,35 +24,12 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.neo4j.io
+package org.opencypher.spark.integration.yelp
 
-import java.net.URI
-import java.util.concurrent.TimeUnit
+object YelpDemo extends App {
+  private val emptyArgs: Array[String] = Array.empty
 
-import org.neo4j.driver.v1.{AuthTokens, Config, Driver, GraphDatabase}
-
-case class Neo4jConfig(
-  uri: URI,
-  user: String = "neo4j",
-  password: Option[String] = None,
-  encrypted: Boolean = true,
-  createNodeBatchSize: Int = 100000,
-  createRelationshipBatchSize: Int = 100000,
-  mergeNodeBatchSize: Int = 1000,
-  mergeRelationshipBatchSize: Int = 10
-) {
-
-  def driver(): Driver = password match {
-    case Some(pwd) => GraphDatabase.driver(uri, AuthTokens.basic(user, pwd), boltConfig())
-    case _ => GraphDatabase.driver(uri, boltConfig())
-  }
-
-  private def boltConfig(): Config = {
-    val builder = Config.build.withMaxTransactionRetryTime(1, TimeUnit.MINUTES)
-
-    if (encrypted)
-      builder.withEncryption().toConfig
-    else
-      builder.withoutEncryption().toConfig
-  }
+  Part1_YelpImport.main(emptyArgs)
+  Part2_YelpGraphLibrary.main(emptyArgs)
+  Part3_YelpBusinessTrends.main(emptyArgs)
 }

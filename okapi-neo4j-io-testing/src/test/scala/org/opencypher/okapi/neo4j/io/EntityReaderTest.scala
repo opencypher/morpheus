@@ -42,7 +42,7 @@ class EntityReaderTest extends BaseTestSuite {
 
   it("constructs flat node queries from schema") {
     EntityReader.flatExactLabelQuery(Set("A"), schema) should equal(
-      s"""|MATCH ($entityVarName:A)
+      s"""|MATCH ($entityVarName:`A`)
           |WHERE length(labels($entityVarName)) = 1
           |RETURN id($entityVarName) AS $idPropertyKey, $entityVarName.bar, $entityVarName.foo""".stripMargin
     )
@@ -50,7 +50,7 @@ class EntityReaderTest extends BaseTestSuite {
 
   it("constructs flat node queries from schema without properties") {
     EntityReader.flatExactLabelQuery(Set("B"), schema) should equal(
-      s"""|MATCH ($entityVarName:B)
+      s"""|MATCH ($entityVarName:`B`)
           |WHERE length(labels($entityVarName)) = 1
           |RETURN id($entityVarName) AS $idPropertyKey""".stripMargin
     )

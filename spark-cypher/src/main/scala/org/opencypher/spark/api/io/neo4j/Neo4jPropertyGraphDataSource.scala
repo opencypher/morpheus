@@ -93,7 +93,7 @@ case class Neo4jPropertyGraphDataSource(
   }
 
   override protected[io] def readSchema(graphName: GraphName): CAPSSchema = {
-    val filteredSchema = graphName.metaLabel match {
+    val filteredSchema = graphName.getMetaLabel match {
       case None =>
         entireGraphSchema
       case Some(metaLabel) =>
@@ -111,7 +111,7 @@ case class Neo4jPropertyGraphDataSource(
     sparkSchema: StructType
   ): DataFrame = {
     val graphSchema = schema(graphName).get
-    val flatQuery = EntityReader.flatExactLabelQuery(labels, graphSchema, graphName.metaLabel)
+    val flatQuery = EntityReader.flatExactLabelQuery(labels, graphSchema, graphName.getMetaLabel)
 
     val neo4jConnection = Neo4j(config, caps.sparkSession)
     val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
@@ -128,7 +128,7 @@ case class Neo4jPropertyGraphDataSource(
     sparkSchema: StructType
   ): DataFrame = {
     val graphSchema = schema(graphName).get
-    val flatQuery = EntityReader.flatRelTypeQuery(relKey, graphSchema, graphName.metaLabel)
+    val flatQuery = EntityReader.flatRelTypeQuery(relKey, graphSchema, graphName.getMetaLabel)
 
     val neo4jConnection = Neo4j(config, caps.sparkSession)
     val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
@@ -140,7 +140,7 @@ case class Neo4jPropertyGraphDataSource(
   }
 
   override protected def deleteGraph(graphName: GraphName): Unit = {
-    graphName.metaLabel match {
+    graphName.getMetaLabel match {
       case Some(metaLabel) =>
         config.withSession { session =>
           session.run(
@@ -157,14 +157,14 @@ case class Neo4jPropertyGraphDataSource(
   override def store(graphName: GraphName, graph: PropertyGraph): Unit = {
     checkStorable(graphName)
 
-    val metaLabel = graphName.metaLabel match {
+    val metaLabel = graphName.getMetaLabel match {
       case Some(meta) => meta
       case None => throw UnsupportedOperationException("Writing to the global Neo4j graph is not supported")
     }
 
     config.withSession { session =>
-      logger.info(s"Creating database uniqueness constraint on $metaLabel.$metaPropertyKey")
-      session.run(s"CREATE CONSTRAINT ON (n:$metaLabel) ASSERT n.$metaPropertyKey IS UNIQUE").consume()
+      logger.info(s"Creating database uniqueness constraint on ${metaLabel.cypherLabelPredicate}.$metaPropertyKey")
+      session.run(s"CREATE CONSTRAINT ON (n${metaLabel.cypherLabelPredicate}) ASSERT n.$metaPropertyKey IS UNIQUE").consume()
     }
 
     val writesCompleted = for {
@@ -236,6 +236,7 @@ case object Writers {
 
   private def rowToListValue(row: Row): Value = {
     def castValue(v: Any): Any = v match {
+      case a: mutable.WrappedArray[_] if a.size == 1 && a.head == null => null
       case a: mutable.WrappedArray[_] => a.array.map(o => castValue(o))
       case d: java.sql.Date => d.toLocalDate
       case ts: java.sql.Timestamp => ts.toLocalDateTime

@@ -36,9 +36,11 @@ object MetaLabelSupport {
   val entireGraphName = GraphName("graph")
 
   implicit class RichGraphName(val graphName: GraphName) {
-    def metaLabel: Option[String] =
+    def getMetaLabel: Option[String] =
       if (graphName == entireGraphName) None
       else Some(metaLabelForSubgraph)
+
+    def metaLabel: String = getMetaLabel.get
 
     def metaLabelForSubgraph = s"$metaPrefix$graphName"
   }

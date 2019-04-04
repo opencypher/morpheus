@@ -29,6 +29,7 @@ package org.opencypher.okapi.neo4j.io
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
+import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 
 object EntityReader {
 
@@ -37,14 +38,14 @@ object EntityReader {
     val allLabels = labels ++ maybeMetaLabel
     val labelCount = allLabels.size
 
-    s"""|MATCH ($entityVarName:${allLabels.mkString(":")})
+    s"""|MATCH ($entityVarName${allLabels.cypherLabelPredicate})
         |WHERE length(labels($entityVarName)) = $labelCount
         |RETURN id($entityVarName) AS $idPropertyKey$props""".stripMargin
   }
 
   def flatRelTypeQuery(relType: String, schema: Schema, maybeMetaLabel: Option[String] = None): String ={
     val props = schema.relationshipPropertyKeys(relType).propertyExtractorString
-    val metaLabel = maybeMetaLabel.map(m => s":$m").getOrElse("")
+    val metaLabel = maybeMetaLabel.map(_.cypherLabelPredicate).getOrElse("")
 
     s"""|MATCH (s$metaLabel)-[$entityVarName:$relType]->(t$metaLabel)
         |RETURN id($entityVarName) AS $idPropertyKey, id(s) AS $startIdPropertyKey, id(t) AS $endIdPropertyKey$props""".stripMargin

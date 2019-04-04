@@ -129,10 +129,14 @@ final class ExpressionConverter(context: IRBuilderContext) {
             .map(l => schema.nodePropertyKeyType(l, name).getOrElse(CTNull))
             .foldLeft(CTVoid: CypherType)(_ join _)
         // User specified label constraints - we can use those for type inference
-        case CTNode(labels, _) =>
+        case CTNode(labels, None) =>
           schema.nodePropertyKeyType(labels, name).getOrElse(CTNull)
-        case CTRelationship(types, _) =>
+        case CTNode(labels, Some(qgn)) =>
+          context.queryLocalCatalog.schema(qgn).nodePropertyKeyType(labels, name).getOrElse(CTNull)
+        case CTRelationship(types, None) =>
           schema.relationshipPropertyKeyType(types, name).getOrElse(CTNull)
+        case CTRelationship(types, Some(qgn)) =>
+          context.queryLocalCatalog.schema(qgn).relationshipPropertyKeyType(types, name).getOrElse(CTNull)
         case CTMap(inner) =>
           inner.getOrElse(name, CTVoid)
         case _: TemporalValueCypherType =>

@@ -110,6 +110,8 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
   val ns = Namespace("testing")
   val g1 = GraphName("testGraph1")
   val g2 = GraphName("testGraph2")
+  val g3 = GraphName("folder1.testGraph3")
+  val g4 = GraphName("folder1.folder2.testGraph4")
   lazy val testCreateGraphStatements: Map[GraphName, String] = Map(
     g1 ->
       s"""
@@ -125,10 +127,9 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
          |CREATE (combo1)-[:S { since: 2006 }]->(combo1)
          |CREATE (ac)-[:T]->(combo2)
     """.stripMargin,
-    g2 ->
-    s"""
-       |CREATE (d { name: 'D', type: 'NO_LABEL' })
-     """.stripMargin
+    g2 -> "CREATE (d { name: 'D', type: 'NO_LABEL' })",
+    g3 -> "CREATE (a:A)",
+    g4 -> "CREATE (a:A)"
   )
 
   def pgds()(implicit ctx: TestContext): PropertyGraphDataSource = ctx.pgds
@@ -159,20 +160,61 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
         session.catalog.source(ns).hasGraph(GraphName("foo")) shouldBe false
       },
 
-      Scenario("API: PropertyGraphDataSource.hasGraph", g1) { implicit ctx: TestContext =>
+      Scenario("API: PropertyGraphDataSource.hasGraph", List(g1, g3, g4)) { implicit ctx: TestContext =>
         registerPgds(ns)
         session.catalog.source(ns).hasGraph(g1) shouldBe true
+        session.catalog.source(ns).hasGraph(g3) shouldBe true
+        session.catalog.source(ns).hasGraph(g4) shouldBe true
         session.catalog.source(ns).hasGraph(GraphName("foo")) shouldBe false
       },
 
-      Scenario("API: PropertyGraphDataSource.graphNames", g1) { implicit ctx: TestContext =>
+      Scenario("API: PropertyGraphDataSource.hasGraph after reset", List(g1, g3, g4)) { implicit ctx: TestContext =>
         registerPgds(ns)
-        session.catalog.source(ns).graphNames should contain(g1)
+        session.catalog.source(ns).hasGraph(g1) shouldBe true
+        session.catalog.source(ns).hasGraph(g3) shouldBe true
+        session.catalog.source(ns).hasGraph(g4) shouldBe true
+        session.catalog.source(ns).hasGraph(GraphName("foo")) shouldBe false
+        session.catalog.source(ns).reset()
+        session.catalog.source(ns).hasGraph(g1) shouldBe true
+        session.catalog.source(ns).hasGraph(g3) shouldBe true
+        session.catalog.source(ns).hasGraph(g4) shouldBe true
+        session.catalog.source(ns).hasGraph(GraphName("foo")) shouldBe false
       },
 
-      Scenario("API: PropertyGraphDataSource.graph", g1) { implicit ctx: TestContext =>
+      Scenario("API: PropertyGraphDataSource.graphNames", List(g1, g3, g4)) { implicit ctx: TestContext =>
+        registerPgds(ns)
+        session.catalog.source(ns).graphNames should contain(g1)
+        session.catalog.source(ns).graphNames should contain(g3)
+        session.catalog.source(ns).graphNames should contain(g4)
+      },
+
+      Scenario("API: PropertyGraphDataSource.graphNames after reset", List(g1, g3, g4)) { implicit ctx: TestContext =>
+        registerPgds(ns)
+        session.catalog.source(ns).graphNames should contain(g1)
+        session.catalog.source(ns).graphNames should contain(g3)
+        session.catalog.source(ns).graphNames should contain(g4)
+        session.catalog.source(ns).reset()
+        session.catalog.source(ns).graphNames should contain(g1)
+        session.catalog.source(ns).graphNames should contain(g3)
+        session.catalog.source(ns).graphNames should contain(g4)
+      },
+
+      Scenario("API: PropertyGraphDataSource.graph", List(g1, g3, g4)) { implicit ctx: TestContext =>
         registerPgds(ns)
         session.catalog.source(ns).graph(g1)
+        session.catalog.source(ns).graph(g3)
+        session.catalog.source(ns).graph(g4)
+      },
+
+      Scenario("API: PropertyGraphDataSource.graph after reset", List(g1, g3, g4)) { implicit ctx: TestContext =>
+        registerPgds(ns)
+        session.catalog.source(ns).graph(g1)
+        session.catalog.source(ns).graph(g3)
+        session.catalog.source(ns).graph(g4)
+        session.catalog.source(ns).reset()
+        session.catalog.source(ns).graph(g1)
+        session.catalog.source(ns).graph(g3)
+        session.catalog.source(ns).graph(g4)
       },
 
       Scenario("API: Correct schema for graph #1", g1) { implicit ctx: TestContext =>
@@ -202,6 +244,12 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
         registerPgds(ns)
         session.catalog.source(ns).graph(g2).nodes("n").size shouldBe 1
         session.catalog.source(ns).graph(g2).relationships("r").size shouldBe 0
+      },
+
+      Scenario("API: PropertyGraphDataSource: correct node/rel count for graph #3", g3) { implicit ctx: TestContext =>
+        registerPgds(ns)
+        session.catalog.source(ns).graph(g3).nodes("n").size shouldBe 1
+        session.catalog.source(ns).graph(g3).relationships("r").size shouldBe 0
       },
 
       Scenario("API: Cypher query directly on graph #1", g1) { implicit ctx: TestContext =>

@@ -179,6 +179,11 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
     }
   }
 
+  override def reset(): Unit = {
+    schemaCache = Map.empty
+    graphNameCache = listGraphNames.map(GraphName).toSet
+  }
+
   protected def waitForWriteCompletion(writeFutures: Set[Future[Unit]])(implicit ec: ExecutionContext): Unit = {
     writeFutures.foreach { writeFuture =>
       Await.ready(writeFuture, Duration.Inf)

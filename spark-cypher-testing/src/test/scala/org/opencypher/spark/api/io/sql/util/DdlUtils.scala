@@ -46,15 +46,16 @@ object DdlUtils {
       val pathPrefixParts: List[String] = List(maybeDataSourceName, maybeDatabaseName).flatten
       val joinFromStartNode: List[Join] = List(Join(GraphEntity.sourceIdKey, Relationship.sourceStartNodeKey))
       val joinFromEndNode: List[Join] = List(Join(GraphEntity.sourceIdKey, Relationship.sourceEndNodeKey))
+      val tablePrefix = graphName.value.replaceAll("\\.", "_")
 
       def nodeViewId(labelCombination: Set[String]): ViewId = {
-        ViewId(maybeSchemaDefinition, pathPrefixParts :+ nodeTableDirectoryName(labelCombination))
+        ViewId(maybeSchemaDefinition, pathPrefixParts :+ nodeTableDirectoryName(labelCombination + tablePrefix))
       }
 
       def relViewId(sourceLabelCombination: Set[String], relType: String, targetLabelCombination: Set[String]): ViewId = {
         val relTypeDir = concatDirectoryNames(Seq(
           nodeTableDirectoryName(sourceLabelCombination),
-          relKeyTableDirectoryName(relType),
+          relKeyTableDirectoryName(tablePrefix + relType),
           nodeTableDirectoryName(targetLabelCombination)))
         ViewId(maybeSchemaDefinition, pathPrefixParts :+ relTypeDir)
       }

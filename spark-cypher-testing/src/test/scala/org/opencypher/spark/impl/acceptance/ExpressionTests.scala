@@ -547,6 +547,21 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
   }
 
+  test("division float and literal") {
+    // Given
+    val given = initGraph("CREATE (:Node {val: 4.5})")
+
+    // When
+    val result = given.cypher("MATCH (n:Node) RETURN n.val / 0.5 AS res")
+
+    // Then
+    result.records.toMaps should equal(Bag(
+      CypherMap("res" -> 9.0)
+    ))
+
+  }
+
+
   it("equality") {
     // Given
     val given = initGraph(

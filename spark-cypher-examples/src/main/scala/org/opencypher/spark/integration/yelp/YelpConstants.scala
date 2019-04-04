@@ -24,35 +24,44 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.neo4j.io
+package org.opencypher.spark.integration.yelp
 
 import java.net.URI
-import java.util.concurrent.TimeUnit
 
-import org.neo4j.driver.v1.{AuthTokens, Config, Driver, GraphDatabase}
+import org.opencypher.okapi.api.graph.{GraphName, Namespace}
+import org.opencypher.okapi.neo4j.io.Neo4jConfig
 
-case class Neo4jConfig(
-  uri: URI,
-  user: String = "neo4j",
-  password: Option[String] = None,
-  encrypted: Boolean = true,
-  createNodeBatchSize: Int = 100000,
-  createRelationshipBatchSize: Int = 100000,
-  mergeNodeBatchSize: Int = 1000,
-  mergeRelationshipBatchSize: Int = 10
-) {
+object YelpConstants {
 
-  def driver(): Driver = password match {
-    case Some(pwd) => GraphDatabase.driver(uri, AuthTokens.basic(user, pwd), boltConfig())
-    case _ => GraphDatabase.driver(uri, boltConfig())
-  }
+  val neo4jConfig = Neo4jConfig(new URI("bolt://localhost:7687"), "neo4j", Some("yelp"))
 
-  private def boltConfig(): Config = {
-    val builder = Config.build.withMaxTransactionRetryTime(1, TimeUnit.MINUTES)
+  val yelpGraphName = GraphName("yelp")
 
-    if (encrypted)
-      builder.withEncryption().toConfig
-    else
-      builder.withoutEncryption().toConfig
+  val defaultYelpJsonFolder = "yelp_json"
+  val defaultYelpGraphFolder = "yelp_graph"
+
+  val userLabel = "User"
+  val businessLabel = "Business"
+  val reviewRelType = "REVIEWS"
+  val friendRelType = "FRIEND"
+
+  val fsNamespace = Namespace("fileSystem")
+  val neo4jNamespace = Namespace("neo4j")
+  val hiveNamespace = Namespace("hive")
+
+  val city = "Boulder City"
+  val cityGraphName = GraphName(city.replace(" ", "").toLowerCase)
+  val businessTrendsGraphName = GraphName("businessTrends")
+
+  def reviewGraphName(year: Int) = GraphName(s"review.y$year")
+  def coReviewGraphName(year: Int) = GraphName(s"coReview.y$year")
+  def friendGraphName(year: Int) = GraphName(s"friend.y$year")
+
+  def pageRankProp(year: Int) = s"pageRank$year"
+  def pageRankCoReviewProp(year: Int) = s"pageRankCoReview$year"
+
+  def log(content: String, level: Int = 0) = {
+    val spaces = (0 to level).foldLeft("") { case (acc, _) => acc + "  " }
+    println(s"${spaces}$content")
   }
 }

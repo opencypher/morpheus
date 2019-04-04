@@ -27,3 +27,6 @@ gradle-app.setting
 .gradletasknamecache
 # gradle/wrapper/gradle-wrapper.properties
 
+# Demo data sets
+yelp_json
+yelp_graph
