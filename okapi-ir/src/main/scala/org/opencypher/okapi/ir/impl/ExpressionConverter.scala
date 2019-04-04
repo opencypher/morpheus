@@ -28,13 +28,16 @@ package org.opencypher.okapi.ir.impl
 
 import org.opencypher.okapi.api.types.CypherType._
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.impl.exception.NotImplementedException
+import org.opencypher.okapi.api.value.CypherValue.CypherInteger
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.impl.OperatorTyping._
+import org.opencypher.okapi.ir.impl.BigDecimalSignatures.{Addition, Division, Multiplication}
+import org.opencypher.okapi.ir.impl.SignatureTyping._
 import org.opencypher.okapi.ir.impl.parse.functions.FunctionExtensions
 import org.opencypher.okapi.ir.impl.parse.{functions => f}
-import org.opencypher.okapi.ir.impl.typer.{InvalidArgument, InvalidContainerAccess, MissingParameter, NoSuitableSignatureForExpr, SignatureConverter, UnTypedExpr}
+import org.opencypher.okapi.ir.impl.typer.SignatureConverter.Signature
+import org.opencypher.okapi.ir.impl.typer.{InvalidArgument, InvalidContainerAccess, MissingParameter, NoSuitableSignatureForExpr, SignatureConverter, UnTypedExpr, WrongNumberOfArguments}
 import org.opencypher.v9_0.expressions.{OperatorExpression, RegexMatch, TypeSignatures, functions}
 import org.opencypher.v9_0.{expressions => ast}
 
@@ -50,28 +53,31 @@ object AddType {
   }
 
   def apply(lhs: CypherType, rhs: CypherType): Option[CypherType] = {
-    val lookup = lhs.material -> rhs.material match {
-      case (CTVoid, _) => CTNull
-      case (_, CTVoid) => CTNull
-      case (left: CTList, _) => left listConcatJoin rhs
-      case (_, right: CTList) => right listConcatJoin lhs
-      case (CTString, _) if rhs.subTypeOf(CTNumber) => CTString
-      case (_, CTString) if lhs.subTypeOf(CTNumber) => CTString
-      case (CTString, CTString) => CTString
-      case (CTDuration, CTDuration) => CTDuration
-      case (CTLocalDateTime, CTDuration) => CTLocalDateTime
-      case (CTDuration, CTLocalDateTime) => CTLocalDateTime
-      case (CTDate, CTDuration) => CTDate
-      case (CTDuration, CTDate) => CTDate
-      case (CTInteger, CTInteger) => CTInteger
-      case (CTFloat, CTInteger) => CTFloat
-      case (CTInteger, CTFloat) => CTFloat
-      case (CTFloat, CTFloat) => CTFloat
-      case (CTNumber, y) if y.subTypeOf(CTNumber) => CTNumber
-      case (x, CTNumber) if x.subTypeOf(CTNumber) => CTNumber
-      case _ => null
+    val addSignature: Signature = args => {
+      val result = args.map(_.material) match {
+        case Seq(CTVoid, _) | Seq(_, CTVoid) => Some(CTNull)
+        case Seq(left: CTList, _) => Some(left listConcatJoin rhs)
+        case Seq(_, right: CTList) => Some(right listConcatJoin lhs)
+        case Seq(CTString, _) if rhs.subTypeOf(CTNumber) => Some(CTString)
+        case Seq(_, CTString) if lhs.subTypeOf(CTNumber) => Some(CTString)
+        case Seq(CTString, CTString) => Some(CTString)
+        case Seq(CTDuration, CTDuration) => Some(CTDuration)
+        case Seq(CTLocalDateTime, CTDuration) => Some(CTLocalDateTime)
+        case Seq(CTDuration, CTLocalDateTime) => Some(CTLocalDateTime)
+        case Seq(CTDate, CTDuration) => Some(CTDate)
+        case Seq(CTDuration, CTDate) => Some(CTDate)
+        case Seq(CTInteger, CTInteger) => Some(CTInteger)
+        case Seq(CTFloat, CTInteger) => Some(CTFloat)
+        case Seq(CTInteger, CTFloat) => Some(CTFloat)
+        case Seq(CTFloat, CTFloat) => Some(CTFloat)
+        case _ => None
+      }
+
+      result.map(_.asNullableAs(rhs join lhs))
     }
-    Option(lookup).map(_.asNullableAs(lhs.join(rhs)))
+    val sigs = Set(addSignature, BigDecimalSignatures.arithmeticSignature(Addition))
+
+    returnTypeFor(Seq.empty, Seq(lhs, rhs), sigs)
   }
 
 }
@@ -87,12 +93,24 @@ final class ExpressionConverter(context: IRBuilderContext) {
     }
   }
 
+  private def extractLong(expr: Expr): Long = {
+    expr match {
+      case param: Param => context.parameters(param.name) match {
+        case CypherInteger(i) => i
+        case other => throw IllegalArgumentException("a CypherInteger value", other)
+      }
+      case l: IntegerLit => l.v
+      case _ => throw IllegalArgumentException("a literal value", expr)
+    }
+  }
+
   def convert(e: ast.Expression): Expr = e match {
     case ast.Variable(name) => Var(name)(context.knownTypes.getOrElse(e, throw UnTypedExpr(e)))
     case p@ast.Parameter(name, _) => Param(name)(parameterType(p))
 
     // Literals
     case astExpr: ast.IntegerLiteral => IntegerLit(astExpr.value)
+    case astExpr: ast.DecimalDoubleLiteral => FloatLit(astExpr.value)
     case ast.StringLiteral(value) => StringLit(value)
     case _: ast.True => TrueLit
     case _: ast.False => FalseLit
@@ -157,23 +175,38 @@ final class ExpressionConverter(context: IRBuilderContext) {
       )
 
       Add(convertedLhs, convertedRhs)(addType)
+
     case s@ast.Subtract(lhs, rhs) =>
 
       val convertedLhs = convert(lhs)
       val convertedRhs = convert(rhs)
-      val exprType = s.returnTypeFor(convertedLhs.cypherType, convertedRhs.cypherType)
+
+      val exprType = s.returnTypeFor(
+        BigDecimalSignatures.arithmeticSignature(Addition),
+        convertedLhs.cypherType, convertedRhs.cypherType
+      )
 
       Subtract(convertedLhs, convertedRhs)(exprType)
+
     case m@ast.Multiply(lhs, rhs) =>
       val convertedLhs = convert(lhs)
       val convertedRhs = convert(rhs)
-      val exprType = m.returnTypeFor(convertedLhs.cypherType, convertedRhs.cypherType)
+
+      val exprType = m.returnTypeFor(
+        BigDecimalSignatures.arithmeticSignature(Multiplication),
+        convertedLhs.cypherType, convertedRhs.cypherType
+      )
 
       Multiply(convertedLhs, convertedRhs)(exprType)
+
     case d@ast.Divide(lhs, rhs) =>
       val convertedLhs = convert(lhs)
       val convertedRhs = convert(rhs)
-      val exprType = d.returnTypeFor(convertedLhs.cypherType, convertedRhs.cypherType)
+
+      val exprType = d.returnTypeFor(
+        BigDecimalSignatures.arithmeticSignature(Division),
+        convertedLhs.cypherType, convertedRhs.cypherType
+      )
 
       Divide(convertedLhs, convertedRhs)(exprType)
 
@@ -282,6 +315,9 @@ final class ExpressionConverter(context: IRBuilderContext) {
           case f.LocalDateTime.name => LocalDateTime(convertedArgs.headOption)
           case f.Date.name => Date(convertedArgs.headOption)
           case f.Duration.name => Duration(arg0)
+          case BigDecimal.name =>
+            e.checkNbrArgs(3, convertedArgs.length)
+            BigDecimal(arg0, extractLong(arg1), extractLong(arg2))
           case name => throw NotImplementedException(s"Support for converting function '$name' is not yet implemented")
         }
 
@@ -295,7 +331,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
     case org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern(subquery, trueVar) =>
       val innerModel = IRBuilder(subquery)(context) match {
         case sq: SingleQuery => sq
-        case _ => throw new IllegalArgumentException("ExistsPattern only accepts SingleQuery")
+        case _ => throw IllegalArgumentException("ExistsPattern only accepts SingleQuery")
       }
       ExistsPatternExpr(
         Var(trueVar.name)(CTBoolean),
@@ -347,27 +383,80 @@ final class ExpressionConverter(context: IRBuilderContext) {
 
 }
 
-object OperatorTyping {
+object BigDecimalSignatures {
 
-  def returnTypeFor(signatures: Seq[ast.TypeSignature], args: Seq[CypherType]): Option[CypherType] = {
+  /**
+    * Signature for BigDecimal arithmetics on the type level. The semantics are based on Spark SQL, which in turn
+    * is based on Hive and SQL Server. See DecimalPrecision in Apache Spark
+    * @param precisionScaleOp
+    * @return
+    */
+  def arithmeticSignature(precisionScaleOp: PrecisionScaleOp): Signature = {
+    case Seq(CTBigDecimal(p1, s1), CTBigDecimal(p2, s2)) => Some(CTBigDecimal(precisionScaleOp(p1, s1, p2, s2)))
+    case Seq(CTBigDecimal(p, s), CTInteger) => Some(CTBigDecimal(precisionScaleOp(p, s, 20, 0)))
+    case Seq(CTInteger, CTBigDecimal(p, s)) => Some(CTBigDecimal(precisionScaleOp(20, 0, p, s)))
+    case Seq(_: CTBigDecimal, CTFloat) => Some(CTFloat)
+    case Seq(CTFloat, _: CTBigDecimal) => Some(CTFloat)
+    case _ => None
+  }
+
+  trait PrecisionScaleOp {
+    def apply(p1: Int, s1: Int, p2: Int, s2: Int): (Int, Int)
+  }
+
+  import Math.max
+
+  case object Addition extends PrecisionScaleOp {
+    override def apply(p1: Int, s1: Int, p2: Int, s2: Int): (Int, Int) = {
+      max(s1, s2) + max(p1 - s1, p2 - s2) + 1 -> max(s1, s2)
+    }
+  }
+
+  case object Multiplication extends PrecisionScaleOp {
+    override def apply(p1: Int, s1: Int, p2: Int, s2: Int): (Int, Int) = {
+      p1 + p2 + 1 -> (s1 + s2)
+    }
+  }
+
+  case object Division extends PrecisionScaleOp {
+    override def apply(p1: Int, s1: Int, p2: Int, s2: Int): (Int, Int) = {
+      p1 - s1 + s2 + max(6, s1 + p2 + 1) -> max(6, s1 + p2 + 1)
+    }
+  }
+}
+
+object SignatureTyping {
+
+  /**
+    * Determines the output type given a set of signatures and a sequence of argument types.
+    * This uses the frontend's signatures, which we enrich with nulls and allow coercions for.
+    * Signatures from the frontend may be extended with additional signatures.
+    */
+  def returnTypeFor(signatures: Seq[ast.TypeSignature], args: Seq[CypherType], extensions: Set[Signature] = Set.empty): Option[CypherType] = {
+    // TODO: shrink signature of this call to just take in one collection of Signature
     val expandedSignatures = SignatureConverter.from(signatures)
       .expandWithNulls
       .expandWithSubstitutions(CTFloat, CTInteger)
       .signatures
 
-    val possibleReturnTypes = expandedSignatures.filter { sig =>
-      sig.input.zip(args).forall {
-        case (sigType, argType) =>
-          argType.couldBeSameTypeAs(sigType)
-      }
-    }.map(_.output)
+    val extendedSignatures = expandedSignatures ++ extensions
+
+    val possibleReturnTypes = extendedSignatures.flatMap(sig => sig(args))
 
     possibleReturnTypes.reduceLeftOption(_ join _)
   }
 
   implicit class RichOperatorExpression(val o: ast.Expression with OperatorExpression) {
     def returnTypeFor(args: CypherType*): CypherType = {
-      OperatorTyping.returnTypeFor(o.signatures, args).getOrElse(throw NoSuitableSignatureForExpr(o, args))
+      SignatureTyping.returnTypeFor(o.signatures, args).getOrElse(throw NoSuitableSignatureForExpr(o, args))
+    }
+
+    def returnTypeFor(signatures: Set[Signature], args: CypherType*): CypherType = {
+      SignatureTyping.returnTypeFor(o.signatures, args, signatures).getOrElse(throw NoSuitableSignatureForExpr(o, args))
+    }
+
+    def returnTypeFor(signature: Signature, args: CypherType*): CypherType = {
+      returnTypeFor(Set(signature), args: _*)
     }
   }
 
@@ -379,7 +468,15 @@ object OperatorTyping {
         case _ => throw NoSuitableSignatureForExpr(f, args)
       }
 
-      OperatorTyping.returnTypeFor(signatures, args).getOrElse(throw NoSuitableSignatureForExpr(f, args))
+      SignatureTyping.returnTypeFor(signatures, args).getOrElse(throw NoSuitableSignatureForExpr(f, args))
+    }
+  }
+
+  implicit class ArgumentChecker(val e: ast.Expression) {
+    def checkNbrArgs(expected: Int, actual: Int): Unit = {
+      if (expected != actual) {
+        throw WrongNumberOfArguments(e, expected, actual)
+      }
     }
   }
 }

@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.api.value
 
+import java.math.{MathContext, RoundingMode}
 import java.util.Objects
 
 import org.opencypher.okapi.api.value.CypherValue.CypherEntity._
@@ -81,6 +82,8 @@ object CypherValue {
         case f: Float => f.toDouble
         case d: Double => d
         case b: Boolean => b
+        case b: BigDecimal => b
+        case b: java.math.BigDecimal => BigDecimal(b)
         case invalid =>
           throw IllegalArgumentException(
             "a value that can be converted to a Cypher value", s"$invalid of type ${invalid.getClass.getName}")
@@ -251,6 +254,11 @@ object CypherValue {
         case CypherFloat(d) => Num(d)
         case CypherInteger(l) => Str(l.toString) // `Num` would lose precision
         case CypherBoolean(b) => Bool(b)
+        case CypherBigDecimal(b) => Obj(
+          "type" -> Str("BigDecimal"),
+          "scale" -> Num(b.bigDecimal.scale()),
+          "precision" -> Num(b.bigDecimal.precision())
+        )
         case other => Str(formatValue(other.value))
       }
     }
@@ -289,6 +297,8 @@ object CypherValue {
   implicit class CypherInteger(val value: Long) extends AnyVal with CypherNumber[Long]
 
   implicit class CypherFloat(val value: Double) extends AnyVal with CypherNumber[Double]
+
+  implicit class CypherBigDecimal(val value: BigDecimal) extends AnyVal with CypherNumber[BigDecimal]
 
   implicit class CypherLocalDateTime(val value: java.time.LocalDateTime) extends AnyVal with MaterialCypherValue[java.time.LocalDateTime] {
     override def unwrap: Any = value
@@ -503,6 +513,24 @@ object CypherValue {
   object CypherBoolean extends UnapplyValue[Boolean, CypherBoolean]
 
   object CypherInteger extends UnapplyValue[Long, CypherInteger]
+
+  object CypherBigDecimal extends UnapplyValue[BigDecimal, CypherBigDecimal] {
+
+    def apply(v: Any, precision: Int, scale: Int): CypherBigDecimal = {
+
+      val context = new MathContext(precision)
+
+      val bigDecimal = v match {
+        case i: Int => BigDecimal(i, context)
+        case l: Long => BigDecimal(l, context)
+        case f: Float => BigDecimal(f.toDouble, context)
+        case d: Double => BigDecimal(d, context)
+        case s: String => BigDecimal(s, context)
+      }
+
+      bigDecimal.setScale(scale)
+    }
+  }
 
   object CypherFloat extends UnapplyValue[Double, CypherFloat]
 

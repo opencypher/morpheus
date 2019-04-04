@@ -114,6 +114,10 @@ object CAPSFunctions {
     filter_with_mask(items, mask, LambdaFunction(IsNotNull(GetStructField(x, 1)), Seq(x), hidden = false))
   }
 
+  def make_big_decimal(unscaledVal: Column, precision: Int, scale: Int): Column = {
+    new Column(MakeDecimal(unscaledVal.expr, precision, scale))
+  }
+
   private def filter_with_mask[T: TypeTag](items: Seq[T], mask: Seq[Column], predicate: LambdaFunction): Column = {
     require(items.size == mask.size, s"Array filtering requires for the items and the mask to have the same length.")
     if (items.isEmpty) {

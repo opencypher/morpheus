@@ -60,6 +60,7 @@ object CypherType {
         case CypherFloat(_) => CTFloat
         case CypherInteger(_) => CTInteger
         case CypherString(_) => CTString
+        case CypherBigDecimal(b) => CTBigDecimal(b.precision, b.scale)
         case CypherLocalDateTime(_) => CTLocalDateTime
         case CypherDate(_) => CTDate
         case CypherDuration(_) => CTDuration
@@ -100,17 +101,13 @@ case object CTNumber extends MaterialDefiniteCypherType with MaterialDefiniteCyp
   override def name = "NUMBER"
 
   override def superTypeOf(other: CypherType): Boolean = other match {
-    case CTNumber => true
-    case CTInteger => true
-    case CTFloat => true
+    case CTNumber | CTInteger | CTFloat | _: CTBigDecimal => true
     case CTVoid => true
     case _ => false
   }
 
   override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
-    case CTNumber => self
-    case CTInteger => self
-    case CTFloat => self
+    case CTNumber | CTInteger | CTFloat | _: CTBigDecimal => self
     case CTVoid => self
     case _ => CTAny
   }
@@ -123,9 +120,8 @@ case object CTInteger extends MaterialDefiniteCypherLeafType {
   override def name = "INTEGER"
 
   override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
-    case CTNumber => CTNumber
+    case CTNumber | CTFloat | _: CTBigDecimal => CTNumber
     case CTInteger => self
-    case CTFloat => CTNumber
     case CTVoid => self
     case _ => CTAny
   }
@@ -138,9 +134,40 @@ case object CTFloat extends MaterialDefiniteCypherLeafType {
   override def name = "FLOAT"
 
   override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
-    case CTNumber => CTNumber
-    case CTInteger => CTNumber
+    case CTNumber | CTInteger | _: CTBigDecimal => CTNumber
     case CTFloat => self
+    case CTVoid => self
+    case _ => CTAny
+  }
+}
+
+object CTBigDecimal {
+  def apply(precisionAndScale: (Int, Int)): CTBigDecimal =
+    CTBigDecimal(precisionAndScale._1, precisionAndScale._2)
+}
+
+case class CTBigDecimal(precision: Int = 10, scale: Int = 0) extends MaterialDefiniteCypherLeafType {
+
+  self =>
+
+  override def name: String = s"BIGDECIMAL($precision,$scale)"
+
+  override def superTypeOf(other: CypherType): Boolean = other match {
+    case CTVoid => true
+    case CTBigDecimal(p, s) =>
+      val myIntegerPartSize = precision - scale
+      val otherIntegerPartSize = p - s
+
+      (precision >= p) && (scale >= s) && (myIntegerPartSize >= otherIntegerPartSize)
+    case _ => false
+  }
+
+  override def joinMaterially(other: MaterialCypherType): MaterialCypherType = other match {
+    case CTNumber | CTInteger | CTFloat => CTNumber
+    case CTBigDecimal(p, s) =>
+      val maxScale = Math.max(scale, s)
+      val maxDiff = Math.max(precision - scale, p - s)
+      CTBigDecimal(maxDiff + maxScale, maxScale)
     case CTVoid => self
     case _ => CTAny
   }
@@ -516,6 +543,7 @@ private[okapi] object MaterialDefiniteCypherType {
       // equal to another instance of itself
       case CTString => CTStringOrNull
       case CTInteger => CTIntegerOrNull
+      case CTBigDecimal(p, s) => CTBigDecimalOrNull(p, s)
       case CTBoolean => CTBooleanOrNull
       case CTAny => CTAnyOrNull
       case CTNumber => CTNumberOrNull
@@ -533,8 +561,12 @@ private[okapi] object MaterialDefiniteCypherType {
 
 case object CTIntegerOrNull extends NullableDefiniteCypherType {
   override def name: String = CTInteger + "?"
-
   override def material: CTInteger.type = CTInteger
+}
+
+case class CTBigDecimalOrNull(precision: Int, scale: Int) extends NullableDefiniteCypherType {
+  override def name: String = material.name + "?"
+  override def material: CTBigDecimal = CTBigDecimal(precision, scale)
 }
 
 case object CTStringOrNull extends NullableDefiniteCypherType {

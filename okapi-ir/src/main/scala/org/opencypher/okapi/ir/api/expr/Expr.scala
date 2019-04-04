@@ -569,6 +569,17 @@ final case class ToBoolean(expr: Expr) extends UnaryFunctionExpr {
   override val cypherType: CypherType = CTBoolean.asNullableAs(expr.cypherType)
 }
 
+object BigDecimal {
+  val name: String = "bigdecimal"
+}
+
+final case class BigDecimal(expr: Expr, precision: Long, scale: Long) extends UnaryFunctionExpr {
+  if (scale > precision) {
+    throw IllegalArgumentException("Greater precision than scale", s"precision: $precision, scale: $scale")
+  }
+  override val cypherType: CypherType = CTBigDecimal(precision.toInt, scale.toInt).asNullableAs(expr.cypherType)
+}
+
 final case class Coalesce(exprs: List[Expr])(val cypherType: CypherType) extends FunctionExpr {
   override def nullInNullOut: Boolean = false
 }
@@ -873,6 +884,10 @@ final case class ContainerIndex(container: Expr, index: Expr)(val cypherType: Cy
 
 final case class IntegerLit(v: Long) extends Lit[Long] {
   override val cypherType: CypherType = CTInteger
+}
+
+final case class FloatLit(v: Double) extends Lit[Double] {
+  override val cypherType: CypherType = CTFloat
 }
 
 final case class StringLit(v: String) extends Lit[String] {

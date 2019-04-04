@@ -133,7 +133,6 @@ class Neo4jPropertyGraphDataSourceTest
   }
 
   it("should throw an error when node ids are not unique") {
-    import scala.collection.JavaConverters._
     val schema = StructType(Seq(StructField("id", LongType, nullable = false)))
     val node1DF = sparkSession.createDataFrame(List(Row(1L)).asJava, schema)
     val node2DF = sparkSession.createDataFrame(List(Row(1L)).asJava, schema)

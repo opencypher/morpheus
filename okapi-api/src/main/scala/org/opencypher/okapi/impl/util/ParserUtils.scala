@@ -26,8 +26,8 @@
  */
 package org.opencypher.okapi.impl.util
 
+import fastparse.NoWhitespace._
 import fastparse._
-import NoWhitespace._
 
 object ParserUtils {
   def newline[_: P]: P[Unit] = P("\n" | "\r\n" | "\r" | "\f")
@@ -37,6 +37,7 @@ object ParserUtils {
 
   def keyword[_: P](k: String): P[Unit] = P(IgnoreCase(k))
   def digit[_: P]: P[Unit] = P(CharIn("0-9"))
+  def integer[_: P]: P[Int] = P(digit.repX(1).!.map(_.toInt))
   def character[_: P]: P[Unit] = P(CharIn("a-zA-Z"))
   def identifier[_: P]: P[Unit] = P(character ~~ P(character | digit | "_").repX)
   def escapedIdentifier[_: P]: P[String] = P(identifier.! | ("`" ~~ CharsWhile(_ != '`').! ~~ "`"))

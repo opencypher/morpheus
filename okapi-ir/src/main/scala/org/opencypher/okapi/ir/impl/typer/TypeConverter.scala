@@ -58,12 +58,23 @@ object TypeConverter {
   }
 }
 
-
-
-
 object SignatureConverter {
 
-  case class FunctionSignature(input: Seq[CypherType], output: CypherType)
+  trait Signature {
+    def apply(input: Seq[CypherType]): Option[CypherType]
+  }
+
+  case class FunctionSignature(declaredInput: Seq[CypherType], output: CypherType) extends Signature {
+    override def apply(givenInput: Seq[CypherType]): Option[CypherType] = {
+      if (declaredInput.zip(givenInput).forall {
+        case (sigType, argType) =>
+          argType.couldBeSameTypeAs(sigType)
+      }) {
+        Some(output)
+      } else
+        None
+    }
+  }
 
   def convert(frontendSig: TypeSignature): Option[FunctionSignature] = {
     val argumentTypes = frontendSig.argumentTypes.map(TypeConverter.convert)
@@ -86,16 +97,16 @@ object SignatureConverter {
 
     def expandWithNulls: FunctionSignatures = include(for {
       signature <- sigs
-      alternative <- substitutions(signature.input, 1, signature.input.size)(_ => CTNull)
+      alternative <- substitutions(signature.declaredInput, 1, signature.declaredInput.size)(_ => CTNull)
     } yield FunctionSignature(alternative, CTNull))
 
     def expandWithSubstitutions(old: CypherType, rep: CypherType): FunctionSignatures = include(for {
       signature <- sigs
-      alternative <- substitutions(signature.input, 1, signature.input.size)(replace(old, rep))
-      if sigs.forall(_.input != alternative)
+      alternative <- substitutions(signature.declaredInput, 1, signature.declaredInput.size)(replace(old, rep))
+      if sigs.forall(_.declaredInput != alternative)
     } yield FunctionSignature(alternative, signature.output))
 
-    lazy val signatures: Set[FunctionSignature] = ListSet(sigs: _*)
+    lazy val signatures: Set[Signature] = ListSet(sigs: _*)
 
     private def mask(size: Int, hits: Int) =
       Seq.fill(hits)(true) ++ Seq.fill(size - hits)(false)

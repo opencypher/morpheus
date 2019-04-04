@@ -478,7 +478,7 @@ object SparkTable {
         case (currentDf, field) =>
           val castType = field.dataType.cypherCompatibleDataType.getOrElse(
             throw IllegalArgumentException(
-              s"a Spark type supported by Cypher: ${supportedTypes.mkString("[", ", ", "]")}",
+              s"a Spark type supported by Cypher.",
               s"type ${field.dataType} of field $field"))
           currentDf.withColumn(field.name, currentDf.col(field.name).cast(castType))
       }

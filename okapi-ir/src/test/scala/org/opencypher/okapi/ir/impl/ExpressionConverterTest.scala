@@ -30,10 +30,12 @@ import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.v9_0.ast.semantics.SemanticState
 import org.opencypher.v9_0.{expressions => ast}
 import org.scalatest.Assertion
@@ -100,6 +102,63 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     _ => ???,
     all
   )
+
+  describe("bigdecimal") {
+    it("should convert bigdecimal") {
+      convert(parseExpr("bigdecimal(INTEGER, 2, 1)")) shouldEqual
+        BigDecimal('INTEGER, 2, 1)
+    }
+
+    it("should convert bigdecimal addition") {
+      convert(parseExpr("bigdecimal(INTEGER, 4, 2) + bigdecimal(INTEGER, 10, 6)")) shouldEqual
+        Add(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))(CTBigDecimal(11, 6))
+    }
+
+    it("should convert bigdecimal subtraction") {
+      convert(parseExpr("bigdecimal(INTEGER, 4, 2) - bigdecimal(INTEGER, 10, 6)")) shouldEqual
+        Subtract(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))(CTBigDecimal(11, 6))
+    }
+
+    it("should convert bigdecimal multiplication") {
+      convert(parseExpr("bigdecimal(INTEGER, 4, 2) * bigdecimal(INTEGER, 10, 6)")) shouldEqual
+        Multiply(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))(CTBigDecimal(15, 8))
+    }
+
+    it("should convert bigdecimal division") {
+      convert(parseExpr("bigdecimal(INTEGER, 4, 2) / bigdecimal(INTEGER, 10, 6)")) shouldEqual
+        Divide(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))(CTBigDecimal(21, 13))
+    }
+
+    it("should convert bigdecimal division (magic number 6)") {
+      convert(parseExpr("bigdecimal(INTEGER, 3, 1) / bigdecimal(INTEGER, 2, 1)")) shouldEqual
+        Divide(BigDecimal('INTEGER, 3, 1), BigDecimal('INTEGER, 2, 1))(CTBigDecimal(9, 6))
+    }
+
+    it("should convert bigdecimal addition with int") {
+      convert(parseExpr("bigdecimal(INTEGER, 2, 2) + 2")) shouldEqual
+        Add(BigDecimal('INTEGER, 2, 2), IntegerLit(2))(CTBigDecimal(23, 2))
+    }
+
+    it("should convert bigdecimal multiplication with int") {
+      convert(parseExpr("bigdecimal(INTEGER, 2, 2) + 2")) shouldEqual
+        Add(BigDecimal('INTEGER, 2, 2), IntegerLit(2))(CTBigDecimal(23, 2))
+    }
+
+    it("should lose bigdecimal when adding with float") {
+      convert(parseExpr("bigdecimal(FLOAT, 4, 2) + 2.5")) shouldEqual
+        Add(BigDecimal('FLOAT, 4, 2), FloatLit(2.5))(CTFloat)
+    }
+
+    it("should lose bigdecimal when dividing by float") {
+      convert(parseExpr("bigdecimal(FLOAT, 4, 2) / 2.5")) shouldEqual
+        Divide(BigDecimal('FLOAT, 4, 2), FloatLit(2.5))(CTFloat)
+    }
+
+    it("should not allow scale to be greater than precision") {
+      val a = the [IllegalArgumentException] thrownBy convert(parseExpr("bigdecimal(INTEGER, 2, 3)"))
+      a.getMessage should(include("Greater precision than scale") and include("precision: 2") and include("scale: 3"))
+    }
+  }
 
   it("should convert CASE") {
     convert(parseExpr("CASE WHEN INTEGER > INTEGER THEN INTEGER ELSE FLOAT END")) should equal(
@@ -278,10 +337,13 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   it("can convert literals") {
-    convert(literalInt(1)) should equal(IntegerLit(1L))
-    convert(ast.StringLiteral("Hello") _) should equal(StringLit("Hello"))
-    convert(parseExpr("false")) should equal(FalseLit)
-    convert(parseExpr("true")) should equal(TrueLit)
+    convert(literalInt(1)) shouldEqual IntegerLit(1L)
+    convert(ast.StringLiteral("Hello") _) shouldEqual StringLit("Hello")
+    convert(parseExpr("false")) shouldEqual FalseLit
+    convert(parseExpr("true")) shouldEqual TrueLit
+    convert(parseExpr("2.5")) shouldEqual FloatLit(2.5)
+    convert(parseExpr("1e10")) shouldEqual FloatLit(1e10)
+    convert(parseExpr("-1.4e-3")) shouldEqual FloatLit(-1.4e-3)
   }
 
   it("can convert property access") {
@@ -307,7 +369,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
     it("can convert single has-labels") {
       val given = ast.HasLabels(varFor("NODE"), Seq(ast.LabelName("Person") _)) _
-      convert(given) shouldEqual(HasLabel('NODE, Label("Person")))
+      convert(given) shouldEqual HasLabel('NODE, Label("Person"))
     }
   }
 
@@ -327,7 +389,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   it("can convert negation") {
     val given = ast.Not(ast.HasLabels(varFor("NODE"), Seq(ast.LabelName("Person") _)) _) _
 
-    convert(given) shouldEqual(Not(HasLabel('NODE, Label("Person"))))
+    convert(given) shouldEqual Not(HasLabel('NODE, Label("Person")))
   }
 
   it("can convert id function") {
@@ -343,7 +405,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   implicit class TestExpr(expr: Expr) {
     def shouldEqual(other: Expr): Assertion = {
-      expr should equal(other)
+      expr should equalWithTracing(other)
       expr.cypherType should equal(other.cypherType)
     }
     def shouldEqual(other: Expr, typ: CypherType): Assertion = {

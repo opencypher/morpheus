@@ -40,6 +40,7 @@ class CypherTypesTest extends ApiBaseTest {
     CTNumber,
     CTInteger,
     CTFloat,
+    CTBigDecimal(12),
     CTString,
     CTMap(Map("foo" -> CTString, "bar" -> CTInteger)),
     CTNode,
@@ -84,6 +85,9 @@ class CypherTypesTest extends ApiBaseTest {
     CTMap couldBeSameTypeAs CTMap(Map("name" -> CTString)) shouldBe true
     CTMap(Map("name" -> CTString)) couldBeSameTypeAs CTMap() shouldBe false
     CTMap() couldBeSameTypeAs CTMap(Map("name" -> CTString)) shouldBe false
+
+    CTNumber couldBeSameTypeAs CTBigDecimal(1, 1)
+    CTBigDecimal(1, 1) couldBeSameTypeAs CTNumber
   }
 
   it("intersects") {
@@ -128,6 +132,7 @@ class CypherTypesTest extends ApiBaseTest {
       CTNumber -> ("NUMBER" -> "NUMBER?"),
       CTInteger -> ("INTEGER" -> "INTEGER?"),
       CTFloat -> ("FLOAT" -> "FLOAT?"),
+      CTBigDecimal(12,6) -> ("BIGDECIMAL(12,6)" -> "BIGDECIMAL(12,6)?"),
       CTMap(Map("foo" -> CTString, "bar" -> CTInteger)) -> ("MAP(foo: STRING, bar: INTEGER)" -> "MAP(foo: STRING, bar: INTEGER)?"),
       CTNode -> ("NODE" -> "NODE?"),
       CTNode("Person") -> ("NODE(:Person)" -> "NODE(:Person)?"),
@@ -253,6 +258,16 @@ class CypherTypesTest extends ApiBaseTest {
 
     CTBoolean.nullable superTypeOf CTAny shouldBe false
     CTAny superTypeOf CTBoolean.nullable shouldBe false
+
+    CTNumber superTypeOf CTBigDecimal(1, 1) shouldBe true
+    CTBigDecimal(1, 1) superTypeOf CTBigDecimal(1, 1) shouldBe true
+    CTBigDecimal(2, 1) superTypeOf CTBigDecimal(1, 1) shouldBe true
+    CTBigDecimal(2, 2) superTypeOf CTBigDecimal(1, 1) shouldBe true
+
+    CTBigDecimal(2, 1) superTypeOf CTBigDecimal(2, 2) shouldBe false
+    CTBigDecimal(2, 2) superTypeOf CTBigDecimal(3, 2) shouldBe false
+
+    CTBigDecimal(2, 2) superTypeOf CTBigDecimal(2, 1) shouldBe false
   }
 
   it("join") {
@@ -273,6 +288,18 @@ class CypherTypesTest extends ApiBaseTest {
 
     CTNode("Car") join CTNode shouldBe CTNode
     CTNode join CTNode("Person") shouldBe CTNode
+
+    CTNumber join CTBigDecimal(1, 1) shouldBe CTNumber
+    CTBigDecimal(1, 1) join CTBigDecimal(1, 1) shouldBe CTBigDecimal(1, 1)
+    CTBigDecimal(2, 1) join CTBigDecimal(1, 1) shouldBe CTBigDecimal(2, 1)
+    CTBigDecimal(1, 1) join CTBigDecimal(2, 2) shouldBe CTBigDecimal(2, 2)
+
+    CTBigDecimal(2, 1) join CTBigDecimal(2, 2) shouldBe CTBigDecimal(3, 2)
+    CTBigDecimal(2, 2) join CTBigDecimal(3, 2) shouldBe CTBigDecimal(3, 2)
+
+    CTBigDecimal(2, 2) join CTBigDecimal(2, 1) shouldBe CTBigDecimal(3, 2)
+
+    CTBigDecimal(10, 2) join CTBigDecimal(4, 3) shouldBe CTBigDecimal(11, 3)
   }
 
   it("join with nullables") {

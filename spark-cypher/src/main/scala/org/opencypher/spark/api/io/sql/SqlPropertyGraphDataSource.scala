@@ -28,7 +28,7 @@ package org.opencypher.spark.api.io.sql
 
 import java.net.URI
 
-import org.apache.spark.sql.types.{DataType, IntegerType, LongType}
+import org.apache.spark.sql.types.{DataType, DecimalType, IntegerType, LongType}
 import org.apache.spark.sql.{Column, DataFrame, DataFrameReader, functions}
 import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph._
@@ -329,11 +329,12 @@ case class SqlPropertyGraphDataSource(
         val targetType = getTargetType(elementTypes, property)
 
         val withCorrectType = (sourceType, targetType) match {
-          case (IntegerType, LongType) => sourceColumn.cast(targetType)
           case _ if sourceType == targetType => sourceColumn
+          case (IntegerType, LongType) => sourceColumn.cast(targetType)
+          case (d1: DecimalType, d2: DecimalType) if d2.getCypherType().superTypeOf(d1.getCypherType()) => sourceColumn.cast(targetType)
           case _ => throw IllegalArgumentException(
-            s"Property `$property` to have type $targetType",
-            sourceColumn
+            s"Property `$property` to be a subtype of $targetType",
+            s"Property $sourceColumn with type $sourceType"
           )
         }
 

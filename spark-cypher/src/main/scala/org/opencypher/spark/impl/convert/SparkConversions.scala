@@ -32,30 +32,15 @@ import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.CalendarInterval
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue, CypherValueConverter}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 import org.opencypher.spark.impl.SparkSQLMappingException
+import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
 
 object SparkConversions {
 
-  // Spark data types that are supported within the Cypher type system
-  val supportedTypes: Seq[DataType] = Seq(
-    // numeric
-    ByteType,
-    ShortType,
-    IntegerType,
-    LongType,
-    FloatType,
-    DoubleType,
-    // other
-    StringType,
-    BooleanType,
-    DateType,
-    TimestampType,
-    NullType
-  )
+  val DEFAULT_PRECISION = 20
 
   implicit class CypherTypeOps(val ct: CypherType) extends AnyVal {
 
@@ -72,6 +57,7 @@ object SparkConversions {
         ct.material match {
           case CTString => Some(StringType)
           case CTInteger => Some(LongType)
+          case CTBigDecimal(p, s) => Some(DataTypes.createDecimalType(p, s))
           case CTBoolean => Some(BooleanType)
           case CTFloat => Some(DoubleType)
           case CTLocalDateTime => Some(TimestampType)
@@ -141,6 +127,7 @@ object SparkConversions {
         case LongType => Some(CTInteger)
         case BooleanType => Some(CTBoolean)
         case DoubleType => Some(CTFloat)
+        case dt: DecimalType => Some(CTBigDecimal(dt.precision, dt.scale))
         case TimestampType => Some(CTLocalDateTime)
         case DateType => Some(CTDate)
         case CalendarIntervalType => Some(CTDuration)
@@ -162,16 +149,18 @@ object SparkConversions {
       if (nullable) result.map(_.nullable) else result.map(_.material)
     }
 
+    def getCypherType(nullable: Boolean = false): CypherType =
+      toCypherType(nullable) match {
+        case Some(ct) => ct
+        case None => throw SparkSQLMappingException(s"Mapping of Spark type $dt to Cypher type is unsupported")
+      }
+
     /**
       * Checks if the given data type is supported within the Cypher type system.
       *
       * @return true, iff the data type is supported
       */
-    def isCypherCompatible: Boolean = dt match {
-      case ArrayType(internalType, _) => internalType.isCypherCompatible
-      case StructType(fields) => fields.forall(_.dataType.isCypherCompatible)
-      case other => supportedTypes.contains(other)
-    }
+    def isCypherCompatible: Boolean = cypherCompatibleDataType.isDefined
 
     /**
       * Converts the given Spark data type into a Cypher type system compatible Spark data type.

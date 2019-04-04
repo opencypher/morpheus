@@ -24,7 +24,7 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.testing.impl.convert
+package org.opencypher.spark.impl.convert
 
 import org.apache.spark.sql.types._
 import org.opencypher.okapi.api.types._
@@ -38,6 +38,8 @@ class SparkConversionsTest extends BaseTestSuite {
     CTIntegerOrNull.toStructField("foo") should equal(StructField("foo", LongType, nullable = true))
     CTFloat.toStructField("foo") should equal(StructField("foo", DoubleType, nullable = false))
     CTFloatOrNull.toStructField("foo") should equal(StructField("foo", DoubleType, nullable = true))
+    CTBigDecimal(38, 12).toStructField("foo") should equal(StructField("foo", DataTypes.createDecimalType(38,12), nullable = false))
+    CTBigDecimalOrNull(10, 5).toStructField("foo") should equal(StructField("foo", DataTypes.createDecimalType(10,5), nullable = true))
     CTBoolean.toStructField("foo") should equal(StructField("foo", BooleanType, nullable = false))
     CTBooleanOrNull.toStructField("foo") should equal(StructField("foo", BooleanType, nullable = true))
     CTString.toStructField("foo") should equal(StructField("foo", StringType, nullable = false))
@@ -47,10 +49,10 @@ class SparkConversionsTest extends BaseTestSuite {
     CTDate.toStructField("foo") should equal(StructField("foo", DateType, nullable = false))
     CTDateOrNull.toStructField("foo") should equal(StructField("foo", DateType, nullable = true))
 
-    CTNode(Set("A")).toStructField("foo") should equal(StructField("foo", LongType, nullable = false))
-    CTNodeOrNull(Set("A")).toStructField("foo") should equal(StructField("foo", LongType, nullable = true))
-    CTRelationship("A").toStructField("foo") should equal(StructField("foo", LongType, nullable = false))
-    CTRelationshipOrNull("A").toStructField("foo") should equal(StructField("foo", LongType, nullable = true))
+    CTNode(Set("A")).toStructField("foo") should equal(StructField("foo", BinaryType, nullable = false))
+    CTNodeOrNull(Set("A")).toStructField("foo") should equal(StructField("foo", BinaryType, nullable = true))
+    CTRelationship("A").toStructField("foo") should equal(StructField("foo", BinaryType, nullable = false))
+    CTRelationshipOrNull("A").toStructField("foo") should equal(StructField("foo", BinaryType, nullable = true))
   }
 
   it("should produce the correct StructField for nested types") {
@@ -79,7 +81,7 @@ class SparkConversionsTest extends BaseTestSuite {
       StructField("myMap", StructType(Seq(
         StructField("foo", LongType, nullable = false),
         StructField("bar", StringType, nullable = true)
-      )))
+      )), nullable = false)
     )
   }
 }

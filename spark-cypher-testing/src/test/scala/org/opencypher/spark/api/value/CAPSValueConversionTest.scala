@@ -128,6 +128,19 @@ class CAPSValueConversionTest extends CAPSValueTestSuite {
     }
   }
 
+  test("BIGDecimal conversion") {
+    val originalValues = BIGDECIMAL_valueGroups.flatten
+    val scalaValues = originalValues.map(_.value)
+    val newValues = scalaValues.map {
+      case null => CypherNull
+      case b: BigDecimal => CypherBigDecimal(b)
+    }
+    assert(newValues.withoutNaNs == originalValues.withoutNaNs)
+    originalValues.foreach { v =>
+      assert(v.isOrContainsNull == (v.value == null))
+    }
+  }
+
   test("NUMBER conversion") {
     val originalValues = NUMBER_valueGroups.flatten
     val scalaValues = originalValues.map(_.value)
@@ -135,6 +148,7 @@ class CAPSValueConversionTest extends CAPSValueTestSuite {
       case null => CypherNull
       case l: java.lang.Long => CypherInteger(l)
       case d: java.lang.Double => CypherFloat(d)
+      case b: BigDecimal => CypherBigDecimal(b)
     }
     assert(newValues.withoutNaNs == originalValues.withoutNaNs)
     originalValues.foreach { v =>
