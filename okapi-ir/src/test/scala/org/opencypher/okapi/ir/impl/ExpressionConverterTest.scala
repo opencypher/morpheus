@@ -44,14 +44,14 @@ import scala.language.implicitConversions
 
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
-  val baseTypes = Seq[CypherType](
+  val baseTypes: Seq[CypherType] = Seq[CypherType](
     CTAny, CTNumber, CTNull, CTVoid,
     CTBoolean, CTInteger, CTFloat, CTString,
     CTDate, CTLocalDateTime, CTDuration,
     CTIdentity, CTPath
   )
 
-  val simple =
+  val simple: Seq[(String, CypherType)] =
     baseTypes.map(tpe => tpe.name -> tpe) ++
       baseTypes.map(tpe => s"${tpe.name}_OR_NULL" -> tpe.nullable)
 
@@ -172,12 +172,12 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   describe("coalesce") {
     it("should convert coalesce") {
       convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE)")) shouldEqual
-        Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE))(CTAny)
+        Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE))(CTUnion(CTInteger, CTString, CTNode("Node")))
     }
 
     it("should become nullable if nothing is non-null") {
       convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE_OR_NULL)")) shouldEqual
-        Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE_OR_NULL))(CTAny.nullable)
+        Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE_OR_NULL))(CTUnion(CTInteger, CTString, CTNode("Node")).nullable)
     }
 
     it("should not consider arguments past the first non-nullable coalesce") {
@@ -382,7 +382,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     convert(given) shouldEqual(
       Ands(
         HasLabel('NODE, Label("Person")),
-        Equals(Property('NODE, PropertyKey("name"))(CTAny), StringLit("Mats"))), CTBoolean
+        Equals(Property('NODE, PropertyKey("name"))(CTAnyMaterial), StringLit("Mats"))), CTBoolean
     )
   }
 

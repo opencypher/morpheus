@@ -31,7 +31,7 @@ import org.opencypher.v9_0.util.{symbols => frontend}
 
 case object toFrontendType extends (CypherType => frontend.CypherType) {
   override def apply(in: CypherType): frontend.CypherType = in.material match {
-    case CTAny => frontend.CTAny
+    case CTAnyMaterial => frontend.CTAny
     case CTNumber => frontend.CTNumber
     case CTInteger => frontend.CTInteger
     case CTFloat => frontend.CTFloat
