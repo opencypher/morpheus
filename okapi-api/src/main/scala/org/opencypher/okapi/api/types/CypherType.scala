@@ -29,7 +29,7 @@ package org.opencypher.okapi.api.types
 import cats.Monoid
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.impl.types.CypherTypeParser
-import upickle.default.{readwriter, _}
+import upickle.default._
 
 trait CypherType {
 

@@ -65,19 +65,13 @@ object SparkConversions {
           case CTDuration => Some(CalendarIntervalType)
           case CTIdentity => Some(BinaryType)
           case n if n.subTypeOf(CTEntity.nullable) => Some(BinaryType)
-            // Spark uses String as the default array inner type
+          // Spark uses String as the default array inner type
+          case CTMap(inner) => Some(StructType(inner.map { case (key, vType) => vType.toStructField(key) }.toSeq))
           case CTList(CTVoid) => Some(ArrayType(StringType, containsNull = false))
           case CTList(CTNull) => Some(ArrayType(StringType, containsNull = true))
-          case CTList(CTNumber) => Some(ArrayType(DoubleType, containsNull = false))
-          case CTList(CTNumber.nullable) => Some(ArrayType(DoubleType, containsNull = true))
-          case CTList(elemType) => elemType.toSparkType.map(ArrayType(_, elemType.isNullable))
-          case CTMap(inner) =>
-            val innerFields = inner.map {
-              case (key, valueType) => valueType.toStructField(key)
-            }.toSeq
-            Some(StructType(innerFields))
-          case _ =>
-            None
+          case CTList(elemType) if elemType.toSparkType.isDefined => elemType.toSparkType.map(ArrayType(_, elemType.isNullable))
+          case l if l.subTypeOf(CTList(CTNumber.nullable)) => Some(ArrayType(DoubleType, containsNull = l.isNullable))
+          case _ => None
         }
     }
 
