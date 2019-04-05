@@ -32,10 +32,6 @@ import scala.language.postfixOps
 
 package object types {
 
-  trait TemporalValueCypherType extends CypherType
-
-  trait TemporalInstantCypherType extends CypherType
-
   case object CTAnyMaterial extends CypherType {
     override lazy val nullable: CypherType = CTAny
 
@@ -44,8 +40,6 @@ package object types {
 
   object CTMap extends CTMap(Map.empty) {
     override def name: String = "ANYMAP"
-
-    override def toString: String = name
 
     override def equals(obj: Any): Boolean = obj.isInstanceOf[CTMap.type]
 
@@ -78,7 +72,21 @@ package object types {
     def unapply(ct: CypherType): Option[(Set[String], Option[QualifiedGraphName])] = {
       ct match {
         case n: CTNode => Some(n.labels -> n.graph)
-        case u: CTUnion => u.alternatives.collectFirst { case n: CTNode => n.labels -> n.graph }
+        case u: CTUnion =>
+          val nodes = u.alternatives.collect { case n: CTNode => n.labels -> n.graph }.toList
+          nodes match {
+            case Nil => None
+            case n :: Nil => Some(n)
+            case ns =>
+              val (lss: Seq[Set[String]], mgs: Seq[Option[QualifiedGraphName]]) = ns.unzip
+              val ls = lss.reduce(_ intersect _)
+              val mg = mgs.flatten match {
+                case Nil => None
+                case g :: Nil => Some(g)
+                case _ => None
+              }
+              Some(ls -> mg)
+          }
         case _ => None
       }
     }
@@ -89,7 +97,7 @@ package object types {
     override val graph: Option[QualifiedGraphName] = None
   ) extends CypherType {
     override def withGraph(qgn: QualifiedGraphName): CTNode = copy(graph = Some(qgn))
-    override def withoutGraph: CypherType = CTNode(labels)
+    override def withoutGraph: CTNode = CTNode(labels)
 
     override def name: String =
       if (this == CTNode) {
@@ -98,7 +106,6 @@ package object types {
         s"NODE(${labels.map(l => s":$l").mkString})${graph.map(g => s" @ $g").getOrElse("")}"
       }
 
-    override def toString: String = if (this == CTNode) "CTNode" else s"CTNode(${labels.map(l => "\"" + l + "\"").mkString(", ")})"
   }
 
   object CTRelationship extends CTRelationship(Set.empty, None) {
@@ -118,7 +125,7 @@ package object types {
     override val graph: Option[QualifiedGraphName] = None
   ) extends CypherType {
     override def withGraph(qgn: QualifiedGraphName): CTRelationship = copy(graph = Some(qgn))
-    override def withoutGraph: CypherType = CTRelationship(types)
+    override def withoutGraph: CTRelationship = CTRelationship(types)
 
     override def name: String = {
       if (this == CTRelationship) {
@@ -126,11 +133,6 @@ package object types {
       } else {
         s"RELATIONSHIP(${types.map(l => s":$l").mkString("|")})${graph.map(g => s" @ $g").getOrElse("")}"
       }
-    }
-
-    override def toString: String = {
-      if (this == CTRelationship) "CTRelationship"
-      else s"CTRelationship(${types.map(t => "\"" + t + "\"").mkString(", ")})"
     }
 
   }
@@ -152,11 +154,11 @@ package object types {
 
   case object CTIdentity extends CypherType
 
-  case object CTLocalDateTime extends TemporalInstantCypherType
+  case object CTLocalDateTime extends CypherType
 
-  case object CTDate extends TemporalInstantCypherType
+  case object CTDate extends CypherType
 
-  case object CTDuration extends TemporalValueCypherType
+  case object CTDuration extends CypherType
 
   case object CTVoid extends CypherType
 
@@ -171,16 +173,12 @@ package object types {
       if (this == CTAny) "ANY?"
       else if (this == CTBoolean) "BOOLEAN"
       else if (this == CTNumber) "NUMBER"
+      else if (this == CTEntity) "ENTITY"
       else if (isNullable) s"${material.name}?"
-      else throw new UnsupportedOperationException(s"Type $toString does not have a name")
+      else s"UNION(${alternatives.mkString(", ")})"
     }
 
     override def graph: Option[QualifiedGraphName] = alternatives.flatMap(_.graph).headOption
-
-    override def toString: String = {
-      if (this == CTAny) "CTAny"
-      else s"CTUnion(${alternatives.mkString(", ")})"
-    }
 
   }
 
@@ -212,5 +210,9 @@ package object types {
   val CTEntity: CTUnion = CTUnion(Set[CypherType](CTNode, CTRelationship))
 
   val CTAny: CTUnion = CTUnion(Set[CypherType](CTAnyMaterial, CTNull))
+
+  val CTTemporalInstant: CTUnion = CTUnion(Set[CypherType](CTLocalDateTime, CTDate))
+
+  val CTTemporal: CTUnion = CTUnion(Set[CypherType](CTLocalDateTime, CTDate, CTDuration))
 
 }

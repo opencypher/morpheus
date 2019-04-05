@@ -57,10 +57,12 @@ trait CypherType {
     else {
       this -> other match {
         case (l: CTNode, r: CTNode) if l.graph == r.graph => CTNode(l.labels ++ r.labels, l.graph)
-        case (l: CTRelationship, r: CTRelationship) if l.graph == r.graph =>
+        case (l: CTNode, r: CTNode) => CTNode(l.labels ++ r.labels)
+        case (l: CTRelationship, r: CTRelationship) =>
           val types = l.types.intersect(r.types)
           if (types.isEmpty) CTVoid
-          else CTRelationship(types, l.graph)
+          else if (l.graph == r.graph) CTRelationship(types, l.graph)
+          else CTRelationship(types)
         case (CTList(l), CTList(r)) => CTList(l & r)
         case (CTUnion(ls), CTUnion(rs)) => CTUnion({
           for {
@@ -143,6 +145,8 @@ trait CypherType {
   }
 
   def name: String = getClass.getSimpleName.filter(_ != '$').drop(2).toUpperCase
+
+  override def toString: String = name
 
   def graph: Option[QualifiedGraphName] = None
 
