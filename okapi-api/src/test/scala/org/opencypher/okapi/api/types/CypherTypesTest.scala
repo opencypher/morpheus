@@ -38,8 +38,12 @@ import scala.language.postfixOps
 
 class CypherTypesTest extends ApiBaseTest with Checkers {
 
+  val someGraphA = Some(QualifiedGraphName("ns.a"))
+  val someGraphB = Some(QualifiedGraphName("ns.b"))
+
   val materialTypes: Seq[CypherType] = Seq(
     CTAnyMaterial,
+    CTEntity,
     CTBoolean,
     CTNumber,
     CTInteger,
@@ -49,11 +53,23 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTMap,
     CTMap(Map("foo" -> CTString, "bar" -> CTInteger)),
     CTNode,
+    CTNode(),
     CTNode("Person"),
     CTNode("Person", "Employee"),
+    CTNode(Set.empty[String], someGraphA),
+    CTNode(Set("Person"), someGraphA),
+    CTNode(Set("Person", "Employee"), someGraphA),
+    CTNode(Set.empty[String], someGraphB),
+    CTNode(Set("Person"), someGraphB),
+    CTNode(Set("Person", "Employee"), someGraphB),
     CTRelationship,
     CTRelationship("KNOWS"),
     CTRelationship("KNOWS", "LOVES"),
+    CTRelationship,
+    CTRelationship(Set("KNOWS"), someGraphA),
+    CTRelationship(Set("KNOWS", "LOVES"), someGraphA),
+    CTRelationship(Set("KNOWS"), someGraphB),
+    CTRelationship(Set("KNOWS", "LOVES"), someGraphB),
     CTPath,
     CTList(CTAnyMaterial),
     CTList(CTAny),
@@ -414,6 +430,7 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
   }
 
   describe("fromName") {
+
     it("can parse CypherType names into CypherTypes") {
       allTypes.foreach { t =>
         parseCypherType(t.name) should equal(Some(t))

@@ -76,7 +76,6 @@ class TypeLawsTest extends FunSuite with Matchers with GeneratorDrivenPropertyCh
     Gen.const(CTAny),
     Gen.const(CTAnyMaterial),
     Gen.const(CTNode),
-    Gen.const(CTMap),
     Gen.const(CTRelationship)
   )
 
@@ -95,7 +94,7 @@ class TypeLawsTest extends FunSuite with Matchers with GeneratorDrivenPropertyCh
     fields <- Gen.mapOf(field)
   } yield CTMap(fields)
   
-  val nestedTypes: List[Gen[CypherType]] = List(list, map)
+  val nestedTypes: List[Gen[CypherType]] = List(list, map, Gen.const(CTList), Gen.const(CTMap))
   
   val allTypes: List[Gen[CypherType]] = List(flatTypes, nestedTypes).flatten
 

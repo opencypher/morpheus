@@ -51,7 +51,7 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
     v.cypherType.material match {
       case n if n.subTypeOf(CTNode.nullable) => collectNode(row, v)
       case r if r.subTypeOf(CTRelationship.nullable) => collectRel(row, v)
-      case l if l.subTypeOf(CTList) && !header.exprToColumn.contains(v) => collectComplexList(row, v)
+      case l if l.subTypeOf(CTList.nullable) && !header.exprToColumn.contains(v) => collectComplexList(row, v)
       case _ => constructFromExpression(row, v)
     }
   }

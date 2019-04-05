@@ -39,7 +39,7 @@ package object types {
   }
 
   object CTMap extends CTMap(Map.empty) {
-    override def name: String = "ANYMAP"
+    override def name: String = "MAP"
 
     override def equals(obj: Any): Boolean = obj.isInstanceOf[CTMap.type]
 
@@ -56,7 +56,11 @@ package object types {
 
   }
 
-  object CTList extends CTList(CTAny)
+  object CTList extends CTList(CTAny) {
+
+    override def name: String = "LIST"
+
+  }
 
   case class CTList(inner: CypherType) extends CypherType {
 
