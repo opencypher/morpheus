@@ -29,7 +29,6 @@ package org.opencypher.okapi.api.types
 import cats.Monoid
 import cats.kernel.Eq
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.types.CypherType._
 import org.scalacheck.{Arbitrary, Gen}
 import org.scalatest.prop.GeneratorDrivenPropertyChecks
 import org.scalatest.{FunSuite, Matchers}
@@ -93,9 +92,9 @@ class TypeLawsTest extends FunSuite with Matchers with GeneratorDrivenPropertyCh
   val map: Gen[CTMap] = for {
     fields <- Gen.mapOf(field)
   } yield CTMap(fields)
-  
+
   val nestedTypes: List[Gen[CypherType]] = List(list, map, Gen.const(CTList), Gen.const(CTMap))
-  
+
   val allTypes: List[Gen[CypherType]] = List(flatTypes, nestedTypes).flatten
 
   val anyType: Gen[CypherType] = pickOne(allTypes)
