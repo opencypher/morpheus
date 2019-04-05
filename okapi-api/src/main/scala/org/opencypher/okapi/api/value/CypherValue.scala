@@ -311,7 +311,9 @@ object CypherValue {
     override def cypherType: CypherType = CTFloat
   }
 
-  implicit class CypherBigDecimal(val value: BigDecimal) extends AnyVal with CypherNumber[BigDecimal]
+  implicit class CypherBigDecimal(val value: BigDecimal) extends AnyVal with CypherNumber[BigDecimal] {
+    override def cypherType: CypherType = CTBigDecimal(value.precision, value.scale)
+  }
 
   implicit class CypherLocalDateTime(val value: java.time.LocalDateTime) extends AnyVal with MaterialCypherValue[java.time.LocalDateTime] {
     override def unwrap: Any = value

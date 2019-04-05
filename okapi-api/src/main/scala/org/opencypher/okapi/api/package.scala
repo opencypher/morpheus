@@ -176,9 +176,9 @@ package object types {
     override def name: String = {
       if (this == CTAny) "ANY?"
       else if (this == CTBoolean) "BOOLEAN"
-      else if (this == CTNumber) "NUMBER"
       else if (this == CTEntity) "ENTITY"
       else if (isNullable) s"${material.name}?"
+      else if (subTypeOf(CTUnion(Set[CypherType](CTFloat, CTInteger, CTBigDecimal)))) "NUMBER"
       else s"UNION(${alternatives.mkString(", ")})"
     }
 
@@ -207,7 +207,20 @@ package object types {
 
   case object CTPath extends CypherType
 
-  val CTNumber: CTUnion = CTUnion(Set[CypherType](CTFloat, CTInteger))
+  object CTBigDecimal extends CTBigDecimal(-1, -1) {
+    def apply(precisionAndScale: (Int, Int)): CTBigDecimal =
+      CTBigDecimal(precisionAndScale._1, precisionAndScale._2)
+
+    override def name: String = "BIGDECIMAL"
+  }
+
+  case class CTBigDecimal(precision: Int = 10, scale: Int = 0) extends CypherType {
+
+    override def name: String = s"BIGDECIMAL($precision,$scale)"
+
+  }
+
+  val CTNumber: CTUnion = CTUnion(Set[CypherType](CTFloat, CTInteger, CTBigDecimal))
 
   val CTBoolean: CTUnion = CTUnion(Set[CypherType](CTTrue, CTFalse))
 

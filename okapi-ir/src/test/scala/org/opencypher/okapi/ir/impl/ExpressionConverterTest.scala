@@ -45,7 +45,7 @@ import scala.language.implicitConversions
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   val baseTypes: Seq[CypherType] = Seq[CypherType](
-    CTAny, CTNumber, CTNull, CTVoid,
+    CTAny, CTUnion(CTInteger, CTFloat), CTNull, CTVoid,
     CTBoolean, CTInteger, CTFloat, CTString,
     CTDate, CTLocalDateTime, CTDuration,
     CTIdentity, CTPath
@@ -84,7 +84,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     simple ++ Seq("name" -> CTBoolean, "age" -> CTFloat)
 
   private val propertiesJoined =
-    simple ++ Seq("name" -> CTAny, "age" -> CTNumber)
+    simple ++ Seq("name" -> CTAny, "age" -> CTUnion(CTInteger, CTFloat))
 
   private val schema: Schema = Schema.empty
     .withNodePropertyKeys("Node")(properties : _*)
@@ -162,7 +162,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   it("should convert CASE") {
     convert(parseExpr("CASE WHEN INTEGER > INTEGER THEN INTEGER ELSE FLOAT END")) should equal(
-      CaseExpr(List((GreaterThan('INTEGER, 'INTEGER), 'INTEGER)), Some('FLOAT))(CTNumber)
+      CaseExpr(List((GreaterThan('INTEGER, 'INTEGER), 'INTEGER)), Some('FLOAT))(CTUnion(CTInteger, CTFloat))
     )
     convert(parseExpr("CASE WHEN STRING > STRING_OR_NULL THEN NODE END")) should equal(
       CaseExpr(List((GreaterThan('STRING, 'STRING_OR_NULL), 'NODE)), None)(CTNode("Node").nullable)
@@ -182,7 +182,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
     it("should not consider arguments past the first non-nullable coalesce") {
       convert(parseExpr("coalesce(INTEGER_OR_NULL, FLOAT, NODE, STRING)")) shouldEqual
-        Coalesce(List('INTEGER_OR_NULL, 'FLOAT))(CTNumber)
+        Coalesce(List('INTEGER_OR_NULL, 'FLOAT))(CTUnion(CTInteger, CTFloat))
     }
 
     it("should remove coalesce if the first arg is non-nullable") {
@@ -205,7 +205,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   describe("IN") {
     it("can convert in predicate and literal list") {
       convert(parseExpr("INTEGER IN [INTEGER, INTEGER_OR_NULL, FLOAT]")) shouldEqual(
-        In('INTEGER, ListLit(List('INTEGER, 'INTEGER_OR_NULL, 'FLOAT))(CTList(CTNumber.nullable))), CTBoolean
+        In('INTEGER, ListLit(List('INTEGER, 'INTEGER_OR_NULL, 'FLOAT))(CTList(CTUnion(CTInteger, CTFloat).nullable))), CTBoolean
       )
     }
 

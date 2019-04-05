@@ -93,7 +93,7 @@ class ConvertersTest extends BaseTestSuite {
       java.lang.Boolean.TRUE -> CTBoolean,
       Array(1) -> CTList(CTInteger),
       Array() -> CTList(CTVoid),
-      Array(Int.box(1), Double.box(3.14)) -> CTList(CTNumber),
+      Array(Int.box(1), Double.box(3.14)) -> CTList(CTUnion(CTInteger, CTFloat)),
       Array(null, "foo") -> CTList(CTString.nullable)
     )
 

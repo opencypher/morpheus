@@ -45,7 +45,7 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTAnyMaterial,
     CTEntity,
     CTBoolean,
-    CTNumber,
+    CTUnion(CTFloat, CTInteger, CTBigDecimal),
     CTInteger,
     CTFloat,
     CTBigDecimal(12),
@@ -87,8 +87,8 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
   it("couldBe") {
     CTAnyMaterial couldBeSameTypeAs CTNode shouldBe true
     CTNode couldBeSameTypeAs CTAnyMaterial shouldBe true
-    CTInteger couldBeSameTypeAs CTNumber shouldBe true
-    CTNumber couldBeSameTypeAs CTInteger shouldBe true
+    CTInteger couldBeSameTypeAs CTUnion(CTFloat, CTInteger, CTBigDecimal) shouldBe true
+    CTUnion(CTFloat, CTInteger, CTBigDecimal) couldBeSameTypeAs CTInteger shouldBe true
     CTFloat couldBeSameTypeAs CTInteger shouldBe false
     CTBoolean couldBeSameTypeAs CTInteger shouldBe false
 
@@ -108,15 +108,15 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTMap(Map("name" -> CTString)) couldBeSameTypeAs CTMap() shouldBe false
     CTMap() couldBeSameTypeAs CTMap(Map("name" -> CTString)) shouldBe false
 
-    CTNumber couldBeSameTypeAs CTBigDecimal(1, 1)
-    CTBigDecimal(1, 1) couldBeSameTypeAs CTNumber
+    CTUnion(CTFloat, CTInteger, CTBigDecimal) couldBeSameTypeAs CTBigDecimal(1, 1)
+    CTBigDecimal(1, 1) couldBeSameTypeAs CTUnion(CTFloat, CTInteger, CTBigDecimal)
   }
 
   it("intersects") {
     CTAnyMaterial intersects CTNode shouldBe true
     CTNode intersects CTAnyMaterial shouldBe true
-    CTInteger intersects CTNumber shouldBe true
-    CTNumber intersects CTInteger shouldBe true
+    CTInteger intersects CTUnion(CTFloat, CTInteger, CTBigDecimal) shouldBe true
+    CTUnion(CTFloat, CTInteger, CTBigDecimal) intersects CTInteger shouldBe true
     CTFloat intersects CTInteger shouldBe false
     CTBoolean intersects CTInteger shouldBe false
 
@@ -151,7 +151,7 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
       CTAnyMaterial -> ("ANY" -> "ANY?"),
       CTString -> ("STRING" -> "STRING?"),
       CTBoolean -> ("BOOLEAN" -> "BOOLEAN?"),
-      CTNumber -> ("NUMBER" -> "NUMBER?"),
+      CTUnion(CTFloat, CTInteger, CTBigDecimal) -> ("NUMBER" -> "NUMBER?"),
       CTInteger -> ("INTEGER" -> "INTEGER?"),
       CTFloat -> ("FLOAT" -> "FLOAT?"),
       CTMap(Map("foo" -> CTString, "bar" -> CTInteger)) -> ("MAP(foo: STRING, bar: INTEGER)" -> "MAP(foo: STRING, bar: INTEGER)?"),
@@ -247,14 +247,14 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
   }
 
   it("basic type inheritance") {
-    CTNumber superTypeOf CTInteger shouldBe true
-    CTNumber superTypeOf CTFloat shouldBe true
+    CTUnion(CTFloat, CTInteger, CTBigDecimal) superTypeOf CTInteger shouldBe true
+    CTUnion(CTFloat, CTInteger, CTBigDecimal) superTypeOf CTFloat shouldBe true
     CTMap(Map("foo" -> CTAny, "bar" -> CTInteger)) superTypeOf CTMap(Map("foo" -> CTString, "bar" -> CTInteger)) shouldBe true
     CTMap(Map("foo" -> CTAny, "bar" -> CTAny)) superTypeOf CTMap(Map("foo" -> CTString, "bar" -> CTInteger)) shouldBe true
 
     CTAnyMaterial superTypeOf CTInteger shouldBe true
     CTAnyMaterial superTypeOf CTFloat shouldBe true
-    CTAnyMaterial superTypeOf CTNumber shouldBe true
+    CTAnyMaterial superTypeOf CTUnion(CTFloat, CTInteger, CTBigDecimal) shouldBe true
     CTAnyMaterial superTypeOf CTBoolean shouldBe true
     CTAnyMaterial superTypeOf CTMap(Map()) shouldBe true
     CTAnyMaterial superTypeOf CTNode shouldBe true
@@ -263,11 +263,11 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTAnyMaterial superTypeOf CTList(CTAnyMaterial) shouldBe true
     CTAnyMaterial superTypeOf CTVoid shouldBe true
 
-    CTList(CTNumber) superTypeOf CTList(CTInteger) shouldBe true
+    CTList(CTUnion(CTFloat, CTInteger, CTBigDecimal)) superTypeOf CTList(CTInteger) shouldBe true
 
     CTVoid subTypeOf CTInteger shouldBe true
     CTVoid subTypeOf CTFloat shouldBe true
-    CTVoid subTypeOf CTNumber shouldBe true
+    CTVoid subTypeOf CTUnion(CTFloat, CTInteger, CTBigDecimal) shouldBe true
     CTVoid subTypeOf CTBoolean shouldBe true
     CTVoid subTypeOf CTMap(Map()) shouldBe true
     CTVoid subTypeOf CTNode shouldBe true
@@ -280,7 +280,7 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTBoolean.nullable superTypeOf CTAnyMaterial shouldBe false
     CTAnyMaterial superTypeOf CTBoolean.nullable shouldBe false
 
-    CTNumber superTypeOf CTBigDecimal(1, 1) shouldBe true
+    CTUnion(CTFloat, CTInteger, CTBigDecimal) superTypeOf CTBigDecimal(1, 1) shouldBe true
     CTBigDecimal(1, 1) superTypeOf CTBigDecimal(1, 1) shouldBe true
     CTBigDecimal(2, 1) superTypeOf CTBigDecimal(1, 1) shouldBe true
     CTBigDecimal(2, 2) superTypeOf CTBigDecimal(1, 1) shouldBe true
@@ -289,14 +289,18 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTBigDecimal(2, 2) superTypeOf CTBigDecimal(3, 2) shouldBe false
 
     CTBigDecimal(2, 2) superTypeOf CTBigDecimal(2, 1) shouldBe false
+
+    CTBigDecimal superTypeOf CTBigDecimal(2, 1) shouldBe true
+    CTBigDecimal(2, 1) superTypeOf CTBigDecimal shouldBe false
   }
 
   it("join") {
-    CTInteger join CTFloat shouldBe CTNumber
-    CTFloat join CTInteger shouldBe CTNumber
-    CTNumber join CTFloat shouldBe CTNumber
-    CTNumber join CTInteger shouldBe CTNumber
-    CTNumber join CTString shouldBe CTUnion(CTString, CTInteger, CTFloat)
+    (CTInteger join CTFloat).subTypeOf(CTUnion(CTFloat, CTInteger, CTBigDecimal)) shouldBe true
+    (CTFloat join CTInteger).subTypeOf(CTUnion(CTFloat, CTInteger, CTBigDecimal)) shouldBe true
+    CTUnion(CTFloat, CTInteger, CTBigDecimal) join CTFloat shouldBe CTUnion(CTFloat, CTInteger, CTBigDecimal)
+    CTUnion(CTFloat, CTInteger, CTBigDecimal) join CTInteger shouldBe CTUnion(CTFloat, CTInteger, CTBigDecimal)
+    CTUnion(CTFloat, CTInteger, CTBigDecimal) join CTBigDecimal shouldBe CTUnion(CTFloat, CTInteger, CTBigDecimal)
+    CTUnion(CTFloat, CTInteger, CTBigDecimal) join CTString shouldBe CTUnion(CTString, CTInteger, CTFloat, CTBigDecimal)
 
     CTString join CTBoolean shouldBe CTUnion(CTString, CTBoolean)
     CTAnyMaterial join CTInteger shouldBe CTAnyMaterial
@@ -310,7 +314,7 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTNode("Car") join CTNode shouldBe CTNode
     CTNode join CTNode("Person") shouldBe CTNode
 
-    CTNumber join CTBigDecimal(1, 1) shouldBe CTNumber
+    CTUnion(CTFloat, CTInteger, CTBigDecimal) join CTBigDecimal(1, 1) shouldBe CTUnion(CTFloat, CTInteger, CTBigDecimal)
     CTBigDecimal(1, 1) join CTBigDecimal(1, 1) shouldBe CTBigDecimal(1, 1)
     CTBigDecimal(2, 1) join CTBigDecimal(1, 1) shouldBe CTBigDecimal(2, 1)
     CTBigDecimal(1, 1) join CTBigDecimal(2, 2) shouldBe CTBigDecimal(2, 2)
@@ -324,9 +328,9 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
   }
 
   it("join with nullables") {
-    CTInteger join CTFloat.nullable shouldBe CTNumber.nullable
-    CTFloat.nullable join CTInteger.nullable shouldBe CTNumber.nullable
-    CTNumber.nullable join CTString shouldBe CTUnion(CTString, CTFloat, CTInteger, CTNull)
+    CTInteger join CTFloat.nullable join CTBigDecimal shouldBe CTUnion(CTFloat, CTInteger, CTBigDecimal).nullable
+    CTFloat.nullable join CTInteger.nullable join CTBigDecimal shouldBe CTUnion(CTFloat, CTInteger, CTBigDecimal).nullable
+    CTUnion(CTFloat, CTInteger, CTBigDecimal).nullable join CTString shouldBe CTUnion(CTString, CTFloat, CTInteger, CTBigDecimal, CTNull)
 
     CTString.nullable join CTBoolean.nullable shouldBe CTUnion(CTString, CTNull, CTTrue, CTFalse)
     CTAnyMaterial join CTInteger.nullable shouldBe CTAnyMaterial.nullable
@@ -349,8 +353,8 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
   }
 
   it("meet") {
-    CTInteger meet CTNumber shouldBe CTInteger
-    CTAnyMaterial meet CTNumber shouldBe CTNumber
+    CTInteger meet CTUnion(CTFloat, CTInteger, CTBigDecimal) shouldBe CTInteger
+    CTAnyMaterial meet CTUnion(CTFloat, CTInteger, CTBigDecimal) shouldBe CTUnion(CTFloat, CTInteger, CTBigDecimal)
 
     CTList(CTInteger) meet CTList(CTFloat) shouldBe CTList(CTVoid)
     CTList(CTInteger) meet CTNode shouldBe CTVoid

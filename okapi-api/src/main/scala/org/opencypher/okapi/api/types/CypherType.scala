@@ -103,6 +103,10 @@ trait CypherType {
     else {
       this -> other match {
         case (l: CTRelationship, r: CTRelationship) if l.graph == r.graph => CTRelationship(l.types ++ r.types, l.graph)
+        case (CTBigDecimal(lp, ls), CTBigDecimal(rp, rs)) =>
+          val maxScale = Math.max(ls, rs)
+          val maxDiff = Math.max(lp - ls, rp - rs)
+          CTBigDecimal(maxDiff + maxScale, maxScale)
         case (CTUnion(ls), CTUnion(rs)) => CTUnion(ls ++ rs)
         case (CTUnion(ls), r) => CTUnion(r +: ls.toSeq: _*)
         case (l, CTUnion(rs)) => CTUnion(l +: rs.toSeq: _*)
@@ -118,6 +122,9 @@ trait CypherType {
       case (CTVoid, _) => true
       case (l, r) if l == r => true
       case (_, CTAny) => true
+      case (_: CTBigDecimal, CTBigDecimal) => true
+      case (CTBigDecimal, _: CTBigDecimal) => false
+      case (CTBigDecimal(lp, ls), CTBigDecimal(rp, rs)) => (lp <= rp) && (ls <= rs) && (lp - ls <= rp - rs)
       case (l, CTAnyMaterial) if !l.isNullable => true
       case (_: CTRelationship, CTRelationship) => true
       case (_: CTMap, CTMap) => true

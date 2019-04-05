@@ -39,7 +39,7 @@ class SparkConversionsTest extends BaseTestSuite {
     CTFloat.toStructField("foo") should equal(StructField("foo", DoubleType, nullable = false))
     CTFloat.nullable.toStructField("foo") should equal(StructField("foo", DoubleType, nullable = true))
     CTBigDecimal(38, 12).toStructField("foo") should equal(StructField("foo", DataTypes.createDecimalType(38,12), nullable = false))
-    CTBigDecimalOrNull(10, 5).toStructField("foo") should equal(StructField("foo", DataTypes.createDecimalType(10,5), nullable = true))
+    CTBigDecimal(10, 5).nullable.toStructField("foo") should equal(StructField("foo", DataTypes.createDecimalType(10,5), nullable = true))
     CTBoolean.toStructField("foo") should equal(StructField("foo", BooleanType, nullable = false))
     CTBoolean.nullable.toStructField("foo") should equal(StructField("foo", BooleanType, nullable = true))
     CTString.toStructField("foo") should equal(StructField("foo", StringType, nullable = false))
@@ -50,9 +50,9 @@ class SparkConversionsTest extends BaseTestSuite {
     CTDate.nullable.toStructField("foo") should equal(StructField("foo", DateType, nullable = true))
 
     CTNode(Set("A")).toStructField("foo") should equal(StructField("foo", BinaryType, nullable = false))
-    CTNode(Set("A")).toStructField("foo").nullable should equal(StructField("foo", BinaryType, nullable = true))
+    CTNode(Set("A")).nullable.toStructField("foo") should equal(StructField("foo", BinaryType, nullable = true))
     CTRelationship("A").toStructField("foo") should equal(StructField("foo", BinaryType, nullable = false))
-    CTRelationship("A").toStructField("foo").nullable should equal(StructField("foo", BinaryType, nullable = true))
+    CTRelationship("A").nullable.toStructField("foo") should equal(StructField("foo", BinaryType, nullable = true))
   }
 
   it("should produce the correct StructField for nested types") {

@@ -45,6 +45,11 @@ class TypeLawsTest extends FunSuite with Matchers with GeneratorDrivenPropertyCh
 
   val nodeLabel: Gen[String] = Gen.oneOf("A", "B", "C")
 
+  val bigDecimalType: Gen[CTBigDecimal] = for {
+    precision <- Gen.posNum[Int]
+    scale <- Gen.posNum[Int]
+  } yield CTBigDecimal(precision, scale)
+
   val node: Gen[CTNode] = for {
     labels <- Gen.listOf(nodeLabel)
     g <- maybeGraph
@@ -63,6 +68,8 @@ class TypeLawsTest extends FunSuite with Matchers with GeneratorDrivenPropertyCh
     Gen.const(CTString),
     Gen.const(CTInteger),
     Gen.const(CTFloat),
+    Gen.const(CTUnion(CTFloat, CTInteger, CTBigDecimal)),
+    Gen.const(CTBigDecimal),
     Gen.const(CTBoolean),
     Gen.const(CTTrue),
     Gen.const(CTFalse),
@@ -72,6 +79,7 @@ class TypeLawsTest extends FunSuite with Matchers with GeneratorDrivenPropertyCh
     Gen.const(CTDuration),
     node,
     relationship,
+    bigDecimalType,
     Gen.const(CTAny),
     Gen.const(CTAnyMaterial),
     Gen.const(CTNode),
