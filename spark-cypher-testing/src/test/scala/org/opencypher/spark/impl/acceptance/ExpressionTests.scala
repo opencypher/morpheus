@@ -1128,7 +1128,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       val e = the[SparkSQLMappingException] thrownBy
         caps.cypher("RETURN $listParam AS res", CypherMap("listParam" -> CypherList(1, "string")))
           .records.toMaps
-      e.getMessage should (include("LIST(ANY)") and include("unsupported"))
+      e.getMessage should (include("LIST(UNION(INTEGER, STRING))") and include("unsupported"))
     }
 
     it("can support empty list parameter") {

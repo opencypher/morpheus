@@ -64,8 +64,7 @@ object SparkConversions {
           case CTDate => Some(DateType)
           case CTDuration => Some(CalendarIntervalType)
           case CTIdentity => Some(BinaryType)
-          case _: CTNode => Some(BinaryType)
-          case _: CTRelationship => Some(BinaryType)
+          case n if n.subTypeOf(CTEntity.nullable) => Some(BinaryType)
             // Spark uses String as the default array inner type
           case CTList(CTVoid) => Some(ArrayType(StringType, containsNull = false))
           case CTList(CTNull) => Some(ArrayType(StringType, containsNull = true))
@@ -134,7 +133,7 @@ object SparkConversions {
         case ArrayType(NullType, _) => Some(CTList(CTVoid))
         case BinaryType => Some(CTIdentity)
         case ArrayType(elemType, containsNull) =>
-          elemType.toCypherType(containsNull).map(CTList)
+          elemType.toCypherType(containsNull).map(CTList(_))
         case NullType => Some(CTNull)
         case StructType(fields) =>
           val convertedFields = fields.map { field => field.name -> field.dataType.toCypherType(field.nullable) }.toMap

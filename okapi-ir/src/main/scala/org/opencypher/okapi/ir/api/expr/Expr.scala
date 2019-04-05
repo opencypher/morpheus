@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.api.expr
 
-import org.opencypher.okapi.api.types.{CTInteger, _}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr.FlattenOps._
@@ -112,10 +112,8 @@ sealed trait Var extends Expr {
 
 object Var {
   def apply(name: String)(cypherType: CypherType = CTAny): Var = cypherType match {
-    case n: CTNode => NodeVar(name)(n)
-    case n: CTNodeOrNull => NodeVar(name)(n)
-    case r: CTRelationship => RelationshipVar(name)(r)
-    case r: CTRelationshipOrNull => RelationshipVar(name)(r)
+    case n if n.subTypeOf(CTNode.nullable) => NodeVar(name)(n)
+    case r if r.subTypeOf(CTRelationship.nullable) => RelationshipVar(name)(r)
     case _ => SimpleVar(name)(cypherType)
   }
 
@@ -145,7 +143,7 @@ final case class NodeVar(name: String)(val cypherType: CypherType = CTNode) exte
   override def withOwner(expr: Var): NodeVar = expr match {
     case n: NodeVar => n
     case other => other.cypherType match {
-      case n: CTNode => NodeVar(other.name)(n)
+      case n if n.subTypeOf(CTNode.nullable) => NodeVar(other.name)(n)
       case o => throw IllegalArgumentException(CTNode, o)
     }
   }
@@ -158,7 +156,7 @@ final case class RelationshipVar(name: String)(val cypherType: CypherType = CTRe
   override def withOwner(expr: Var): RelationshipVar = expr match {
     case r: RelationshipVar => r
     case other => other.cypherType match {
-      case r: CTRelationship => RelationshipVar(other.name)(r)
+      case r if r.subTypeOf(CTRelationship.nullable) => RelationshipVar(other.name)(r)
       case o => throw IllegalArgumentException(CTRelationship, o)
     }
   }

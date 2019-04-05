@@ -31,17 +31,17 @@ import org.opencypher.v9_0.util.{symbols => frontend}
 
 case object toFrontendType extends (CypherType => frontend.CypherType) {
   override def apply(in: CypherType): frontend.CypherType = in.material match {
-    case CTAny          => frontend.CTAny
-    case CTNumber       => frontend.CTNumber
-    case CTInteger      => frontend.CTInteger
-    case CTFloat        => frontend.CTFloat
-    case CTBoolean      => frontend.CTBoolean
-    case CTString       => frontend.CTString
-    case CTNode         => frontend.CTNode
+    case CTAny => frontend.CTAny
+    case CTNumber => frontend.CTNumber
+    case CTInteger => frontend.CTInteger
+    case CTFloat => frontend.CTFloat
+    case CTBoolean => frontend.CTBoolean
+    case CTString => frontend.CTString
+    case CTNode => frontend.CTNode
     case CTRelationship => frontend.CTRelationship
-    case CTPath         => frontend.CTPath
-    case CTMap(_)       => frontend.CTMap
-    case CTList(inner)  => frontend.ListType(toFrontendType(inner))
+    case CTPath => frontend.CTPath
+    case CTMap(_) => frontend.CTMap
+    case CTList(inner) => frontend.ListType(toFrontendType(inner))
     case x => throw new UnsupportedOperationException(s"Can not convert internal type $x to an openCypher frontend type")
   }
 }

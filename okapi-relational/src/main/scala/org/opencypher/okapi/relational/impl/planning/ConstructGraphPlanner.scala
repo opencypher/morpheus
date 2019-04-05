@@ -45,6 +45,7 @@ import org.opencypher.okapi.relational.impl.operators.{ConstructGraph, Relationa
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner.RelationalOperatorOps
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.relational.impl.{operators => relational}
+import org.opencypher.okapi.impl.types.CypherTypeUtils._
 
 import scala.reflect.runtime.universe.TypeTag
 
@@ -375,7 +376,7 @@ object ConstructGraphPlanner {
 
       case (v, r@CTRelationship(_, Some(sourceGraph))) =>
         val sourceSchema = context.resolveGraph(sourceGraph).schema
-        sourceSchema.forRelationship(r).relationshipTypes.map(v -> CTRelationship(_)).toSeq
+        sourceSchema.forRelationship(r.toCTRelationship).relationshipTypes.map(v -> CTRelationship(_)).toSeq
 
       case other => throw UnsupportedOperationException(s"Cannot construct scan from $other")
     }.toSet

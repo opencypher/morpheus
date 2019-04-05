@@ -29,6 +29,7 @@ package org.opencypher.okapi.api.value
 import java.math.{MathContext, RoundingMode}
 import java.util.Objects
 
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherEntity._
 import org.opencypher.okapi.api.value.CypherValue.CypherNode._
 import org.opencypher.okapi.api.value.CypherValue.CypherRelationship._
@@ -140,6 +141,8 @@ object CypherValue {
       * @return wrapped value
       */
     def value: Any
+
+    def cypherType: CypherType
 
     /**
       * @return null-safe version of [[value]]
@@ -286,30 +289,43 @@ object CypherValue {
     override def unwrap: Null = value
 
     override def getValue: Option[Any] = None
+
+    override def cypherType: CypherType = CTNull
   }
 
-  implicit class CypherString(val value: String) extends AnyVal with PrimitiveCypherValue[String]
+  implicit class CypherString(val value: String) extends AnyVal with PrimitiveCypherValue[String] {
+    override def cypherType: CypherType = CTString
+  }
 
-  implicit class CypherBoolean(val value: Boolean) extends AnyVal with PrimitiveCypherValue[Boolean]
+  implicit class CypherBoolean(val value: Boolean) extends AnyVal with PrimitiveCypherValue[Boolean] {
+    override def cypherType: CypherType = CTBoolean
+  }
 
   sealed trait CypherNumber[+V] extends Any with PrimitiveCypherValue[V]
 
-  implicit class CypherInteger(val value: Long) extends AnyVal with CypherNumber[Long]
+  implicit class CypherInteger(val value: Long) extends AnyVal with CypherNumber[Long] {
+    override def cypherType: CypherType = CTInteger
+  }
 
-  implicit class CypherFloat(val value: Double) extends AnyVal with CypherNumber[Double]
+  implicit class CypherFloat(val value: Double) extends AnyVal with CypherNumber[Double] {
+    override def cypherType: CypherType = CTFloat
+  }
 
   implicit class CypherBigDecimal(val value: BigDecimal) extends AnyVal with CypherNumber[BigDecimal]
 
   implicit class CypherLocalDateTime(val value: java.time.LocalDateTime) extends AnyVal with MaterialCypherValue[java.time.LocalDateTime] {
     override def unwrap: Any = value
+    override def cypherType: CypherType = CTLocalDateTime
   }
 
   implicit class CypherDate(val value: java.time.LocalDate) extends AnyVal with MaterialCypherValue[java.time.LocalDate] {
     override def unwrap: Any = value
+    override def cypherType: CypherType = CTDate
   }
 
   implicit class CypherDuration(val value: Duration) extends AnyVal with MaterialCypherValue[Duration] {
     override def unwrap: Any = value
+    override def cypherType: CypherType = CTDuration
   }
 
   implicit class CypherMap(val value: Map[String, CypherValue]) extends AnyVal with MaterialCypherValue[Map[String, CypherValue]] {
@@ -328,6 +344,9 @@ object CypherValue {
     def ++(other: CypherMap): CypherMap = value ++ other.value
 
     def updated(k: String, v: CypherValue): CypherMap = value.updated(k, v)
+
+    override def cypherType: CypherType = CTMap(value.mapValues(_.cypherType))
+
   }
 
   object CypherMap extends UnapplyValue[Map[String, CypherValue], CypherMap] {
@@ -341,6 +360,7 @@ object CypherValue {
 
   implicit class CypherList(val value: List[CypherValue]) extends AnyVal with MaterialCypherValue[List[CypherValue]] {
     override def unwrap: List[Any] = value.map(_.unwrap)
+    override def cypherType: CypherType = CTList(CTUnion(value.map(_.cypherType): _*))
   }
 
   object CypherList extends UnapplyValue[List[CypherValue], CypherList] {
@@ -398,6 +418,8 @@ object CypherValue {
 
     override def value: CypherNode[Id] = this
 
+    override def cypherType: CypherType = CTNode(labels)
+
     override def unwrap: CypherNode[Id] = this
 
     override def productArity: Int = 3
@@ -446,6 +468,8 @@ object CypherValue {
     def relType: String
 
     override def value: CypherRelationship[Id] = this
+
+    override def cypherType: CypherType = CTRelationship(Set(relType))
 
     override def unwrap: CypherRelationship[Id] = this
 

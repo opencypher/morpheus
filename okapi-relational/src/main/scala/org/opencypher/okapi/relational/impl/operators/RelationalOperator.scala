@@ -111,10 +111,8 @@ abstract class RelationalOperator[T <: Table[T] : TypeTag] extends AbstractTreeN
         // on conflicts when we expect entities (alternative: change reverse-mapping function somehow)
 
         headerType match {
-          case _: CTNode if tableType == CTInteger =>
-          case _: CTNodeOrNull if tableType == CTInteger =>
-          case _: CTRelationship if tableType == CTInteger =>
-          case _: CTRelationshipOrNull if tableType == CTInteger =>
+          case n if n.subTypeOf(CTNode.nullable) && tableType == CTInteger =>
+          case r if r.subTypeOf(CTRelationship.nullable) && tableType == CTInteger =>
           case _ if tableType == headerType =>
           case _ => throw IllegalArgumentException(
             s"${getClass.getSimpleName}: data matching header type $headerType for expression $expr", tableType)

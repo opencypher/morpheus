@@ -230,7 +230,7 @@ object SparkSQLExprMapper {
 
         case Keys(e) =>
           e.cypherType.material match {
-            case _: CTNode | _: CTRelationship =>
+            case entity if entity.subTypeOf(CTEntity) =>
               val possibleProperties = header.propertiesFor(e.owner.get).toSeq.sortBy(_.key.name)
               val propertyNames = possibleProperties.map(_.key.name)
               val propertyValues = possibleProperties.map(_.asSparkSQLExpr)
@@ -249,7 +249,7 @@ object SparkSQLExprMapper {
 
         case Properties(e) =>
           e.cypherType.material match {
-            case _: CTNode | _: CTRelationship =>
+            case entity if entity.subTypeOf(CTEntity) =>
               val propertyExpressions = header.propertiesFor(e.owner.get).toSeq.sortBy(_.key.name)
               val propertyColumns = propertyExpressions
                 .map(propertyExpression => propertyExpression.asSparkSQLExpr.as(propertyExpression.key.name))

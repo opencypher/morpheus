@@ -1,4 +1,4 @@
-/**
+/*
  * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
@@ -26,19 +26,26 @@
  */
 package org.opencypher.okapi.impl.types
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CTUnion, CypherType}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 
 object CypherTypeUtils {
+
   implicit class RichCypherType(val ct: CypherType) extends AnyVal {
+
+    private def notNode() = throw UnsupportedOperationException(s"cannot convert $ct into a CTNode")
+    private def notRel() = throw UnsupportedOperationException(s"cannot convert $ct into a CTRelationship")
+
     def toCTNode: CTNode = ct match {
       case n: CTNode => n
-      case other => throw UnsupportedOperationException(s"cannot convert $other into a CTNode")
+      case CTUnion(as) => as.collectFirst { case n: CTNode => n }.getOrElse(notNode())
+      case _ => notNode()
     }
 
     def toCTRelationship: CTRelationship = ct match {
       case r: CTRelationship => r
-      case other => throw UnsupportedOperationException(s"cannot convert $other into a CTRelationship")
+      case CTUnion(as) => as.collectFirst { case r: CTRelationship => r }.getOrElse(notRel())
+      case _ => notRel()
     }
   }
 }

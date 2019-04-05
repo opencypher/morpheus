@@ -29,6 +29,7 @@ package org.opencypher.okapi.impl.types
 import fastparse.Parsed.{Failure, Success}
 import fastparse._
 import org.apache.logging.log4j.scala.Logging
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.util.ParserUtils._
 
@@ -63,7 +64,8 @@ object CypherTypeParser extends Logging {
   def FLOAT[_: P]: P[CTFloat.type] = IgnoreCase("FLOAT").map(_ => CTFloat)
   def NUMBER[_: P]: P[CTNumber.type] = IgnoreCase("NUMBER").map(_ => CTNumber)
   def BOOLEAN[_: P]: P[CTBoolean.type] = IgnoreCase("BOOLEAN").map(_ => CTBoolean)
-  def ANY[_: P]: P[CTAny.type] = IgnoreCase("ANY").map(_ => CTAny)
+  def ANY[_: P]: P[CypherType] = IgnoreCase("ANY?").map(_ => CTAny)
+  def ANYMATERIAL[_: P]: P[CTAnyMaterial.type] = IgnoreCase("ANY").map(_ => CTAnyMaterial)
   def VOID[_: P]: P[CTVoid.type] = IgnoreCase("VOID").map(_ => CTVoid)
   def NULL[_: P]: P[CTNull.type] = IgnoreCase("NULL").map(_ => CTNull)
   def DATE[_: P]: P[CTDate.type] = IgnoreCase("DATE").map(_ => CTDate)
@@ -76,9 +78,13 @@ object CypherTypeParser extends Logging {
     IgnoreCase("NODE") ~/ ("(" ~/ label.rep() ~ ")").?
   ).map(l => CTNode(l.getOrElse(Seq.empty).toSet))
 
+  def ANYNODE[_: P]: P[CTNode.type] = P(IgnoreCase("ANYNODE").map(_ => CTNode))
+
   def RELATIONSHIP[_: P]: P[CTRelationship] = P(
     IgnoreCase("RELATIONSHIP") ~/ ("(" ~ label.rep(sep = "|") ~/ ")").?
   ).map(l => CTRelationship(l.getOrElse(Seq.empty).toSet))
+
+  def ANYRELATIONSHIP[_: P]: P[CTRelationship] = P(IgnoreCase("ANYRELATIONSHIP").map(_ => CTRelationship))
 
   def PATH[_: P]: P[CTPath.type] = P(IgnoreCase("PATH").map(_ => CTPath))
 
@@ -89,17 +95,23 @@ object CypherTypeParser extends Logging {
   private def kvPair[_: P]: P[(String, CypherType)] = P(mapKey ~/ ":" ~/ cypherType)
   def MAP[_: P]: P[CTMap] = P(IgnoreCase("MAP") ~/ "(" ~/ kvPair.rep(sep = ",") ~/ ")").map(inner => CTMap(inner.toMap))
 
+  def ANYMAP[_: P]: P[CTMap] = P(IgnoreCase("ANYMAP").map(_ => CTMap))
+
   def materialCypherType[_: P]: P[CypherType] = P(
     STRING |
       INTEGER |
       FLOAT |
       NUMBER |
       BOOLEAN |
+      NODE |
+      RELATIONSHIP |
+      ANYNODE |
+      ANYRELATIONSHIP |
+      ANYMAP |
+      ANYMATERIAL |
       ANY |
       VOID |
       NULL |
-      NODE |
-      RELATIONSHIP |
       PATH |
       LIST |
       MAP |
