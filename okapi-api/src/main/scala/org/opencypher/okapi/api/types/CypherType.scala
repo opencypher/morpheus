@@ -183,3 +183,191 @@ object CypherType {
   }
 
 }
+
+case object CTAnyMaterial extends CypherType {
+  override lazy val nullable: CypherType = CTAny
+
+  override def name: String = "ANY"
+}
+
+object CTMap extends CTMap(Map.empty) {
+  override def name: String = "MAP"
+
+  override def equals(obj: Any): Boolean = obj.isInstanceOf[CTMap.type]
+
+  override def canEqual(that: Any): Boolean = that.isInstanceOf[CTMap.type]
+}
+
+case class CTMap(properties: Map[String, CypherType] = Map.empty) extends CypherType {
+
+  override def containsNullable: Boolean = properties.values.exists(_.containsNullable)
+
+  override def name: String = {
+    s"MAP(${properties.map { case (n, t) => s"$n: ${t.name}" }.mkString(", ")})"
+  }
+
+}
+
+object CTList extends CTList(CTAny) {
+
+  override def name: String = "LIST"
+
+}
+
+case class CTList(inner: CypherType) extends CypherType {
+
+  override def containsNullable: Boolean = inner.containsNullable
+
+  override def name: String = s"LIST(${inner.name})"
+
+}
+
+object CTNode extends CTNode(Set.empty, None) {
+  def apply(labels: String*): CTNode = CTNode(labels.toSet)
+
+  def unapply(ct: CypherType): Option[(Set[String], Option[QualifiedGraphName])] = {
+    ct match {
+      case n: CTNode => Some(n.labels -> n.graph)
+      case u: CTUnion =>
+        val nodes = u.alternatives.collect { case n: CTNode => n.labels -> n.graph }.toList
+        nodes match {
+          case Nil => None
+          case n :: Nil => Some(n)
+          case ns =>
+            val (lss: Seq[Set[String]], mgs: Seq[Option[QualifiedGraphName]]) = ns.unzip
+            val ls = lss.reduce(_ intersect _)
+            val mg = mgs.flatten match {
+              case Nil => None
+              case g :: Nil => Some(g)
+              case _ => None
+            }
+            Some(ls -> mg)
+        }
+      case _ => None
+    }
+  }
+}
+
+case class CTNode(
+  labels: Set[String] = Set.empty,
+  override val graph: Option[QualifiedGraphName] = None
+) extends CypherType {
+  override def withGraph(qgn: QualifiedGraphName): CTNode = copy(graph = Some(qgn))
+  override def withoutGraph: CTNode = CTNode(labels)
+
+  override def name: String =
+    if (this == CTNode) {
+      "NODE"
+    } else {
+      s"NODE(${labels.map(l => s":$l").mkString})${graph.map(g => s" @ $g").getOrElse("")}"
+    }
+
+}
+
+object CTRelationship extends CTRelationship(Set.empty, None) {
+  def apply(relTypes: String*): CTRelationship = CTRelationship(relTypes.toSet)
+
+  def unapply(ct: CypherType): Option[(Set[String], Option[QualifiedGraphName])] = {
+    ct match {
+      case r: CTRelationship => Some(r.types -> r.graph)
+      case u: CTUnion => u.alternatives.collectFirst { case r: CTRelationship => r.types -> r.graph }
+      case _ => None
+    }
+  }
+}
+
+case class CTRelationship(
+  types: Set[String] = Set.empty,
+  override val graph: Option[QualifiedGraphName] = None
+) extends CypherType {
+  override def withGraph(qgn: QualifiedGraphName): CTRelationship = copy(graph = Some(qgn))
+  override def withoutGraph: CTRelationship = CTRelationship(types)
+
+  override def name: String = {
+    if (this == CTRelationship) {
+      "RELATIONSHIP"
+    } else {
+      s"RELATIONSHIP(${types.map(l => s":$l").mkString("|")})${graph.map(g => s" @ $g").getOrElse("")}"
+    }
+  }
+
+}
+
+case object CTString extends CypherType
+
+case object CTInteger extends CypherType
+
+case object CTFloat extends CypherType
+
+case object CTTrue extends CypherType
+
+case object CTFalse extends CypherType
+
+case object CTNull extends CypherType {
+  override def isNullable: Boolean = true
+  override def material: CypherType = CTVoid
+}
+
+case object CTIdentity extends CypherType
+
+case object CTLocalDateTime extends CypherType
+
+case object CTDate extends CypherType
+
+case object CTDuration extends CypherType
+
+case object CTVoid extends CypherType
+
+case class CTUnion(alternatives: Set[CypherType]) extends CypherType {
+  require(!alternatives.exists(_.isInstanceOf[CTUnion]), "Unions need to be flattened")
+
+  override def isNullable: Boolean = alternatives.contains(CTNull)
+
+  override def material: CypherType = CTUnion((alternatives - CTNull).toSeq: _*)
+
+  override def name: String = {
+    if (this == CTAny) "ANY?"
+    else if (this == CTBoolean) "BOOLEAN"
+    else if (this == CTEntity) "ENTITY"
+    else if (isNullable) s"${material.name}?"
+    else if (subTypeOf(CTUnion(Set[CypherType](CTFloat, CTInteger, CTBigDecimal)))) "NUMBER"
+    else s"UNION(${alternatives.mkString(", ")})"
+  }
+
+  override def graph: Option[QualifiedGraphName] = alternatives.flatMap(_.graph).headOption
+
+}
+
+object CTUnion {
+  def apply(ts: CypherType*): CypherType = {
+    val flattened = ts.flatMap {
+      case u: CTUnion => u.alternatives
+      case p => Set(p)
+    }.distinct.toList
+
+    // Filter alternatives that are a subtype of another alternative
+    val filtered = flattened.filter(t => !flattened.exists(o => o != t && t.subTypeOf(o)))
+
+    filtered match {
+      case Nil => CTVoid
+      case h :: Nil => h
+      case many if many.contains(CTAnyMaterial) => if (many.contains(CTNull)) CTAny else CTAnyMaterial
+      case many => CTUnion(many.toSet)
+    }
+  }
+}
+
+case object CTPath extends CypherType
+
+object CTBigDecimal extends CTBigDecimal(-1, -1) {
+  def apply(precisionAndScale: (Int, Int)): CTBigDecimal =
+    CTBigDecimal(precisionAndScale._1, precisionAndScale._2)
+
+  override def name: String = "BIGDECIMAL"
+}
+
+case class CTBigDecimal(precision: Int = 10, scale: Int = 0) extends CypherType {
+
+  override def name: String = s"BIGDECIMAL($precision,$scale)"
+
+}
