@@ -32,8 +32,8 @@ ext {
             log4j     : [main : '2.11.0',
                          scala: '11.0'],
 
-            scalatest : '3.0.5',
-            scalacheck: '1.13.5',
+            scalatest : '3.0.6',
+            scalacheck: '1.14.0',
             mockito   : '1.10.19',
             claimant  : '0.0.2',
 

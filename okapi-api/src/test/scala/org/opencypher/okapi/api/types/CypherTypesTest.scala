@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.api.value.GenCypherValue.any
 import org.opencypher.okapi.impl.types.CypherTypeParser.parseCypherType
 import org.scalacheck.Prop
-import org.scalatest.prop.Checkers
+import org.scalatestplus.scalacheck.Checkers
 
 import scala.language.postfixOps
 

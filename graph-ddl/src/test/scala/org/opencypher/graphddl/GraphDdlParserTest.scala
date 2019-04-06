@@ -32,7 +32,7 @@ import org.opencypher.graphddl.GraphDdlParser._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.util.ParserUtils._
 import org.opencypher.okapi.testing.{BaseTestSuite, TestNameFixture}
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 
 class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture {
 

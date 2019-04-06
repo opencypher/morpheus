@@ -35,7 +35,7 @@ import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.v9_0.util.SyntaxException
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAfterAll {

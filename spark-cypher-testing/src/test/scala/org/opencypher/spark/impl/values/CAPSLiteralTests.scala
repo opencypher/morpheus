@@ -34,7 +34,7 @@ import org.opencypher.spark.impl.acceptance.ScanGraphInit
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalacheck.Gen.const
 import org.scalacheck.{Gen, Prop}
-import org.scalatest.prop.Checkers
+import org.scalatestplus.scalacheck.Checkers
 
 class CAPSLiteralTests extends CAPSTestSuite with Checkers with ScanGraphInit {
 

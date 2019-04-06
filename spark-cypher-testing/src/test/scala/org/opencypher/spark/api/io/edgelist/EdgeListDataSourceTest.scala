@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.impl.exception
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.BeforeAndAfterAll
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 
 class EdgeListDataSourceTest extends CAPSTestSuite with BeforeAndAfterAll with MockitoSugar {
 

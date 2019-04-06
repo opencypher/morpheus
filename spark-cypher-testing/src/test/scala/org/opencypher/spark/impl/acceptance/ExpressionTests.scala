@@ -40,8 +40,8 @@ import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.SparkSQLMappingException
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalacheck.Prop
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.prop.Checkers
+import org.scalatestplus.junit.JUnitRunner
+import org.scalatestplus.scalacheck.Checkers
 
 @RunWith(classOf[JUnitRunner])
 class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {

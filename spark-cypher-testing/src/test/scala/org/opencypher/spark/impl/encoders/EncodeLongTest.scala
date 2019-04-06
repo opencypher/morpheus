@@ -35,7 +35,7 @@ import org.scalacheck.Prop.propBoolean
 import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.impl.expressions.EncodeLong
 import org.opencypher.spark.impl.expressions.EncodeLong._
-import org.scalatest.prop.Checkers
+import org.scalatestplus.scalacheck.Checkers
 
 class EncodeLongTest extends CAPSTestSuite with Checkers {
 

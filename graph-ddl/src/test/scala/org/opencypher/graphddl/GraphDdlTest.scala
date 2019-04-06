@@ -31,7 +31,7 @@ import org.opencypher.graphddl.GraphDdlParser.parseDdl
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.{FunSpec, Matchers}
 
 @RunWith(classOf[JUnitRunner])

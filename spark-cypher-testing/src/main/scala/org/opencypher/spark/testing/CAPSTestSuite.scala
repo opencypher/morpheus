@@ -34,7 +34,7 @@ import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.fixture.{CAPSSessionFixture, SparkSessionFixture}
 import org.opencypher.spark.testing.support.{GraphMatchingTestSupport, RecordMatchingTestSupport}
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 abstract class CAPSTestSuite
