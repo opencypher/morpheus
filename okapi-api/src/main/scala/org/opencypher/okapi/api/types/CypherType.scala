@@ -224,28 +224,6 @@ case class CTList(inner: CypherType) extends CypherType {
 
 object CTNode extends CTNode(Set.empty, None) {
   def apply(labels: String*): CTNode = CTNode(labels.toSet)
-
-  def unapply(ct: CypherType): Option[(Set[String], Option[QualifiedGraphName])] = {
-    ct match {
-      case n: CTNode => Some(n.labels -> n.graph)
-      case u: CTUnion =>
-        val nodes = u.alternatives.collect { case n: CTNode => n.labels -> n.graph }.toList
-        nodes match {
-          case Nil => None
-          case n :: Nil => Some(n)
-          case ns =>
-            val (lss: Seq[Set[String]], mgs: Seq[Option[QualifiedGraphName]]) = ns.unzip
-            val ls = lss.reduce(_ intersect _)
-            val mg = mgs.flatten match {
-              case Nil => None
-              case g :: Nil => Some(g)
-              case _ => None
-            }
-            Some(ls -> mg)
-        }
-      case _ => None
-    }
-  }
 }
 
 case class CTNode(
@@ -266,14 +244,6 @@ case class CTNode(
 
 object CTRelationship extends CTRelationship(Set.empty, None) {
   def apply(relTypes: String*): CTRelationship = CTRelationship(relTypes.toSet)
-
-  def unapply(ct: CypherType): Option[(Set[String], Option[QualifiedGraphName])] = {
-    ct match {
-      case r: CTRelationship => Some(r.types -> r.graph)
-      case u: CTUnion => u.alternatives.collectFirst { case r: CTRelationship => r.types -> r.graph }
-      case _ => None
-    }
-  }
 }
 
 case class CTRelationship(
