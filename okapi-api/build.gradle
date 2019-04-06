@@ -13,9 +13,8 @@ dependencies {
         exclude group: 'com.lihaoyi', module: 'utest_2.11'
     }
     compile group: 'com.lihaoyi', name: "fastparse".scala(), version: ver.fastparse
-    //TODO: Extract version numbers
-    compile group: "org.typelevel", name: "discipline".scala(), version: "0.10.0"
-    compile group: "org.typelevel", name: "cats-laws".scala(), version: "1.1.0"
+    compile group: "org.typelevel", name: "discipline".scala(), version: ver.discipline
+    compile group: "org.typelevel", name: "cats-laws".scala(), version: ver.cats
 
     testCompile group: 'org.mockito', name: 'mockito-all', version: ver.mockito
     testCompile group: 'junit', name: 'junit', version: ver.junit.main
