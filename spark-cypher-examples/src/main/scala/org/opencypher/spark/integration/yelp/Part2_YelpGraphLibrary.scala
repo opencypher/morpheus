@@ -81,9 +81,11 @@ object Part2_YelpGraphLibrary extends App {
       s"""
          |CATALOG CREATE GRAPH $fsNamespace.${coReviewGraphName(year)} {
          |  FROM GRAPH $fsNamespace.${reviewGraphName(year)}
-         |  MATCH (b:Business)<-[r:REVIEWS]-(user1:User),
-         |        (b)<-[:REVIEWS]-(user2:User)
-         |  WHERE user1.yelping_since.year <= $year AND user2.yelping_since.year <= $year
+         |  MATCH (b:Business)<-[r1:REVIEWS]-(user1:User),
+         |        (b)<-[r2:REVIEWS]-(user2:User)
+         |  WHERE r1.date.year = $year
+         |    AND r2.date.year = $year
+         |    AND user1.yelping_since.year <= $year AND user2.yelping_since.year <= $year
          |  CONSTRUCT
          |    CREATE (user1)-[:CO_REVIEWS]->(user2)
          |  RETURN GRAPH

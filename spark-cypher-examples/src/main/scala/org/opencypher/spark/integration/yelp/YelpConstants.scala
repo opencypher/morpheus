@@ -39,6 +39,7 @@ object YelpConstants {
 
   val defaultYelpJsonFolder = "yelp_json"
   val defaultYelpGraphFolder = "yelp_graph"
+  val defaultYelpSubsetFolder = "yelp_subset"
 
   val userLabel = "User"
   val businessLabel = "Business"

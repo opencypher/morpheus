@@ -32,67 +32,67 @@ import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Jdbc
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.integration.yelp.YelpConstants.{defaultYelpJsonFolder, _}
+import org.opencypher.spark.integration.yelp.YelpConstants._
 
 object Part5_YelpHive extends App {
 
   log("Part 5 - Hive")
 
-  lazy val inputPath = args.headOption.getOrElse(defaultYelpJsonFolder)
+  lazy val inputPath = args.headOption.getOrElse(defaultYelpSubsetFolder)
 
   implicit val caps: CAPSSession = CAPSSession.local()
   implicit val spark: SparkSession = caps.sparkSession
 
-  val yelpDB = "YELP"
-  val facebookDB = "FACEBOOK"
+  val yelpDB = "yelp"
+  val facebookDB = "facebook"
   val integratedGraphName = GraphName("yelp_and_facebook")
 
-  val jdbcConfig = SqlDataSourceConfig.Jdbc(
+  val h2Config = SqlDataSourceConfig.Jdbc(
     url = s"jdbc:h2:mem:$facebookDB.db;INIT=CREATE SCHEMA IF NOT EXISTS $facebookDB;DB_CLOSE_DELAY=30;",
     driver = "org.h2.Driver"
   )
 
-  createJdbcData(jdbcConfig)
-  createHiveData()
+  // Requires Part1_YelpImport#yelpSubgraph to be executed
+  initH2(h2Config)
+  initHive()
 
-  val ddl =
+  val graphDdl =
     s"""
        |CREATE GRAPH $integratedGraphName (
        |  -- Graph schema
-       |  Business ( businessId INTEGER, name STRING, city STRING, state STRING ),
-       |  User ( name STRING ),
-       |  REVIEWS ( stars INTEGER),
+       |  Business ( businessId STRING, name STRING, city STRING, state STRING ),
+       |  User     ( name STRING ),
+       |  REVIEWS  ( stars INTEGER ),
        |  FRIEND,
        |
        |  -- Load Yelp users and businesses from Hive
        |  (Business) FROM HIVE.$yelpDB.business (business_id AS businessId),
-       |  (User) FROM HIVE.$yelpDB.user,
+       |  (User)     FROM HIVE.$yelpDB.user,
        |
        |  -- Load Yelp reviews from Hive
        |  (User)-[REVIEWS]->(Business) FROM HIVE.$yelpDB.review e
-       |    START NODES (User)     FROM HIVE.$yelpDB.user     n JOIN ON e.user_id  = n.user_id
+       |    START NODES (User)     FROM HIVE.$yelpDB.user     n JOIN ON e.user_email  = n.email
        |    END   NODES (Business) FROM HIVE.$yelpDB.business n JOIN ON e.business_id = n.business_id,
        |
-       |  -- Load Facebook friendships from H2 (via JDBC) and join with Hive data
+       |  -- Load Facebook friendships from H2 (via JDBC) and join with Hive data using email address
        |  (User)-[FRIEND]->(User) FROM H2.$facebookDB.friend e
-       |    START NODES (User)     FROM HIVE.$yelpDB.user     n JOIN ON e.user1_id  = n.user_id
-       |    END   NODES (User)     FROM HIVE.$yelpDB.user     n JOIN ON e.user2_id  = n.user_id
+       |    START NODES (User)     FROM HIVE.$yelpDB.user     n JOIN ON e.user1_email = n.email
+       |    END   NODES (User)     FROM HIVE.$yelpDB.user     n JOIN ON e.user2_email = n.email
        |)
      """.stripMargin
 
-  // Init SQL Property Graph Data Source with DDL and the two data sources
-  val sqlPropertyGraphDataSource = GraphSources
-    .sql(GraphDdl(ddl))
-    .withSqlDataSourceConfigs("HIVE" -> SqlDataSourceConfig.Hive, "H2" -> jdbcConfig)
-
-  sqlPropertyGraphDataSource
+  // Load integrated graph using SQL Property Graph Data Source using above DDL script and two data sources
+  val integratedGraph = GraphSources
+    .sql(GraphDdl(graphDdl))
+    .withSqlDataSourceConfigs("HIVE" -> SqlDataSourceConfig.Hive, "H2" -> h2Config)
     .graph(integratedGraphName)
-    .cypher("MATCH (n)-[r]->(m) RETURN n, r, m")
-    .show
 
-  def createJdbcData(conf: Jdbc): Unit = {
+  integratedGraph.cypher("MATCH (n)-[r:FRIEND]->(m) RETURN n, r, m LIMIT 10").show
+  integratedGraph.cypher("MATCH (n)-[r:REVIEWS]->(m) RETURN n, r, m LIMIT 10").show
+
+  def initH2(conf: Jdbc): Unit = {
     spark.read
-      .json("yelp_json/friend.json")
+      .json(s"$inputPath/$cityGraphName/$facebookDB/friend.json")
       .write
       .format("jdbc")
       .mode("ignore")
@@ -103,17 +103,15 @@ object Part5_YelpHive extends App {
       .save
   }
 
-  def createHiveData(): Unit = {
+  def initHive(): Unit = {
     import spark._
 
     sql(s"DROP DATABASE IF EXISTS $yelpDB CASCADE")
     sql(s"CREATE DATABASE $yelpDB")
     sql(s"USE $yelpDB")
 
-    //  sql(s"CREATE TABLE IF NOT EXISTS business ( name STRING, city STRING, state STRING ) USING HIVE")
-    //  sql(s"LOAD DATA LOCAL INPATH 'yelp_json/business.json' INTO TABLE business")
-    read.json("yelp_json/business.json").write.saveAsTable(s"$yelpDB.business")
-    read.json("yelp_json/user.json").write.saveAsTable(s"$yelpDB.user")
-    read.json("yelp_json/review.json").write.saveAsTable(s"$yelpDB.review")
+    read.json(s"$inputPath/$cityGraphName/$yelpDB/business.json").write.saveAsTable(s"$yelpDB.business")
+    read.json(s"$inputPath/$cityGraphName/$yelpDB/user.json").write.saveAsTable(s"$yelpDB.user")
+    read.json(s"$inputPath/$cityGraphName/$yelpDB/review.json").write.saveAsTable(s"$yelpDB.review")
   }
 }

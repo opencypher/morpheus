@@ -32,4 +32,5 @@ object YelpDemo extends App {
   Part1_YelpImport.main(emptyArgs)
   Part2_YelpGraphLibrary.main(emptyArgs)
   Part3_YelpBusinessTrends.main(emptyArgs)
+  Part4_EliteValidation(emptyArgs)
 }
