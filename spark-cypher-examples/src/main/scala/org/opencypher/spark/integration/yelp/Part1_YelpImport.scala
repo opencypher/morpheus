@@ -26,16 +26,15 @@
  */
 package org.opencypher.spark.integration.yelp
 
-import org.apache.spark.sql.types.{ArrayType, DateType, IntegerType, LongType}
-import org.apache.spark.sql.{Column, DataFrame, SparkSession, functions}
+import org.apache.spark.sql.SparkSession
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.api.io.GraphEntity._
 import org.opencypher.spark.api.io.Relationship._
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.integration.yelp.YelpConstants._
+import org.opencypher.spark.integration.yelp.YelpHelpers._
 
 object Part1_YelpImport extends App {
 
@@ -48,8 +47,6 @@ object Part1_YelpImport extends App {
   implicit val spark: SparkSession = caps.sparkSession
 
   storeGraph(inputPath, outputPath)
-  //  yelpStats(inputPath)
-  //  yelpSubgraph(defaultYelpSubsetFolder)
 
   def storeGraph(inputPath: String, outputPath: String): Unit = {
     // Load Yelp data into DataFrames
@@ -111,88 +108,5 @@ object Part1_YelpImport extends App {
 
     // Create property graph
     caps.graphs.create(businessNodeTable, userNodeTable, reviewRelTable)
-  }
-
-  def loadYelpTables(inputPath: String)(implicit spark: SparkSession): YelpTables = {
-    log("read business.json", 2)
-    val rawBusinessDf = spark.read.json(s"$inputPath/business.json")
-    log("read review.json", 2)
-    val rawReviewDf = spark.read.json(s"$inputPath/review.json")
-    log("read user.json", 2)
-    val rawUserDf = spark.read.json(s"$inputPath/user.json")
-
-    import spark.implicits._
-
-    val businessDf = rawBusinessDf.select($"business_id".as(sourceIdKey), $"business_id", $"name", $"address", $"city", $"state")
-    val reviewDf = rawReviewDf.select($"review_id".as(sourceIdKey), $"user_id".as(sourceStartNodeKey), $"business_id".as(sourceEndNodeKey), $"stars", $"date".cast(DateType))
-    val userDf = rawUserDf.select(
-      $"user_id".as(sourceIdKey),
-      $"name",
-      $"yelping_since".cast(DateType),
-      functions.split($"elite", ",").cast(ArrayType(LongType)).as("elite"))
-
-    YelpTables(userDf, businessDf, reviewDf)
-  }
-
-  def yelpStats(inputPath: String): Unit = {
-    val rawBusinessDf = spark.read.json(s"$inputPath/business.json")
-    val rawReviewDf = spark.read.json(s"$inputPath/review.json")
-
-    import spark.implicits._
-
-    rawBusinessDf.select($"city", $"state").distinct().show()
-    rawBusinessDf.withColumnRenamed("business_id", "id")
-      .join(rawReviewDf, $"id" === $"business_id")
-      .groupBy($"city", $"state")
-      .count().as("count")
-      .orderBy($"count".desc, $"state".asc)
-      .show(100)
-  }
-
-  def yelpSubgraph(outputPath: String): Unit = {
-    import spark.implicits._
-
-    def emailColumn(userId: String): Column = functions.concat($"$userId", functions.lit("@yelp.com"))
-
-    val rawUserDf = spark.read.json(s"$inputPath/user.json")
-    val rawReviewDf = spark.read.json(s"$inputPath/review.json")
-    val rawBusinessDf = spark.read.json(s"$inputPath/business.json")
-
-    val businessDf = rawBusinessDf.filter($"city" === city)
-    val reviewDf = rawReviewDf
-      .join(businessDf, Seq("business_id"), "left_semi")
-      .withColumn("user_email", emailColumn("user_id"))
-      .withColumnRenamed("stars", "stars_tmp")
-      .withColumn("stars", $"stars_tmp".cast(IntegerType))
-      .drop("stars_tmp")
-    val userDf = rawUserDf
-      .join(reviewDf, Seq("user_id"), "left_semi")
-      .withColumn("email", emailColumn("user_id"))
-    val friendDf = userDf
-      .select($"email".as("user1_email"), functions.explode(functions.split($"friends", ", ")).as("user2_id"))
-      .withColumn("user2_email", emailColumn("user2_id"))
-      .select(s"user1_email", s"user2_email")
-
-    businessDf.write.json(s"$outputPath/$cityGraphName/yelp/business.json")
-    reviewDf.write.json(s"$outputPath/$cityGraphName/yelp/review.json")
-    userDf.write.json(s"$outputPath/$cityGraphName/yelp/user.json")
-    friendDf.write.json(s"$outputPath/$cityGraphName/facebook/friend.json")
-  }
-
-  implicit class DataFrameOps(df: DataFrame) {
-    def prependIdColumn(idColumn: String, prefix: String): DataFrame =
-      df.transformColumns(idColumn)(column => functions.concat(functions.lit(prefix), column).as(idColumn))
-  }
-
-  case class YelpTables(
-    userDf: DataFrame,
-    businessDf: DataFrame,
-    reviewDf: DataFrame
-  ) {
-    def show(): Unit = {
-      userDf.show()
-      businessDf.show()
-      reviewDf.show()
-    }
   }
 }

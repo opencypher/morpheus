@@ -87,8 +87,5 @@ object Part4_EliteValidation extends App {
     }
   }.unzip
 
-  println(eliteRanks)
-  println(nonEliteRanks)
-
   println(s"pValue: ${new TTest().tTest(eliteRanks.toArray, nonEliteRanks.toArray)}")
 }
