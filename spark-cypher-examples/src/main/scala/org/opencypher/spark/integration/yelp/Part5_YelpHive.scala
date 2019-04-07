@@ -27,8 +27,10 @@
 package org.opencypher.spark.integration.yelp
 
 import org.apache.spark.sql.SparkSession
-import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Hive
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.graphddl.GraphDdl
+import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlPropertyGraphDataSource}
 import org.opencypher.spark.integration.yelp.YelpConstants.{defaultYelpJsonFolder, _}
 
 object Part5_YelpHive extends App {
@@ -40,51 +42,86 @@ object Part5_YelpHive extends App {
   implicit val caps: CAPSSession = CAPSSession.local()
   implicit val spark: SparkSession = caps.sparkSession
 
-  populateHiveTables()
+  val yelpDB = "YELP"
+  val facebookDB = "FACEBOOK"
+  val integratedGraphName = GraphName("yelp_and_facebook")
 
-  import caps._
+  createJdbcData()
+  createHiveData()
 
-  registerSource(hiveNamespace, GraphSources
-    .sql(getClass.getResource("/yelp/ddl/yelp.ddl").getFile)
-    .withSqlDataSourceConfigs("hive" -> Hive))
+  val ddl =
+    s"""
+       |CREATE GRAPH $integratedGraphName (
+       |  -- Graph schema
+       |  Business ( businessId INTEGER, name STRING, city STRING, state STRING ),
+       |  User ( name STRING ),
+       |  REVIEWS ( stars INTEGER),
+       |  FRIEND,
+       |
+       |  -- Load Yelp users and businesses from Hive
+       |  (Business) FROM HIVE.$yelpDB.business (business_id AS businessId),
+       |  (User) FROM HIVE.$yelpDB.user,
+       |
+       |  -- Load Yelp reviews from Hive
+       |  (User)-[REVIEWS]->(Business) FROM HIVE.$yelpDB.review e
+       |    START NODES (User)     FROM HIVE.$yelpDB.user     n JOIN ON e.user_id  = n.user_id
+       |    END   NODES (Business) FROM HIVE.$yelpDB.business n JOIN ON e.business_id = n.business_id,
+       |
+       |  -- Load Facebook friendships from H2 (via JDBC) and join with Hive data
+       |  (User)-[FRIEND]->(User) FROM H2.$facebookDB.friend e
+       |    START NODES (User)     FROM HIVE.$yelpDB.user     n JOIN ON e.user1_id  = n.user_id
+       |    END   NODES (User)     FROM HIVE.$yelpDB.user     n JOIN ON e.user2_id  = n.user_id
+       |)
+     """.stripMargin
 
-    cypher(
-      s"""
-         |FROM $hiveNamespace.review2017
-         |MATCH ()-[r]->()
-         |RETURN COUNT(r)
-       """.stripMargin).show
+  // Init SQL Property Graph Data Source with DDL and the two data sources
+  val sqlPropertyGraphDataSource = SqlPropertyGraphDataSource(
+    graphDdl = GraphDdl(ddl),
+    sqlDataSourceConfigs = Map(
+      "HIVE" -> SqlDataSourceConfig.Hive,
+      "H2" -> SqlDataSourceConfig.Jdbc(
+        url = s"jdbc:h2:mem:$facebookDB.db;INIT=CREATE SCHEMA IF NOT EXISTS $facebookDB;DB_CLOSE_DELAY=30;",
+        driver = "org.h2.Driver"
+      )))
 
-    cypher(
-      s"""
-         |FROM $hiveNamespace.review2018
-         |MATCH ()-[r]->()
-         |RETURN COUNT(r)
-       """.stripMargin).show
+  sqlPropertyGraphDataSource
+    .graph(integratedGraphName)
+    .cypher("MATCH (n)-[r]->(m) RETURN n, r, m")
+    .show
 
-  def populateHiveTables(): Unit = {
-    // Create Hive tables from Yelp data
-    val yelpTables = Part1_YelpImport.loadYelpTables(inputPath)
-    spark.sql(s"DROP DATABASE IF EXISTS $yelpGraphName CASCADE")
-    spark.sql(s"CREATE DATABASE $yelpGraphName")
-    yelpTables.businessDf.write.saveAsTable(s"$yelpGraphName.business")
-    yelpTables.userDf.write.saveAsTable(s"$yelpGraphName.user")
-    yelpTables.reviewDf.write.saveAsTable(s"$yelpGraphName.review")
-    // Create Hive views
-    spark.sql(
-      s"""
-         |CREATE VIEW $yelpGraphName.reviews2017 AS
-         |SELECT *
-         |FROM $yelpGraphName.review
-         |WHERE year(date) = 2017
-     """.stripMargin)
+  def createJdbcData(): Unit = {
+    spark.read
+      .json("yelp_json/friend.json")
+      .write
+      .format("jdbc")
+      .mode("ignore")
+      .option("url", SqlDataSourceConfig.Jdbc(
+        url = s"jdbc:h2:mem:$facebookDB.db;INIT=CREATE SCHEMA IF NOT EXISTS $facebookDB;DB_CLOSE_DELAY=30;",
+        driver = "org.h2.Driver"
+      ).url)
+      .option("driver", SqlDataSourceConfig.Jdbc(
+        url = s"jdbc:h2:mem:$facebookDB.db;INIT=CREATE SCHEMA IF NOT EXISTS $facebookDB;DB_CLOSE_DELAY=30;",
+        driver = "org.h2.Driver"
+      ).driver)
+      .options(SqlDataSourceConfig.Jdbc(
+        url = s"jdbc:h2:mem:$facebookDB.db;INIT=CREATE SCHEMA IF NOT EXISTS $facebookDB;DB_CLOSE_DELAY=30;",
+        driver = "org.h2.Driver"
+      ).options)
+      .option("dbtable", s"$facebookDB.friend")
+      .save
+  }
 
-    spark.sql(
-      s"""
-         |CREATE VIEW $yelpGraphName.reviews2018 AS
-         |SELECT *
-         |FROM $yelpGraphName.review
-         |WHERE year(date) = 2018
-     """.stripMargin)
+  def createHiveData(): Unit = {
+    import spark._
+
+    sql(s"DROP DATABASE IF EXISTS $yelpDB CASCADE")
+    sql(s"CREATE DATABASE $yelpDB")
+    sql(s"USE $yelpDB")
+
+    //  sql(s"CREATE TABLE IF NOT EXISTS business ( name STRING, city STRING, state STRING ) USING HIVE")
+    //  sql(s"LOAD DATA LOCAL INPATH 'yelp_json/business.json' INTO TABLE business")
+    read.json("yelp_json/business.json").write.saveAsTable(s"$yelpDB.business")
+    read.json("yelp_json/user.json").write.saveAsTable(s"$yelpDB.user")
+    read.json("yelp_json/review.json").write.saveAsTable(s"$yelpDB.review")
   }
 }
