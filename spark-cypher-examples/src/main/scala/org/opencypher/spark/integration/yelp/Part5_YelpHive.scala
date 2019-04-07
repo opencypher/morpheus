@@ -29,8 +29,9 @@ package org.opencypher.spark.integration.yelp
 import org.apache.spark.sql.SparkSession
 import org.opencypher.graphddl.GraphDdl
 import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlPropertyGraphDataSource}
+import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
+import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Jdbc
+import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants.{defaultYelpJsonFolder, _}
 
 object Part5_YelpHive extends App {
@@ -46,7 +47,12 @@ object Part5_YelpHive extends App {
   val facebookDB = "FACEBOOK"
   val integratedGraphName = GraphName("yelp_and_facebook")
 
-  createJdbcData()
+  val jdbcConfig = SqlDataSourceConfig.Jdbc(
+    url = s"jdbc:h2:mem:$facebookDB.db;INIT=CREATE SCHEMA IF NOT EXISTS $facebookDB;DB_CLOSE_DELAY=30;",
+    driver = "org.h2.Driver"
+  )
+
+  createJdbcData(jdbcConfig)
   createHiveData()
 
   val ddl =
@@ -75,38 +81,24 @@ object Part5_YelpHive extends App {
      """.stripMargin
 
   // Init SQL Property Graph Data Source with DDL and the two data sources
-  val sqlPropertyGraphDataSource = SqlPropertyGraphDataSource(
-    graphDdl = GraphDdl(ddl),
-    sqlDataSourceConfigs = Map(
-      "HIVE" -> SqlDataSourceConfig.Hive,
-      "H2" -> SqlDataSourceConfig.Jdbc(
-        url = s"jdbc:h2:mem:$facebookDB.db;INIT=CREATE SCHEMA IF NOT EXISTS $facebookDB;DB_CLOSE_DELAY=30;",
-        driver = "org.h2.Driver"
-      )))
+  val sqlPropertyGraphDataSource = GraphSources
+    .sql(GraphDdl(ddl))
+    .withSqlDataSourceConfigs("HIVE" -> SqlDataSourceConfig.Hive, "H2" -> jdbcConfig)
 
   sqlPropertyGraphDataSource
     .graph(integratedGraphName)
     .cypher("MATCH (n)-[r]->(m) RETURN n, r, m")
     .show
 
-  def createJdbcData(): Unit = {
+  def createJdbcData(conf: Jdbc): Unit = {
     spark.read
       .json("yelp_json/friend.json")
       .write
       .format("jdbc")
       .mode("ignore")
-      .option("url", SqlDataSourceConfig.Jdbc(
-        url = s"jdbc:h2:mem:$facebookDB.db;INIT=CREATE SCHEMA IF NOT EXISTS $facebookDB;DB_CLOSE_DELAY=30;",
-        driver = "org.h2.Driver"
-      ).url)
-      .option("driver", SqlDataSourceConfig.Jdbc(
-        url = s"jdbc:h2:mem:$facebookDB.db;INIT=CREATE SCHEMA IF NOT EXISTS $facebookDB;DB_CLOSE_DELAY=30;",
-        driver = "org.h2.Driver"
-      ).driver)
-      .options(SqlDataSourceConfig.Jdbc(
-        url = s"jdbc:h2:mem:$facebookDB.db;INIT=CREATE SCHEMA IF NOT EXISTS $facebookDB;DB_CLOSE_DELAY=30;",
-        driver = "org.h2.Driver"
-      ).options)
+      .option("url", conf.url)
+      .option("driver", conf.driver)
+      .options(conf.options)
       .option("dbtable", s"$facebookDB.friend")
       .save
   }
