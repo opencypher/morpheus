@@ -53,15 +53,14 @@ object YelpConstants {
   val cityGraphName = GraphName(city.replace(" ", "").toLowerCase)
   val businessTrendsGraphName = GraphName("businessTrends")
 
-  def reviewGraphName(year: Int) = GraphName(s"review.y$year")
-  def coReviewGraphName(year: Int) = GraphName(s"coReview.y$year")
-  def friendGraphName(year: Int) = GraphName(s"friend.y$year")
+  def reviewGraphName(year: Int) = GraphName(s"$cityGraphName.review.y$year")
+  def coReviewGraphName(year: Int) = GraphName(s"$cityGraphName.coReview.y$year")
 
   def pageRankProp(year: Int) = s"pageRank$year"
   def pageRankCoReviewProp(year: Int) = s"pageRankCoReview$year"
 
-  def log(content: String, level: Int = 0) = {
+  def log(content: String, level: Int = 0): Unit = {
     val spaces = (0 to level).foldLeft("") { case (acc, _) => acc + "  " }
-    println(s"${spaces}$content")
+    println(s"$spaces$content")
   }
 }

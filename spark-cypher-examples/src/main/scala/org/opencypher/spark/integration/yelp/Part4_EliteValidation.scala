@@ -79,7 +79,7 @@ object Part4_EliteValidation extends App {
       val noneElitePageRank = neo4jCypher(
         s"""
            |MATCH (u:User)
-           |WHERE NOT $year IN u.elite AND exists(u.${pageRankCoReviewProp(year)})
+           |WHERE u.elite IS NULL OR NOT $year IN u.elite AND exists(u.${pageRankCoReviewProp(year)})
            |RETURN avg(u.${pageRankCoReviewProp(year)}) AS avg
          """.stripMargin).head("avg").cast[CypherFloat].value
 

@@ -48,12 +48,10 @@ object Part2_YelpGraphLibrary extends App {
     s"""
        |CATALOG CREATE GRAPH $cityGraphName {
        |  FROM GRAPH $fsNamespace.$yelpGraphName
-       |  MATCH (b:Business)<-[r:REVIEWS]-(user1:User),
-       |        (user1)-[f:FRIEND]->(user2:User)
+       |  MATCH (b:Business)<-[r:REVIEWS]-(user1:User)
        |  WHERE b.city = '$city'
        |  CONSTRUCT
        |   CREATE (user1)-[r]->(b)
-       |   CREATE (user1)-[f]->(user2)
        |  RETURN GRAPH
        |}
       """.stripMargin)
@@ -65,19 +63,6 @@ object Part2_YelpGraphLibrary extends App {
   log(s"create graph projections for '$city'", 1)
   (2015 to 2018) foreach { year =>
     log(s"$year", 2)
-    // Compute (:User)-[:FRIEND]->(:User) graph
-    cypher(
-      s"""
-         |CATALOG CREATE GRAPH $fsNamespace.${friendGraphName(year)} {
-         |  FROM GRAPH $cityGraphName
-         |  MATCH (user1:User)-[f:FRIEND]->(user2:User)
-         |  WHERE user1.yelping_since.year <= $year AND user2.yelping_since.year <= $year
-         |  CONSTRUCT
-         |   CREATE (user1)-[f]->(user2)
-         |  RETURN GRAPH
-         |}
-     """.stripMargin)
-
     // Compute (:User)-[:REVIEWS]->(:Business) graph
     cypher(
       s"""
