@@ -848,7 +848,7 @@ final case class Count(expr: Expr, distinct: Boolean) extends Aggregator {
 
 }
 
-final case class Max(expr: Expr)(val cypherType: CypherType) extends Aggregator {
+final case class Max(expr: Expr) extends Aggregator {
 
   override val inner: Option[Expr] = Some(expr)
 
@@ -856,9 +856,10 @@ final case class Max(expr: Expr)(val cypherType: CypherType) extends Aggregator 
 
   override def withoutType: String = s"max(${expr.withoutType})"
 
+  override val cypherType: CypherType = expr.cypherType
 }
 
-final case class Min(expr: Expr)(val cypherType: CypherType) extends Aggregator {
+final case class Min(expr: Expr) extends Aggregator {
 
   override val inner: Option[Expr] = Some(expr)
 
@@ -866,9 +867,11 @@ final case class Min(expr: Expr)(val cypherType: CypherType) extends Aggregator 
 
   override def withoutType: String = s"min(${expr.withoutType})"
 
+  override val cypherType: CypherType = expr.cypherType
+
 }
 
-final case class Sum(expr: Expr)(val cypherType: CypherType) extends Aggregator {
+final case class Sum(expr: Expr) extends Aggregator {
 
   override val inner: Option[Expr] = Some(expr)
 
@@ -876,6 +879,7 @@ final case class Sum(expr: Expr)(val cypherType: CypherType) extends Aggregator 
 
   override def withoutType: String = s"sum(${expr.withoutType})"
 
+  override val cypherType: CypherType = expr.cypherType
 }
 
 final case class Collect(expr: Expr, distinct: Boolean) extends Aggregator {
