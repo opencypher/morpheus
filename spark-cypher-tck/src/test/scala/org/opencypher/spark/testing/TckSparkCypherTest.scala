@@ -30,6 +30,7 @@ import java.io.File
 
 import org.opencypher.okapi.tck.test.Tags.{BlackList, WhiteList}
 import org.opencypher.okapi.tck.test.{ScenariosFor, TCKGraph}
+import org.opencypher.spark.api.io.util.FileSystemUtils._
 import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 import org.opencypher.tools.tck.api.CypherTCK
 import org.scalatest.Tag
@@ -85,11 +86,9 @@ class TckSparkCypherTest extends CAPSTestSuite {
     val white = scenarios.whiteList.groupBy(_.featureName).mapValues(_.size)
     val black = scenarios.blackList.groupBy(_.featureName).mapValues(_.size)
 
-    def withSource[T](s: Source)(f: Source => T) = try { f(s) } finally { s.close() }
-
-    val failingScenarios = withSource(Source.fromFile(failingBlacklist))(_.getLines().size)
-    val failingTemporalScenarios = withSource(Source.fromFile(temporalBlacklist))(_.getLines().size)
-    val failureReportingScenarios = withSource(Source.fromFile(failureReportingBlacklistFile))(_.getLines().size)
+    val failingScenarios = using(Source.fromFile(failingBlacklist))(_.getLines().size)
+    val failingTemporalScenarios = using(Source.fromFile(temporalBlacklist))(_.getLines().size)
+    val failureReportingScenarios = using(Source.fromFile(failureReportingBlacklistFile))(_.getLines().size)
 
     val allFeatures = white.keySet ++ black.keySet
     val perFeatureCoverage = allFeatures.foldLeft(Map.empty[String, Float]) {
