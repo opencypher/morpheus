@@ -185,8 +185,8 @@ object SparkSQLExprMapper {
               } else {
                 throw SparkSQLMappingException(s"Lists of different inner types are not supported (${lhInner.material}, ${rhInner.material})")
               }
-            case (CTList(inner), nonListType) if nonListType.subTypeOf(inner.material) || inner.material == CTVoid => concat(child0, array(child1))
-            case (nonListType, CTList(inner)) if inner.material.subTypeOf(nonListType) || inner.material == CTVoid => concat(array(child0), child1)
+            case (CTList(inner), nonListType) if (inner | nonListType).isSparkCompatible => concat(child0, array(child1))
+            case (nonListType, CTList(inner)) if (inner | nonListType).isSparkCompatible => concat(array(child0), child1)
             case (CTString, _) if rhsCT.subTypeOf(CTNumber) => concat(child0, child1.cast(StringType))
             case (_, CTString) if lhsCT.subTypeOf(CTNumber) => concat(child0.cast(StringType), child1)
             case (CTString, CTString) => concat(child0, child1)
