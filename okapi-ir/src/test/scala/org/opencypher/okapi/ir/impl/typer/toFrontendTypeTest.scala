@@ -40,8 +40,8 @@ class toFrontendTypeTest extends BaseTestSuite {
     CTInteger.nullable shouldBeConvertedTo frontend.CTInteger
     CTFloat shouldBeConvertedTo frontend.CTFloat
     CTFloat.nullable shouldBeConvertedTo frontend.CTFloat
-    CTUnion(CTFloat, CTInteger, CTBigDecimal) shouldBeConvertedTo frontend.CTNumber
-    CTUnion(CTFloat, CTInteger, CTBigDecimal).nullable shouldBeConvertedTo frontend.CTNumber
+    CTNumber shouldBeConvertedTo frontend.CTNumber
+    CTNumber.nullable shouldBeConvertedTo frontend.CTNumber
     CTBoolean shouldBeConvertedTo frontend.CTBoolean
     CTBoolean.nullable shouldBeConvertedTo frontend.CTBoolean
     CTString shouldBeConvertedTo frontend.CTString

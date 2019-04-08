@@ -68,7 +68,7 @@ class TypeLawsTest extends FunSuite with Matchers with ScalaCheckDrivenPropertyC
     Gen.const(CTString),
     Gen.const(CTInteger),
     Gen.const(CTFloat),
-    Gen.const(CTUnion(CTFloat, CTInteger, CTBigDecimal)),
+    Gen.const(CTNumber),
     Gen.const(CTBigDecimal),
     Gen.const(CTBoolean),
     Gen.const(CTTrue),

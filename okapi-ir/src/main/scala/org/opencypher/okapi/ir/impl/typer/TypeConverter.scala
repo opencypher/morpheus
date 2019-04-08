@@ -36,7 +36,7 @@ import scala.collection.immutable.ListSet
 object TypeConverter {
   def convert(in: frontend.CypherType): Option[CypherType] = in match {
     case frontend.CTAny           => Some(CTAny)
-    case frontend.CTNumber        => Some(CTUnion(CTFloat, CTInteger, CTBigDecimal))
+    case frontend.CTNumber        => Some(CTNumber)
     case frontend.CTInteger       => Some(CTInteger)
     case frontend.CTFloat         => Some(CTFloat)
     case frontend.CTBoolean       => Some(CTBoolean)
