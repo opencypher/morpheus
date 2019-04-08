@@ -347,24 +347,26 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   it("can convert property access") {
-    convert(prop("NODE", "age")) shouldEqual
-      EntityProperty('NODE, PropertyKey("age"))(CTInteger)
+    val convertedNodeProperty = convert(prop("NODE", "age"))
+    convertedNodeProperty.cypherType shouldEqual CTInteger
+    convertedNodeProperty shouldEqual EntityProperty('NODE, PropertyKey("age"))(CTInteger)
 
-    convert(prop(mapOf("age" -> literal(40)), "age")) shouldEqual
+    val convertedMapProperty = convert(prop(mapOf("age" -> literal(40)), "age"))
+    convertedMapProperty.cypherType shouldEqual CTInteger
+    convertedMapProperty shouldEqual
       MapProperty(MapExpression(Map("age" -> IntegerLit(40)))(CTMap(Map("age" -> CTInteger))), PropertyKey("age"))
 
-    convert(prop(mapOf("age" -> literal(40)), "age")) shouldEqual
-      MapProperty(MapExpression(Map("age" -> IntegerLit(40)))(CTMap(Map("age" -> CTInteger))), PropertyKey("age"))
+    val convertedDateProperty = convert(prop(function("date"), "year"))
+    convertedDateProperty.cypherType shouldEqual CTInteger
+    convertedDateProperty shouldEqual DateProperty(Date(None),PropertyKey("year"))
 
-    convert(prop(function("date"), "year")) shouldEqual
-      DateProperty(expr.Date(None),PropertyKey("year"))
+    val convertedLocalDateTimeProperty = convert(prop(function("localdatetime"), "year"))
+    convertedLocalDateTimeProperty.cypherType shouldEqual CTInteger
+    convertedLocalDateTimeProperty shouldEqual LocalDateTimeProperty(LocalDateTime(None),PropertyKey("year"))
 
-    convert(prop(function("localdatetime"), "year")) shouldEqual
-      LocalDateTimeProperty(expr.LocalDateTime(None),PropertyKey("year"))
-
-    convert(prop(function("duration", literal("PT1M")), "minutes")) shouldEqual
-      DurationProperty(expr.Duration(StringLit("PT1M")), PropertyKey("minutes"))
-
+    val convertedDurationProperty = convert(prop(function("duration", literal("PT1M")), "minutes"))
+    convertedDurationProperty.cypherType shouldEqual CTInteger
+    convertedDurationProperty shouldEqual DurationProperty(Duration(StringLit("PT1M")), PropertyKey("minutes"))
   }
 
   it("can convert equals") {
