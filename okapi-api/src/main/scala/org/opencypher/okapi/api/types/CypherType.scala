@@ -300,7 +300,7 @@ case class CTUnion(alternatives: Set[CypherType]) extends CypherType {
     else if (this == CTBoolean) "BOOLEAN"
     else if (this == CTEntity) "ENTITY"
     else if (isNullable) s"${material.name}?"
-    else if (subTypeOf(CTUnion(Set[CypherType](CTFloat, CTInteger, CTBigDecimal)))) "NUMBER"
+    else if (subTypeOf(CTNumber)) "NUMBER"
     else s"UNION(${alternatives.mkString(", ")})"
   }
 

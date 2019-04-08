@@ -63,7 +63,7 @@ object CypherTypeParser extends Logging {
   def STRING[_: P]: P[CTString.type] = IgnoreCase("STRING").map(_ => CTString)
   def INTEGER[_: P]: P[CTInteger.type] = IgnoreCase("INTEGER").map(_ => CTInteger)
   def FLOAT[_: P]: P[CTFloat.type] = IgnoreCase("FLOAT").map(_ => CTFloat)
-  def NUMBER[_: P]: P[CTUnion] = IgnoreCase("NUMBER").map(_ => CTUnion(Set[CypherType](CTFloat, CTInteger, CTBigDecimal)))
+  def NUMBER[_: P]: P[CTUnion] = IgnoreCase("NUMBER").map(_ => CTNumber)
   def BOOLEAN[_: P]: P[CTBoolean.type] = IgnoreCase("BOOLEAN").map(_ => CTBoolean)
   def ANY[_: P]: P[CypherType] = IgnoreCase("ANY?").map(_ => CTAny)
   def ANYMATERIAL[_: P]: P[CTAnyMaterial.type] = IgnoreCase("ANY").map(_ => CTAnyMaterial)
