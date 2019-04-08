@@ -256,7 +256,7 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTAnyMaterial superTypeOf CTFloat shouldBe true
     CTAnyMaterial superTypeOf CTNumber shouldBe true
     CTAnyMaterial superTypeOf CTBoolean shouldBe true
-    CTAnyMaterial superTypeOf CTMap(Map()) shouldBe true
+    CTAnyMaterial superTypeOf CTMap() shouldBe true
     CTAnyMaterial superTypeOf CTNode shouldBe true
     CTAnyMaterial superTypeOf CTRelationship shouldBe true
     CTAnyMaterial superTypeOf CTPath shouldBe true
@@ -269,7 +269,7 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTVoid subTypeOf CTFloat shouldBe true
     CTVoid subTypeOf CTNumber shouldBe true
     CTVoid subTypeOf CTBoolean shouldBe true
-    CTVoid subTypeOf CTMap(Map()) shouldBe true
+    CTVoid subTypeOf CTMap() shouldBe true
     CTVoid subTypeOf CTNode shouldBe true
     CTVoid subTypeOf CTRelationship shouldBe true
     CTVoid subTypeOf CTPath shouldBe true
@@ -318,12 +318,9 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTBigDecimal(1, 1) join CTBigDecimal(1, 1) shouldBe CTBigDecimal(1, 1)
     CTBigDecimal(2, 1) join CTBigDecimal(1, 1) shouldBe CTBigDecimal(2, 1)
     CTBigDecimal(1, 1) join CTBigDecimal(2, 2) shouldBe CTBigDecimal(2, 2)
-
     CTBigDecimal(2, 1) join CTBigDecimal(2, 2) shouldBe CTBigDecimal(3, 2)
     CTBigDecimal(2, 2) join CTBigDecimal(3, 2) shouldBe CTBigDecimal(3, 2)
-
     CTBigDecimal(2, 2) join CTBigDecimal(2, 1) shouldBe CTBigDecimal(3, 2)
-
     CTBigDecimal(10, 2) join CTBigDecimal(4, 3) shouldBe CTBigDecimal(11, 3)
   }
 
@@ -365,6 +362,10 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTInteger meet CTVoid shouldBe CTVoid
 
     CTNode meet CTNode("Person") shouldBe CTNode("Person")
+
+    CTMap("age" -> CTInteger) meet CTMap() shouldBe CTMap("age" -> CTInteger.nullable)
+    CTMap() meet CTMap("age" -> CTInteger)  shouldBe CTMap("age" -> CTInteger.nullable)
+    CTMap("age" -> CTInteger) meet CTMap shouldBe CTMap("age" -> CTInteger)
   }
 
   it("meet with labels and types") {

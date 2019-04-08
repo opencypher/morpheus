@@ -76,8 +76,8 @@ trait CypherType {
           val intersectedProps = (pl.keys ++ pr.keys).map { k =>
             val ct = pl.get(k) -> pr.get(k) match {
               case (Some(tl), Some(tr)) => tl | tr
-              case (Some(tl), None) => tl
-              case (None, Some(tr)) => tr
+              case (Some(tl), None) => tl.nullable
+              case (None, Some(tr)) => tr.nullable
               case (None, None) => CTVoid
             }
             k -> ct
@@ -196,6 +196,9 @@ object CTMap extends CTMap(Map.empty) {
   override def equals(obj: Any): Boolean = obj.isInstanceOf[CTMap.type]
 
   override def canEqual(that: Any): Boolean = that.isInstanceOf[CTMap.type]
+
+  def apply(propertyTypes: (String, CypherType)*): CTMap = CTMap(propertyTypes.toMap)
+
 }
 
 case class CTMap(properties: Map[String, CypherType] = Map.empty) extends CypherType {
