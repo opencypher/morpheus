@@ -52,6 +52,38 @@ case class AcceptanceTestGenerator(
   private val escapeStringMarks = "\"\"\""
   private val packageNames = Map("white" -> "whiteList", "black" -> "blackList")
 
+  //generates test-cases for given scenario names
+  def generateGivenScenarios(outDir: File, resFiles: Array[File], keyWords: Array[String] = Array.empty): Unit = {
+    setUpDirectories(outDir)
+    val scenarios = getScenarios(resFiles)
+    val wantedWhiteScenarios = scenarios.whiteList.filter(scen =>
+      keyWords.map(keyWord =>
+        scen.name
+          .contains(keyWord))
+        .reduce(_ || _))
+    val wantedBlackScenarios = scenarios.blackList.filter(scen =>
+      keyWords.map(keyWord =>
+        scen.name
+          .contains(keyWord))
+        .reduce(_ || _))
+    generateClassFile("specialWhiteCases", wantedWhiteScenarios, black = false, outDir)
+    generateClassFile("specialBlackCases", wantedBlackScenarios, black = true, outDir)
+  }
+
+  def generateAllScenarios(outDir: File, resFiles: Array[File]): Unit = {
+    setUpDirectories(outDir)
+    val scenarios = getScenarios(resFiles)
+    val blackFeatures = scenarios.blackList.groupBy(_.featureName)
+    val whiteFeatures = scenarios.whiteList.groupBy(_.featureName)
+    whiteFeatures.map { case (featureName, featureScenarios) =>
+      generateClassFile(featureName, featureScenarios, black = false, outDir)
+    }
+
+    blackFeatures.map { case (featureName, featureScenarios) =>
+      generateClassFile(featureName, featureScenarios, black = true, outDir)
+    }
+  }
+
   private def generateClassFile(className: String, scenarios: Seq[Scenario], black: Boolean, outDir: File) = {
     val packageName = if (black) packageNames.get("black") else packageNames.get("white")
 
@@ -118,9 +150,31 @@ case class AcceptanceTestGenerator(
     file.createNewFile()
   }
 
-  private def alignString(query: String, tabsNumber: Int = 3): String = {
-    val tabs = (0 to tabsNumber).foldLeft("") { case (acc, _) => acc + "\t"}
-    query.replaceAllLiterally("\n", s"\n$tabs")
+  //checks if package directories exists clears them or creates new
+  private def setUpDirectories(outDir: File): Unit = {
+    if (outDir.exists() || outDir.mkdir())
+      packageNames.values.map(packageName => {
+        val directory = new File(outDir + "/" + packageName)
+        if (directory.exists()) {
+          val files = directory.listFiles()
+          files.map(_.delete())
+        }
+        else {
+          directory.mkdir()
+        }
+        val gitIgnoreFile = new File(outDir + "/" + packageName + "/.gitignore")
+        val writer = new PrintWriter(gitIgnoreFile)
+        writer.println("*")
+        writer.close()
+        gitIgnoreFile.createNewFile()
+      }
+      )
+  }
+
+  private def getScenarios(resFiles: Array[File]): ScenariosFor = {
+    //todo: only take .txt or files with no suffix?
+    val resFileNames = resFiles.map(_.getPath).filterNot(name => name.contains(".feature") || name.contains(".scala"))
+    ScenariosFor(resFileNames: _*)
   }
 
   private def stepsToString(steps: List[(Step, Int)]): String = {
@@ -187,7 +241,6 @@ case class AcceptanceTestGenerator(
     }.filter(_.nonEmpty).mkString(s"\n    ")
   }
 
-
   private def generateTest(scenario: Scenario, black: Boolean): String = {
     val (initSteps, execSteps) = scenario.steps.partition {
       case Execute(_, InitQuery, _) => true
@@ -223,7 +276,7 @@ case class AcceptanceTestGenerator(
     if (black)
       s"""  it("${scenario.name}") {
          |    Try({
-         |     ${alignString(testString,1)}
+         |     ${alignString(testString, 1)}
          |    }) match{
          |      case Success(_) =>
          |        throw new RuntimeException("${if (expectsError) "False-positive as probably wrong error" else "A blacklisted scenario works"}")
@@ -238,63 +291,8 @@ case class AcceptanceTestGenerator(
       """.stripMargin
   }
 
-  //checks if package directories exists clears them or creates new
-  private def setUpDirectories(outDir: File): Unit = {
-    if (outDir.exists() || outDir.mkdir())
-      packageNames.values.map(packageName => {
-        val directory = new File(outDir + "/" + packageName)
-        if (directory.exists()) {
-          val files = directory.listFiles()
-          files.map(_.delete())
-        }
-        else {
-          directory.mkdir()
-        }
-        val gitIgnoreFile = new File(outDir + "/" + packageName + "/.gitignore")
-        val writer = new PrintWriter(gitIgnoreFile)
-        writer.println("*")
-        writer.close()
-        gitIgnoreFile.createNewFile()
-      }
-      )
+  private def alignString(query: String, tabsNumber: Int = 3): String = {
+    val tabs = (0 to tabsNumber).foldLeft("") { case (acc, _) => acc + "\t" }
+    query.replaceAllLiterally("\n", s"\n$tabs")
   }
-
-  private def getScenarios(resFiles: Array[File]): ScenariosFor = {
-    //todo: only take .txt or files with no suffix?
-    val resFileNames = resFiles.map(_.getPath).filterNot(name => name.contains(".feature") || name.contains(".scala"))
-    ScenariosFor(resFileNames: _*)
-  }
-
-  //generates test-cases for given scenario names
-  def generateGivenScenarios(outDir: File, resFiles: Array[File], keyWords: Array[String] = Array.empty): Unit = {
-    setUpDirectories(outDir)
-    val scenarios = getScenarios(resFiles)
-    val wantedWhiteScenarios = scenarios.whiteList.filter(scen =>
-      keyWords.map(keyWord =>
-        scen.name
-          .contains(keyWord))
-        .reduce(_ || _))
-    val wantedBlackScenarios = scenarios.blackList.filter(scen =>
-      keyWords.map(keyWord =>
-        scen.name
-          .contains(keyWord))
-        .reduce(_ || _))
-    generateClassFile("specialWhiteCases", wantedWhiteScenarios, black = false, outDir)
-    generateClassFile("specialBlackCases", wantedBlackScenarios, black = true, outDir)
-  }
-
-  def generateAllScenarios(outDir: File, resFiles: Array[File]): Unit = {
-    setUpDirectories(outDir)
-    val scenarios = getScenarios(resFiles)
-    val blackFeatures = scenarios.blackList.groupBy(_.featureName)
-    val whiteFeatures = scenarios.whiteList.groupBy(_.featureName)
-    whiteFeatures.map { case (featureName, featureScenarios) =>
-      generateClassFile(featureName, featureScenarios, black = false, outDir)
-    }
-
-    blackFeatures.map { case (featureName, featureScenarios) =>
-      generateClassFile(featureName, featureScenarios, black = true, outDir)
-    }
-  }
-
 }
