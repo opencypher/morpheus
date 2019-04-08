@@ -180,7 +180,7 @@ object SparkSQLExprMapper {
           val rhsCT = rhs.cypherType.material
           lhsCT -> rhsCT match {
             case (CTList(lhInner), CTList(rhInner)) =>
-              if (lhInner.material == rhInner.material || lhInner == CTVoid || rhInner == CTVoid) {
+              if ((lhInner | rhInner).isSparkCompatible) {
                 concat(child0, child1)
               } else {
                 throw SparkSQLMappingException(s"Lists of different inner types are not supported (${lhInner.material}, ${rhInner.material})")
