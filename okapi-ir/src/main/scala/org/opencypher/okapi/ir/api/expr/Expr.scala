@@ -245,11 +245,9 @@ final case class Ands(_exprs: List[Expr]) extends Expr {
   require(_exprs.forall(!_.isInstanceOf[Ands]), "Ands need to be flattened")
 
   override val cypherType: CypherType = {
-    if (children.exists(_.cypherType.isNullable)) {
-      CTBoolean.nullable
-    } else {
-      CTBoolean
-    }
+    val childTypes = children.map(_.cypherType)
+    if (childTypes.contains(CTFalse)) CTFalse
+    else CTUnion(childTypes: _*)
   }
 
   override def nullInNullOut: Boolean = false
@@ -275,11 +273,9 @@ final case class Ors(_exprs: List[Expr]) extends Expr {
   require(_exprs.forall(!_.isInstanceOf[Ors]), "Ors need to be flattened")
 
   override val cypherType: CypherType = {
-    if (children.exists(_.cypherType.isNullable)) {
-      CTBoolean.nullable
-    } else {
-      CTBoolean
-    }
+    val childTypes = children.map(_.cypherType)
+    if (childTypes.contains(CTTrue)) CTTrue
+    else CTUnion(childTypes: _*)
   }
 
   override def nullInNullOut: Boolean = false
