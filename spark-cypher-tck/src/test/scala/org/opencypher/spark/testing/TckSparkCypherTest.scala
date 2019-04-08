@@ -108,8 +108,11 @@ class TckSparkCypherTest extends CAPSTestSuite {
     val readOnlyCoverage = scenarios.whiteList.size / readOnlyScenarios
     val smallReadOnlyCoverage = scenarios.whiteList.size / smallReadOnlyScenarios
 
-    val featureCoverageReport =
-      perFeatureCoverage.map{ case (feature, coverage) => s" $feature: $coverage%" }.mkString("\n")
+    val featureCoverageReport = perFeatureCoverage.toSeq
+      .sortBy { case (_, coverage) => coverage }
+      .reverse
+      .map{ case (feature, coverage) => s" $feature: $coverage%" }
+      .mkString("\n")
 
     val report = s"""
       |TCK Coverage
