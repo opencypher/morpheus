@@ -120,37 +120,37 @@ final class ExpressionConverter(context: IRBuilderContext) {
       ListLit(elements)(CTList(elementType))
 
     case ast.Property(m, ast.PropertyKeyName(name)) =>
-      val entity = convert(m)
+      val owner = convert(m)
       val key = PropertyKey(name)
-      entity.cypherType.material match {
+      owner.cypherType.material match {
         case CTVoid => NullLit
         // This means that the node can have any possible label combination, as the user did not specify any constraints
-        case n: CTNode =>
+        case CTNode =>
           val propertyType = schema.allCombinations
             .map(l => schema.nodePropertyKeyType(l, name).getOrElse(CTNull))
             .foldLeft(CTVoid: CypherType)(_ join _)
           // User specified label constraints - we can use those for type inference
-          EntityProperty(entity, key)(propertyType)
+          EntityProperty(owner, key)(propertyType)
         case CTNode(labels, None) =>
           val propertyType = schema.nodePropertyKeyType(labels, name).getOrElse(CTNull)
-          EntityProperty(entity, key)(propertyType)
+          EntityProperty(owner, key)(propertyType)
         case CTNode(labels, Some(qgn)) =>
           val propertyType = context.queryLocalCatalog.schema(qgn).nodePropertyKeyType(labels, name).getOrElse(CTNull)
-          EntityProperty(entity, key)(propertyType)
+          EntityProperty(owner, key)(propertyType)
         case CTRelationship(types, None) =>
           val propertyType = schema.relationshipPropertyKeyType(types, name).getOrElse(CTNull)
-          EntityProperty(entity, key)(propertyType)
+          EntityProperty(owner, key)(propertyType)
         case CTRelationship(types, Some(qgn)) =>
           val propertyType = context.queryLocalCatalog.schema(qgn).relationshipPropertyKeyType(types, name).getOrElse(CTNull)
-          EntityProperty(entity, key)(propertyType)
+          EntityProperty(owner, key)(propertyType)
         case _: CTMap =>
-          MapProperty(entity, key)
+          MapProperty(owner, key)
         case CTDate =>
-          DateProperty(entity, key)
+          DateProperty(owner, key)
         case CTLocalDateTime =>
-          LocalDateTimeProperty(entity, key)
+          LocalDateTimeProperty(owner, key)
         case CTDuration =>
-          DurationProperty(entity, key)
+          DurationProperty(owner, key)
         case _ => throw InvalidContainerAccess(e)
       }
 

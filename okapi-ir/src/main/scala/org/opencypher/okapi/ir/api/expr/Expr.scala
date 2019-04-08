@@ -434,65 +434,57 @@ final case class In(lhs: Expr, rhs: Expr) extends BinaryPredicate {
 
 sealed trait Property extends Expr {
 
-  def entity: Expr
+  def propertyOwner: Expr
 
   def key: PropertyKey
 
-  override def owner: Option[Var] = entity match {
+  override def owner: Option[Var] = propertyOwner match {
     case v: Var => Some(v)
     case _ => None
   }
 
-  override def withoutType: String = s"${entity.withoutType}.${key.name}"
+  override def withoutType: String = s"${propertyOwner.withoutType}.${key.name}"
 
 }
 
-final case class EntityProperty(entity: Expr, key: PropertyKey)(val cypherType: CypherType) extends Property {
+final case class EntityProperty(propertyOwner: Expr, key: PropertyKey)(val cypherType: CypherType) extends Property {
 
   override def withOwner(v: Var): EntityProperty = EntityProperty(v, key)(cypherType)
 
 }
 
-final case class MapProperty(map: Expr, key: PropertyKey) extends Property {
+final case class MapProperty(propertyOwner: Expr, key: PropertyKey) extends Property {
 
-  override def entity: Expr = map
-
-  val cypherType: CypherType = map.cypherType match {
+  val cypherType: CypherType = propertyOwner.cypherType match {
     case CTMap(inner) =>
-      inner.getOrElse(key.name, CTVoid)
+      inner.getOrElse(key.name, CTNull)
     case other =>
-      throw IllegalArgumentException(s"Map property needs to be defined on a map. `$map` is of type `$other`.")
+      throw IllegalArgumentException(s"Map property needs to be defined on a map. `$propertyOwner` is of type `$other`.")
   }
 
   override def withOwner(v: Var): MapProperty = MapProperty(v, key)
 
 }
 
-final case class DateProperty(date: Expr, key: PropertyKey) extends Property {
+final case class DateProperty(propertyOwner: Expr, key: PropertyKey) extends Property {
 
-  override def entity: Expr = date
-
-  val cypherType: CypherType = CTInteger.asNullableAs(date.cypherType)
+  val cypherType: CypherType = CTInteger.asNullableAs(propertyOwner.cypherType)
 
   override def withOwner(v: Var): DateProperty = DateProperty(v, key)
 
 }
 
-final case class LocalDateTimeProperty(localDateTime: Expr, key: PropertyKey) extends Property {
+final case class LocalDateTimeProperty(propertyOwner: Expr, key: PropertyKey) extends Property {
 
-  override def entity: Expr = localDateTime
-
-  val cypherType: CypherType = CTInteger.asNullableAs(localDateTime.cypherType)
+  val cypherType: CypherType = CTInteger.asNullableAs(propertyOwner.cypherType)
 
   override def withOwner(v: Var): LocalDateTimeProperty = LocalDateTimeProperty(v, key)
 
 }
 
-final case class DurationProperty(duration: Expr, key: PropertyKey) extends Property {
+final case class DurationProperty(propertyOwner: Expr, key: PropertyKey) extends Property {
 
-  override def entity: Expr = duration
-
-  val cypherType: CypherType = CTInteger.asNullableAs(duration.cypherType)
+  val cypherType: CypherType = CTInteger.asNullableAs(propertyOwner.cypherType)
 
   override def withOwner(v: Var): DurationProperty = DurationProperty(v, key)
 
