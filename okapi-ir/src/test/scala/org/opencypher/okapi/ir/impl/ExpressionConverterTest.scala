@@ -349,6 +349,22 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   it("can convert property access") {
     convert(prop("NODE", "age")) shouldEqual
       EntityProperty('NODE, PropertyKey("age"))(CTInteger)
+
+    convert(prop(mapOf("age" -> literal(40)), "age")) shouldEqual
+      MapProperty(MapExpression(Map("age" -> IntegerLit(40)))(CTMap(Map("age" -> CTInteger))), PropertyKey("age"))
+
+    convert(prop(mapOf("age" -> literal(40)), "age")) shouldEqual
+      MapProperty(MapExpression(Map("age" -> IntegerLit(40)))(CTMap(Map("age" -> CTInteger))), PropertyKey("age"))
+
+    convert(prop(function("date"), "year")) shouldEqual
+      DateProperty(expr.Date(None),PropertyKey("year"))
+
+    convert(prop(function("localdatetime"), "year")) shouldEqual
+      LocalDateTimeProperty(expr.LocalDateTime(None),PropertyKey("year"))
+
+    convert(prop(function("duration", literal("PT1M")), "minutes")) shouldEqual
+      DurationProperty(expr.Duration(StringLit("PT1M")), PropertyKey("minutes"))
+
   }
 
   it("can convert equals") {
@@ -382,8 +398,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     convert(given) shouldEqual(
       Ands(
         HasLabel('NODE, Label("Person")),
-        Equals(EntityProperty('NODE, PropertyKey("name"))(CTAny), StringLit("Mats"))), CTBoolean
-        Equals(Property('NODE, PropertyKey("name"))(CTAnyMaterial), StringLit("Mats"))), CTBoolean
+        Equals(EntityProperty('NODE, PropertyKey("name"))(CTAnyMaterial), StringLit("Mats"))), CTBoolean
     )
   }
 
