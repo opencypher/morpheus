@@ -915,13 +915,15 @@ final case class Duration(expr: Expr) extends UnaryFunctionExpr {
 
 }
 
-sealed abstract class BoolLit(val v: Boolean) extends Lit[Boolean] {
-  override val cypherType: CypherType = CTBoolean
+sealed abstract class BoolLit(val v: Boolean) extends Lit[Boolean]
+
+case object TrueLit extends BoolLit(true) {
+  override val cypherType: CypherType = CTTrue
 }
 
-case object TrueLit extends BoolLit(true)
-
-case object FalseLit extends BoolLit(false)
+case object FalseLit extends BoolLit(false) {
+  override val cypherType: CypherType = CTFalse
+}
 
 case object NullLit extends Lit[Null] {
 
