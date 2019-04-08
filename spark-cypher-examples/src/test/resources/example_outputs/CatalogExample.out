@@ -1,0 +1,71 @@
+*** Graph names in File-based PGDS ***
+products
+*** Graph names in catalog ***
+session.emptyGraph
+CSV.products
+╔═════════════════════════════════════════════════════════════════════════════════╗
+║ n                                                                               ║
+╠═════════════════════════════════════════════════════════════════════════════════╣
+║ (:`Product` {`category`: 'Book', `rank`: 246, `title`: '1984'})                 ║
+║ (:`Product` {`category`: 'Book', `rank`: 842, `title`: 'Cryptonomicon'})        ║
+║ (:`Product` {`category`: 'Book', `rank`: 950, `title`: 'The Eye of the World'}) ║
+║ (:`Product` {`category`: 'Book', `rank`: 478, `title`: 'The Circle'})           ║
+║ (:`Product` {`category`: 'DVD', `rank`: 102, `title`: 'Terminator 2'})          ║
+║ (:`Product` {`category`: 'DVD', `rank`: 820, `title`: 'Die Hard 3'})            ║
+║ (:`Product` {`category`: 'DVD', `rank`: 152, `title`: 'Matrix'})                ║
+║ (:`Product` {`category`: 'DVD', `rank`: 927, `title`: 'Iron Man'})              ║
+║ (:`Product` {`category`: 'Video', `rank`: 832, `title`: 'Jurassic Park'})       ║
+║ (:`Product` {`category`: 'Video', `rank`: 112, `title`: 'Das Boot'})            ║
+║ (:`Product` {`category`: 'Video', `rank`: 862, `title`: 'Sharknado'})           ║
+║ (:`Product` {`category`: 'Video', `rank`: 347, `title`: 'Turtles'})             ║
+║ (:`Product` {`category`: 'Music', `rank`: 886, `title`: 'Shakira'})             ║
+║ (:`Product` {`category`: 'Music', `rank`: 454, `title`: 'Roland Kaiser'})       ║
+║ (:`Product` {`category`: 'Music', `rank`: 743, `title`: 'Snap'})                ║
+║ (:`Product` {`category`: 'Music', `rank`: 623, `title`: 'Dr.Alban'})            ║
+║ (:`Customer` {`name`: 'Alice'})                                                 ║
+║ (:`Customer` {`name`: 'Bob'})                                                   ║
+║ (:`Customer` {`name`: 'Eve'})                                                   ║
+║ (:`Customer` {`name`: 'Carol'})                                                 ║
+║ (:`Customer` {`name`: 'Carl'})                                                  ║
+║ (:`Customer` {`name`: 'Dave'})                                                  ║
+║ (:`Customer` {`name`: 'Mallory'})                                               ║
+║ (:`Customer` {`name`: 'Trudy'})                                                 ║
+║ (:`Customer` {`name`: 'Trent'})                                                 ║
+║ (:`Customer` {`name`: 'Oscar'})                                                 ║
+║ (:`Customer` {`name`: 'Victor'})                                                ║
+║ (:`Customer` {`name`: 'Peggy'})                                                 ║
+╚═════════════════════════════════════════════════════════════════════════════════╝
+(28 rows)
+╔═════════════════════════════════════════════════════════════════════════════════╗
+║ n                                                                               ║
+╠═════════════════════════════════════════════════════════════════════════════════╣
+║ (:`Product` {`category`: 'Book', `rank`: 246, `title`: '1984'})                 ║
+║ (:`Product` {`category`: 'Book', `rank`: 842, `title`: 'Cryptonomicon'})        ║
+║ (:`Product` {`category`: 'Book', `rank`: 950, `title`: 'The Eye of the World'}) ║
+║ (:`Product` {`category`: 'Book', `rank`: 478, `title`: 'The Circle'})           ║
+║ (:`Product` {`category`: 'DVD', `rank`: 102, `title`: 'Terminator 2'})          ║
+║ (:`Product` {`category`: 'DVD', `rank`: 820, `title`: 'Die Hard 3'})            ║
+║ (:`Product` {`category`: 'DVD', `rank`: 152, `title`: 'Matrix'})                ║
+║ (:`Product` {`category`: 'DVD', `rank`: 927, `title`: 'Iron Man'})              ║
+║ (:`Product` {`category`: 'Video', `rank`: 832, `title`: 'Jurassic Park'})       ║
+║ (:`Product` {`category`: 'Video', `rank`: 112, `title`: 'Das Boot'})            ║
+║ (:`Product` {`category`: 'Video', `rank`: 862, `title`: 'Sharknado'})           ║
+║ (:`Product` {`category`: 'Video', `rank`: 347, `title`: 'Turtles'})             ║
+║ (:`Product` {`category`: 'Music', `rank`: 886, `title`: 'Shakira'})             ║
+║ (:`Product` {`category`: 'Music', `rank`: 454, `title`: 'Roland Kaiser'})       ║
+║ (:`Product` {`category`: 'Music', `rank`: 743, `title`: 'Snap'})                ║
+║ (:`Product` {`category`: 'Music', `rank`: 623, `title`: 'Dr.Alban'})            ║
+║ (:`Customer` {`name`: 'Alice'})                                                 ║
+║ (:`Customer` {`name`: 'Bob'})                                                   ║
+║ (:`Customer` {`name`: 'Eve'})                                                   ║
+║ (:`Customer` {`name`: 'Carol'})                                                 ║
+║ (:`Customer` {`name`: 'Carl'})                                                  ║
+║ (:`Customer` {`name`: 'Dave'})                                                  ║
+║ (:`Customer` {`name`: 'Mallory'})                                               ║
+║ (:`Customer` {`name`: 'Trudy'})                                                 ║
+║ (:`Customer` {`name`: 'Trent'})                                                 ║
+║ (:`Customer` {`name`: 'Oscar'})                                                 ║
+║ (:`Customer` {`name`: 'Victor'})                                                ║
+║ (:`Customer` {`name`: 'Peggy'})                                                 ║
+╚═════════════════════════════════════════════════════════════════════════════════╝
+(28 rows)
