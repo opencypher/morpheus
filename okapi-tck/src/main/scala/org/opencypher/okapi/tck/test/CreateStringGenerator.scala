@@ -94,7 +94,8 @@ object CreateStringGenerator {
   }
 
   def diffToCreateString(diff : Diff): String = {
-    s"Diff(Map(${diff.v.map{case (s,i) => escapeString(s) -> i}.mkString(",")}))"
+    val diffs = diff.v.map{case (s,i) => escapeString(s) -> i}
+    s"Diff(Map(${diffs.mkString(",")}}))"
   }
 
   def escapeString(s: String): String = {

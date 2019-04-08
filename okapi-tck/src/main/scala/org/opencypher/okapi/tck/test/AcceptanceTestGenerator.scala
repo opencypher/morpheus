@@ -31,7 +31,6 @@ import java.io.{File, PrintWriter}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.tck.test.CreateStringGenerator._
 import org.opencypher.tools.tck.api._
-import org.scalatest.prop.TableFor1
 
 import scala.collection.mutable
 
@@ -51,79 +50,77 @@ case class AcceptanceTestGenerator(
   addGitIgnore: Boolean
 ) {
   private val escapeStringMarks = "\"\"\""
-  private val tabs = "\t\t"
   private val packageNames = Map("white" -> "whiteList", "black" -> "blackList")
 
-  private def generateClassFile(className: String, scenarios: TableFor1[Scenario], black: Boolean, outDir: File) = {
+  private def generateClassFile(className: String, scenarios: Seq[Scenario], black: Boolean, outDir: File) = {
     val packageName = if (black) packageNames.get("black") else packageNames.get("white")
-    //renaming to allow generalization of the rest of the code (renaming via Map?
-    val classHeader =
-      s"""|/*
-          | * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
-          | *
-          | * Licensed under the Apache License, Version 2.0 (the "License");
-          | * you may not use this file except in compliance with the License.
-          | * You may obtain a copy of the License at
-          | *
-          | *     http://www.apache.org/licenses/LICENSE-2.0
-          | *
-          | * Unless required by applicable law or agreed to in writing, software
-          | * distributed under the License is distributed on an "AS IS" BASIS,
-          | * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-          | * See the License for the specific language governing permissions and
-          | * limitations under the License.
-          | *
-          | * Attribution Notice under the terms of the Apache License 2.0
-          | *
-          | * This work was created by the collective efforts of the openCypher community.
-          | * Without limiting the terms of Section 6, any Derivative Work that is not
-          | * approved by the public consensus process of the openCypher Implementers Group
-          | * should not be described as “Cypher” (and Cypher® is a registered trademark of
-          | * Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
-          | * proposals for change that have been documented or implemented should only be
-          | * described as "implementation extensions to Cypher" or as "proposed changes to
-          | * Cypher that are not yet approved by the openCypher community".
-          | */
-          |package ${specificNames.targetPackage}.${packageName.get}
-          |
-          |import org.scalatest.junit.JUnitRunner
-          |import org.junit.runner.RunWith
-          |import scala.util.{Failure, Success, Try}
-          |import org.opencypher.okapi.api.value.CypherValue._
-          |import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
-          |import org.opencypher.okapi.tck.test.CypherToTCKConverter._
-          |import org.opencypher.okapi.tck.test.TCKGraph
-          |import org.opencypher.tools.tck.SideEffectOps.Diff
-          |import org.opencypher.tools.tck.api.CypherValueRecords
-          |import org.opencypher.tools.tck.SideEffectOps
-          |import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, CypherString => TCKCypherString, CypherOrderedList => TCKCypherOrderedList,
-          |           CypherNode => TCKCypherNode, CypherRelationship => TCKCypherRelationship, Connection, Forward => TCKForward, Backward => TCKBackward,
-          |           CypherInteger => TCKCypherInteger, CypherFloat => TCKCypherFloat, CypherBoolean => TCKCypherBoolean, CypherProperty => TCKCypherProperty,
-          |           CypherPropertyMap => TCKCypherPropertyMap, CypherNull => TCKCypherNull, CypherPath => TCKCypherPath}
-          |${specificImports.mkString("\n")}
-          |
-          |@RunWith(classOf[JUnitRunner])
-          |class $className extends ${specificNames.TestSuite}{""".stripMargin
 
-
-    val testCases = scenarios.filterNot(_.name.equals("Failing on incorrect unicode literal"))
-      .map(scenario => generateTest(scenario, black)).mkString("\n")
-
-    val file = new File(s"$outDir/${packageName.get}/$className.scala")
+    val testCases = scenarios
+      .filterNot(_.name.equals("Failing on incorrect unicode literal")) //produced test couldn't be compiled
+      .map(scenario => generateTest(scenario, black))
+      .mkString("\n")
 
     val fileString =
-      s"""$classHeader
+      s"""/*
+         | * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
+         | *
+         | * Licensed under the Apache License, Version 2.0 (the "License");
+         | * you may not use this file except in compliance with the License.
+         | * You may obtain a copy of the License at
+         | *
+         | *     http://www.apache.org/licenses/LICENSE-2.0
+         | *
+         | * Unless required by applicable law or agreed to in writing, software
+         | * distributed under the License is distributed on an "AS IS" BASIS,
+         | * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+         | * See the License for the specific language governing permissions and
+         | * limitations under the License.
+         | *
+         | * Attribution Notice under the terms of the Apache License 2.0
+         | *
+         | * This work was created by the collective efforts of the openCypher community.
+         | * Without limiting the terms of Section 6, any Derivative Work that is not
+         | * approved by the public consensus process of the openCypher Implementers Group
+         | * should not be described as “Cypher” (and Cypher® is a registered trademark of
+         | * Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
+         | * proposals for change that have been documented or implemented should only be
+         | * described as "implementation extensions to Cypher" or as "proposed changes to
+         | * Cypher that are not yet approved by the openCypher community".
+         | */
+         |package ${specificNames.targetPackage}.${packageName.get}
+         |
+         |import org.scalatest.junit.JUnitRunner
+         |import org.junit.runner.RunWith
+         |import scala.util.{Failure, Success, Try}
+         |import org.opencypher.okapi.api.value.CypherValue._
+         |import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
+         |import org.opencypher.okapi.tck.test.CypherToTCKConverter._
+         |import org.opencypher.okapi.tck.test.TCKGraph
+         |import org.opencypher.tools.tck.SideEffectOps.Diff
+         |import org.opencypher.tools.tck.api.CypherValueRecords
+         |import org.opencypher.tools.tck.SideEffectOps
+         |import org.opencypher.tools.tck.values.{CypherValue => TCKCypherValue, CypherString => TCKCypherString, CypherOrderedList => TCKCypherOrderedList,
+         |           CypherNode => TCKCypherNode, CypherRelationship => TCKCypherRelationship, Connection, Forward => TCKForward, Backward => TCKBackward,
+         |           CypherInteger => TCKCypherInteger, CypherFloat => TCKCypherFloat, CypherBoolean => TCKCypherBoolean, CypherProperty => TCKCypherProperty,
+         |           CypherPropertyMap => TCKCypherPropertyMap, CypherNull => TCKCypherNull, CypherPath => TCKCypherPath}
+         |${specificImports.mkString("\n")}
+         |
+         |@RunWith(classOf[JUnitRunner])
+         |class $className extends ${specificNames.TestSuite}{
          |
          |$testCases
          |}""".stripMargin
+
+    val file = new File(s"$outDir/${packageName.get}/$className.scala")
     val out = new PrintWriter(file)
     out.print(fileString)
     out.close()
     file.createNewFile()
   }
 
-  private def alignQuery(query: String): String = {
-    query.replaceAllLiterally("\n", s"\n      ")
+  private def alignString(query: String, tabsNumber: Int = 3): String = {
+    val tabs = (0 to tabsNumber).foldLeft("") { case (acc, _) => acc + "\t"}
+    query.replaceAllLiterally("\n", s"\n$tabs")
   }
 
   private def stepsToString(steps: List[(Step, Int)]): String = {
@@ -140,7 +137,11 @@ case class AcceptanceTestGenerator(
             contextExecQueryStack.push(nr)
             val parameters = if (contextParameterStepNrs.nonEmpty) s", parameter${contextParameterStepNrs.head}" else ""
             s"""
-               |    lazy val result$nr = graph.cypher($escapeStringMarks${alignQuery(query)}$escapeStringMarks$parameters)
+               |    lazy val result$nr = graph.cypher(
+               |      $escapeStringMarks
+               |        ${alignString(query)}
+               |      $escapeStringMarks$parameters
+               |    )
            """
           case _ =>
             //currently no TCK-Tests with side effect queries
@@ -153,7 +154,8 @@ case class AcceptanceTestGenerator(
         s"""
            |    val result${resultNumber}ValueRecords = convertToTckStrings(result$resultNumber.records).asValueRecords
            |    val expected${resultNumber}ValueRecords = CypherValueRecords(List(${expectedResult.header.map(escapeString).mkString(",")}),
-           |      List(${expectedResult.rows.map(tckCypherMapToTCKCreateString).mkString(s", \n$tabs$tabs$tabs")}))
+           |      List(${expectedResult.rows.map(tckCypherMapToTCKCreateString).mkString(s", \n           ")}))
+           |
            |    result${resultNumber}ValueRecords.$equalMethod(expected${resultNumber}ValueRecords) shouldBe true
            """.stripMargin
       case (ExpectError(errorType, errorPhase, detail, _), _) =>
@@ -161,7 +163,7 @@ case class AcceptanceTestGenerator(
         //todo: check for errorType and detail (when corresponding errors exist in CAPS like SyntaxError, TypeError, ParameterMissing, ...)
         //todo: maybe check if they get imported? (or modify specificNamings case class with optional parameter
         s"""
-           |$tabs val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{result$stepNumber}
+           |     val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{result$stepNumber}
            """.stripMargin
 
       case (SideEffects(expected, _), _) =>
@@ -182,7 +184,7 @@ case class AcceptanceTestGenerator(
         }
         else ""
       case _ => ""
-    }.filter(_.nonEmpty).mkString(s"\n$tabs")
+    }.filter(_.nonEmpty).mkString(s"\n    ")
   }
 
 
@@ -193,18 +195,23 @@ case class AcceptanceTestGenerator(
     }
 
     //combine multiple initQueries into one
-    val initQuery = escapeStringMarks + initSteps.foldLeft("")((combined, x) => x match {
-      case Execute(query, InitQuery, _) => combined + s"\n$tabs$tabs  ${alignQuery(query)}"
-      case _ => combined
-    }) + escapeStringMarks
+    val initQueries = initSteps.collect {
+      case Execute(query, InitQuery, _) => s"${alignString(query, 3)}"
+    }
+
+    val initQueryString =
+      if (initSteps.nonEmpty)
+        s"""${specificNames.graphFactory}.${specificNames.createGraphMethod}(
+           |      $escapeStringMarks
+           |        ${initQueries.mkString("\n")}
+           |      $escapeStringMarks
+           |    )""".stripMargin
+      else specificNames.graphFactory + '.' + specificNames.emptyGraphMethod
 
     val execString = stepsToString(execSteps.zipWithIndex)
     val testString =
       s"""
-         |    val graph = ${
-        if (initSteps.nonEmpty) s"${specificNames.graphFactory}.${specificNames.createGraphMethod}($initQuery)"
-        else specificNames.graphFactory + '.' + specificNames.emptyGraphMethod
-      }
+         |    val graph = $initQueryString
          |    $execString
        """.stripMargin
 
@@ -216,10 +223,10 @@ case class AcceptanceTestGenerator(
     if (black)
       s"""  it("${scenario.name}") {
          |    Try({
-         |     ${testString.replaceAll("\n    ", "\n     ")}
+         |     ${alignString(testString,1)}
          |    }) match{
          |      case Success(_) =>
-         |        throw new RuntimeException("${if(expectsError) "False-positive as probably wrong error" else "A blacklisted scenario works"}")
+         |        throw new RuntimeException("${if (expectsError) "False-positive as probably wrong error" else "A blacklisted scenario works"}")
          |      case Failure(_) =>
          |    }
          |   }
@@ -262,8 +269,16 @@ case class AcceptanceTestGenerator(
   def generateGivenScenarios(outDir: File, resFiles: Array[File], keyWords: Array[String] = Array.empty): Unit = {
     setUpDirectories(outDir)
     val scenarios = getScenarios(resFiles)
-    val wantedWhiteScenarios = scenarios.whiteList.filter(scen => keyWords.map(keyWord => scen.name.contains(keyWord)).reduce(_ || _))
-    val wantedBlackScenarios = scenarios.blackList.filter(scen => keyWords.map(keyWord => scen.name.contains(keyWord)).reduce(_ || _))
+    val wantedWhiteScenarios = scenarios.whiteList.filter(scen =>
+      keyWords.map(keyWord =>
+        scen.name
+          .contains(keyWord))
+        .reduce(_ || _))
+    val wantedBlackScenarios = scenarios.blackList.filter(scen =>
+      keyWords.map(keyWord =>
+        scen.name
+          .contains(keyWord))
+        .reduce(_ || _))
     generateClassFile("specialWhiteCases", wantedWhiteScenarios, black = false, outDir)
     generateClassFile("specialBlackCases", wantedBlackScenarios, black = true, outDir)
   }
@@ -273,14 +288,12 @@ case class AcceptanceTestGenerator(
     val scenarios = getScenarios(resFiles)
     val blackFeatures = scenarios.blackList.groupBy(_.featureName)
     val whiteFeatures = scenarios.whiteList.groupBy(_.featureName)
-    whiteFeatures.map { feature => {
-      generateClassFile(feature._1, feature._2, black = false, outDir)
-    }
+    whiteFeatures.map { case (featureName, featureScenarios) =>
+      generateClassFile(featureName, featureScenarios, black = false, outDir)
     }
 
-    blackFeatures.map { feature => {
-      generateClassFile(feature._1, feature._2, black = true, outDir)
-    }
+    blackFeatures.map { case (featureName, featureScenarios) =>
+      generateClassFile(featureName, featureScenarios, black = true, outDir)
     }
   }
 
