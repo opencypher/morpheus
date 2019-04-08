@@ -72,7 +72,7 @@ object Neo4jTestUtils {
 
   }
 
-  def connectNeo4j(dataFixture: String, uri: String = "bolt://localhost:7687"): Neo4jContext = {
+  def connectNeo4j(dataFixture: String = "", uri: String = "bolt://localhost:7687"): Neo4jContext = {
     val neo4jURI = URI.create(uri)
 
     val config = Neo4jConfig(neo4jURI, user = "anonymous", password = Some("password"), encrypted = false)
