@@ -90,7 +90,7 @@ class ConvertersTest extends BaseTestSuite {
       java.lang.Byte.valueOf("1") -> CTInteger,
       java.lang.Double.valueOf(3.14) -> CTFloat,
       java.lang.Float.valueOf(3.14f) -> CTFloat,
-      java.lang.Boolean.TRUE -> CTBoolean,
+      java.lang.Boolean.TRUE -> CTTrue,
       Array(1) -> CTList(CTInteger),
       Array() -> CTList(CTVoid),
       Array(Int.box(1), Double.box(3.14)) -> CTList(CTUnion(CTInteger, CTFloat)),
