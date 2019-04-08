@@ -42,4 +42,6 @@ package object types {
 
   val CTTemporal: CTUnion = CTUnion(Set[CypherType](CTLocalDateTime, CTDate, CTDuration))
 
+  val CTContainer: CTUnion = CTUnion(Set[CypherType](CTList, CTMap))
+
 }

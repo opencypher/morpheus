@@ -64,7 +64,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     "REL" -> CTRelationship(Set("REL")),
     "REL_EMPTY" -> CTRelationship(),
     "MAP" -> CTMap(simple.toMap),
-    "MAP_EMPTY" -> CTMap(Map())
+    "MAP_EMPTY" -> CTMap()
   )
 
   private val all = Seq(

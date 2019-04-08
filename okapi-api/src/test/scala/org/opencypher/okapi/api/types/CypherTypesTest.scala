@@ -44,6 +44,8 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
   val materialTypes: Seq[CypherType] = Seq(
     CTAnyMaterial,
     CTEntity,
+    CTTrue,
+    CTFalse,
     CTBoolean,
     CTNumber,
     CTInteger,
@@ -495,13 +497,13 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     }, minSuccessful(100))
   }
 
-  it("intersects struct types with different properties") {
+  it("intersects map types with different properties") {
     CTMap(Map("name" -> CTString)) & CTMap(Map("age" -> CTInteger)) should equal(
-      CTMap(Map("name" -> CTString, "age" -> CTInteger))
+      CTMap(Map("name" -> CTString.nullable, "age" -> CTInteger.nullable))
     )
   }
 
-  it("intersects struct types with overlapping properties") {
+  it("intersects map types with overlapping properties") {
     CTMap(Map("name" -> CTString)) & CTMap(Map("name" -> CTInteger)) should equal(
       CTMap(Map("name" -> (CTString | CTInteger)))
     )

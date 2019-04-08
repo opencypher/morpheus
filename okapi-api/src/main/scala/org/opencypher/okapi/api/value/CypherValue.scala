@@ -298,7 +298,7 @@ object CypherValue {
   }
 
   implicit class CypherBoolean(val value: Boolean) extends AnyVal with PrimitiveCypherValue[Boolean] {
-    override def cypherType: CypherType = CTBoolean
+    override def cypherType: CypherType = if (value) CTTrue else CTFalse
   }
 
   sealed trait CypherNumber[+V] extends Any with PrimitiveCypherValue[V]
