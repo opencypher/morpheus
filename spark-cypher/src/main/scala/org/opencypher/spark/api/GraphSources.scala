@@ -36,6 +36,7 @@ import org.opencypher.spark.api.io.fs.{CsvGraphSource, EscapeAtSymbol, FSGraphSo
 import org.opencypher.spark.api.io.neo4j.{Neo4jBulkCSVDataSink, Neo4jPropertyGraphDataSource}
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy.IdGenerationStrategy
 import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlPropertyGraphDataSource}
+import org.opencypher.spark.api.io.util.FileSystemUtils._
 
 import scala.io.Source
 import scala.util.Properties
@@ -50,6 +51,8 @@ object GraphSources {
   def cypher: CypherGraphSources.type = CypherGraphSources
 
   def sql(graphDdlPath: String)(implicit session: CAPSSession) = SqlGraphSources(graphDdlPath)
+
+  def sql(graphDdl: GraphDdl)(implicit session: CAPSSession) = SqlGraphSources(graphDdl)
 }
 
 object FSGraphSources {
@@ -105,8 +108,7 @@ object CypherGraphSources {
   // TODO: document
   def neo4j(config: Neo4jConfig, schemaFile: String, omitIncompatibleProperties: Boolean)
     (implicit session: CAPSSession): Neo4jPropertyGraphDataSource = {
-    val schemaString = Source.fromFile(Paths.get(schemaFile).toUri).getLines().mkString("\n")
-
+    val schemaString = using(Source.fromFile(Paths.get(schemaFile).toUri))(_.getLines().mkString(Properties.lineSeparator))
     Neo4jPropertyGraphDataSource(config, maybeSchema = Some(Schema.fromJson(schemaString)), omitIncompatibleProperties = omitIncompatibleProperties)
   }
 }
@@ -122,7 +124,7 @@ object SqlGraphSources {
       copy(idGenerationStrategy = idGenerationStrategy)
 
     def withSqlDataSourceConfigs(sqlDataSourceConfigsPath: String): SqlPropertyGraphDataSource = {
-      val jsonString = Source.fromFile(sqlDataSourceConfigsPath, "UTF-8").getLines().mkString(Properties.lineSeparator)
+      val jsonString = using(Source.fromFile(sqlDataSourceConfigsPath, "UTF-8"))(_.getLines().mkString(Properties.lineSeparator))
       val sqlDataSourceConfigs = SqlDataSourceConfig.dataSourcesFromString(jsonString)
       withSqlDataSourceConfigs(sqlDataSourceConfigs)
     }
@@ -135,7 +137,8 @@ object SqlGraphSources {
   }
 
   def apply(graphDdlPath: String)(implicit session: CAPSSession): SqlGraphSourceFactory =
-    SqlGraphSourceFactory(
-      graphDdl = GraphDdl(Source.fromFile(graphDdlPath, "UTF-8").mkString),
-      idGenerationStrategy = SerializedId)
+    SqlGraphSources(GraphDdl(using(Source.fromFile(graphDdlPath, "UTF-8"))(_.mkString)))
+
+  def apply(graphDdl: GraphDdl)(implicit session: CAPSSession): SqlGraphSourceFactory =
+    SqlGraphSourceFactory(graphDdl = graphDdl, idGenerationStrategy = SerializedId)
 }

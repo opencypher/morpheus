@@ -163,7 +163,7 @@ case class Neo4jPropertyGraphDataSource(
     }
 
     config.withSession { session =>
-      logger.info(s"Creating database uniqueness constraint on ${metaLabel.cypherLabelPredicate}.$metaPropertyKey")
+      logger.debug(s"Creating database uniqueness constraint on ${metaLabel.cypherLabelPredicate}.$metaPropertyKey")
       session.run(s"CREATE CONSTRAINT ON (n${metaLabel.cypherLabelPredicate}) ASSERT n.$metaPropertyKey IS UNIQUE").consume()
     }
 

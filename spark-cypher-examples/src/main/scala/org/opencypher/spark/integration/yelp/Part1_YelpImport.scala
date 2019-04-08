@@ -26,16 +26,15 @@
  */
 package org.opencypher.spark.integration.yelp
 
-import org.apache.spark.sql.types.{ArrayType, DateType, LongType}
-import org.apache.spark.sql.{DataFrame, SparkSession, functions}
+import org.apache.spark.sql.SparkSession
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.spark.api.io.CAPSEntityTable
 import org.opencypher.spark.api.io.GraphEntity._
 import org.opencypher.spark.api.io.Relationship._
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.integration.yelp.YelpConstants._
+import org.opencypher.spark.integration.yelp.YelpHelpers._
 
 object Part1_YelpImport extends App {
 
@@ -48,7 +47,6 @@ object Part1_YelpImport extends App {
   implicit val spark: SparkSession = caps.sparkSession
 
   storeGraph(inputPath, outputPath)
-//  yelpStats(inputPath)
 
   def storeGraph(inputPath: String, outputPath: String): Unit = {
     // Load Yelp data into DataFrames
@@ -66,7 +64,7 @@ object Part1_YelpImport extends App {
     val parquetPGDS = GraphSources.fs(outputPath).parquet
     // Store graph in PGDS
     if (parquetPGDS.hasGraph(graphName)) {
-     log(s"Warning: A graph with GraphName $graphName already exists.")
+      log(s"Warning: A graph with GraphName $graphName already exists.")
     } else {
       parquetPGDS.store(yelpGraphName, graph)
     }
@@ -108,76 +106,7 @@ object Part1_YelpImport extends App {
         .prependIdColumn(sourceStartNodeKey, userLabel)
         .prependIdColumn(sourceEndNodeKey, businessLabel))
 
-    // (:User)-[:FRIEND]->(:User)
-    val friendRelTable = CAPSEntityTable.create(RelationshipMappingBuilder.on(sourceIdKey)
-      .withSourceStartNodeKey(sourceStartNodeKey)
-      .withSourceEndNodeKey(sourceEndNodeKey)
-      .withRelType(friendRelType)
-      .build,
-      yelpTables.friendDf
-        .prependIdColumn(sourceIdKey, friendRelType)
-        .prependIdColumn(sourceStartNodeKey, userLabel)
-        .prependIdColumn(sourceEndNodeKey, userLabel))
-
     // Create property graph
-    caps.graphs.create(businessNodeTable, userNodeTable, reviewRelTable, friendRelTable)
-  }
-
-  def loadYelpTables(inputPath: String)(implicit spark: SparkSession): YelpTables = {
-    log("read business.json", 2)
-    val rawBusinessDf = spark.read.json(s"$inputPath/business.json")
-    log("read review.json", 2)
-    val rawReviewDf = spark.read.json(s"$inputPath/review.json")
-    log("read user.json", 2)
-    val rawUserDf = spark.read.json(s"$inputPath/user.json")
-
-    import spark.implicits._
-
-    val businessDf = rawBusinessDf.select($"business_id".as(sourceIdKey), $"business_id", $"name", $"address", $"city", $"state")
-    val reviewDf = rawReviewDf.select($"review_id".as(sourceIdKey), $"user_id".as(sourceStartNodeKey), $"business_id".as(sourceEndNodeKey), $"stars", $"date".cast(DateType))
-    val userDf = rawUserDf.select(
-      $"user_id".as(sourceIdKey),
-      $"name",
-      $"yelping_since".cast(DateType),
-      functions.split($"elite", ",").cast(ArrayType(LongType)).as("elite"))
-    val friendDf = rawUserDf
-      .select($"user_id".as(sourceStartNodeKey), functions.explode(functions.split($"friends", ", ")).as(sourceEndNodeKey))
-      .withColumn(sourceIdKey, functions.monotonically_increasing_id())
-
-    YelpTables(userDf, businessDf, reviewDf, friendDf)
-  }
-
-  def yelpStats(inputPath: String): Unit = {
-    val rawBusinessDf = spark.read.json(s"$inputPath/business.json")
-    val rawReviewDf = spark.read.json(s"$inputPath/review.json")
-
-    import spark.implicits._
-
-    rawBusinessDf.select($"city", $"state").distinct().show()
-    rawBusinessDf.withColumnRenamed("business_id", "id")
-      .join(rawReviewDf, $"id" === $"business_id")
-      .groupBy($"city", $"state")
-      .count().as("count")
-      .orderBy($"count".desc, $"state".asc)
-      .show(100)
-  }
-
-  implicit class DataFrameOps(df: DataFrame) {
-    def prependIdColumn(idColumn: String, prefix: String): DataFrame =
-      df.transformColumns(idColumn)(column => functions.concat(functions.lit(prefix), column).as(idColumn))
-  }
-
-  case class YelpTables(
-    userDf: DataFrame,
-    businessDf: DataFrame,
-    reviewDf: DataFrame,
-    friendDf: DataFrame
-  ) {
-    def show(): Unit = {
-      userDf.show()
-      businessDf.show()
-      reviewDf.show()
-      friendDf.show()
-    }
+    caps.graphs.create(businessNodeTable, userNodeTable, reviewRelTable)
   }
 }
