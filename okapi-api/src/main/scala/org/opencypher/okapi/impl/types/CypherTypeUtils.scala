@@ -38,13 +38,19 @@ object CypherTypeUtils {
 
     def toCTNode: CTNode = ct match {
       case n: CTNode => n
-      case CTUnion(as) => as.collectFirst { case n: CTNode => n }.getOrElse(notNode())
+      case CTUnion(as) => as.toList.collect { case n: CTNode => n } match {
+        case n :: Nil => n
+        case _ => notNode()
+      }
       case _ => notNode()
     }
 
     def toCTRelationship: CTRelationship = ct match {
       case r: CTRelationship => r
-      case CTUnion(as) => as.collectFirst { case r: CTRelationship => r }.getOrElse(notRel())
+      case CTUnion(as) => as.toList.collect { case r: CTRelationship => r } match {
+        case r :: Nil => r
+        case _ => notRel()
+      }
       case _ => notRel()
     }
   }
