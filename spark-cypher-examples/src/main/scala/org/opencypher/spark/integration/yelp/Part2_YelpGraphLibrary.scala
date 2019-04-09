@@ -66,19 +66,6 @@ object Part2_YelpGraphLibrary extends App {
   log(s"create graph projections for '$city'", 1)
   (2015 to 2018) foreach { year =>
     log(s"$year", 2)
-    // Compute (:User)-[:REVIEWS]->(:Business) graph
-    cypher(
-      s"""
-         |CATALOG CREATE GRAPH $fsNamespace.${reviewGraphName(year)} {
-         |  FROM GRAPH $cityGraphName
-         |  MATCH (b:Business)<-[r:REVIEWS]-(user:User)
-         |  WHERE r.date.year = $year AND user.yelping_since.year <= $year
-         |  CONSTRUCT
-         |   CREATE (user)-[r]->(b)
-         |  RETURN GRAPH
-         |}
-     """.stripMargin)
-
     if (!parquetPGDS.hasGraph(reviewGraphName(year))) {
       // Compute (:User)-[:REVIEWS]->(:Business) graph
       cypher(
@@ -92,8 +79,8 @@ object Part2_YelpGraphLibrary extends App {
            |  RETURN GRAPH
            |}
      """.stripMargin)
-
     }
+    else log(s"Warning: A graph with GraphName ${reviewGraphName(year)} already exists.")
 
     if (!parquetPGDS.hasGraph(coReviewGraphName(year))) {
       // Compute (:User)-[:CO_REVIEWS]->(:User) graph
@@ -112,5 +99,6 @@ object Part2_YelpGraphLibrary extends App {
            |}
      """.stripMargin)
     }
+    else log(s"Warning: A graph with GraphName ${coReviewGraphName(year)} already exists.")
   }
 }
