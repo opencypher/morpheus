@@ -26,7 +26,6 @@
  */
 package org.opencypher.okapi.relational.impl.planning
 
-import org.opencypher.okapi.api.types.CTBoolean
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.logical.impl.LogicalOperator
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
@@ -73,7 +72,7 @@ abstract class VarLengthExpandPlanner[T <: Table[T] : TypeTag] {
   val physicalEdgeScanOp: RelationalOperator[T] = relEdgeScanOp
   val physicalTargetOp: RelationalOperator[T] = process(targetOp)
 
-  protected val startEdgeScan: Var = ListSegment(1, list)(edgeScan.cypherType)
+  protected val startEdgeScan: Var = ListSegment(1, list)
 
   /**
     * Performs the initial expand from the start node
@@ -112,7 +111,7 @@ abstract class VarLengthExpandPlanner[T <: Table[T] : TypeTag] {
     edgeVars: Seq[Var]
   ): (RelationalOperator[T], Var) = {
     val nextEdgeCT = if (i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
-    val nextEdge = ListSegment(i, list)(nextEdgeCT)
+    val nextEdge = ListSegment(i, list)
 
     val aliasedEdgeScanOp = physicalEdgeScanOp.
       alias(edgeScan as nextEdge)

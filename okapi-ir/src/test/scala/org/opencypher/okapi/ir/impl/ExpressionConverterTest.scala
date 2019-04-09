@@ -172,17 +172,17 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   describe("coalesce") {
     it("should convert coalesce") {
       convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE)")) shouldEqual
-        Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE))(CTUnion(CTInteger, CTString, CTNode("Node")))
+        Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE))
     }
 
     it("should become nullable if nothing is non-null") {
       convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE_OR_NULL)")) shouldEqual
-        Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE_OR_NULL))(CTUnion(CTInteger, CTString, CTNode("Node")).nullable)
+        Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE_OR_NULL))
     }
 
     it("should not consider arguments past the first non-nullable coalesce") {
       convert(parseExpr("coalesce(INTEGER_OR_NULL, FLOAT, NODE, STRING)")) shouldEqual
-        Coalesce(List('INTEGER_OR_NULL, 'FLOAT))(CTUnion(CTInteger, CTFloat))
+        Coalesce(List('INTEGER_OR_NULL, 'FLOAT))
     }
 
     it("should remove coalesce if the first arg is non-nullable") {
@@ -205,7 +205,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   describe("IN") {
     it("can convert in predicate and literal list") {
       convert(parseExpr("INTEGER IN [INTEGER, INTEGER_OR_NULL, FLOAT]")) shouldEqual(
-        In('INTEGER, ListLit(List('INTEGER, 'INTEGER_OR_NULL, 'FLOAT))(CTList(CTUnion(CTInteger, CTFloat).nullable))), CTBoolean.nullable
+        In('INTEGER, ListLit(List('INTEGER, 'INTEGER_OR_NULL, 'FLOAT))), CTBoolean.nullable
       )
     }
 

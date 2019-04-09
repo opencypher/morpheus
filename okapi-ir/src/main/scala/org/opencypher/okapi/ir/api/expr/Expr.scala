@@ -80,7 +80,7 @@ sealed abstract class Expr extends AbstractTreeNode[Expr] {
   /**
     * When `nullInNullOut` is true, then the expression evaluates to `null`, if any of its inputs evaluate to `null`.
     *
-    * Essentially it means that `null` values pass up the evaluatio chain from children to parents.
+    * Essentially it means that `null` values pass up the evaluation chain from children to parents.
     */
   def nullInNullOut: Boolean = true
 
@@ -122,16 +122,17 @@ object Var {
   def unnamed: CypherType => Var = apply("")
 }
 
-final case class ListSegment(index: Int, listVar: Var)(val cypherType: CypherType) extends Var {
+final case class ListSegment(index: Int, listVar: Var) extends Var {
 
   override def owner: Option[Var] = Some(listVar)
 
-  override def withOwner(v: Var): ListSegment = copy(listVar = v)(cypherType)
+  override def withOwner(v: Var): ListSegment = copy(listVar = v)
 
   override def withoutType: String = s"${listVar.withoutType}($index)"
 
   override def name: String = s"${listVar.name}($index)"
 
+  override def cypherType: CypherType = listVar.cypherType
 }
 
 sealed trait ReturnItem extends Var
@@ -491,10 +492,11 @@ final case class DurationProperty(propertyOwner: Expr, key: PropertyKey) extends
 
 }
 
-final case class MapExpression(items: Map[String, Expr])(val cypherType: CypherType) extends Expr {
+final case class MapExpression(items: Map[String, Expr]) extends Expr {
 
   override def withoutType: String = s"{${items.mapValues(_.withoutType)}}"
 
+  override def cypherType: CypherType = CTMap(items.map { case (key, value) => key -> value.cypherType })
 }
 
 // Arithmetic expressions
@@ -541,10 +543,11 @@ sealed trait FunctionExpr extends Expr {
   override final def withoutType = s"$name(${exprs.map(_.withoutType).mkString(", ")})"
 }
 
-final case class MonotonicallyIncreasingId(cypherType: CypherType = CTInteger) extends FunctionExpr {
+final case class MonotonicallyIncreasingId() extends FunctionExpr {
 
   override def exprs: List[Expr] = List.empty
 
+  override def cypherType: CypherType = CTInteger
 }
 
 sealed trait NullaryFunctionExpr extends FunctionExpr {
@@ -567,7 +570,9 @@ object PrefixId {
   type GraphIdPrefix = Byte
 }
 
-final case class PrefixId(expr: Expr, prefix: GraphIdPrefix)(val cypherType: CypherType) extends UnaryFunctionExpr
+final case class PrefixId(expr: Expr, prefix: GraphIdPrefix) extends UnaryFunctionExpr {
+  override def cypherType: CypherType = expr.cypherType
+}
 
 final case class ToId(expr: Expr)(val cypherType: CypherType = CTIdentity) extends UnaryFunctionExpr
 
@@ -587,7 +592,9 @@ final case class Size(expr: Expr) extends UnaryFunctionExpr {
   override val cypherType: CypherType = childNullPropagatesTo(CTInteger)
 }
 
-final case class Keys(expr: Expr)(val cypherType: CypherType) extends UnaryFunctionExpr
+final case class Keys(expr: Expr) extends UnaryFunctionExpr {
+  override def cypherType: CypherType = childNullPropagatesTo(CTList(CTString))
+}
 
 final case class StartNodeFunction(expr: Expr)(val cypherType: CypherType) extends UnaryFunctionExpr
 
@@ -620,16 +627,19 @@ final case class BigDecimal(expr: Expr, precision: Long, scale: Long) extends Un
   override val cypherType: CypherType = CTBigDecimal(precision.toInt, scale.toInt).asNullableAs(expr.cypherType)
 }
 
-final case class Coalesce(exprs: List[Expr])(val cypherType: CypherType) extends FunctionExpr {
+final case class Coalesce(exprs: List[Expr]) extends FunctionExpr {
   override def nullInNullOut: Boolean = false
+
+  override def cypherType: CypherType = exprs.map(_.cypherType).reduceLeft(_ join _)
 }
 
-final case class Explode(expr: Expr)(val cypherType: CypherType) extends Expr {
+final case class Explode(expr: Expr) extends Expr {
 
   override def nullInNullOut = false
 
   override def withoutType: String = s"explode(${expr.withoutType})"
 
+  override def cypherType: CypherType = expr.cypherType
 }
 
 final case class Trim(expr: Expr) extends UnaryFunctionExpr {
@@ -674,30 +684,38 @@ final case class Substring(original: Expr, start: Expr, length: Option[Expr]) ex
 
 // Bit operators
 
-final case class ShiftLeft(value: Expr, shiftBits: IntegerLit)(val cypherType: CypherType) extends BinaryExpr {
+final case class ShiftLeft(value: Expr, shiftBits: IntegerLit) extends BinaryExpr {
   require(shiftBits.v < 64)
 
   override def lhs: Expr = value
   override def rhs: Expr = shiftBits
   override def op: String = "<<"
+
+  override def cypherType: CypherType = value.cypherType
 }
 
-final case class ShiftRightUnsigned(value: Expr, shiftBits: IntegerLit)(val cypherType: CypherType) extends BinaryExpr {
+final case class ShiftRightUnsigned(value: Expr, shiftBits: IntegerLit) extends BinaryExpr {
   require(shiftBits.v < 64)
 
   override def lhs: Expr = value
   override def rhs: Expr = shiftBits
   override def op: String = ">>>"
+
+  override def cypherType: CypherType = value.cypherType
 }
 
-final case class BitwiseAnd(lhs: Expr, rhs: Expr)(val cypherType: CypherType) extends BinaryExpr {
+final case class BitwiseAnd(lhs: Expr, rhs: Expr) extends BinaryExpr {
 
   override def op: String = "&"
+
+  override def cypherType: CypherType = lhs.cypherType join rhs.cypherType
 }
 
-final case class BitwiseOr(lhs: Expr, rhs: Expr)(val cypherType: CypherType) extends BinaryExpr {
+final case class BitwiseOr(lhs: Expr, rhs: Expr) extends BinaryExpr {
 
   override def op: String = "|"
+
+  override def cypherType: CypherType = lhs.cypherType join rhs.cypherType
 }
 
 // Mathematical functions
@@ -728,7 +746,9 @@ case object Pi extends NullaryFunctionExpr {
 
 // Numeric functions
 
-final case class Abs(expr: Expr)(val cypherType: CypherType) extends UnaryFunctionExpr
+final case class Abs(expr: Expr) extends UnaryFunctionExpr {
+  override def cypherType: CypherType = expr.cypherType
+}
 
 final case class Ceil(expr: Expr) extends UnaryFunctionExpr {
   override val cypherType: CypherType = CTInteger.asNullableAs(expr.cypherType)
@@ -902,7 +922,9 @@ sealed trait Lit[T] extends Expr {
   override def withoutType = s"$v"
 }
 
-final case class ListLit(v: List[Expr])(val cypherType: CypherType = CTEmptyList) extends Lit[List[Expr]]
+final case class ListLit(v: List[Expr]) extends Lit[List[Expr]] {
+  override def cypherType: CypherType = v.foldLeft(CTVoid: CypherType)(_ join _.cypherType)
+}
 
 sealed abstract class ListSlice(maybeFrom: Option[Expr], maybeTo: Option[Expr]) extends Expr {
 

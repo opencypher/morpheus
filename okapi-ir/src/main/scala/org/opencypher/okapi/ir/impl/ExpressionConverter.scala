@@ -117,7 +117,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
     case ast.ListLiteral(exprs) =>
       val elements = exprs.map(convert).toList
       val elementType = elements.foldLeft(CTVoid: CypherType) { case (agg, nextExpr) => agg.join(nextExpr.cypherType) }
-      ListLit(elements)(CTList(elementType))
+      ListLit(elements)
 
     case ast.Property(m, ast.PropertyKeyName(name)) =>
       val owner = convert(m)
@@ -248,7 +248,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
         case functions.Collect => Collect(arg0, distinct)
         case functions.Exists => Exists(arg0)
         case functions.Size => Size(arg0)
-        case functions.Keys => Keys(arg0)(returnType)
+        case functions.Keys => Keys(arg0)
         case functions.StartNode => StartNodeFunction(arg0)(returnType)
         case functions.EndNode => EndNodeFunction(arg0)(returnType)
         case functions.ToFloat => ToFloat(arg0)
@@ -263,13 +263,11 @@ final class ExpressionConverter(context: IRBuilderContext) {
               convertedArgs.head
             case -1 =>
               // nothing was non-nullable; keep all args
-              val outType = convertedArgs.map(_.cypherType).reduceLeft(_ join _)
-              Coalesce(convertedArgs)(outType)
+              Coalesce(convertedArgs)
             case other =>
               // keep only the args up until the first non-nullable (inclusive)
               val relevantArgs = convertedArgs.slice(0, other + 1)
-              val outType = relevantArgs.map(_.cypherType).reduceLeft(_ join _)
-              Coalesce(relevantArgs)(outType.material)
+              Coalesce(relevantArgs)
           }
         case functions.Range => Range(arg0, arg1, convertedArgs.lift(2))
         case functions.Substring => Substring(arg0, arg1, convertedArgs.lift(2))
@@ -302,7 +300,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
         case functions.Pi => Pi
 
         // Numeric functions
-        case functions.Abs => Abs(arg0)(returnType)
+        case functions.Abs => Abs(arg0)
         case functions.Ceil => Ceil(arg0)
         case functions.Floor => Floor(arg0)
         case functions.Rand => Rand
@@ -363,8 +361,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
 
     case ast.MapExpression(items) =>
       val convertedMap = items.map { case (key, value) => key.name -> convert(value) }.toMap
-      val mapType = CTMap(convertedMap.map { case (key, value) => key -> value.cypherType })
-      MapExpression(convertedMap)(mapType)
+      MapExpression(convertedMap)
 
     // Expression
     case ast.ListSlice(list, Some(from), Some(to)) => ListSliceFromTo(convert(list), convert(from), convert(to))

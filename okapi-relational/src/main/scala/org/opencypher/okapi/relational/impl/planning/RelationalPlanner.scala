@@ -96,7 +96,7 @@ object RelationalPlanner {
         }
 
       case logical.Unwind(list, item, in, _) =>
-        val explodeExpr = Explode(list)(item.cypherType)
+        val explodeExpr = Explode(list)
         process[T](in).add(explodeExpr as item)
 
       case logical.PatternScan(pattern, mapping, in, _) =>
@@ -419,7 +419,7 @@ object RelationalPlanner {
     }
 
     def prefixVariableId(v: Var, prefix: GraphIdPrefix): RelationalOperator[T] = {
-      val prefixedIds = op.header.idExpressions(v).map(exprToPrefix => PrefixId(ToId(exprToPrefix)(), prefix)(CTIdentity) -> exprToPrefix)
+      val prefixedIds = op.header.idExpressions(v).map(exprToPrefix => PrefixId(ToId(exprToPrefix)(), prefix) -> exprToPrefix)
       op.addInto(prefixedIds.toSeq: _*)
     }
 

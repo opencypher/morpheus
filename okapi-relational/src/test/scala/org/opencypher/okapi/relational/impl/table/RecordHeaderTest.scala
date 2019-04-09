@@ -43,9 +43,9 @@ class RecordHeaderTest extends BaseTestSuite {
   val r: Var = Var("r")(CTRelationship)
   val s: Var = Var("s")(CTNode("A"))
   val nodeList: Var = Var("l")(CTList(CTNode))
-  val nodeListSegment: ListSegment = ListSegment(0, nodeList)(CTNode("A", "B"))
+  val nodeListSegment: ListSegment = ListSegment(0, nodeList)
   val relList: Var = Var("l")(CTList(CTRelationship))
-  val relListSegment: ListSegment = ListSegment(0, relList)(CTRelationship)
+  val relListSegment: ListSegment = ListSegment(0, relList)
 
   val countN = CountStar
 
@@ -87,7 +87,7 @@ class RecordHeaderTest extends BaseTestSuite {
   }
 
   it("can return vars that are not present in the header, but own an expression in the header") {
-    RecordHeader.empty.withExpr(ListSegment(1, m)(CTNode)).vars should equal(Set(m))
+    RecordHeader.empty.withExpr(ListSegment(1, m)).vars should equal(Set(m))
   }
 
   it("can return all return items") {
@@ -319,7 +319,7 @@ class RecordHeaderTest extends BaseTestSuite {
   }
 
   it("can return transitive members for an entity") {
-    val segment = ListSegment(1, n)(n.cypherType)
+    val segment = ListSegment(1, n)
     val withSegment = nHeader.withAlias(n as segment).select(segment)
 
     withSegment.ownedBy(n) should equal(withSegment.expressions)
