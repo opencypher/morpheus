@@ -29,6 +29,8 @@ package org.opencypher.okapi.impl.types
 import fastparse.Parsed.{Failure, Success}
 import fastparse._
 import org.apache.logging.log4j.scala.Logging
+import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.util.ParserUtils._
 
@@ -61,9 +63,12 @@ object CypherTypeParser extends Logging {
   def STRING[_: P]: P[CTString.type] = IgnoreCase("STRING").map(_ => CTString)
   def INTEGER[_: P]: P[CTInteger.type] = IgnoreCase("INTEGER").map(_ => CTInteger)
   def FLOAT[_: P]: P[CTFloat.type] = IgnoreCase("FLOAT").map(_ => CTFloat)
-  def NUMBER[_: P]: P[CTNumber.type] = IgnoreCase("NUMBER").map(_ => CTNumber)
+  def NUMBER[_: P]: P[CTNumber.type ] = IgnoreCase("NUMBER").map(_ => CTNumber)
   def BOOLEAN[_: P]: P[CTBoolean.type] = IgnoreCase("BOOLEAN").map(_ => CTBoolean)
-  def ANY[_: P]: P[CTAny.type] = IgnoreCase("ANY").map(_ => CTAny)
+  def TRUE[_: P]: P[CTTrue.type] = IgnoreCase("TRUE").map(_ => CTTrue)
+  def FALSE[_: P]: P[CTFalse.type] = IgnoreCase("FALSE").map(_ => CTFalse)
+  def ANY[_: P]: P[CTAny.type ] = IgnoreCase("ANY?").map(_ => CTAny)
+  def ANYMATERIAL[_: P]: P[CTAnyMaterial.type] = IgnoreCase("ANY").map(_ => CTAnyMaterial)
   def VOID[_: P]: P[CTVoid.type] = IgnoreCase("VOID").map(_ => CTVoid)
   def NULL[_: P]: P[CTNull.type] = IgnoreCase("NULL").map(_ => CTNull)
   def DATE[_: P]: P[CTDate.type] = IgnoreCase("DATE").map(_ => CTDate)
@@ -73,36 +78,53 @@ object CypherTypeParser extends Logging {
 
   // element types
   def NODE[_: P]: P[CTNode] = P(
-    IgnoreCase("NODE") ~/ ("(" ~/ label.rep() ~ ")").?
-  ).map(l => CTNode(l.getOrElse(Seq.empty).toSet))
+    IgnoreCase("NODE") ~ ("(" ~/ label.rep ~ ")") ~ ("@" ~/ (identifier | ".").rep.!).?
+  ).map { case (l, mg) => CTNode(l.toSet, mg.map(QualifiedGraphName(_))) }
+
+  def ANYNODE[_: P]: P[CTNode.type] = P(IgnoreCase("NODE").map(_ => CTNode))
 
   def RELATIONSHIP[_: P]: P[CTRelationship] = P(
-    IgnoreCase("RELATIONSHIP") ~/ ("(" ~ label.rep(sep = "|") ~/ ")").?
-  ).map(l => CTRelationship(l.getOrElse(Seq.empty).toSet))
+    IgnoreCase("RELATIONSHIP") ~ ("(" ~/ label.rep(sep = "|") ~/ ")") ~ ("@" ~/ (identifier | ".").rep.!).?
+  ).map { case (l, mg) => CTRelationship(l.toSet, mg.map(QualifiedGraphName(_))) }
+
+  def ANYRELATIONSHIP[_: P]: P[CTRelationship] = P(IgnoreCase("RELATIONSHIP").map(_ => CTRelationship))
+
+  def ENTITY[_: P]: P[CTUnion] = P(IgnoreCase("ENTITY").map(_ => CTEntity))
 
   def PATH[_: P]: P[CTPath.type] = P(IgnoreCase("PATH").map(_ => CTPath))
 
   // container types
-  def LIST[_: P]: P[CTList] = P(IgnoreCase("LIST") ~/ "(" ~/ cypherType ~/ ")").map(inner => CTList(inner))
+  def ANYLIST[_: P]: P[CTList] = P(IgnoreCase("LIST").map(_ => CTList))
+  def LIST[_: P]: P[CTList] = P(IgnoreCase("LIST") ~ "(" ~/ cypherType ~/ ")").map(inner => CTList(inner))
 
   private def mapKey[_: P]: P[String] = P(identifier.! | escapedIdentifier)
   private def kvPair[_: P]: P[(String, CypherType)] = P(mapKey ~/ ":" ~/ cypherType)
-  def MAP[_: P]: P[CTMap] = P(IgnoreCase("MAP") ~/ "(" ~/ kvPair.rep(sep = ",") ~/ ")").map(inner => CTMap(inner.toMap))
+  def ANYMAP[_: P]: P[CTMap] = P(IgnoreCase("MAP").map(_ => CTMap))
+  def MAP[_: P]: P[CTMap] = P(IgnoreCase("MAP") ~ "(" ~/ kvPair.rep(sep = ",") ~/ ")").map { inner => CTMap(inner.toMap)
+  }
 
   def materialCypherType[_: P]: P[CypherType] = P(
     STRING |
       INTEGER |
       FLOAT |
       NUMBER |
+      TRUE |
+      FALSE |
       BOOLEAN |
+      NODE |
+      RELATIONSHIP |
+      ENTITY |
+      ANYNODE |
+      ANYRELATIONSHIP |
+      MAP |
+      ANYMAP |
+      ANYMATERIAL |
       ANY |
       VOID |
       NULL |
-      NODE |
-      RELATIONSHIP |
       PATH |
       LIST |
-      MAP |
+      ANYLIST |
       LOCALDATETIME |
       DATE |
       BIGDECIMAL

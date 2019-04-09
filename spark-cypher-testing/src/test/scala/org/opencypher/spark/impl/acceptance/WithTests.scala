@@ -32,7 +32,7 @@ import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class WithTests extends CAPSTestSuite with ScanGraphInit {

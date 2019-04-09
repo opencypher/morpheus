@@ -50,7 +50,7 @@ class TypeConverterTest extends BaseTestSuite {
 
   test("should convert container types") {
     frontend.CTList(frontend.CTInteger) shouldBeConvertedTo CTList(CTInteger)
-    frontend.CTMap shouldBeConvertedTo CTMap(Map.empty)
+    frontend.CTMap shouldBeConvertedTo CTMap
   }
 
   implicit class RichType(t: frontend.CypherType) {

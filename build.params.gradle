@@ -22,7 +22,8 @@ ext {
             hadoop    : '2.7.0',
             fastparse : '2.1.0',
             upickle   : '0.7.1',
-            cats      : '1.0.1',
+            cats      : '1.6.0',
+            discipline: '0.11.0',
             eff       : '5.0.0',
             bctls     : '1.59',
             netty     : '4.1.24.Final',
@@ -31,8 +32,8 @@ ext {
             log4j     : [main : '2.11.0',
                          scala: '11.0'],
 
-            scalatest : '3.0.5',
-            scalacheck: '1.13.5',
+            scalatest : '3.0.6',
+            scalacheck: '1.14.0',
             mockito   : '1.10.19',
             claimant  : '0.0.2',
 

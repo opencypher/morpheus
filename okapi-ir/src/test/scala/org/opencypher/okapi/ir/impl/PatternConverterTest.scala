@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.api.types.{CTAny, CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._

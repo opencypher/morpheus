@@ -45,15 +45,15 @@ object RecordHeader {
   def from[T <: Expr](exprs: Seq[T]): RecordHeader = from(exprs.head, exprs.tail: _*)
 
   def from(v: Var): RecordHeader = v.cypherType match {
-    case n: CTNode =>
+    case CTNode(labels, _) =>
       from(
         v,
-        n.labels.map(l => HasLabel(v, Label(l))).toSeq: _*
+        labels.map(l => HasLabel(v, Label(l))).toSeq: _*
       )
-    case r: CTRelationship => from(
+    case CTRelationship(types, _) => from(
       v,
       Seq(StartNode(v)(CTIdentity), EndNode(v)(CTIdentity))
-        ++ r.types.map(t => HasType(v, RelType(t))): _*
+        ++ types.map(t => HasType(v, RelType(t))): _*
     )
     case other => throw IllegalArgumentException("A node or relationship variable", other)
   }

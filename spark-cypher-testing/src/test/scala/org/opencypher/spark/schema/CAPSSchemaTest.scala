@@ -40,7 +40,7 @@ class CAPSSchemaTest extends BaseTestSuite {
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTInteger)
 
     the[SchemaException] thrownBy (schema1 ++ schema2).asCaps should have message
-      "The property type 'ANY' for property 'bar' can not be stored in a Spark column. The unsupported type is specified on label combination [A]."
+      "The property type 'UNION(INTEGER, STRING)' for property 'bar' can not be stored in a Spark column. The unsupported type is specified on label combination [A]."
   }
 
   it("fails when combining type conflicting schemas resulting in type NUMBER") {
@@ -75,7 +75,7 @@ class CAPSSchemaTest extends BaseTestSuite {
       .withNodePropertyKeys("Pet")("name" -> CTBoolean)
 
     the[SchemaException] thrownBy schema.asCaps should have message
-      "The property type 'ANY' for property 'name' can not be stored in a Spark column. The conflict appears between label combinations [Dog, Pet] and [Pet]."
+      "The property type 'UNION(FLOAT, TRUE, FALSE)' for property 'name' can not be stored in a Spark column. The conflict appears between label combinations [Dog, Pet] and [Pet]."
   }
 
   it("fails when verifying schema with conflict on combined labels") {
@@ -87,6 +87,6 @@ class CAPSSchemaTest extends BaseTestSuite {
       .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
 
     the[SchemaException] thrownBy schema.asCaps should have message
-      "The property type 'ANY' for property 'name' can not be stored in a Spark column. The conflict appears between label combinations [Person] and [Employee, Person]."
+      "The property type 'UNION(STRING, INTEGER)' for property 'name' can not be stored in a Spark column. The conflict appears between label combinations [Person] and [Employee, Person]."
   }
 }

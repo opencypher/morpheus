@@ -466,7 +466,7 @@ object RelationalPlanner {
 
       // Fill in missing false label columns
       val falseLabels = targetVar.cypherType match {
-        case _: CTNode => targetHeaderLabels -- trueLabels -- existingLabels
+        case n if n.subTypeOf(CTNode.nullable) => targetHeaderLabels -- trueLabels -- existingLabels
         case _ => Set.empty
       }
       val withFalseLabels = withTrueLabels.addInto(
@@ -484,7 +484,7 @@ object RelationalPlanner {
 
       // Fill in missing false relType columns
       val falseRelTypes = targetVar.cypherType match {
-        case _: CTRelationship => targetHeaderTypes -- trueRelTypes -- existingRelTypes
+        case r if r.subTypeOf(CTRelationship.nullable) => targetHeaderTypes -- trueRelTypes -- existingRelTypes
         case _ => Set.empty
       }
       val withFalseRelTypes = withTrueRelTypes.addInto(

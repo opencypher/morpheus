@@ -32,7 +32,7 @@ import org.opencypher.graphddl.GraphDdlParser._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.util.ParserUtils._
 import org.opencypher.okapi.testing.{BaseTestSuite, TestNameFixture}
-import org.scalatest.mockito.MockitoSugar
+import org.scalatestplus.mockito.MockitoSugar
 
 class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFixture {
 
@@ -127,7 +127,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     }
 
     it("parses A ( key DATE? )") {
-      success(elementTypeDefinition(_), ElementTypeDefinition("A", properties = Map("key" -> CTDateOrNull)))
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", properties = Map("key" -> CTDate.nullable)))
     }
 
     it("parses A ( key LOCALDATETIME )") {
@@ -135,7 +135,7 @@ class GraphDdlParserTest extends BaseTestSuite with MockitoSugar with TestNameFi
     }
 
     it("parses A ( key LOCALDATETIME? )") {
-      success(elementTypeDefinition(_), ElementTypeDefinition("A", properties = Map("key" -> CTLocalDateTimeOrNull)))
+      success(elementTypeDefinition(_), ElementTypeDefinition("A", properties = Map("key" -> CTLocalDateTime.nullable)))
     }
 
     it("parses A ()") {

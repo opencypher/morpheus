@@ -44,14 +44,14 @@ import scala.language.implicitConversions
 
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
-  val baseTypes = Seq[CypherType](
-    CTAny, CTNumber, CTNull, CTVoid,
+  val baseTypes: Seq[CypherType] = Seq[CypherType](
+    CTAny, CTUnion(CTInteger, CTFloat), CTNull, CTVoid,
     CTBoolean, CTInteger, CTFloat, CTString,
     CTDate, CTLocalDateTime, CTDuration,
     CTIdentity, CTPath
   )
 
-  val simple =
+  val simple: Seq[(String, CypherType)] =
     baseTypes.map(tpe => tpe.name -> tpe) ++
       baseTypes.map(tpe => s"${tpe.name}_OR_NULL" -> tpe.nullable)
 
@@ -64,7 +64,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     "REL" -> CTRelationship(Set("REL")),
     "REL_EMPTY" -> CTRelationship(),
     "MAP" -> CTMap(simple.toMap),
-    "MAP_EMPTY" -> CTMap(Map())
+    "MAP_EMPTY" -> CTMap()
   )
 
   private val all = Seq(
@@ -84,7 +84,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     simple ++ Seq("name" -> CTBoolean, "age" -> CTFloat)
 
   private val propertiesJoined =
-    simple ++ Seq("name" -> CTAny, "age" -> CTNumber)
+    simple ++ Seq("name" -> CTAny, "age" -> CTUnion(CTInteger, CTFloat))
 
   private val schema: Schema = Schema.empty
     .withNodePropertyKeys("Node")(properties : _*)
@@ -162,7 +162,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   it("should convert CASE") {
     convert(parseExpr("CASE WHEN INTEGER > INTEGER THEN INTEGER ELSE FLOAT END")) should equal(
-      CaseExpr(List((GreaterThan('INTEGER, 'INTEGER), 'INTEGER)), Some('FLOAT))(CTNumber)
+      CaseExpr(List((GreaterThan('INTEGER, 'INTEGER), 'INTEGER)), Some('FLOAT))(CTUnion(CTInteger, CTFloat))
     )
     convert(parseExpr("CASE WHEN STRING > STRING_OR_NULL THEN NODE END")) should equal(
       CaseExpr(List((GreaterThan('STRING, 'STRING_OR_NULL), 'NODE)), None)(CTNode("Node").nullable)
@@ -172,17 +172,17 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   describe("coalesce") {
     it("should convert coalesce") {
       convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE)")) shouldEqual
-        Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE))(CTAny)
+        Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE))(CTUnion(CTInteger, CTString, CTNode("Node")))
     }
 
     it("should become nullable if nothing is non-null") {
       convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE_OR_NULL)")) shouldEqual
-        Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE_OR_NULL))(CTAny.nullable)
+        Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE_OR_NULL))(CTUnion(CTInteger, CTString, CTNode("Node")).nullable)
     }
 
     it("should not consider arguments past the first non-nullable coalesce") {
       convert(parseExpr("coalesce(INTEGER_OR_NULL, FLOAT, NODE, STRING)")) shouldEqual
-        Coalesce(List('INTEGER_OR_NULL, 'FLOAT))(CTNumber)
+        Coalesce(List('INTEGER_OR_NULL, 'FLOAT))(CTUnion(CTInteger, CTFloat))
     }
 
     it("should remove coalesce if the first arg is non-nullable") {
@@ -205,7 +205,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   describe("IN") {
     it("can convert in predicate and literal list") {
       convert(parseExpr("INTEGER IN [INTEGER, INTEGER_OR_NULL, FLOAT]")) shouldEqual(
-        In('INTEGER, ListLit(List('INTEGER, 'INTEGER_OR_NULL, 'FLOAT))(CTList(CTNumber.nullable))), CTBoolean
+        In('INTEGER, ListLit(List('INTEGER, 'INTEGER_OR_NULL, 'FLOAT))(CTList(CTUnion(CTInteger, CTFloat).nullable))), CTBoolean
       )
     }
 
@@ -382,7 +382,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     convert(given) shouldEqual(
       Ands(
         HasLabel('NODE, Label("Person")),
-        Equals(Property('NODE, PropertyKey("name"))(CTAny), StringLit("Mats"))), CTBoolean
+        Equals(Property('NODE, PropertyKey("name"))(CTAnyMaterial), StringLit("Mats"))), CTBoolean
     )
   }
 

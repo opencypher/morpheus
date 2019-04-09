@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.value.CypherValue.{CypherMap, _}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class UnwindTests extends CAPSTestSuite with ScanGraphInit {

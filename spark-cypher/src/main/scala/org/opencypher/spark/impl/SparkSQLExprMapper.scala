@@ -180,13 +180,13 @@ object SparkSQLExprMapper {
           val rhsCT = rhs.cypherType.material
           lhsCT -> rhsCT match {
             case (CTList(lhInner), CTList(rhInner)) =>
-              if (lhInner.material == rhInner.material || lhInner == CTVoid || rhInner == CTVoid) {
+              if ((lhInner | rhInner).isSparkCompatible) {
                 concat(child0, child1)
               } else {
                 throw SparkSQLMappingException(s"Lists of different inner types are not supported (${lhInner.material}, ${rhInner.material})")
               }
-            case (CTList(inner), nonListType) if nonListType == inner.material || inner.material == CTVoid => concat(child0, array(child1))
-            case (nonListType, CTList(inner)) if inner.material == nonListType || inner.material == CTVoid => concat(array(child0), child1)
+            case (CTList(inner), nonListType) if (inner | nonListType).isSparkCompatible => concat(child0, array(child1))
+            case (nonListType, CTList(inner)) if (inner | nonListType).isSparkCompatible => concat(array(child0), child1)
             case (CTString, _) if rhsCT.subTypeOf(CTNumber) => concat(child0, child1.cast(StringType))
             case (_, CTString) if lhsCT.subTypeOf(CTNumber) => concat(child0.cast(StringType), child1)
             case (CTString, CTString) => concat(child0, child1)
@@ -230,7 +230,7 @@ object SparkSQLExprMapper {
 
         case Keys(e) =>
           e.cypherType.material match {
-            case _: CTNode | _: CTRelationship =>
+            case entity if entity.subTypeOf(CTEntity) =>
               val possibleProperties = header.propertiesFor(e.owner.get).toSeq.sortBy(_.key.name)
               val propertyNames = possibleProperties.map(_.key.name)
               val propertyValues = possibleProperties.map(_.asSparkSQLExpr)
@@ -249,7 +249,7 @@ object SparkSQLExprMapper {
 
         case Properties(e) =>
           e.cypherType.material match {
-            case _: CTNode | _: CTRelationship =>
+            case entity if entity.subTypeOf(CTEntity) =>
               val propertyExpressions = header.propertiesFor(e.owner.get).toSeq.sortBy(_.key.name)
               val propertyColumns = propertyExpressions
                 .map(propertyExpression => propertyExpression.asSparkSQLExpr.as(propertyExpression.key.name))
@@ -335,11 +335,9 @@ object SparkSQLExprMapper {
           switch(branches, maybeConvertedDefault)
 
         case ContainerIndex(container, index) =>
-          val indexCol = index.asSparkSQLExpr
           val containerCol = container.asSparkSQLExpr
-
           container.cypherType.material match {
-            case _: CTList | _: CTMap => containerCol.get(indexCol)
+            case c if c.subTypeOf(CTContainer) => containerCol.get(index.asSparkSQLExpr)
             case other => throw NotImplementedException(s"Accessing $other by index is not supported")
           }
 

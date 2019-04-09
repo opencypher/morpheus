@@ -139,7 +139,7 @@ case class NodePattern(nodeType: CTNode) extends Pattern {
   override def topology: Map[Entity, Connection] = Map.empty
 
   override def subTypeOf(other: Pattern): Boolean = other match {
-    case NodePattern(otherNodeType) => nodeType.subTypeOf(otherNodeType)
+    case NodePattern(otherNodeType) => nodeType.withoutGraph.subTypeOf(otherNodeType.withoutGraph)
     case _ => false
   }
 }
@@ -151,7 +151,7 @@ case class RelationshipPattern(relType: CTRelationship) extends Pattern {
   override def topology: Map[Entity, Connection] = Map.empty
 
   override def subTypeOf(other: Pattern): Boolean = other match {
-    case RelationshipPattern(otherRelType) => relType.subTypeOf(otherRelType)
+    case RelationshipPattern(otherRelType) => relType.withoutGraph.subTypeOf(otherRelType.withoutGraph)
     case _ => false
   }
 }
@@ -174,7 +174,7 @@ case class NodeRelPattern(nodeType: CTNode, relType: CTRelationship) extends Pat
 
   override def subTypeOf(other: Pattern): Boolean = other match {
     case NodeRelPattern(otherNodeType, otherRelType) =>
-      nodeType.subTypeOf(otherNodeType) && relType.subTypeOf(otherRelType)
+      nodeType.withoutGraph.subTypeOf(otherNodeType.withoutGraph) && relType.withoutGraph.subTypeOf(otherRelType.withoutGraph)
     case _ => false
   }
 }
@@ -196,9 +196,9 @@ case class TripletPattern(sourceNodeType: CTNode, relType: CTRelationship, targe
 
   override def subTypeOf(other: Pattern): Boolean = other match {
     case tr: TripletPattern =>
-      sourceNodeType.subTypeOf(tr.sourceNodeType) &&
-      relType.subTypeOf(tr.relType) &&
-      targetNodeType.subTypeOf(tr.targetNodeType)
+      sourceNodeType.withoutGraph.subTypeOf(tr.sourceNodeType.withoutGraph) &&
+      relType.withoutGraph.subTypeOf(tr.relType.withoutGraph) &&
+      targetNodeType.withoutGraph.subTypeOf(tr.targetNodeType.withoutGraph)
     case _ => false
   }
 }

@@ -36,7 +36,7 @@ import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class ReturnTests extends CAPSTestSuite with ScanGraphInit {

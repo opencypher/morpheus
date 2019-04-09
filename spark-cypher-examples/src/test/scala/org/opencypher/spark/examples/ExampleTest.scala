@@ -31,7 +31,7 @@ import java.net.URI
 
 import org.junit.runner.RunWith
 import org.opencypher.okapi.testing.Bag._
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 import org.scalatest.{BeforeAndAfterAll, FunSpec, Matchers}
 
 import scala.io.Source

@@ -24,24 +24,24 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.ir.impl.typer
+package org.opencypher.okapi.api
 
-import org.opencypher.okapi.api.types._
-import org.opencypher.v9_0.util.{symbols => frontend}
+import scala.language.postfixOps
 
-case object toFrontendType extends (CypherType => frontend.CypherType) {
-  override def apply(in: CypherType): frontend.CypherType = in.material match {
-    case CTAnyMaterial => frontend.CTAny
-    case CTInteger => frontend.CTInteger
-    case CTFloat => frontend.CTFloat
-    case CTString => frontend.CTString
-    case CTNode => frontend.CTNode
-    case CTRelationship => frontend.CTRelationship
-    case CTPath => frontend.CTPath
-    case CTMap(_) => frontend.CTMap
-    case CTList(inner) => frontend.ListType(toFrontendType(inner))
-    case b if b.subTypeOf(CTBoolean) => frontend.CTBoolean
-    case t if t.subTypeOf(CTNumber) => frontend.CTNumber
-    case x => throw new UnsupportedOperationException(s"Can not convert internal type $x to an openCypher frontend type")
-  }
+package object types {
+
+  val CTNumber: CTUnion = CTUnion(Set[CypherType](CTFloat, CTInteger, CTBigDecimal))
+
+  val CTBoolean: CTUnion = CTUnion(Set[CypherType](CTTrue, CTFalse))
+
+  val CTEntity: CTUnion = CTUnion(Set[CypherType](CTNode, CTRelationship))
+
+  val CTAny: CTUnion = CTUnion(Set[CypherType](CTAnyMaterial, CTNull))
+
+  val CTTemporalInstant: CTUnion = CTUnion(Set[CypherType](CTLocalDateTime, CTDate))
+
+  val CTTemporal: CTUnion = CTUnion(Set[CypherType](CTLocalDateTime, CTDate, CTDuration))
+
+  val CTContainer: CTUnion = CTUnion(Set[CypherType](CTList, CTMap))
+
 }

@@ -30,7 +30,7 @@ import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.{Bag, TestNameFixture}
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class NullTests extends CAPSTestSuite with ScanGraphInit with TestNameFixture {

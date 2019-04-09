@@ -31,8 +31,7 @@ import cats.syntax.semigroup._
 import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.schema.LabelPropertyMap._
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
-import org.opencypher.okapi.api.types.{CTAny, CTBoolean, CTInteger, CTString}
-import org.scalatest.{FunSpec, Matchers}
+import org.opencypher.okapi.api.types._
 
 class LabelPropertyMapTest extends ApiBaseTest {
 
@@ -47,7 +46,7 @@ class LabelPropertyMapTest extends ApiBaseTest {
 
     map1 |+| map2 should equal(
       LabelPropertyMap.empty
-        .register("A")("name" -> CTString, "age" -> CTInteger, "gender" -> CTAny)
+        .register("A")("name" -> CTString, "age" -> CTInteger, "gender" -> CTUnion(CTString, CTTrue, CTFalse))
         .register("B")("p" -> CTBoolean)
         .register("C")("name" -> CTString)
     )

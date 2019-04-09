@@ -285,7 +285,7 @@ class SchemaTest extends ApiBaseTest {
       .withNodePropertyKeys(Set.empty[String], Map("a" -> CTString))
 
     schema.nodePropertyKeyType(Set("A"), "a") should equal(Some(CTInteger))
-    schema.nodePropertyKeyType(Set.empty[String], "a") should equal(Some(CTAny))
+    schema.nodePropertyKeyType(Set.empty[String], "a") should equal(Some(CTUnion(CTString, CTInteger)))
     schema.nodePropertyKeyType(Set.empty[String], "b") should equal(Some(CTString.nullable))
     schema.nodePropertyKeyType(Set("B"), "b") should equal(None)
     schema.nodePropertyKeyType(Set("A"), "x") should equal(None)
@@ -302,12 +302,12 @@ class SchemaTest extends ApiBaseTest {
       .withRelationshipType("C")
 
     schema.relationshipPropertyKeyType(Set("A"), "a") should equal(Some(CTInteger))
-    schema.relationshipPropertyKeyType(Set("A", "B"), "a") should equal(Some(CTNumber))
+    schema.relationshipPropertyKeyType(Set("A", "B"), "a") should equal(Some(CTUnion(CTInteger, CTFloat)))
     schema.relationshipPropertyKeyType(Set("A", "B"), "b") should equal(Some(CTString.nullable))
-    schema.relationshipPropertyKeyType(Set("A", "B", "C"), "c") should equal(Some(CTAny.nullable))
+    schema.relationshipPropertyKeyType(Set("A", "B", "C"), "c") should equal(Some(CTUnion(CTFloat, CTString).nullable))
     schema.relationshipPropertyKeyType(Set("A"), "e") should equal(None)
 
-    schema.relationshipPropertyKeyType(Set.empty, "a") should equal(Some(CTNumber.nullable))
+    schema.relationshipPropertyKeyType(Set.empty, "a") should equal(Some(CTUnion(CTInteger, CTFloat).nullable))
   }
 
   it("get all keys") {
@@ -319,11 +319,11 @@ class SchemaTest extends ApiBaseTest {
     allNodePropertyKeys(schema) should equal(
       Map(
         "a" -> CTString.nullable,
-        "b" -> CTNumber.nullable,
+        "b" -> CTUnion(CTInteger, CTFloat).nullable,
         "c" -> CTString,
         "d" -> CTString.nullable,
-        "e" -> CTAny.nullable,
-        "f" -> CTAny))
+        "e" -> CTUnion(CTString, CTInteger).nullable,
+        "f" -> CTUnion(CTString, CTInteger, CTTrue, CTFalse)))
   }
 
   it("get keys for") {
@@ -334,7 +334,7 @@ class SchemaTest extends ApiBaseTest {
 
     schema.nodePropertyKeysForCombinations(Set(Set("A"))) should equal(Map("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger))
     schema.nodePropertyKeysForCombinations(Set(Set("B"))) should equal(Map("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger))
-    schema.nodePropertyKeysForCombinations(Set(Set("A"), Set("B"))) should equal(Map("b" -> CTNumber, "c" -> CTString, "e" -> CTAny, "f" -> CTInteger.nullable))
+    schema.nodePropertyKeysForCombinations(Set(Set("A"), Set("B"))) should equal(Map("b" -> CTUnion(CTInteger, CTFloat), "c" -> CTString, "e" -> CTUnion(CTString, CTInteger), "f" -> CTInteger.nullable))
   }
 
   it("get keys for label combinations") {
@@ -345,7 +345,7 @@ class SchemaTest extends ApiBaseTest {
 
     schema.nodePropertyKeysForCombinations(Set(Set("A"))) should equal(Map("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger))
     schema.nodePropertyKeysForCombinations(Set(Set("B"))) should equal(Map("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger))
-    schema.nodePropertyKeysForCombinations(Set(Set("A"), Set("B"))) should equal(Map("b" -> CTNumber, "c" -> CTString, "e" -> CTAny, "f" -> CTInteger.nullable))
+    schema.nodePropertyKeysForCombinations(Set(Set("A"), Set("B"))) should equal(Map("b" -> CTUnion(CTInteger, CTFloat), "c" -> CTString, "e" -> CTUnion(CTString, CTInteger), "f" -> CTInteger.nullable))
     schema.nodePropertyKeysForCombinations(Set(Set("A", "B"))) should equal(Map.empty)
     schema.nodePropertyKeysForCombinations(Set(Set.empty[String])) should equal(Map("a" -> CTString, "c" -> CTString, "d" -> CTString.nullable, "f" -> CTString))
   }

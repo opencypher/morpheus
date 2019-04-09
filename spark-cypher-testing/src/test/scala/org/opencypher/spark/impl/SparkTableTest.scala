@@ -33,12 +33,12 @@ import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.table.SparkTable.{DataFrameTable, _}
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatest.Matchers
-import org.scalatest.prop.GeneratorDrivenPropertyChecks
+import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.WrappedArray.ofLong
 
-class SparkTableTest extends CAPSTestSuite with Matchers with GeneratorDrivenPropertyChecks {
+class SparkTableTest extends CAPSTestSuite with Matchers with ScalaCheckDrivenPropertyChecks {
   import caps.sparkSession.sqlContext.implicits._
 
   it("it should cast integer columns to long") {

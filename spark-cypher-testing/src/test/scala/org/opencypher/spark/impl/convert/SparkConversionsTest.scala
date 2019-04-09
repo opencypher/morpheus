@@ -35,24 +35,24 @@ class SparkConversionsTest extends BaseTestSuite {
 
   it("should produce the correct StructField for non-nested types") {
     CTInteger.toStructField("foo") should equal(StructField("foo", LongType, nullable = false))
-    CTIntegerOrNull.toStructField("foo") should equal(StructField("foo", LongType, nullable = true))
+    CTInteger.nullable.toStructField("foo") should equal(StructField("foo", LongType, nullable = true))
     CTFloat.toStructField("foo") should equal(StructField("foo", DoubleType, nullable = false))
-    CTFloatOrNull.toStructField("foo") should equal(StructField("foo", DoubleType, nullable = true))
+    CTFloat.nullable.toStructField("foo") should equal(StructField("foo", DoubleType, nullable = true))
     CTBigDecimal(38, 12).toStructField("foo") should equal(StructField("foo", DataTypes.createDecimalType(38,12), nullable = false))
-    CTBigDecimalOrNull(10, 5).toStructField("foo") should equal(StructField("foo", DataTypes.createDecimalType(10,5), nullable = true))
+    CTBigDecimal(10, 5).nullable.toStructField("foo") should equal(StructField("foo", DataTypes.createDecimalType(10,5), nullable = true))
     CTBoolean.toStructField("foo") should equal(StructField("foo", BooleanType, nullable = false))
-    CTBooleanOrNull.toStructField("foo") should equal(StructField("foo", BooleanType, nullable = true))
+    CTBoolean.nullable.toStructField("foo") should equal(StructField("foo", BooleanType, nullable = true))
     CTString.toStructField("foo") should equal(StructField("foo", StringType, nullable = false))
-    CTStringOrNull.toStructField("foo") should equal(StructField("foo", StringType, nullable = true))
+    CTString.nullable.toStructField("foo") should equal(StructField("foo", StringType, nullable = true))
     CTLocalDateTime.toStructField("foo") should equal(StructField("foo", TimestampType, nullable = false))
-    CTLocalDateTimeOrNull.toStructField("foo") should equal(StructField("foo", TimestampType, nullable = true))
+    CTLocalDateTime.nullable.toStructField("foo") should equal(StructField("foo", TimestampType, nullable = true))
     CTDate.toStructField("foo") should equal(StructField("foo", DateType, nullable = false))
-    CTDateOrNull.toStructField("foo") should equal(StructField("foo", DateType, nullable = true))
+    CTDate.nullable.toStructField("foo") should equal(StructField("foo", DateType, nullable = true))
 
     CTNode(Set("A")).toStructField("foo") should equal(StructField("foo", BinaryType, nullable = false))
-    CTNodeOrNull(Set("A")).toStructField("foo") should equal(StructField("foo", BinaryType, nullable = true))
+    CTNode(Set("A")).nullable.toStructField("foo") should equal(StructField("foo", BinaryType, nullable = true))
     CTRelationship("A").toStructField("foo") should equal(StructField("foo", BinaryType, nullable = false))
-    CTRelationshipOrNull("A").toStructField("foo") should equal(StructField("foo", BinaryType, nullable = true))
+    CTRelationship("A").nullable.toStructField("foo") should equal(StructField("foo", BinaryType, nullable = true))
   }
 
   it("should produce the correct StructField for nested types") {

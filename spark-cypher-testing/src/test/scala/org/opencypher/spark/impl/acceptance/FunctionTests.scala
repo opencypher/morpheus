@@ -34,7 +34,7 @@ import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 @RunWith(classOf[JUnitRunner])
 class FunctionTests extends CAPSTestSuite with ScanGraphInit {

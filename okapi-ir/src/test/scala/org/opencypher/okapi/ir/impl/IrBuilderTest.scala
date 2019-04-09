@@ -793,7 +793,12 @@ class IrBuilderTest extends IrTestSuite {
     }
 
     it("matches node order by name and returns it") {
-      "MATCH (a:Person) WITH a.name AS name, a.age AS age ORDER BY age RETURN age, name".asCypherQuery().model.ensureThat {
+      "FROM GRAPH foo MATCH (a:Person) WITH a.name AS name, a.age AS age ORDER BY age RETURN age, name"
+        .asCypherQuery(GraphName("foo") -> Schema.empty
+          .withNodePropertyKeys("Person")(
+            "name" -> CTString,
+            "age" -> CTInteger
+          )).model.ensureThat {
         (model, _) =>
           val loadBlock = model.findExactlyOne {
             case NoWhereBlock(s@SourceBlock(_)) =>
@@ -813,8 +818,8 @@ class IrBuilderTest extends IrTestSuite {
               deps should equalWithTracing(List(matchBlock))
               map should equal(
                 Map(
-                  toField('name) -> Property(Var("a")(CTNode), PropertyKey("name"))(CTNull),
-                  toField('age) -> Property(Var("a")(CTNode), PropertyKey("age"))(CTNull)
+                  toField('name) -> Property(Var("a")(CTNode), PropertyKey("name"))(CTString),
+                  toField('age) -> Property(Var("a")(CTNode), PropertyKey("age"))(CTInteger)
                 ))
           }
 

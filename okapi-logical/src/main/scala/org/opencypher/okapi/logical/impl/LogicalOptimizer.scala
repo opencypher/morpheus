@@ -27,7 +27,7 @@
 package org.opencypher.okapi.logical.impl
 
 import org.opencypher.okapi.api.graph._
-import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.types.CypherTypeUtils._
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr._

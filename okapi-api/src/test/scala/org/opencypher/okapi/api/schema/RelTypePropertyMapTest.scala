@@ -31,7 +31,7 @@ import cats.syntax.semigroup._
 import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.schema.RelTypePropertyMap._
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
-import org.opencypher.okapi.api.types.{CTAny, CTBoolean, CTInteger, CTString}
+import org.opencypher.okapi.api.types._
 import org.scalatest.{FunSpec, Matchers}
 
 class RelTypePropertyMapTest extends ApiBaseTest {
@@ -47,7 +47,7 @@ class RelTypePropertyMapTest extends ApiBaseTest {
 
     map1 |+| map2 should equal(
       RelTypePropertyMap.empty
-        .register("A")("name" -> CTString, "age" -> CTInteger, "gender" -> CTAny)
+        .register("A")("name" -> CTString, "age" -> CTInteger, "gender" -> CTUnion(CTString, CTTrue, CTFalse))
         .register("B")("p" -> CTBoolean)
         .register("C")("name" -> CTString)
     )

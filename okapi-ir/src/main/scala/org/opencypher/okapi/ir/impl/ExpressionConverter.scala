@@ -124,7 +124,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
       val propertyType = mapLike.cypherType.material match {
         case CTVoid => CTNull
         // This means that the node can have any possible label combination, as the user did not specify any constraints
-        case n: CTNode if n.labels.isEmpty =>
+        case CTNode =>
           schema.allCombinations
             .map(l => schema.nodePropertyKeyType(l, name).getOrElse(CTNull))
             .foldLeft(CTVoid: CypherType)(_ join _)
@@ -139,7 +139,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
           context.queryLocalCatalog.schema(qgn).relationshipPropertyKeyType(types, name).getOrElse(CTNull)
         case CTMap(inner) =>
           inner.getOrElse(name, CTVoid)
-        case _: TemporalValueCypherType =>
+        case t if t.subTypeOf(CTTemporal.nullable) =>
           CTInteger.asNullableAs(mapLike.cypherType)
         case _ => throw InvalidContainerAccess(e)
       }

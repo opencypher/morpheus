@@ -49,15 +49,9 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
   // TODO: Validate all column types. At the moment null values are cast to the expected type...
   private def constructValue(row: Row, v: Var): CypherValue = {
     v.cypherType.material match {
-      case _: CTNode =>
-        collectNode(row, v)
-
-      case _: CTRelationship =>
-        collectRel(row, v)
-
-      case CTList(_) if !header.exprToColumn.contains(v) =>
-        collectComplexList(row, v)
-
+      case n if n.subTypeOf(CTNode.nullable) => collectNode(row, v)
+      case r if r.subTypeOf(CTRelationship.nullable) => collectRel(row, v)
+      case l if l.subTypeOf(CTList.nullable) && !header.exprToColumn.contains(v) => collectComplexList(row, v)
       case _ => constructFromExpression(row, v)
     }
   }

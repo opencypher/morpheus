@@ -41,7 +41,7 @@ import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.table.SparkTable
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatest.junit.JUnitRunner
+import org.scalatestplus.junit.JUnitRunner
 
 import scala.language.existentials
 

@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.api.pattern
 
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.Binds
 import org.opencypher.okapi.ir.api.expr.MapExpression

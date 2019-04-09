@@ -31,8 +31,7 @@ import org.apache.spark.sql.catalyst.expressions._
 import org.apache.spark.sql.functions._
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame, functions}
-import org.opencypher.okapi.api.types.CTNull
-import org.opencypher.okapi.api.types.CypherType._
+import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap, CypherValue}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.Expr
@@ -162,6 +161,10 @@ object CAPSFunctions {
     (implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
     if (expr.cypherType == CTNull) {
       NULL_LIT
+    } else if (expr.cypherType == CTTrue) {
+      TRUE_LIT
+    } else if (expr.cypherType == CTFalse) {
+      FALSE_LIT
     } else {
       val evaluatedArgs = expr.children.map(_.asSparkSQLExpr)
       val withConvertedChildrenResult = withConvertedChildren(evaluatedArgs).expr

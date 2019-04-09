@@ -40,8 +40,8 @@ import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.SparkSQLMappingException
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalacheck.Prop
-import org.scalatest.junit.JUnitRunner
-import org.scalatest.prop.Checkers
+import org.scalatestplus.junit.JUnitRunner
+import org.scalatestplus.scalacheck.Checkers
 
 @RunWith(classOf[JUnitRunner])
 class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
@@ -1128,7 +1128,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       val e = the[SparkSQLMappingException] thrownBy
         caps.cypher("RETURN $listParam AS res", CypherMap("listParam" -> CypherList(1, "string")))
           .records.toMaps
-      e.getMessage should (include("LIST(ANY)") and include("unsupported"))
+      e.getMessage should (include("LIST(UNION(INTEGER, STRING))") and include("unsupported"))
     }
 
     it("can support empty list parameter") {

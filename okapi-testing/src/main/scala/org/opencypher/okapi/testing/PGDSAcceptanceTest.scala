@@ -225,7 +225,7 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
           .withNodePropertyKeys("A", "B")("name" -> CTString, "type" -> CTString, "size" -> CTInteger.nullable)
           .withNodePropertyKeys("C")("name" -> CTString)
           .withNodePropertyKeys("A", "C")("name" -> CTString)
-          .withRelationshipPropertyKeys("R")("since" -> CTInteger, "before" -> CTBoolean.nullable)
+          .withRelationshipPropertyKeys("R")("since" -> CTInteger, "before" -> CTFalse.nullable)
           .withRelationshipPropertyKeys("S")("since" -> CTInteger)
           .withRelationshipPropertyKeys("T")()
 
