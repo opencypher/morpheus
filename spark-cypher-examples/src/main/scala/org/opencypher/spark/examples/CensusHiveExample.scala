@@ -55,7 +55,7 @@ object CensusHiveExample extends App {
       .withSqlDataSourceConfigs("CENSUS" -> Hive)
 
   // tag::prepare-sql-database[]
-  // Create the data in H2 in-memory database
+  // Create the data in Hive
   CensusDB.createHiveData(Hive)
   // end::prepare-sql-database[]
 

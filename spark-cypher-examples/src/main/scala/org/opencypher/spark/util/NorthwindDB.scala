@@ -27,6 +27,7 @@
 package org.opencypher.spark.util
 
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
+import org.opencypher.spark.api.io.util.FileSystemUtils._
 import org.opencypher.spark.testing.utils.H2Utils._
 
 import scala.io.Source
@@ -53,8 +54,7 @@ object NorthwindDB {
   }
 
   private def readResourceAsString(name: String): String =
-    Source.fromFile(getClass.getResource(name).toURI)
-      .getLines()
+    using(Source.fromFile(getClass.getResource(name).toURI))(_.getLines())
       .filterNot(line => line.startsWith("#") || line.startsWith("CREATE INDEX"))
       .mkString(Properties.lineSeparator)
 }
