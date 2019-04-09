@@ -67,7 +67,7 @@ object Part3b_EliteValidation extends App {
            |  writeProperty:  "${pageRankCoReviewProp(year)}",
            |  weightProperty: "$reviewCountProperty"
            |})
-           |YIELD nodes, iterations, loadMillis, computeMillis, writeMillis, dampingFactor, write, writeProperty
+           |YIELD nodes, loadMillis, computeMillis, writeMillis, dampingFactor
     """.stripMargin))
 
       val elitePageRank = neo4jCypher(

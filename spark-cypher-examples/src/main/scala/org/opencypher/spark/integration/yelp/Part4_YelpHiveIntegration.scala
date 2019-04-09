@@ -45,9 +45,7 @@ object Part4_YelpHiveIntegration extends App {
   implicit val caps: CAPSSession = CAPSSession.local()
   implicit val spark: SparkSession = caps.sparkSession
 
-  val yelpDB = "yelp"
-  val yelpBookDB = "yelpBook"
-  val integratedGraphName = GraphName("yelp_and_yelpBook")
+  val integratedGraphName = GraphName(s"${yelpDB}_and_$yelpBookDB")
 
   prepareDemoData()
 
@@ -77,7 +75,7 @@ object Part4_YelpHiveIntegration extends App {
        |    START NODES (User)     FROM HIVE.$yelpDB.user     n JOIN ON e.user_email  = n.email
        |    END   NODES (Business) FROM HIVE.$yelpDB.business n JOIN ON e.business_id = n.business_id,
        |
-       |  -- Load Facebook friendships from H2 (via JDBC) and join with Hive data using email address
+       |  -- Load YelpBook friendships from H2 (via JDBC) and join with Hive data using email address
        |  (User)-[FRIEND]->(User) FROM H2.$yelpBookDB.friend e
        |    START NODES (User)     FROM HIVE.$yelpDB.user     n JOIN ON e.user1_email = n.email
        |    END   NODES (User)     FROM HIVE.$yelpDB.user     n JOIN ON e.user2_email = n.email

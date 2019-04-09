@@ -73,7 +73,7 @@ object Part3c_BusinessRecommendations extends App {
     (0 until communityNumber).foreach { communityNumber =>
       neo4jCypher(
         s"""
-           |MATCH (u:User)-[r:REVIEWS]-(b:Business)
+           |MATCH (u:User)-[r:REVIEWS]->(b:Business)
            |WHERE u.${communityProp(year)} = $communityNumber
            |WITH { item: id(u), categories: collect(id(b))} AS userData
            |WITH collect(userData) AS data

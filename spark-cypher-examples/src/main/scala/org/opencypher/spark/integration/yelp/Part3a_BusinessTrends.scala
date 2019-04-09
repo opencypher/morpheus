@@ -68,7 +68,7 @@ object Part3a_BusinessTrends extends App {
            |  writeProperty:  "pageRank$year",
            |  weightProperty: "stars"
            |})
-           |YIELD nodes, iterations, loadMillis, computeMillis, writeMillis, dampingFactor, write, writeProperty
+           |YIELD nodes, loadMillis, computeMillis, writeMillis
     """.stripMargin))
     }
   }
