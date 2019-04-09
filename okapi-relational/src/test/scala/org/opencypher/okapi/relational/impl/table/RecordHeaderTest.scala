@@ -87,7 +87,7 @@ class RecordHeaderTest extends BaseTestSuite {
   }
 
   it("can return vars that are not present in the header, but own an expression in the header") {
-    RecordHeader.empty.withExpr(ListSegment(1, m)).vars should equal(Set(m))
+    RecordHeader.empty.withExpr(nodeListSegment).vars should equal(Set(nodeList))
   }
 
   it("can return all return items") {
@@ -319,10 +319,9 @@ class RecordHeaderTest extends BaseTestSuite {
   }
 
   it("can return transitive members for an entity") {
-    val segment = ListSegment(1, n)
-    val withSegment = nHeader.withAlias(n as segment).select(segment)
+    val withSegment = nHeader.withAlias(n as nodeListSegment).select(nodeListSegment)
 
-    withSegment.ownedBy(n) should equal(withSegment.expressions)
+    withSegment.ownedBy(nodeList) should equalWithTracing(withSegment.expressions)
   }
 
   it("returns labels for a node") {
