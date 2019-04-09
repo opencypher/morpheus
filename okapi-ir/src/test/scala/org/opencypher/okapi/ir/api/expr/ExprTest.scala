@@ -90,6 +90,10 @@ class ExprTest extends BaseTestSuite {
       ListSegment(3, Var("list")(CTUnion(CTList(CTString), CTList(CTInteger)))).cypherType should equalWithTracing(
         CTUnion(CTString, CTInteger).nullable
       )
+
+      ListSegment(3, Var("list")(CTNull)).cypherType should equalWithTracing(
+        CTNull
+      )
     }
 
     it("types MapExpression correctly") {
@@ -106,6 +110,20 @@ class ExprTest extends BaseTestSuite {
       ListLit(List(a, b)).cypherType should equal(CTList(CTUnion(CTNode, CTInteger, CTString)))
       ListLit(List(b, c)).cypherType should equal(CTList(CTUnion(CTInteger, CTString.nullable)))
       ListLit(List(a, b, c, d)).cypherType should equal(CTList(CTUnion(CTNode, CTInteger, CTString).nullable))
+    }
+
+    it("types Explode correctly") {
+      Explode(Var("list")(CTList(CTNode))).cypherType should equalWithTracing(
+        CTNode
+      )
+
+      Explode(Var("list")(CTUnion(CTList(CTString), CTList(CTInteger)))).cypherType should equalWithTracing(
+        CTUnion(CTString, CTInteger)
+      )
+
+      Explode(Var("list")(CTNull)).cypherType should equalWithTracing(
+        CTVoid
+      )
     }
   }
 
