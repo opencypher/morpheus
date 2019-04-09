@@ -101,6 +101,12 @@ class ExprTest extends BaseTestSuite {
       )
       MapExpression(mapFields).cypherType should equalWithTracing(CTMap(mapFields.mapValues(_.cypherType)))
     }
+
+    it("types ListLit correctly") {
+      ListLit(List(a, b)).cypherType should equal(CTList(CTUnion(CTNode, CTInteger, CTString)))
+      ListLit(List(b, c)).cypherType should equal(CTList(CTUnion(CTInteger, CTString.nullable)))
+      ListLit(List(a, b, c, d)).cypherType should equal(CTList(CTUnion(CTNode, CTInteger, CTString).nullable))
+    }
   }
 
 }

@@ -938,7 +938,7 @@ sealed trait Lit[T] extends Expr {
 }
 
 final case class ListLit(v: List[Expr]) extends Lit[List[Expr]] {
-  override def cypherType: CypherType = v.foldLeft(CTVoid: CypherType)(_ | _.cypherType)
+  override def cypherType: CypherType = CTList(v.foldLeft(CTVoid: CypherType)(_ | _.cypherType))
 }
 
 sealed abstract class ListSlice(maybeFrom: Option[Expr], maybeTo: Option[Expr]) extends Expr {
