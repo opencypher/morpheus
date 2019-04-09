@@ -31,7 +31,7 @@ import org.opencypher.okapi.neo4j.io.Neo4jHelpers.{cypher => neo4jCypher, _}
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants._
 
-object Part6_BusinessRecommendations extends App {
+object Part3c_BusinessRecommendations extends App {
 
   log("Part 6 - Business Recommendation")
 
@@ -68,7 +68,7 @@ object Part6_BusinessRecommendations extends App {
          |YIELD communityCount;
     """.stripMargin).head("communityCount").cast[CypherInteger].value.toInt
 
-    log(s"Finding similar users within $communityNumber communities")
+    log("Finding similar users within $communityNumber communities")
     // We use Jaccard similarity because it doesn't require equal length vectors
     (0 until communityNumber).foreach { communityNumber =>
       neo4jCypher(
@@ -99,7 +99,7 @@ object Part6_BusinessRecommendations extends App {
        |MATCH (u:User)-[:${isSimilarRelType(year)}]->(o:User),
        |      (o:User)-[r:REVIEWS]->(b:Business)
        |WHERE NOT((u)<-[:REVIEWS]-(b:Business)) AND r.stars > 3
-       |WITH id(u) AS user_id, u.name AS name, COLLECT(DISTINCT b.name) AS recommendations
+       |WITH id(u) AS user_id, u.name AS name, collect(DISTINCT b.name) AS recommendations
        |RETURN name AS user, recommendations
        |ORDER BY user_id DESC
        |LIMIT 10

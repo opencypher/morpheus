@@ -26,15 +26,16 @@
  */
 package org.opencypher.spark.integration.yelp
 
+import org.apache.commons.math3.stat.inference.TTest
 import org.opencypher.okapi.api.value.CypherValue.CypherFloat
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.{cypher => neo4jCypher, _}
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants._
 
-object Part3_YelpBusinessTrends extends App {
+object Part3b_EliteValidation extends App {
 
-  log("Part 3 - Business trends")
+  log("Part 4 - Elite validation")
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
@@ -45,13 +46,11 @@ object Part3_YelpBusinessTrends extends App {
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
   registerSource(neo4jNamespace, GraphSources.cypher.neo4j(neo4jConfig))
 
-  log("write to Neo4j and compute pageRank", 1)
-  (2017 to 2018) foreach { year =>
-    log(s"$year", 2)
+  val (eliteRanks, nonEliteRanks) = (2015 to 2018).map { year =>
     cypher(
       s"""
-         |CATALOG CREATE GRAPH $neo4jNamespace.${reviewGraphName(year)} {
-         |  FROM $fsNamespace.${reviewGraphName(year)}
+         |CATALOG CREATE GRAPH $neo4jNamespace.${coReviewGraphName(year)} {
+         |  FROM $fsNamespace.${coReviewGraphName(year)}
          |  RETURN GRAPH
          |}
      """.stripMargin)
@@ -60,63 +59,34 @@ object Part3_YelpBusinessTrends extends App {
     neo4jConfig.withSession { implicit session =>
       println(neo4jCypher(
         s"""
-           |CALL algo.pageRank('${reviewGraphName(year).metaLabel}', null, {
+           |CALL algo.pageRank('${coReviewGraphName(year).metaLabel}', null, {
            |  iterations:     20,
            |  dampingFactor:  0.85,
            |  direction:      "BOTH",
            |  write:          true,
-           |  writeProperty:  "pageRank$year",
-           |  weightProperty: "stars"
+           |  writeProperty:  "${pageRankCoReviewProp(year)}",
+           |  weightProperty: "$reviewCountProperty"
            |})
            |YIELD nodes, iterations, loadMillis, computeMillis, writeMillis, dampingFactor, write, writeProperty
     """.stripMargin))
+
+      val elitePageRank = neo4jCypher(
+        s"""
+           |MATCH (u:User)
+           |WHERE $year IN u.elite AND exists(u.${pageRankCoReviewProp(year)})
+           |RETURN avg(u.${pageRankCoReviewProp(year)}) AS avg
+         """.stripMargin).head("avg").cast[CypherFloat].value
+
+      val noneElitePageRank = neo4jCypher(
+        s"""
+           |MATCH (u:User)
+           |WHERE u.elite IS NULL OR NOT $year IN u.elite AND exists(u.${pageRankCoReviewProp(year)})
+           |RETURN avg(u.${pageRankCoReviewProp(year)}) AS avg
+         """.stripMargin).head("avg").cast[CypherFloat].value
+
+      elitePageRank -> noneElitePageRank
     }
-  }
+  }.unzip
 
-  // Reset schema cache to enable loading new properties
-  catalog.source(neo4jNamespace).reset()
-
-  // Load graphs from Neo4j into Spark and compute trend rank for each business based on their page ranks.
-  log("load graphs back to Spark and compute trend rank", 1)
-  cypher(
-    s"""
-       |CATALOG CREATE GRAPH $businessTrendsGraphName {
-       |  FROM GRAPH $neo4jNamespace.${reviewGraphName(2017)}
-       |  MATCH (b1:Business)
-       |  FROM GRAPH $neo4jNamespace.${reviewGraphName(2018)}
-       |  MATCH (b2:Business)
-       |  WHERE b1.businessId = b2.businessId
-       |  WITH b1 AS b, (b2.${pageRankProp(2018)} / ${normalizationFactor(2018)}) - (b1.${pageRankProp(2017)} / ${normalizationFactor(2017)}) AS trendRank
-       |  CONSTRUCT
-       |    CREATE (newB COPY OF b)
-       |    SET newB.trendRank = trendRank
-       |  RETURN GRAPH
-       |}
-     """.stripMargin)
-
-  // Increasing popularity
-  cypher(
-    s"""
-       |FROM GRAPH $businessTrendsGraphName
-       |MATCH (b:Business)
-       |RETURN b.name AS name, b.address AS address, b.trendRank AS trendRank
-       |ORDER BY trendRank DESC
-       |LIMIT 10
-     """.stripMargin).show
-
-  // Decreasing popularity
-  cypher(
-    s"""
-       |FROM GRAPH $businessTrendsGraphName
-       |MATCH (b:Business)
-       |RETURN b.name AS name, b.address AS address, b.trendRank AS trendRank
-       |ORDER BY trendRank ASC
-       |LIMIT 10
-     """.stripMargin).show
-
-  def normalizationFactor(year: Int): Double = neo4jConfig.cypherWithNewSession(
-    s"""
-       |MATCH (b:Business)
-       |RETURN sum(b.${pageRankProp(year)}) AS nf
-     """.stripMargin).head("nf").cast[CypherFloat].value
+  println(s"pValue: ${new TTest().tTest(eliteRanks.toArray, nonEliteRanks.toArray)}")
 }

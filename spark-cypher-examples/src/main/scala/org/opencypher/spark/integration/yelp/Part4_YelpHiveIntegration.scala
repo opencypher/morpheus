@@ -36,7 +36,7 @@ import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Jdbc
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants._
 
-object Part5_YelpHiveIntegration extends App {
+object Part4_YelpHiveIntegration extends App {
 
   log("Part 5 - Hive Integration")
 
