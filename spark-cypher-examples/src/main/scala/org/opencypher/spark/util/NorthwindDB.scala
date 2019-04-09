@@ -54,7 +54,8 @@ object NorthwindDB {
   }
 
   private def readResourceAsString(name: String): String =
-    using(Source.fromFile(getClass.getResource(name).toURI))(_.getLines())
+    using(Source.fromFile(getClass.getResource(name).toURI))(_
+      .getLines()
       .filterNot(line => line.startsWith("#") || line.startsWith("CREATE INDEX"))
-      .mkString(Properties.lineSeparator)
+      .mkString(Properties.lineSeparator))
 }
