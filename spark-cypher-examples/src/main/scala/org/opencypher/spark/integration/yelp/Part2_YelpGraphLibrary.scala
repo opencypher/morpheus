@@ -26,11 +26,13 @@
  */
 package org.opencypher.spark.integration.yelp
 
+import org.apache.log4j.{Level, Logger}
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants.{defaultYelpGraphFolder, yelpGraphName, _}
 import org.opencypher.spark.impl.CAPSConverters._
 
 object Part2_YelpGraphLibrary extends App {
+  Logger.getRootLogger.setLevel(Level.ERROR)
 
   log("Part 2 - Create graphs")
 
@@ -43,7 +45,7 @@ object Part2_YelpGraphLibrary extends App {
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
 
   // Construct City sub graph
-  log("construct city sub graph", 1)
+  log("Construct city sub graph", 1)
   cypher(
     s"""
        |CATALOG CREATE GRAPH $cityGraphName {
@@ -60,9 +62,9 @@ object Part2_YelpGraphLibrary extends App {
   catalog.source(catalog.sessionNamespace).graph(cityGraphName).asCaps.cache()
 
   // Create multiple projections of the City graph and store them in yearly buckets
-  log(s"create graph projections for '$city'", 1)
+  log(s"Create graph projections for '$city'", 1)
   (2015 to 2018) foreach { year =>
-    log(s"$year", 2)
+    log(s"For year $year", 2)
     // Compute (:User)-[:REVIEWS]->(:Business) graph
     cypher(
       s"""

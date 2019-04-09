@@ -28,6 +28,7 @@ package org.opencypher.spark.integration.yelp
 
 import java.nio.file.Paths
 
+import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
 import org.opencypher.graphddl.GraphDdl
 import org.opencypher.okapi.api.graph.GraphName
@@ -37,8 +38,9 @@ import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants._
 
 object Part4_YelpHiveIntegration extends App {
+  Logger.getRootLogger.setLevel(Level.ERROR)
 
-  log("Part 5 - Hive Integration")
+  log("Part 4 - Hive Integration")
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpSubsetFolder)
 

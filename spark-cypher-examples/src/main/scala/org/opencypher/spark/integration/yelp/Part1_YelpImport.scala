@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.integration.yelp
 
+import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
@@ -37,6 +38,7 @@ import org.opencypher.spark.integration.yelp.YelpConstants._
 import org.opencypher.spark.integration.yelp.YelpHelpers._
 
 object Part1_YelpImport extends App {
+  Logger.getRootLogger.setLevel(Level.ERROR)
 
   log("Part 1 - Import")
 
@@ -50,12 +52,12 @@ object Part1_YelpImport extends App {
 
   def storeGraph(inputPath: String, outputPath: String): Unit = {
     // Load Yelp data into DataFrames
-    log("load yelp tables", 1)
+    log("Load yelp tables", 1)
     val yelpTables = loadYelpTables(inputPath)
     // Create a Property Graph from DataFrames
-    log("create property graph", 1)
+    log("Create property graph", 1)
     val propertyGraph = createPropertyGraph(yelpTables)
-    log("store in parquet", 1)
+    log("Store in parquet", 1)
     storeAsParquet(yelpGraphName, propertyGraph)
   }
 

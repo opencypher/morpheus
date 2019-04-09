@@ -27,6 +27,7 @@
 package org.opencypher.spark.integration.yelp
 
 import org.apache.commons.math3.stat.inference.TTest
+import org.apache.log4j.{Level, Logger}
 import org.opencypher.okapi.api.value.CypherValue.CypherFloat
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.{cypher => neo4jCypher, _}
@@ -34,8 +35,9 @@ import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants._
 
 object Part3b_EliteValidation extends App {
+  Logger.getRootLogger.setLevel(Level.ERROR)
 
-  log("Part 4 - Elite validation")
+  log("Part 3b - Elite validation")
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
