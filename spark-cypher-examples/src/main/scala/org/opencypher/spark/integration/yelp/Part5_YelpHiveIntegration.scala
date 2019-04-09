@@ -46,13 +46,13 @@ object Part5_YelpHiveIntegration extends App {
   implicit val spark: SparkSession = caps.sparkSession
 
   val yelpDB = "yelp"
-  val facebookDB = "facebook"
-  val integratedGraphName = GraphName("yelp_and_facebook")
+  val yelpBookDB = "yelpBook"
+  val integratedGraphName = GraphName("yelp_and_yelpBook")
 
   prepareDemoData()
 
   val h2Config = SqlDataSourceConfig.Jdbc(
-    url = s"jdbc:h2:mem:$facebookDB.db;INIT=CREATE SCHEMA IF NOT EXISTS $facebookDB;DB_CLOSE_DELAY=30;",
+    url = s"jdbc:h2:mem:$yelpBookDB.db;INIT=CREATE SCHEMA IF NOT EXISTS $yelpBookDB;DB_CLOSE_DELAY=30;",
     driver = "org.h2.Driver"
   )
 
@@ -78,7 +78,7 @@ object Part5_YelpHiveIntegration extends App {
        |    END   NODES (Business) FROM HIVE.$yelpDB.business n JOIN ON e.business_id = n.business_id,
        |
        |  -- Load Facebook friendships from H2 (via JDBC) and join with Hive data using email address
-       |  (User)-[FRIEND]->(User) FROM H2.$facebookDB.friend e
+       |  (User)-[FRIEND]->(User) FROM H2.$yelpBookDB.friend e
        |    START NODES (User)     FROM HIVE.$yelpDB.user     n JOIN ON e.user1_email = n.email
        |    END   NODES (User)     FROM HIVE.$yelpDB.user     n JOIN ON e.user2_email = n.email
        |)
@@ -95,14 +95,14 @@ object Part5_YelpHiveIntegration extends App {
 
   def initH2(conf: Jdbc): Unit = {
     spark.read
-      .json(s"$inputPath/$cityGraphName/$facebookDB/friend.json")
+      .json(s"$inputPath/$cityGraphName/$yelpBookDB/friend.json")
       .write
       .format("jdbc")
       .mode("ignore")
       .option("url", conf.url)
       .option("driver", conf.driver)
       .options(conf.options)
-      .option("dbtable", s"$facebookDB.friend")
+      .option("dbtable", s"$yelpBookDB.friend")
       .save
   }
 
