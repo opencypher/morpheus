@@ -64,7 +64,8 @@ object Part4_EliteValidation extends App {
            |  dampingFactor:  0.85,
            |  direction:      "BOTH",
            |  write:          true,
-           |  writeProperty:  "${pageRankCoReviewProp(year)}"
+           |  writeProperty:  "${pageRankCoReviewProp(year)}",
+           |  weightProperty: "$reviewCountProperty"
            |})
            |YIELD nodes, iterations, loadMillis, computeMillis, writeMillis, dampingFactor, write, writeProperty
     """.stripMargin))

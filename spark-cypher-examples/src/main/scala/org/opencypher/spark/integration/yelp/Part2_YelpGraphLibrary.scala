@@ -86,8 +86,28 @@ object Part2_YelpGraphLibrary extends App {
          |  WHERE r1.date.year = $year
          |    AND r2.date.year = $year
          |    AND user1.yelping_since.year <= $year AND user2.yelping_since.year <= $year
+         |  WITH user1, user2, count(b) AS reviewCount
          |  CONSTRUCT
-         |    CREATE (user1)-[:CO_REVIEWS]->(user2)
+         |    CREATE (user1)-[r:CO_REVIEWS { $reviewCountProperty : $reviewCountProperty }]->(user2)
+         |  RETURN GRAPH
+         |}
+     """.stripMargin)
+
+    // Compute (u1:User)-[:CO_REVIEWS]->(u2:User)-[:REVIEWS]->(:Business)<-[:REVIEWS]-(u1) graph
+    cypher(
+      s"""
+         |CATALOG CREATE GRAPH $fsNamespace.${coReviewAndBusinessGraphName(year)} {
+         |  FROM GRAPH $fsNamespace.${reviewGraphName(year)}
+         |  MATCH (b:Business)<-[r1:REVIEWS]-(user1:User),
+         |        (b)<-[r2:REVIEWS]-(user2:User)
+         |  WHERE r1.date.year = $year
+         |    AND r2.date.year = $year
+         |    AND user1.yelping_since.year <= $year AND user2.yelping_since.year <= $year
+         |  WITH b, user1, r1, user2, r2, count(b) AS $reviewCountProperty
+         |  CONSTRUCT
+         |    CREATE (user1)-[r1]->(b)
+         |    CREATE (user2)-[r2]->(b)
+         |    CREATE (user1)-[r:CO_REVIEWS { $reviewCountProperty : $reviewCountProperty }]->(user2)
          |  RETURN GRAPH
          |}
      """.stripMargin)

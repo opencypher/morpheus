@@ -56,9 +56,12 @@ object YelpConstants {
 
   def reviewGraphName(year: Int) = GraphName(s"$cityGraphName.review.y$year")
   def coReviewGraphName(year: Int) = GraphName(s"$cityGraphName.coReview.y$year")
+  def coReviewAndBusinessGraphName(year: Int) = GraphName(s"$cityGraphName.coReviewAndBusiness.y$year")
 
   def pageRankProp(year: Int) = s"pageRank$year"
   def pageRankCoReviewProp(year: Int) = s"pageRankCoReview$year"
+
+  val reviewCountProperty = "reviewCount"
 
   def log(content: String, level: Int = 0): Unit = {
     val spaces = (0 to level).foldLeft("") { case (acc, _) => acc + "  " }
