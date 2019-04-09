@@ -1,13 +1,38 @@
+/*
+ * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ *
+ * Attribution Notice under the terms of the Apache License 2.0
+ *
+ * This work was created by the collective efforts of the openCypher community.
+ * Without limiting the terms of Section 6, any Derivative Work that is not
+ * approved by the public consensus process of the openCypher Implementers Group
+ * should not be described as “Cypher” (and Cypher® is a registered trademark of
+ * Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
+ * proposals for change that have been documented or implemented should only be
+ * described as "implementation extensions to Cypher" or as "proposed changes to
+ * Cypher that are not yet approved by the openCypher community".
+ */
 package org.opencypher.spark.integration.yelp
-
 import org.opencypher.okapi.api.value.CypherValue.CypherInteger
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.integration.yelp.YelpConstants.{coReviewAndBusinessGraphName, defaultYelpGraphFolder, fsNamespace, log, neo4jConfig, neo4jNamespace, reviewCountProperty, reviewRelType}
-import org.opencypher.okapi.neo4j.io.Neo4jHelpers.{cypher => neo4jCypher, _}
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
-
+import org.opencypher.okapi.neo4j.io.Neo4jHelpers.{cypher => neo4jCypher, _}
+import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.integration.yelp.YelpConstants._
 
 object Part6_BusinessRecommendations extends App {
+
   log("Part 6 - Business Recommendation")
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
@@ -16,68 +41,72 @@ object Part6_BusinessRecommendations extends App {
 
   import caps._
 
-  val parquetPGDS = GraphSources.fs(inputPath).parquet
-  registerSource(fsNamespace, parquetPGDS)
+  registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
   registerSource(neo4jNamespace, GraphSources.cypher.neo4j(neo4jConfig))
-
 
   val year = 2017
 
-  if (!parquetPGDS.hasGraph(coReviewAndBusinessGraphName(year)))
-    cypher(
-      s"""
-         |CATALOG CREATE GRAPH $neo4jNamespace.${coReviewAndBusinessGraphName(year)} {
-         |  FROM $fsNamespace.${coReviewAndBusinessGraphName(year)}
-         |  RETURN GRAPH
-         |}
+  cypher(
+    s"""
+       |CATALOG CREATE GRAPH $neo4jNamespace.${coReviewAndBusinessGraphName(year)} {
+       |  FROM $fsNamespace.${coReviewAndBusinessGraphName(year)}
+       |  RETURN GRAPH
+       |}
      """.stripMargin)
 
-  // Compute Louvain using Neo4j Graph Algorithms
+  // Use Neo4j Graph Algorithms to compute Louvain clusters and Jaccard similarity within clusters
   neo4jConfig.withSession { implicit session =>
+
     log("Find communities via Louvain")
     val communityNumber = neo4jCypher(
       s"""
          |CALL algo.louvain('${coReviewAndBusinessGraphName(year).metaLabel}', 'CO_REVIEWS', {
-         |    weightProperty:'$reviewCountProperty',
-         |    write:true,
-         |    writeProperty:'community_label'})
-         |    YIELD nodes, communityCount, iterations, loadMillis, computeMillis, writeMillis;
+         |  write:           true,
+         |  weightProperty: '$reviewCountProperty',
+         |  writeProperty:  '${communityProp(year)}'
+         |})
+         |YIELD communityCount;
     """.stripMargin).head("communityCount").cast[CypherInteger].value.toInt
 
-    log(s"Finding similar users inside the $communityNumber communities")
-
+    log(s"Finding similar users within $communityNumber communities")
+    // We use Jaccard similarity because it doesn't require equal length vectors
     (0 until communityNumber).foreach { communityNumber =>
       neo4jCypher(
         s"""
-           | MATCH (u:User)-[r:$reviewRelType]-(b:Business)
-           | WHERE u.community_label = $communityNumber
-           | WITH {item:id(u), categories: collect(id(b))} as userData
-           | WITH collect (userData) as data
-           | CALL algo.similarity.jaccard(data,{similarityCutoff:0.5, write: true, writeRelationshipType:'JaccardSimilar_2017_Reviews'})
-           | YIELD nodes, similarityPairs, write, writeRelationshipType, writeProperty, min, max, mean, stdDev, p25, p50, p75, p90, p95, p99, p999, p100
-           | RETURN nodes, similarityPairs, write, writeRelationshipType, writeProperty, min, max, mean, p95
+           |MATCH (u:User)-[r:REVIEWS]-(b:Business)
+           |WHERE u.${communityProp(year)} = $communityNumber
+           |WITH { item: id(u), categories: collect(id(b))} AS userData
+           |WITH collect(userData) AS data
+           |CALL algo.similarity.jaccard(data, {
+           |  similarityCutoff:      0.5,
+           |  write:                 true,
+           |  writeRelationshipType: '${isSimilarRelType(year)}'})
+           |YIELD similarityPairs
+           |RETURN similarityPairs
        """.stripMargin
       )
     }
   }
 
-
   log("Find recommendations")
+
+  // Reset schema cache to enable loading new properties
+  catalog.source(neo4jNamespace).reset()
 
   val recommendations = cypher(
     s"""
        |FROM GRAPH $neo4jNamespace.${coReviewAndBusinessGraphName(year)}
-       |MATCH (u:User)-[:JaccardSimilar_2017_Reviews]->(o:User),
-       |      (o:User)-[r:$reviewRelType]->(b:Business)
-       |WHERE not((u)<--(b:Business)) AND r.stars > 3
-       |WITH id(u) as user_id, u.name as name, COLLECT(DISTINCT b.name) as recommendations
-       |RETURN name as User, recommendations
+       |MATCH (u:User)-[:${isSimilarRelType(year)}]->(o:User),
+       |      (o:User)-[r:REVIEWS]->(b:Business)
+       |WHERE NOT((u)<-[:REVIEWS]-(b:Business)) AND r.stars > 3
+       |WITH id(u) AS user_id, u.name AS name, COLLECT(DISTINCT b.name) AS recommendations
+       |RETURN name AS user, recommendations
        |ORDER BY user_id DESC
        |LIMIT 10
        """.stripMargin
   )
 
-  println(recommendations.show)
+  recommendations.show
 }
 
 

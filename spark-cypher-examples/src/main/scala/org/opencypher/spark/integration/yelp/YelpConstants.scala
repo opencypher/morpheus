@@ -60,8 +60,10 @@ object YelpConstants {
 
   def pageRankProp(year: Int) = s"pageRank$year"
   def pageRankCoReviewProp(year: Int) = s"pageRankCoReview$year"
-
+  def communityProp(year: Int) = s"community$year"
   val reviewCountProperty = "reviewCount"
+
+  def isSimilarRelType(year: Int) = s"IS_SIMILAR_$year"
 
   def log(content: String, level: Int = 0): Unit = {
     val spaces = (0 to level).foldLeft("") { case (acc, _) => acc + "  " }
