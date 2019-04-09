@@ -132,7 +132,22 @@ final case class ListSegment(index: Int, listVar: Var) extends Var {
 
   override def name: String = s"${listVar.name}($index)"
 
-  override def cypherType: CypherType = listVar.cypherType
+  override def cypherType: CypherType = {
+    val innerType = listVar.cypherType match {
+      case CTList(inner) => inner
+
+      case CTUnion(options) =>
+        options.map {
+          case CTList(inner) => inner
+          case _ => throw IllegalArgumentException("input cypher type to resolve to a list", listVar.cypherType)
+        }.reduceLeft(_ | _)
+
+      case _ => throw IllegalArgumentException("input cypher type to resolve to a list", listVar.cypherType)
+    }
+
+    innerType.nullable
+  }
+
 }
 
 sealed trait ReturnItem extends Var
@@ -630,7 +645,7 @@ final case class BigDecimal(expr: Expr, precision: Long, scale: Long) extends Un
 final case class Coalesce(exprs: List[Expr]) extends FunctionExpr {
   override def nullInNullOut: Boolean = false
 
-  override def cypherType: CypherType = exprs.map(_.cypherType).reduceLeft(_ join _)
+  override def cypherType: CypherType = exprs.map(_.cypherType).reduceLeft(_ | _).nullable
 }
 
 final case class Explode(expr: Expr) extends Expr {
@@ -708,14 +723,14 @@ final case class BitwiseAnd(lhs: Expr, rhs: Expr) extends BinaryExpr {
 
   override def op: String = "&"
 
-  override def cypherType: CypherType = lhs.cypherType join rhs.cypherType
+  override def cypherType: CypherType = lhs.cypherType | rhs.cypherType
 }
 
 final case class BitwiseOr(lhs: Expr, rhs: Expr) extends BinaryExpr {
 
   override def op: String = "|"
 
-  override def cypherType: CypherType = lhs.cypherType join rhs.cypherType
+  override def cypherType: CypherType = lhs.cypherType | rhs.cypherType
 }
 
 // Mathematical functions
@@ -923,7 +938,7 @@ sealed trait Lit[T] extends Expr {
 }
 
 final case class ListLit(v: List[Expr]) extends Lit[List[Expr]] {
-  override def cypherType: CypherType = v.foldLeft(CTVoid: CypherType)(_ join _.cypherType)
+  override def cypherType: CypherType = v.foldLeft(CTVoid: CypherType)(_ | _.cypherType)
 }
 
 sealed abstract class ListSlice(maybeFrom: Option[Expr], maybeTo: Option[Expr]) extends Expr {
