@@ -286,8 +286,6 @@ final case class Filter[T <: Table[T] : TypeTag](
   expr: Expr
 ) extends RelationalOperator[T] {
 
-  require(expr.cypherType.material == CTBoolean)
-
   override lazy val _table: T = in.table.filter(expr)(header, context.parameters)
 }
 
