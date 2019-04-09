@@ -32,18 +32,14 @@ import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.tck.test.CreateStringGenerator._
 import org.opencypher.tools.tck.api._
 
-case class SpecificNamings(
-  graphFactory: String,
-  createGraphMethod: String,
-  emptyGraphMethod: String,
-  TestSuite: String,
-  targetPackage: String
-)
-
 //SideEffects not relevant in CAPS
 case class AcceptanceTestGenerator(
   specificImports: List[String],
-  specificNames: SpecificNamings,
+  graphFactoryName: String,
+  createGraphMethodName: String,
+  emptyGraphMethodName: String,
+  testSuiteName: String,
+  targetPackageName: String,
   checkSideEffects: Boolean,
   addGitIgnore: Boolean
 ) {
@@ -117,7 +113,7 @@ case class AcceptanceTestGenerator(
          | * described as "implementation extensions to Cypher" or as "proposed changes to
          | * Cypher that are not yet approved by the openCypher community".
          | */
-         |package ${specificNames.targetPackage}.${packageName.get}
+         |package $targetPackageName.${packageName.get}
          |
          |import org.scalatest.junit.JUnitRunner
          |import org.junit.runner.RunWith
@@ -136,7 +132,7 @@ case class AcceptanceTestGenerator(
          |${specificImports.mkString("\n")}
          |
          |@RunWith(classOf[JUnitRunner])
-         |class $className extends ${specificNames.TestSuite}{
+         |class $className extends $testSuiteName{
          |
          |$testCases
          |}""".stripMargin
@@ -184,7 +180,7 @@ case class AcceptanceTestGenerator(
         stepContext(context.ExecQueryStepNr, Some(stepNr), context.graphStateStepNr) -> (accString + s"\n    $stepString")
       case ((context, accString), (_: Measure, stepNr)) =>
         if (checkSideEffects) {
-          val stepString = s"val beforeState$stepNr = SideEffectOps.measureState(TCKGraph(${specificNames.graphFactory},graph))"
+          val stepString = s"val beforeState$stepNr = SideEffectOps.measureState(TCKGraph($graphFactoryName,graph))"
           stepContext(context.ExecQueryStepNr, context.ParameterStepNr, Some(stepNr)) -> (accString + s"\n    $stepString")
         }
         else context -> accString
@@ -192,7 +188,7 @@ case class AcceptanceTestGenerator(
         queryType match {
           case ExecQuery =>
             val parameters = context.ParameterStepNr match {
-              case Some(stepNr) => s", parameter${stepNr}"
+              case Some(pStepNr) => s", parameter$pStepNr"
               case None => ""
             }
             val stepString =
@@ -244,7 +240,7 @@ case class AcceptanceTestGenerator(
             case None => throw new NullPointerException(s"no graph state found to check side effects")
           }
           s"""
-             |    val afterState$contextStep = SideEffectOps.measureState(TCKGraph(${specificNames.graphFactory},graph))
+             |    val afterState$contextStep = SideEffectOps.measureState(TCKGraph($graphFactoryName,graph))
              |    (beforeState$contextStep diff afterState$contextStep) shouldEqual ${diffToCreateString(expected)}
            """.stripMargin
         }
@@ -263,17 +259,17 @@ case class AcceptanceTestGenerator(
 
     //combine multiple initQueries into one
     val initQueries = initSteps.collect {
-      case Execute(query, InitQuery, _) => s"${alignString(query, 3)}"
+      case Execute(query, InitQuery, _) => s"${alignString(query)}"
     }
 
     val initQueryString =
       if (initSteps.nonEmpty)
-        s"""${specificNames.graphFactory}.${specificNames.createGraphMethod}(
+        s"""$graphFactoryName.$createGraphMethodName(
            |      $escapeStringMarks
            |        ${initQueries.mkString("\n")}
            |      $escapeStringMarks
            |    )""".stripMargin
-      else specificNames.graphFactory + '.' + specificNames.emptyGraphMethod
+      else graphFactoryName + '.' + emptyGraphMethodName
 
     val execString = stepsToString(execSteps.zipWithIndex)
     val testString =
