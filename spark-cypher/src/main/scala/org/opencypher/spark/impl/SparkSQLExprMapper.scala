@@ -62,6 +62,10 @@ object SparkSQLExprMapper {
       (implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
       if (expr.cypherType == CTNull) {
         NULL_LIT
+      } else if (expr.cypherType == CTTrue) {
+        TRUE_LIT
+      } else if (expr.cypherType == CTFalse) {
+        FALSE_LIT
       } else {
         val evaluatedArgs = expr.children.map(_.asSparkSQLExpr)
         val withConvertedChildrenResult = withConvertedChildren(evaluatedArgs).expr
