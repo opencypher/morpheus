@@ -67,7 +67,7 @@ object SparkConversions {
           case n if n.subTypeOf(CTEntity.nullable) => Some(BinaryType)
           // Spark uses String as the default array inner type
           case CTMap(inner) => Some(StructType(inner.map { case (key, vType) => vType.toStructField(key) }.toSeq))
-          case CTList(CTVoid) => Some(ArrayType(StringType, containsNull = false))
+          case CTEmptyList => Some(ArrayType(StringType, containsNull = false))
           case CTList(CTNull) => Some(ArrayType(StringType, containsNull = true))
           case CTList(inner) if inner.subTypeOf(CTBoolean.nullable) => Some(ArrayType(BooleanType, containsNull = inner.isNullable))
           case CTList(elemType) if elemType.toSparkType.isDefined => elemType.toSparkType.map(ArrayType(_, elemType.isNullable))
@@ -125,7 +125,7 @@ object SparkConversions {
         case TimestampType => Some(CTLocalDateTime)
         case DateType => Some(CTDate)
         case CalendarIntervalType => Some(CTDuration)
-        case ArrayType(NullType, _) => Some(CTList(CTVoid))
+        case ArrayType(NullType, _) => Some(CTEmptyList)
         case BinaryType => Some(CTIdentity)
         case ArrayType(elemType, containsNull) =>
           elemType.toCypherType(containsNull).map(CTList(_))

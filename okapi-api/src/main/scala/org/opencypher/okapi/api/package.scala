@@ -44,4 +44,6 @@ package object types {
 
   val CTContainer: CTUnion = CTUnion(Set[CypherType](CTList, CTMap))
 
+  val CTEmptyList: CTList = CTList(CTVoid)
+
 }

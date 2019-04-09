@@ -36,7 +36,7 @@ import org.scalatest.{FunSpec, Matchers}
 class SchemaTest extends ApiBaseTest {
 
   it("lists of void and others") {
-    val s1 = Schema.empty.withNodePropertyKeys("A")("v" -> CTList(CTVoid))
+    val s1 = Schema.empty.withNodePropertyKeys("A")("v" -> CTEmptyList)
     val s2 = Schema.empty.withNodePropertyKeys("A")("v" -> CTList(CTString).nullable)
 
     val joined = s1 ++ s2

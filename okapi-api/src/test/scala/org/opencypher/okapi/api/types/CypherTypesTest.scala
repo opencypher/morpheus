@@ -141,11 +141,10 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
   }
 
   it("joining with list of void") {
-    val voidList = CTList(CTVoid)
     val otherList = CTList(CTString).nullable
 
-    voidList join otherList should equal(otherList)
-    otherList join voidList should equal(otherList)
+    CTEmptyList join otherList should equal(otherList)
+    otherList join CTEmptyList should equal(otherList)
   }
 
   it("type names") {
@@ -355,7 +354,7 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTInteger meet CTNumber shouldBe CTInteger
     CTAnyMaterial meet CTNumber shouldBe CTNumber
 
-    CTList(CTInteger) meet CTList(CTFloat) shouldBe CTList(CTVoid)
+    CTList(CTInteger) meet CTList(CTFloat) shouldBe CTEmptyList
     CTList(CTInteger) meet CTNode shouldBe CTVoid
 
     CTVoid meet CTInteger shouldBe CTVoid

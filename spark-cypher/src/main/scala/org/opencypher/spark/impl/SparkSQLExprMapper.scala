@@ -169,7 +169,7 @@ object SparkSQLExprMapper {
           lit(durationValue)
 
         case In(lhs, rhs) => rhs.cypherType.material match {
-          case CTList(CTVoid) => FALSE_LIT
+          case CTEmptyList => FALSE_LIT
           case CTList(inner) if inner.couldBeSameTypeAs(lhs.cypherType) => array_contains(child1, child0)
           case _ => NULL_LIT
         }
