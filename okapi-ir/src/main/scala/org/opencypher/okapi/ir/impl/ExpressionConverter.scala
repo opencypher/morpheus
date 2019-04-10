@@ -180,14 +180,12 @@ final class ExpressionConverter(context: IRBuilderContext) {
       case _: ast.Contains => Contains(child0, child1)
 
       // Arithmetics
-      case ast.Add(lhs, rhs) =>
-        val convertedLhs = convert(lhs)
-        val convertedRhs = convert(rhs)
-        val addType = AddType(convertedLhs.cypherType, convertedRhs.cypherType).getOrElse(
-          throw NoSuitableSignatureForExpr(e, Seq(convertedLhs.cypherType, convertedRhs.cypherType))
+      case _: ast.Add =>
+        val addType = AddType(child0.cypherType, child1.cypherType).getOrElse(
+          throw NoSuitableSignatureForExpr(e, Seq(child0.cypherType, child1.cypherType))
         )
 
-        Add(convertedLhs, convertedRhs)(addType)
+        Add(child0, child1)(addType)
 
       case s: ast.Subtract =>
         val exprType = s.returnTypeFor(
@@ -214,63 +212,53 @@ final class ExpressionConverter(context: IRBuilderContext) {
         Divide(child0, child1)(exprType)
 
       case funcInv: ast.FunctionInvocation =>
-        val convertedArgs = funcInv.args.map(convert).toList
-
-        def returnType: CypherType = funcInv.returnTypeFor(convertedArgs.map(_.cypherType): _*)
-
-        val distinct = funcInv.distinct
-
-        def arg0 = convertedArgs(0)
-
-        def arg1 = convertedArgs(1)
-
-        def arg2 = convertedArgs(2)
+        def returnType: CypherType = funcInv.returnTypeFor(convertedChildren.map(_.cypherType): _*)
 
         funcInv.function match {
-          case functions.Id => Id(arg0)
-          case functions.Labels => Labels(arg0)
-          case functions.Type => Type(arg0)
-          case functions.Avg => Avg(arg0)
-          case functions.Max => Max(arg0)
-          case functions.Min => Min(arg0)
-          case functions.Sum => Sum(arg0)
-          case functions.Count => Count(arg0, distinct)
-          case functions.Collect => Collect(arg0, distinct)
-          case functions.Exists => Exists(arg0)
-          case functions.Size => Size(arg0)
-          case functions.Keys => Keys(arg0)
-          case functions.StartNode => StartNodeFunction(arg0)(returnType)
-          case functions.EndNode => EndNodeFunction(arg0)(returnType)
-          case functions.ToFloat => ToFloat(arg0)
-          case functions.ToInteger => ToInteger(arg0)
-          case functions.ToString => ToString(arg0)
-          case functions.ToBoolean => ToBoolean(arg0)
+          case functions.Id => Id(child0)
+          case functions.Labels => Labels(child0)
+          case functions.Type => Type(child0)
+          case functions.Avg => Avg(child0)
+          case functions.Max => Max(child0)
+          case functions.Min => Min(child0)
+          case functions.Sum => Sum(child0)
+          case functions.Count => Count(child0, funcInv.distinct)
+          case functions.Collect => Collect(child0, funcInv.distinct)
+          case functions.Exists => Exists(child0)
+          case functions.Size => Size(child0)
+          case functions.Keys => Keys(child0)
+          case functions.StartNode => StartNodeFunction(child0)(returnType)
+          case functions.EndNode => EndNodeFunction(child0)(returnType)
+          case functions.ToFloat => ToFloat(child0)
+          case functions.ToInteger => ToInteger(child0)
+          case functions.ToString => ToString(child0)
+          case functions.ToBoolean => ToBoolean(child0)
           case functions.Coalesce =>
             // Special optimisation for coalesce using short-circuit logic
-            convertedArgs.map(_.cypherType).indexWhere(!_.isNullable) match {
+            convertedChildren.map(_.cypherType).indexWhere(!_.isNullable) match {
               case 0 =>
                 // first argument is non-nullable; just use it directly without coalesce
-                convertedArgs.head
+                convertedChildren.head
               case -1 =>
                 // nothing was non-nullable; keep all args
-                Coalesce(convertedArgs)
+                Coalesce(convertedChildren)
               case other =>
                 // keep only the args up until the first non-nullable (inclusive)
-                val relevantArgs = convertedArgs.slice(0, other + 1)
+                val relevantArgs = convertedChildren.slice(0, other + 1)
                 Coalesce(relevantArgs)
             }
-          case functions.Range => Range(arg0, arg1, convertedArgs.lift(2))
-          case functions.Substring => Substring(arg0, arg1, convertedArgs.lift(2))
-          case functions.Left => Substring(arg0, IntegerLit(0), convertedArgs.lift(1))
-          case functions.Right => Substring(arg0, Subtract(Multiply(IntegerLit(-1), arg1)(CTInteger), IntegerLit(1))(CTInteger), None)
-          case functions.Replace => Replace(arg0, arg1, arg2)
-          case functions.Trim => Trim(arg0)
-          case functions.LTrim => LTrim(arg0)
-          case functions.RTrim => RTrim(arg0)
-          case functions.ToUpper => ToUpper(arg0)
-          case functions.ToLower => ToLower(arg0)
+          case functions.Range => Range(child0, child1, convertedChildren.lift(2))
+          case functions.Substring => Substring(child0, child1, convertedChildren.lift(2))
+          case functions.Left => Substring(child0, IntegerLit(0), convertedChildren.lift(1))
+          case functions.Right => Substring(child0, Subtract(Multiply(IntegerLit(-1), child1)(CTInteger), IntegerLit(1))(CTInteger), None)
+          case functions.Replace => Replace(child0, child1, child2)
+          case functions.Trim => Trim(child0)
+          case functions.LTrim => LTrim(child0)
+          case functions.RTrim => RTrim(child0)
+          case functions.ToUpper => ToUpper(child0)
+          case functions.ToLower => ToLower(child0)
           case functions.Properties =>
-            val outType = arg0.cypherType.material match {
+            val outType = child0.cypherType.material match {
               case CTVoid => CTNull
               case CTNode(labels, _) =>
                 CTMap(schema.nodePropertyKeysForCombinations(schema.combinationsFor(labels)))
@@ -279,47 +267,47 @@ final class ExpressionConverter(context: IRBuilderContext) {
               case m: CTMap => m
               case _ => throw InvalidArgument(funcInv, funcInv.args(0))
             }
-            Properties(arg0)(outType)
+            Properties(child0)(outType)
 
           // Logarithmic functions
-          case functions.Sqrt => Sqrt(arg0)
-          case functions.Log => Log(arg0)
-          case functions.Log10 => Log10(arg0)
-          case functions.Exp => Exp(arg0)
+          case functions.Sqrt => Sqrt(child0)
+          case functions.Log => Log(child0)
+          case functions.Log10 => Log10(child0)
+          case functions.Exp => Exp(child0)
           case functions.E => E
           case functions.Pi => Pi
 
           // Numeric functions
-          case functions.Abs => Abs(arg0)
-          case functions.Ceil => Ceil(arg0)
-          case functions.Floor => Floor(arg0)
+          case functions.Abs => Abs(child0)
+          case functions.Ceil => Ceil(child0)
+          case functions.Floor => Floor(child0)
           case functions.Rand => Rand
-          case functions.Round => Round(arg0)
-          case functions.Sign => Sign(arg0)
+          case functions.Round => Round(child0)
+          case functions.Sign => Sign(child0)
 
           // Trigonometric functions
-          case functions.Acos => Acos(arg0)
-          case functions.Asin => Asin(arg0)
-          case functions.Atan => Atan(arg0)
-          case functions.Atan2 => Atan2(arg0, arg1)
-          case functions.Cos => Cos(arg0)
-          case functions.Cot => Cot(arg0)
-          case functions.Degrees => Degrees(arg0)
-          case functions.Haversin => Haversin(arg0)
-          case functions.Radians => Radians(arg0)
-          case functions.Sin => Sin(arg0)
-          case functions.Tan => Tan(arg0)
+          case functions.Acos => Acos(child0)
+          case functions.Asin => Asin(child0)
+          case functions.Atan => Atan(child0)
+          case functions.Atan2 => Atan2(child0, child1)
+          case functions.Cos => Cos(child0)
+          case functions.Cot => Cot(child0)
+          case functions.Degrees => Degrees(child0)
+          case functions.Haversin => Haversin(child0)
+          case functions.Radians => Radians(child0)
+          case functions.Sin => Sin(child0)
+          case functions.Tan => Tan(child0)
 
           // Match by name
           case functions.UnresolvedFunction => funcInv.name match {
             // Time functions
             case f.Timestamp.name => Timestamp
-            case f.LocalDateTime.name => LocalDateTime(convertedArgs.headOption)
-            case f.Date.name => Date(convertedArgs.headOption)
-            case f.Duration.name => Duration(arg0)
+            case f.LocalDateTime.name => LocalDateTime(convertedChildren.headOption)
+            case f.Date.name => Date(convertedChildren.headOption)
+            case f.Duration.name => Duration(child0)
             case BigDecimal.name =>
-              e.checkNbrArgs(3, convertedArgs.length)
-              BigDecimal(arg0, extractLong(arg1), extractLong(arg2))
+              e.checkNbrArgs(3, convertedChildren.length)
+              BigDecimal(child0, extractLong(child1), extractLong(child2))
             case name => throw NotImplementedException(s"Support for converting function '$name' is not yet implemented")
           }
 
