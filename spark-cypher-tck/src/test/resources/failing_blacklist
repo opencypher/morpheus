@@ -202,7 +202,6 @@ Feature "ListOperations": Scenario "IN should work with an empty list when compa
 Feature "ListOperations": Scenario "IN should return null if LHS and RHS are null - list version"
 Feature "ListOperations": Scenario "Equality between list and literal should return false"
 Feature "ListOperations": Scenario "IN should work with an empty list in the presence of other list elements: matching"
-Feature "ListOperations": Scenario "IN should return false if no match can be found, despite nulls"
 Feature "ListOperations": Scenario "Setting and returning the size of a list property"
 Feature "MatchAcceptance": Scenario "Return relationships by collecting them as a list - undirected, starting from one extreme"
 Feature "ListOperations": Scenario "Collect and extract using a list comprehension"
