@@ -75,11 +75,14 @@ class ExprTest extends BaseTestSuite {
     val b = Var("b")(CTUnion(CTInteger, CTString))
     val c = Var("c")(CTUnion(CTInteger, CTString.nullable))
     val d = Var("d")(CTInteger.nullable)
+    val e = Var("e")(CTString.nullable)
 
     it("types Coalesce correctly") {
-      Coalesce(List(a, b)).cypherType should equal(CTUnion(CTNode, CTInteger, CTString).nullable)
-      Coalesce(List(b, c)).cypherType should equal(CTUnion(CTInteger, CTString).nullable)
-      Coalesce(List(a, b, c, d)).cypherType should equal(CTUnion(CTNode, CTInteger, CTString).nullable)
+      Coalesce(List(a, b)).cypherType should equal(CTUnion(CTNode, CTInteger, CTString))
+      Coalesce(List(b, c)).cypherType should equal(CTUnion(CTInteger, CTString))
+      Coalesce(List(a, b, c, d)).cypherType should equal(CTUnion(CTNode, CTInteger, CTString))
+
+      Coalesce(List(d,e)).cypherType should equal(CTUnion(CTInteger, CTString).nullable)
     }
 
     it("types ListSegment correctly") {

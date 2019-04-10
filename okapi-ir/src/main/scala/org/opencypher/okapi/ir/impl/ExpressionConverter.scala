@@ -115,7 +115,6 @@ final class ExpressionConverter(context: IRBuilderContext) {
     case _: ast.False => FalseLit
     case ast.ListLiteral(exprs) =>
       val elements = exprs.map(convert).toList
-      val elementType = elements.foldLeft(CTVoid: CypherType) { case (agg, nextExpr) => agg.join(nextExpr.cypherType) }
       ListLit(elements)
 
     case ast.Property(m, ast.PropertyKeyName(name)) =>

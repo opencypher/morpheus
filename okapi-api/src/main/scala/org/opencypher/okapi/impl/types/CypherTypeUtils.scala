@@ -40,6 +40,7 @@ object CypherTypeUtils {
       case n: CTNode => n
       case CTUnion(as) => as.toList.collect { case n: CTNode => n } match {
         case n :: Nil => n
+        // TODO this is Spark specific remove
         case _ => notNode()
       }
       case _ => notNode()

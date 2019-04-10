@@ -354,7 +354,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     val convertedMapProperty = convert(prop(mapOf("age" -> literal(40)), "age"))
     convertedMapProperty.cypherType shouldEqual CTInteger
     convertedMapProperty shouldEqual
-      MapProperty(MapExpression(Map("age" -> IntegerLit(40)))(CTMap(Map("age" -> CTInteger))), PropertyKey("age"))
+      MapProperty(MapExpression(Map("age" -> IntegerLit(40))), PropertyKey("age"))
 
     val convertedDateProperty = convert(prop(function("date"), "year"))
     convertedDateProperty.cypherType shouldEqual CTInteger
