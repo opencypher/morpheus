@@ -70,7 +70,7 @@ object RelationalSchema {
       }
 
       val propertyExpressions = schema.nodePropertyKeysForCombinations(labelCombos).map {
-        case (k, t) => Property(node, PropertyKey(k))(t)
+        case (k, t) => EntityProperty(node, PropertyKey(k))(t)
       }
 
       RecordHeader.from(labelExpressions ++ propertyExpressions + node)
@@ -101,7 +101,7 @@ object RelationalSchema {
         }
 
       val propertyExpressions: Set[Expr] = relKeyHeaderProperties.map {
-        case (k, t) => Property(rel, PropertyKey(k))(t)
+        case (k, t) => EntityProperty(rel, PropertyKey(k))(t)
       }.toSet
 
       val startNodeExpr = StartNode(rel)(CTNode)

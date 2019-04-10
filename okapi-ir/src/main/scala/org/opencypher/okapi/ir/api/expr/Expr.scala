@@ -433,16 +433,61 @@ final case class In(lhs: Expr, rhs: Expr) extends BinaryPredicate {
 
 }
 
-final case class Property(entity: Expr, key: PropertyKey)(val cypherType: CypherType) extends Expr {
+sealed trait Property extends Expr {
 
-  override def owner: Option[Var] = entity match {
+  def propertyOwner: Expr
+
+  def key: PropertyKey
+
+  override def owner: Option[Var] = propertyOwner match {
     case v: Var => Some(v)
     case _ => None
   }
 
-  override def withOwner(v: Var): Property = Property(v, key)(cypherType)
+  override def withoutType: String = s"${propertyOwner.withoutType}.${key.name}"
 
-  override def withoutType: String = s"${entity.withoutType}.${key.name}"
+}
+
+final case class EntityProperty(propertyOwner: Expr, key: PropertyKey)(val cypherType: CypherType) extends Property {
+
+  override def withOwner(v: Var): EntityProperty = EntityProperty(v, key)(cypherType)
+
+}
+
+final case class MapProperty(propertyOwner: Expr, key: PropertyKey) extends Property {
+
+  val cypherType: CypherType = propertyOwner.cypherType match {
+    case CTMap(inner) =>
+      inner.getOrElse(key.name, CTNull)
+    case other =>
+      throw IllegalArgumentException(s"Map property needs to be defined on a map. `$propertyOwner` is of type `$other`.")
+  }
+
+  override def withOwner(v: Var): MapProperty = MapProperty(v, key)
+
+}
+
+final case class DateProperty(propertyOwner: Expr, key: PropertyKey) extends Property {
+
+  val cypherType: CypherType = CTInteger.asNullableAs(propertyOwner.cypherType)
+
+  override def withOwner(v: Var): DateProperty = DateProperty(v, key)
+
+}
+
+final case class LocalDateTimeProperty(propertyOwner: Expr, key: PropertyKey) extends Property {
+
+  val cypherType: CypherType = CTInteger.asNullableAs(propertyOwner.cypherType)
+
+  override def withOwner(v: Var): LocalDateTimeProperty = LocalDateTimeProperty(v, key)
+
+}
+
+final case class DurationProperty(propertyOwner: Expr, key: PropertyKey) extends Property {
+
+  val cypherType: CypherType = CTInteger.asNullableAs(propertyOwner.cypherType)
+
+  override def withOwner(v: Var): DurationProperty = DurationProperty(v, key)
 
 }
 

@@ -26,22 +26,20 @@
  */
 package org.opencypher.spark.impl
 
+import org.apache.spark.sql.catalyst.expressions.CaseWhen
 import org.apache.spark.sql.functions.{array_contains => _, translate => _, _}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception._
-import org.opencypher.okapi.impl.temporal.TemporalTypesHelper._
-import org.opencypher.okapi.impl.temporal.{Duration => DurationValue}
-import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.impl.CAPSFunctions._
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.expressions.AddPrefix._
 import org.opencypher.spark.impl.expressions.EncodeLong._
-import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
+import org.opencypher.spark.impl.temporal.TemporalConversions._
 import org.opencypher.spark.impl.temporal.TemporalUdfs
 
 final case class SparkSQLMappingException(msg: String) extends InternalException(msg)
@@ -49,6 +47,36 @@ final case class SparkSQLMappingException(msg: String) extends InternalException
 object SparkSQLExprMapper {
 
   implicit class RichExpression(expr: Expr) {
+
+    /**
+      * Converts `expr` with the `withConvertedChildren` function, which is passed the converted child expressions as its
+      * argument.
+      *
+      * Iff the expression has `expr.nullInNullOut == true`, then any child being mapped to `null` will also result in
+      * the parent expression being mapped to null.
+      *
+      * For these expressions the `withConvertedChildren` function is guaranteed to not receive any `null`
+      * values from the evaluated children.
+      */
+    def nullSafeConversion(expr: Expr)(withConvertedChildren: Seq[Column] => Column)
+      (implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
+      if (expr.cypherType == CTNull) {
+        NULL_LIT
+      } else if (expr.cypherType == CTTrue) {
+        TRUE_LIT
+      } else if (expr.cypherType == CTFalse) {
+        FALSE_LIT
+      } else {
+        val evaluatedArgs = expr.children.map(_.asSparkSQLExpr)
+        val withConvertedChildrenResult = withConvertedChildren(evaluatedArgs).expr
+        if (expr.children.nonEmpty && expr.nullInNullOut && expr.cypherType.isNullable) {
+          val nullPropagationCases = evaluatedArgs.map(_.isNull.expr).zip(Seq.fill(evaluatedArgs.length)(NULL_LIT.expr))
+          new Column(CaseWhen(nullPropagationCases, withConvertedChildrenResult))
+        } else {
+          new Column(withConvertedChildrenResult)
+        }
+      }
+    }
 
     /**
       * Attempts to create a Spark SQL expression from the CAPS expression.
@@ -63,7 +91,7 @@ object SparkSQLExprMapper {
         // Evaluate based on already present data; no recursion
         case _: Var | _: HasLabel | _: HasType | _: StartNode | _: EndNode => column_for(expr)
         // Evaluate bottom-up
-        case _ => null_safe_conversion(expr)(convert)
+        case _ => nullSafeConversion(expr)(convert)
       }
       header.getColumn(expr) match {
         case None => outCol
@@ -116,57 +144,15 @@ object SparkSQLExprMapper {
           case _ => explode(child0)
         }
 
-        case Property(e, PropertyKey(key)) =>
-          // TODO: Convert property lookups into separate specific lookups instead of overloading
-          e.cypherType.material match {
-            case CTMap(inner) => if (inner.keySet.contains(key)) child0.getField(key) else NULL_LIT
-            case CTDate => temporalAccessor[java.sql.Date](child0, key)
-            case CTLocalDateTime => temporalAccessor[java.sql.Timestamp](child0, key)
-            case CTDuration => TemporalUdfs.durationAccessor(key.toLowerCase).apply(child0)
-            case _ =>
-              if (!header.contains(expr)) {
-                NULL_LIT
-              } else {
-                column_for(expr)
-              }
-          }
-        case LocalDateTime(dateExpr) =>
-          // TODO: Move code outside of expr mapper
-          dateExpr match {
-            case Some(e) =>
-              val localDateTimeValue = resolveTemporalArgument(e)
-                .map(parseLocalDateTime)
-                .map(java.sql.Timestamp.valueOf)
-                .map {
-                  case ts if ts.getNanos % 1000 == 0 => ts
-                  case _ => throw IllegalStateException("Spark does not support nanosecond resolution in 'localdatetime'")
-                }
-                .orNull
+        case _: EntityProperty => if (!header.contains(expr)) NULL_LIT else column_for(expr)
+        case MapProperty(_, key) => if (expr.cypherType.material == CTVoid) NULL_LIT else child0.getField(key.name)
+        case DateProperty(_, key) => temporalAccessor[java.sql.Date](child0, key.name)
+        case LocalDateTimeProperty(_, key) => temporalAccessor[java.sql.Timestamp](child0, key.name)
+        case DurationProperty(_, key) => TemporalUdfs.durationAccessor(key.name.toLowerCase).apply(child0)
 
-              lit(localDateTimeValue).cast(DataTypes.TimestampType)
-            case None => current_timestamp()
-          }
-
-        case Date(dateExpr) =>
-          // TODO: Move code outside of expr mapper
-          dateExpr match {
-            case Some(e) =>
-              val dateValue = resolveTemporalArgument(e)
-                .map(parseDate)
-                .map(java.sql.Date.valueOf)
-                .orNull
-
-              lit(dateValue).cast(DataTypes.DateType)
-            case None => current_timestamp()
-          }
-
-        case Duration(durationExpr) =>
-          // TODO: Move code outside of expr mapper
-          val durationValue = resolveTemporalArgument(durationExpr).map {
-            case Left(m) => DurationValue(m.mapValues(_.toLong)).toCalendarInterval
-            case Right(s) => DurationValue.parse(s).toCalendarInterval
-          }.orNull
-          lit(durationValue)
+        case LocalDateTime(maybeDateExpr) => maybeDateExpr.map(e => lit(e.resolveTimestamp).cast(DataTypes.TimestampType)).getOrElse(current_timestamp())
+        case Date(maybeDateExpr) => maybeDateExpr.map(e => lit(e.resolveDate).cast(DataTypes.DateType)).getOrElse(current_timestamp())
+        case Duration(durationExpr) => lit(durationExpr.resolveInterval)
 
         case In(lhs, rhs) => rhs.cypherType.material match {
           case CTList(inner) if inner.couldBeSameTypeAs(lhs.cypherType) => array_contains(child1, child0)
@@ -207,8 +193,7 @@ object SparkSQLExprMapper {
         case ToId(e) =>
           e.cypherType.material match {
             case CTInteger => child0.encodeLongAsCAPSId
-            // TODO: Remove this call; we shouldn't have nodes or rels as concrete types here
-            case _: CTNode | _: CTRelationship | CTIdentity => child0
+            case ct if ct.toSparkType.contains(BinaryType) => child0
             case other => throw IllegalArgumentException("a type that may be converted to an ID", other)
           }
 

@@ -135,7 +135,7 @@ object ConstructGraphPlanner {
 
         val setValueForExprTuples = sets.flatMap {
           case SetPropertyItem(propertyKey, v, valueExpr) =>
-            List(valueExpr -> Property(v, PropertyKey(propertyKey))(valueExpr.cypherType))
+            List(valueExpr -> EntityProperty(v, PropertyKey(propertyKey))(valueExpr.cypherType))
           case SetLabelItem(v, labels) =>
             labels.toList.map { label =>
               v.cypherType.material match {

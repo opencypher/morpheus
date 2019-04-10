@@ -569,7 +569,7 @@ object RelationalPlanner {
       val header = op.header
       val idCol = header.idColumns(entity).head
       val properties = header.propertiesFor(entity).map(p => p -> header.column(p))
-      val propertyMapping = properties.map { case (Property(_, PropertyKey(property)), column) => property -> column }
+      val propertyMapping = properties.map { case (p: Property, column) => p.key.name -> column }
 
       entity.cypherType match {
         case CTNode(labels, _) =>

@@ -50,7 +50,7 @@ import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.expressions.EncodeLong._
 import org.opencypher.spark.impl.io.neo4j.external.Neo4j
 import org.opencypher.spark.impl.table.SparkTable._
-import org.opencypher.spark.impl.temporal.SparkTemporalHelpers._
+import org.opencypher.spark.impl.temporal.TemporalConversions._
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
 

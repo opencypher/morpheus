@@ -197,7 +197,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
     it("can convert") {
       convert(parseExpr("exists(NODE.name)")) shouldEqual(
-        Exists(Property('NODE, PropertyKey("name"))(CTString)), CTBoolean
+        Exists(EntityProperty('NODE, PropertyKey("name"))(CTString)), CTBoolean
       )
     }
   }
@@ -347,8 +347,26 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   it("can convert property access") {
-    convert(prop("NODE", "age")) shouldEqual
-      Property('NODE, PropertyKey("age"))(CTInteger)
+    val convertedNodeProperty = convert(prop("NODE", "age"))
+    convertedNodeProperty.cypherType shouldEqual CTInteger
+    convertedNodeProperty shouldEqual EntityProperty('NODE, PropertyKey("age"))(CTInteger)
+
+    val convertedMapProperty = convert(prop(mapOf("age" -> literal(40)), "age"))
+    convertedMapProperty.cypherType shouldEqual CTInteger
+    convertedMapProperty shouldEqual
+      MapProperty(MapExpression(Map("age" -> IntegerLit(40)))(CTMap(Map("age" -> CTInteger))), PropertyKey("age"))
+
+    val convertedDateProperty = convert(prop(function("date"), "year"))
+    convertedDateProperty.cypherType shouldEqual CTInteger
+    convertedDateProperty shouldEqual DateProperty(Date(None),PropertyKey("year"))
+
+    val convertedLocalDateTimeProperty = convert(prop(function("localdatetime"), "year"))
+    convertedLocalDateTimeProperty.cypherType shouldEqual CTInteger
+    convertedLocalDateTimeProperty shouldEqual LocalDateTimeProperty(LocalDateTime(None),PropertyKey("year"))
+
+    val convertedDurationProperty = convert(prop(function("duration", literal("PT1M")), "minutes"))
+    convertedDurationProperty.cypherType shouldEqual CTInteger
+    convertedDurationProperty shouldEqual DurationProperty(Duration(StringLit("PT1M")), PropertyKey("minutes"))
   }
 
   it("can convert equals") {
@@ -382,7 +400,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     convert(given) shouldEqual(
       Ands(
         HasLabel('NODE, Label("Person")),
-        Equals(Property('NODE, PropertyKey("name"))(CTAnyMaterial), StringLit("Mats"))), CTBoolean
+        Equals(EntityProperty('NODE, PropertyKey("name"))(CTAnyMaterial), StringLit("Mats"))), CTBoolean
     )
   }
 

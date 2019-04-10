@@ -163,7 +163,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
         nodeVar,
         HasLabel(nodeVar, Label("Person")),
         HasLabel(nodeVar, Label("Martian")),
-        Property(nodeVar, PropertyKey("name"))(CTString),
+        EntityProperty(nodeVar, PropertyKey("name"))(CTString),
         relVar,
         HasType(relVar, RelType("SPEAKS")),
         StartNode(relVar)(CTAny),
@@ -189,14 +189,14 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
         sourceVar,
         HasLabel(sourceVar, Label("Person")),
         HasLabel(sourceVar, Label("Martian")),
-        Property(sourceVar, PropertyKey("name"))(CTString),
+        EntityProperty(sourceVar, PropertyKey("name"))(CTString),
         relVar,
         HasType(relVar, RelType("SPEAKS")),
         StartNode(relVar)(CTAny),
         EndNode(relVar)(CTAny),
         targetVar,
         HasLabel(targetVar, Label("Language")),
-        Property(targetVar, PropertyKey("title"))(CTString)
+        EntityProperty(targetVar, PropertyKey("title"))(CTString)
       )
 
       val data = Bag(
