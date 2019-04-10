@@ -422,12 +422,13 @@ final case class In(lhs: Expr, rhs: Expr) extends BinaryPredicate {
 
   override val op = "IN"
 
-  override val cypherType: CypherType = {
-    if (rhs.cypherType == CTList(CTVoid)) {
-      CTBoolean
-    } else {
-      childNullPropagatesTo(CTBoolean)
-    }
+  override val cypherType: CypherType = lhs.cypherType -> rhs.cypherType match {
+    case (_, CTEmptyList) => CTFalse
+    case (CTNull, _) => CTNull
+    case (l, _) if l.isNullable => CTBoolean.nullable
+    case (_, CTList(inner)) if inner.isNullable => CTBoolean.nullable
+    case (l, CTList(inner)) if !l.couldBeSameTypeAs(inner) => CTFalse
+    case _ => childNullPropagatesTo(CTBoolean)
   }
 
 }
@@ -852,7 +853,7 @@ sealed trait Lit[T] extends Expr {
   override def withoutType = s"$v"
 }
 
-final case class ListLit(v: List[Expr])(val cypherType: CypherType = CTList(CTVoid)) extends Lit[List[Expr]]
+final case class ListLit(v: List[Expr])(val cypherType: CypherType = CTEmptyList) extends Lit[List[Expr]]
 
 sealed abstract class ListSlice(maybeFrom: Option[Expr], maybeTo: Option[Expr]) extends Expr {
 
@@ -954,8 +955,8 @@ final case class CaseExpr(alternatives: List[(Expr, Expr)], default: Option[Expr
       None -> newChildren
     }
     val indexed = as.zipWithIndex
-    val conditions = indexed.collect { case (c, i) if i % 2 == 0 => c}
-    val values = indexed.collect { case (c, i) if i % 2 == 1 => c}
+    val conditions = indexed.collect { case (c, i) if i % 2 == 0 => c }
+    val values = indexed.collect { case (c, i) if i % 2 == 1 => c }
     val newAlternatives = conditions.zip(values).toList
     CaseExpr(newAlternatives, newDefault)(cypherType)
   }

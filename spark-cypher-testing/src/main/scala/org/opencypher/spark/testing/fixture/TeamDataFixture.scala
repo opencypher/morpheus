@@ -80,7 +80,7 @@ trait TeamDataFixture extends TestDataFixture {
   lazy val dataFixtureSchema: Schema = Schema.empty
     .withNodePropertyKeys("Person", "German")("name" -> CTString, "luckyNumber" -> CTInteger, "languages" -> CTList(CTString).nullable)
     .withNodePropertyKeys("Person", "Swede")("name" -> CTString, "luckyNumber" -> CTInteger)
-    .withNodePropertyKeys("Person")("name" -> CTString, "luckyNumber" -> CTInteger, "languages" -> CTList(CTVoid))
+    .withNodePropertyKeys("Person")("name" -> CTString, "luckyNumber" -> CTInteger, "languages" -> CTEmptyList)
     .withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger)
 
   override lazy val nbrNodes = 4

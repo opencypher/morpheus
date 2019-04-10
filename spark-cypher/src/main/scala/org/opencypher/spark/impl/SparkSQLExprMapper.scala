@@ -28,7 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.functions.{array_contains => _, translate => _, _}
 import org.apache.spark.sql.types._
-import org.apache.spark.sql.{Column, DataFrame, functions}
+import org.apache.spark.sql.{Column, DataFrame}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception._
@@ -169,7 +169,6 @@ object SparkSQLExprMapper {
           lit(durationValue)
 
         case In(lhs, rhs) => rhs.cypherType.material match {
-          case CTList(CTVoid) => FALSE_LIT
           case CTList(inner) if inner.couldBeSameTypeAs(lhs.cypherType) => array_contains(child1, child0)
           case _ => NULL_LIT
         }
@@ -329,8 +328,8 @@ object SparkSQLExprMapper {
             None -> convertedChildren
           }
           val indexed = convertedAlternatives.zipWithIndex
-          val conditions = indexed.collect { case (c, i) if i % 2 == 0 => c}
-          val values = indexed.collect { case (c, i) if i % 2 == 1 => c}
+          val conditions = indexed.collect { case (c, i) if i % 2 == 0 => c }
+          val values = indexed.collect { case (c, i) if i % 2 == 1 => c }
           val branches = conditions.zip(values)
           switch(branches, maybeConvertedDefault)
 

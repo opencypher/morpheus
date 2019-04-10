@@ -205,7 +205,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   describe("IN") {
     it("can convert in predicate and literal list") {
       convert(parseExpr("INTEGER IN [INTEGER, INTEGER_OR_NULL, FLOAT]")) shouldEqual(
-        In('INTEGER, ListLit(List('INTEGER, 'INTEGER_OR_NULL, 'FLOAT))(CTList(CTUnion(CTInteger, CTFloat).nullable))), CTBoolean
+        In('INTEGER, ListLit(List('INTEGER, 'INTEGER_OR_NULL, 'FLOAT))(CTList(CTUnion(CTInteger, CTFloat).nullable))), CTBoolean.nullable
       )
     }
 
