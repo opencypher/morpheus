@@ -40,7 +40,6 @@ object Part3c_BusinessRecommendations extends App {
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
   implicit val caps: CAPSSession = CAPSSession.local()
-  caps.sparkSession.sparkContext.setLogLevel("OFF")
   import caps._
 
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
@@ -65,7 +64,7 @@ object Part3c_BusinessRecommendations extends App {
       s"""
          |CALL algo.louvain('${coReviewAndBusinessGraphName(year).metaLabel}', 'CO_REVIEWS', {
          |  write:           true,
-         |  weightProperty: '$reviewCountProperty',
+         |  weightProperty: 'reviewCount',
          |  writeProperty:  '${communityProp(year)}'
          |})
          |YIELD communityCount;

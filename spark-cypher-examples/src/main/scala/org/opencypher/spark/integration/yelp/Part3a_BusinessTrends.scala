@@ -41,7 +41,6 @@ object Part3a_BusinessTrends extends App {
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
   implicit val caps: CAPSSession = CAPSSession.local()
-
   import caps._
 
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)

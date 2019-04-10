@@ -42,7 +42,6 @@ object Part3b_EliteValidation extends App {
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
   implicit val caps: CAPSSession = CAPSSession.local()
-
   import caps._
 
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
@@ -67,9 +66,9 @@ object Part3b_EliteValidation extends App {
            |  direction:      "BOTH",
            |  write:          true,
            |  writeProperty:  "${pageRankCoReviewProp(year)}",
-           |  weightProperty: "$reviewCountProperty"
+           |  weightProperty: "reviewCount"
            |})
-           |YIELD nodes, loadMillis, computeMillis, writeMillis, dampingFactor
+           |YIELD nodes, loadMillis, computeMillis, writeMillis
     """.stripMargin))
 
       val elitePageRank = neo4jCypher(

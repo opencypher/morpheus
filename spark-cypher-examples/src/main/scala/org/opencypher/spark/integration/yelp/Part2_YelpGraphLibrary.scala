@@ -39,7 +39,6 @@ object Part2_YelpGraphLibrary extends App {
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
   implicit val caps: CAPSSession = CAPSSession.local()
-
   import caps._
 
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
@@ -90,7 +89,7 @@ object Part2_YelpGraphLibrary extends App {
          |    AND user1.yelping_since.year <= $year AND user2.yelping_since.year <= $year
          |  WITH user1, user2, count(b) AS reviewCount
          |  CONSTRUCT
-         |    CREATE (user1)-[r:CO_REVIEWS { $reviewCountProperty : $reviewCountProperty }]->(user2)
+         |    CREATE (user1)-[r:CO_REVIEWS { reviewCount : reviewCount }]->(user2)
          |  RETURN GRAPH
          |}
      """.stripMargin)
@@ -105,11 +104,11 @@ object Part2_YelpGraphLibrary extends App {
          |  WHERE r1.date.year = $year
          |    AND r2.date.year = $year
          |    AND user1.yelping_since.year <= $year AND user2.yelping_since.year <= $year
-         |  WITH b, user1, r1, user2, r2, count(b) AS $reviewCountProperty
+         |  WITH b, user1, r1, user2, r2, count(b) AS reviewCount
          |  CONSTRUCT
          |    CREATE (user1)-[r1]->(b)
          |    CREATE (user2)-[r2]->(b)
-         |    CREATE (user1)-[r:CO_REVIEWS { $reviewCountProperty : $reviewCountProperty }]->(user2)
+         |    CREATE (user1)-[r:CO_REVIEWS { reviewCount : reviewCount }]->(user2)
          |  RETURN GRAPH
          |}
      """.stripMargin)
