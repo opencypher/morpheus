@@ -217,9 +217,13 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   it("can convert or predicate") {
-    convert(parseExpr("NODE = NODE_OR_NULL OR STRING_OR_NULL > STRING")) shouldEqual(
-      Ors(Equals('NODE, 'NODE_OR_NULL), GreaterThan('STRING_OR_NULL, 'STRING)), CTBoolean.nullable
-    )
+    convert(parseExpr("NODE = NODE_OR_NULL OR STRING_OR_NULL > STRING")) match {
+      case ors @ Ors(inner) =>
+        inner.toSet should equal(Set(GreaterThan('STRING_OR_NULL, 'STRING), Equals('NODE, 'NODE_OR_NULL)))
+        ors.cypherType should equal(CTBoolean.nullable)
+
+      case other => fail(s"Expected an `Ors` Expr, got `$other`")
+    }
   }
 
   describe("type()") {
@@ -397,11 +401,12 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
         ast.HasLabels(varFor("NODE"), Seq(ast.LabelName("Person") _)) _,
         ast.Equals(prop("NODE", "name"), ast.StringLiteral("Mats") _) _)) _
 
-    convert(given) shouldEqual(
-      Ands(
-        HasLabel('NODE, Label("Person")),
-        Equals(EntityProperty('NODE, PropertyKey("name"))(CTAnyMaterial), StringLit("Mats"))), CTBoolean
-    )
+    convert(given) match {
+      case ands @ Ands(inner) =>
+        inner.toSet should equal( Set(HasLabel('NODE, Label("Person")),  Equals(EntityProperty('NODE, PropertyKey("name"))(CTAnyMaterial), StringLit("Mats"))))
+        ands.cypherType should equal(CTBoolean)
+      case other => fail(s"Expected an `Ands` Expr, but got `$other`")
+    }
   }
 
   it("can convert negation") {
@@ -427,7 +432,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
       expr.cypherType should equal(other.cypherType)
     }
     def shouldEqual(other: Expr, typ: CypherType): Assertion = {
-      expr should equal(other)
+      expr should equalWithTracing(other)
       expr.cypherType should equal(other.cypherType)
       expr.cypherType should equal(typ)
     }
