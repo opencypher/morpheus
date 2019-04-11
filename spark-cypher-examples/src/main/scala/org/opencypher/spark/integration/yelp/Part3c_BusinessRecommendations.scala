@@ -98,7 +98,7 @@ object Part3c_BusinessRecommendations extends App {
   val recommendations = cypher(
     s"""
        |FROM GRAPH $neo4jNamespace.${coReviewAndBusinessGraphName(year)}
-       |MATCH (u:User)-[:${isSimilarRelType(year)}]->(o:User),
+       |MATCH (u:User)-[:${isSimilarRelType(year)}]-(o:User),
        |      (o:User)-[r:REVIEWS]->(b:Business)
        |WHERE NOT((u)<-[:REVIEWS]-(b:Business)) AND r.stars > 3
        |WITH id(u) AS user_id, u.name AS name, collect(DISTINCT b.name) AS recommendations
