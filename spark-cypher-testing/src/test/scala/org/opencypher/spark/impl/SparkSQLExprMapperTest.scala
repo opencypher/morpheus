@@ -52,20 +52,20 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
   it("converts prefix id expressions") {
     val id = 257L
     val prefix = 2.toByte
-    val expr = PrefixId(ToId(IntegerLit(id))(), prefix)
+    val expr = PrefixId(ToId(IntegerLit(id)), prefix)
     expr.eval.asInstanceOf[Array[_]].toList should equal(prefix :: id.encodeAsCAPSId.toList)
   }
 
   it("converts a CypherInteger to an ID") {
     val id = 257L
-    val expr = ToId(IntegerLit(id))()
+    val expr = ToId(IntegerLit(id))
     expr.eval.asInstanceOf[Array[_]].toList should equal(id.encodeAsCAPSId.toList)
   }
 
   it("converts a CypherInteger to an ID and prefixes it") {
     val id = 257L
     val prefix = 2.toByte
-    val expr = PrefixId(ToId(IntegerLit(id))(), prefix)
+    val expr = PrefixId(ToId(IntegerLit(id)), prefix)
     expr.eval.asInstanceOf[Array[_]].toList should equal(prefix :: id.encodeAsCAPSId.toList)
   }
 
