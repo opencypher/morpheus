@@ -211,7 +211,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
     it("can convert IN for single-element lists") {
       convert(parseExpr("STRING IN ['foo']")) shouldEqual(
-        Equals('STRING, StringLit("foo")), CTBoolean
+        In('STRING, ListLit(List(StringLit("foo")))), CTBoolean
       )
     }
   }
