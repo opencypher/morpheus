@@ -385,8 +385,13 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   describe("has labels") {
     it("can convert has-labels") {
-      convert(parseExpr("NODE:Person:Duck")) shouldEqual
-        Ands(HasLabel('NODE, Label("Person")), HasLabel('NODE, Label("Duck")))
+      val given = parseExpr("NODE:Person:Duck")
+      convert(given) match {
+        case ands @ Ands(inner) =>
+          inner.toSet should equal( Set(HasLabel('NODE, Label("Person")), HasLabel('NODE, Label("Duck"))))
+          ands.cypherType should equal(CTBoolean)
+        case other => fail(s"Expected an `Ands` Expr, but got `$other`")
+      }
     }
 
     it("can convert single has-labels") {
