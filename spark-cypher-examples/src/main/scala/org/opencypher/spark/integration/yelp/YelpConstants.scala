@@ -37,6 +37,9 @@ object YelpConstants {
 
   val yelpGraphName = GraphName("yelp")
 
+  val yelpDB = "yelp"
+  val yelpBookDB = "yelpBook"
+
   val defaultYelpJsonFolder = "yelp_json"
   val defaultYelpGraphFolder = "yelp_graph"
   val defaultYelpSubsetFolder = "yelp_subset"
@@ -56,9 +59,13 @@ object YelpConstants {
 
   def reviewGraphName(year: Int) = GraphName(s"$cityGraphName.review.y$year")
   def coReviewGraphName(year: Int) = GraphName(s"$cityGraphName.coReview.y$year")
+  def coReviewAndBusinessGraphName(year: Int) = GraphName(s"$cityGraphName.coReviewAndBusiness.y$year")
 
   def pageRankProp(year: Int) = s"pageRank$year"
   def pageRankCoReviewProp(year: Int) = s"pageRankCoReview$year"
+  def communityProp(year: Int) = s"community$year"
+
+  def isSimilarRelType(year: Int) = s"IS_SIMILAR_$year"
 
   def log(content: String, level: Int = 0): Unit = {
     val spaces = (0 to level).foldLeft("") { case (acc, _) => acc + "  " }

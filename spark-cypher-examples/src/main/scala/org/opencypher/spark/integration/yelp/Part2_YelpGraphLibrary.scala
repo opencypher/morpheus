@@ -26,24 +26,25 @@
  */
 package org.opencypher.spark.integration.yelp
 
+import org.apache.log4j.{Level, Logger}
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants.{defaultYelpGraphFolder, yelpGraphName, _}
 import org.opencypher.spark.impl.CAPSConverters._
 
 object Part2_YelpGraphLibrary extends App {
+  Logger.getRootLogger.setLevel(Level.ERROR)
 
   log("Part 2 - Create graphs")
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
   implicit val caps: CAPSSession = CAPSSession.local()
-
   import caps._
 
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
 
   // Construct City sub graph
-  log("construct city sub graph", 1)
+  log("Construct city sub graph", 1)
   cypher(
     s"""
        |CATALOG CREATE GRAPH $cityGraphName {
@@ -60,9 +61,9 @@ object Part2_YelpGraphLibrary extends App {
   catalog.source(catalog.sessionNamespace).graph(cityGraphName).asCaps.cache()
 
   // Create multiple projections of the City graph and store them in yearly buckets
-  log(s"create graph projections for '$city'", 1)
+  log(s"Create graph projections for '$city'", 1)
   (2015 to 2018) foreach { year =>
-    log(s"$year", 2)
+    log(s"For year $year", 2)
     // Compute (:User)-[:REVIEWS]->(:Business) graph
     cypher(
       s"""
@@ -86,8 +87,28 @@ object Part2_YelpGraphLibrary extends App {
          |  WHERE r1.date.year = $year
          |    AND r2.date.year = $year
          |    AND user1.yelping_since.year <= $year AND user2.yelping_since.year <= $year
+         |  WITH user1, user2, count(b) AS reviewCount
          |  CONSTRUCT
-         |    CREATE (user1)-[:CO_REVIEWS]->(user2)
+         |    CREATE (user1)-[r:CO_REVIEWS { reviewCount : reviewCount }]->(user2)
+         |  RETURN GRAPH
+         |}
+     """.stripMargin)
+
+    // Compute (u1:User)-[:CO_REVIEWS]->(u2:User)-[:REVIEWS]->(:Business)<-[:REVIEWS]-(u1) graph
+    cypher(
+      s"""
+         |CATALOG CREATE GRAPH $fsNamespace.${coReviewAndBusinessGraphName(year)} {
+         |  FROM GRAPH $fsNamespace.${reviewGraphName(year)}
+         |  MATCH (b:Business)<-[r1:REVIEWS]-(user1:User),
+         |        (b)<-[r2:REVIEWS]-(user2:User)
+         |  WHERE r1.date.year = $year
+         |    AND r2.date.year = $year
+         |    AND user1.yelping_since.year <= $year AND user2.yelping_since.year <= $year
+         |  WITH b, user1, r1, user2, r2, count(b) AS reviewCount
+         |  CONSTRUCT
+         |    CREATE (user1)-[r1]->(b)
+         |    CREATE (user2)-[r2]->(b)
+         |    CREATE (user1)-[r:CO_REVIEWS { reviewCount : reviewCount }]->(user2)
          |  RETURN GRAPH
          |}
      """.stripMargin)

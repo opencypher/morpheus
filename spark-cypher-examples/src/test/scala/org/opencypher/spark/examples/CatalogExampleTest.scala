@@ -24,38 +24,13 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.util
+package org.opencypher.spark.examples
 
-import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
-import org.opencypher.spark.api.io.util.FileSystemUtils._
-import org.opencypher.spark.testing.utils.H2Utils._
-
-import scala.io.Source
-import scala.util.Properties
-
-object NorthwindDB {
-
-  def init(sqlDataSourceConfig: SqlDataSourceConfig.Jdbc): Unit = {
-
-    withConnection(sqlDataSourceConfig) { connection =>
-      connection.execute("DROP SCHEMA IF EXISTS NORTHWIND")
-      connection.execute("CREATE SCHEMA NORTHWIND")
-      connection.setSchema("NORTHWIND")
-
-      // create the SQL db schema
-      connection.execute(readResourceAsString("/northwind/sql/northwind_schema.sql"))
-
-      // populate tables with data
-      connection.execute(readResourceAsString("/northwind/sql/northwind_data.sql"))
-
-      // create views that hide problematic columns
-      connection.execute(readResourceAsString("/northwind/sql/northwind_views.sql"))
-    }
+class CatalogExampleTest extends ExampleTest {
+  it("should produce the correct output") {
+    validate(
+      CatalogExample.main(Array.empty),
+      getClass.getResource("/example_outputs/CatalogExample.out").toURI
+    )
   }
-
-  private def readResourceAsString(name: String): String =
-    using(Source.fromFile(getClass.getResource(name).toURI))(_
-      .getLines()
-      .filterNot(line => line.startsWith("#") || line.startsWith("CREATE INDEX"))
-      .mkString(Properties.lineSeparator))
 }

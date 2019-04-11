@@ -24,38 +24,42 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.spark.util
+// tag::full-example[]
+package org.opencypher.spark.examples
 
-import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
-import org.opencypher.spark.api.io.util.FileSystemUtils._
-import org.opencypher.spark.testing.utils.H2Utils._
+import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
+import org.opencypher.spark.api.io.fs.FSGraphSource
+import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.util.App
 
-import scala.io.Source
-import scala.util.Properties
+object CatalogExample extends App {
 
-object NorthwindDB {
+  implicit val session: CAPSSession = CAPSSession.local()
 
-  def init(sqlDataSourceConfig: SqlDataSourceConfig.Jdbc): Unit = {
+  val graphDir = getClass.getResource("/fs-graphsource/csv").getFile
 
-    withConnection(sqlDataSourceConfig) { connection =>
-      connection.execute("DROP SCHEMA IF EXISTS NORTHWIND")
-      connection.execute("CREATE SCHEMA NORTHWIND")
-      connection.setSchema("NORTHWIND")
+  // Create File-based PGDS
+  val filePgds: FSGraphSource = GraphSources.fs(rootPath = graphDir).csv
 
-      // create the SQL db schema
-      connection.execute(readResourceAsString("/northwind/sql/northwind_schema.sql"))
+  // Register PGDS in the catalog
+  val namespace = Namespace("CSV")
+  session.registerSource(namespace, filePgds)
 
-      // populate tables with data
-      connection.execute(readResourceAsString("/northwind/sql/northwind_data.sql"))
+  // Print graphs stored in PGDS
+  println("*** Graph names in File-based PGDS ***")
+  println(filePgds.graphNames.mkString(System.lineSeparator()))
 
-      // create views that hide problematic columns
-      connection.execute(readResourceAsString("/northwind/sql/northwind_views.sql"))
-    }
-  }
+  // Print all available graphs
+  println("*** Graph names in catalog ***")
+  println(session.catalog.graphNames.mkString(System.lineSeparator()))
 
-  private def readResourceAsString(name: String): String =
-    using(Source.fromFile(getClass.getResource(name).toURI))(_
-      .getLines()
-      .filterNot(line => line.startsWith("#") || line.startsWith("CREATE INDEX"))
-      .mkString(Properties.lineSeparator))
+  // Get graph name from File-based PGDS
+  val graphName = filePgds.graphNames.head
+
+  // Access graph via Cypher query
+  session.cypher(s"FROM GRAPH $namespace.$graphName MATCH (n) RETURN n").show
+
+  // Access graph via API
+  session.catalog.graph(QualifiedGraphName(namespace, graphName)).cypher("MATCH (n) RETURN n").show
 }
+// end::full-example[]

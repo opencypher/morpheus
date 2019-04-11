@@ -31,7 +31,7 @@ import org.apache.spark.sql.{Column, DataFrame, SparkSession, functions}
 import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.impl.table.SparkTable._
-import org.opencypher.spark.integration.yelp.YelpConstants.{cityGraphName, log}
+import org.opencypher.spark.integration.yelp.YelpConstants._
 
 object YelpHelpers {
 
@@ -101,10 +101,10 @@ object YelpHelpers {
       .withColumn("user2_email", emailColumn("user2_id"))
       .select(s"user1_email", s"user2_email")
 
-    businessDf.write.json(s"$outputPath/$cityGraphName/yelp/business.json")
-    reviewDf.write.json(s"$outputPath/$cityGraphName/yelp/review.json")
-    userDf.write.json(s"$outputPath/$cityGraphName/yelp/user.json")
-    friendDf.write.json(s"$outputPath/$cityGraphName/facebook/friend.json")
+    businessDf.write.json(s"$outputPath/$cityGraphName/$yelpDB/business.json")
+    reviewDf.write.json(s"$outputPath/$cityGraphName/$yelpDB/review.json")
+    userDf.write.json(s"$outputPath/$cityGraphName/$yelpDB/user.json")
+    friendDf.write.json(s"$outputPath/$cityGraphName/$yelpBookDB/friend.json")
   }
 
   implicit class DataFrameOps(df: DataFrame) {

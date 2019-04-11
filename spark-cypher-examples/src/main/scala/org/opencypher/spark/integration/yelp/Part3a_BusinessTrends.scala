@@ -26,28 +26,29 @@
  */
 package org.opencypher.spark.integration.yelp
 
+import org.apache.log4j.{Level, Logger}
 import org.opencypher.okapi.api.value.CypherValue.CypherFloat
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.{cypher => neo4jCypher, _}
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants._
 
-object Part3_YelpBusinessTrends extends App {
+object Part3a_BusinessTrends extends App {
+  Logger.getRootLogger.setLevel(Level.ERROR)
 
-  log("Part 3 - Business trends")
+  log("Part 3a - Business trends")
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
   implicit val caps: CAPSSession = CAPSSession.local()
-
   import caps._
 
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
   registerSource(neo4jNamespace, GraphSources.cypher.neo4j(neo4jConfig))
 
-  log("write to Neo4j and compute pageRank", 1)
+  log("Write to Neo4j and compute pageRank", 1)
   (2017 to 2018) foreach { year =>
-    log(s"$year", 2)
+    log(s"For year $year", 2)
     cypher(
       s"""
          |CATALOG CREATE GRAPH $neo4jNamespace.${reviewGraphName(year)} {
@@ -68,7 +69,7 @@ object Part3_YelpBusinessTrends extends App {
            |  writeProperty:  "pageRank$year",
            |  weightProperty: "stars"
            |})
-           |YIELD nodes, iterations, loadMillis, computeMillis, writeMillis, dampingFactor, write, writeProperty
+           |YIELD nodes, loadMillis, computeMillis, writeMillis
     """.stripMargin))
     }
   }
@@ -77,7 +78,7 @@ object Part3_YelpBusinessTrends extends App {
   catalog.source(neo4jNamespace).reset()
 
   // Load graphs from Neo4j into Spark and compute trend rank for each business based on their page ranks.
-  log("load graphs back to Spark and compute trend rank", 1)
+  log("Load graphs back to Spark and compute trend rank", 1)
   cypher(
     s"""
        |CATALOG CREATE GRAPH $businessTrendsGraphName {

@@ -28,6 +28,7 @@ package org.opencypher.spark.integration.yelp
 
 import java.nio.file.Paths
 
+import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
 import org.opencypher.graphddl.GraphDdl
 import org.opencypher.okapi.api.graph.GraphName
@@ -36,23 +37,22 @@ import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Jdbc
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants._
 
-object Part5_YelpHiveIntegration extends App {
+object Part4_YelpHiveIntegration extends App {
+  Logger.getRootLogger.setLevel(Level.ERROR)
 
-  log("Part 5 - Hive Integration")
+  log("Part 4 - Hive Integration")
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpSubsetFolder)
 
   implicit val caps: CAPSSession = CAPSSession.local()
   implicit val spark: SparkSession = caps.sparkSession
 
-  val yelpDB = "yelp"
-  val facebookDB = "facebook"
-  val integratedGraphName = GraphName("yelp_and_facebook")
+  val integratedGraphName = GraphName(s"${yelpDB}_and_$yelpBookDB")
 
   prepareDemoData()
 
   val h2Config = SqlDataSourceConfig.Jdbc(
-    url = s"jdbc:h2:mem:$facebookDB.db;INIT=CREATE SCHEMA IF NOT EXISTS $facebookDB;DB_CLOSE_DELAY=30;",
+    url = s"jdbc:h2:mem:$yelpBookDB.db;INIT=CREATE SCHEMA IF NOT EXISTS $yelpBookDB;DB_CLOSE_DELAY=30;",
     driver = "org.h2.Driver"
   )
 
@@ -77,8 +77,8 @@ object Part5_YelpHiveIntegration extends App {
        |    START NODES (User)     FROM HIVE.$yelpDB.user     n JOIN ON e.user_email  = n.email
        |    END   NODES (Business) FROM HIVE.$yelpDB.business n JOIN ON e.business_id = n.business_id,
        |
-       |  -- Load Facebook friendships from H2 (via JDBC) and join with Hive data using email address
-       |  (User)-[FRIEND]->(User) FROM H2.$facebookDB.friend e
+       |  -- Load YelpBook friendships from H2 (via JDBC) and join with Hive data using email address
+       |  (User)-[FRIEND]->(User) FROM H2.$yelpBookDB.friend e
        |    START NODES (User)     FROM HIVE.$yelpDB.user     n JOIN ON e.user1_email = n.email
        |    END   NODES (User)     FROM HIVE.$yelpDB.user     n JOIN ON e.user2_email = n.email
        |)
@@ -95,14 +95,14 @@ object Part5_YelpHiveIntegration extends App {
 
   def initH2(conf: Jdbc): Unit = {
     spark.read
-      .json(s"$inputPath/$cityGraphName/$facebookDB/friend.json")
+      .json(s"$inputPath/$cityGraphName/$yelpBookDB/friend.json")
       .write
       .format("jdbc")
       .mode("ignore")
       .option("url", conf.url)
       .option("driver", conf.driver)
       .options(conf.options)
-      .option("dbtable", s"$facebookDB.friend")
+      .option("dbtable", s"$yelpBookDB.friend")
       .save
   }
 
