@@ -42,45 +42,6 @@ import org.opencypher.v9_0.{expressions => ast}
 
 import scala.language.implicitConversions
 
-object AddType {
-
-  private implicit class RichCTList(val left: CTList) extends AnyVal {
-    def listConcatJoin(right: CypherType): CypherType = (left, right) match {
-      case (CTList(lInner), CTList(rInner)) => CTList(lInner join rInner)
-      case (CTList(lInner), _) => CTList(lInner join right)
-    }
-  }
-
-  def apply(lhs: CypherType, rhs: CypherType): Option[CypherType] = {
-    val addSignature: Signature = args => {
-      val result = args.map(_.material) match {
-        case Seq(CTVoid, _) | Seq(_, CTVoid) => Some(CTNull)
-        case Seq(left: CTList, _) => Some(left listConcatJoin rhs)
-        case Seq(_, right: CTList) => Some(right listConcatJoin lhs)
-        case Seq(CTString, _) if rhs.subTypeOf(CTNumber) => Some(CTString)
-        case Seq(_, CTString) if lhs.subTypeOf(CTNumber) => Some(CTString)
-        case Seq(CTString, CTString) => Some(CTString)
-        case Seq(CTDuration, CTDuration) => Some(CTDuration)
-        case Seq(CTLocalDateTime, CTDuration) => Some(CTLocalDateTime)
-        case Seq(CTDuration, CTLocalDateTime) => Some(CTLocalDateTime)
-        case Seq(CTDate, CTDuration) => Some(CTDate)
-        case Seq(CTDuration, CTDate) => Some(CTDate)
-        case Seq(CTInteger, CTInteger) => Some(CTInteger)
-        case Seq(CTFloat, CTInteger) => Some(CTFloat)
-        case Seq(CTInteger, CTFloat) => Some(CTFloat)
-        case Seq(CTFloat, CTFloat) => Some(CTFloat)
-        case _ => None
-      }
-
-      result.map(_.asNullableAs(rhs join lhs))
-    }
-    val sigs = Set(addSignature, BigDecimalSignatures.arithmeticSignature(Addition))
-
-    returnTypeFor(Seq.empty, Seq(lhs, rhs), sigs)
-  }
-
-}
-
 final class ExpressionConverter(context: IRBuilderContext) {
 
   private def schema = context.workingGraph.schema
@@ -180,36 +141,10 @@ final class ExpressionConverter(context: IRBuilderContext) {
       case _: ast.Contains => Contains(child0, child1)
 
       // Arithmetics
-      case _: ast.Add =>
-        val addType = AddType(child0.cypherType, child1.cypherType).getOrElse(
-          throw NoSuitableSignatureForExpr(e, Seq(child0.cypherType, child1.cypherType))
-        )
-
-        Add(child0, child1)(addType)
-
-      case s: ast.Subtract =>
-        val exprType = s.returnTypeFor(
-          BigDecimalSignatures.arithmeticSignature(Addition),
-          child0.cypherType, child1.cypherType
-        )
-
-        Subtract(child0, child1)(exprType)
-
-      case m@ast.Multiply(lhs, rhs) =>
-        val exprType = m.returnTypeFor(
-          BigDecimalSignatures.arithmeticSignature(Multiplication),
-          child0.cypherType, child1.cypherType
-        )
-
-        Multiply(child0, child1)(exprType)
-
-      case d: ast.Divide =>
-        val exprType = d.returnTypeFor(
-          BigDecimalSignatures.arithmeticSignature(Division),
-          child0.cypherType, child1.cypherType
-        )
-
-        Divide(child0, child1)(exprType)
+      case _: ast.Add => Add(child0, child1)
+      case _: ast.Subtract => Subtract(child0, child1)
+      case _: ast.Multiply => Multiply(child0, child1)
+      case _: ast.Divide => Divide(child0, child1)
 
       case funcInv: ast.FunctionInvocation =>
         def returnType: CypherType = funcInv.returnTypeFor(convertedChildren.map(_.cypherType): _*)
@@ -250,7 +185,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
           case functions.Range => Range(child0, child1, convertedChildren.lift(2))
           case functions.Substring => Substring(child0, child1, convertedChildren.lift(2))
           case functions.Left => Substring(child0, IntegerLit(0), convertedChildren.lift(1))
-          case functions.Right => Substring(child0, Subtract(Multiply(IntegerLit(-1), child1)(CTInteger), IntegerLit(1))(CTInteger), None)
+          case functions.Right => Substring(child0, Subtract(Multiply(IntegerLit(-1), child1), IntegerLit(1)), None)
           case functions.Replace => Replace(child0, child1, child2)
           case functions.Trim => Trim(child0)
           case functions.LTrim => LTrim(child0)
@@ -382,6 +317,7 @@ object BigDecimalSignatures {
     * @param precisionScaleOp
     * @return
     */
+  // TODO change to tuples
   def arithmeticSignature(precisionScaleOp: PrecisionScaleOp): Signature = {
     case Seq(CTBigDecimal(p1, s1), CTBigDecimal(p2, s2)) => Some(CTBigDecimal(precisionScaleOp(p1, s1, p2, s2)))
     case Seq(CTBigDecimal(p, s), CTInteger) => Some(CTBigDecimal(precisionScaleOp(p, s, 20, 0)))
