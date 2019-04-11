@@ -32,7 +32,7 @@ import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr.FlattenOps._
 import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 import org.opencypher.okapi.ir.impl.BigDecimalSignatures
-import org.opencypher.okapi.ir.impl.BigDecimalSignatures.{Addition, Multiplication}
+import org.opencypher.okapi.ir.impl.BigDecimalSignatures.{Addition, Division, Multiplication}
 import org.opencypher.okapi.trees.AbstractTreeNode
 
 import scala.annotation.tailrec
@@ -595,7 +595,7 @@ final case class Divide(lhs: Expr, rhs: Expr) extends ArithmeticExpr {
     case (CTFloat, CTInteger) => Some(CTFloat)
     case (CTDuration, CTFloat) => Some(CTDuration)
     case (CTDuration, CTInteger) => Some(CTDuration)
-    case (left, right) => BigDecimalSignatures.arithmeticSignature(Multiplication)(Seq(left, right))
+    case (left, right) => BigDecimalSignatures.arithmeticSignature(Division)(Seq(left, right))
   }
 }
 

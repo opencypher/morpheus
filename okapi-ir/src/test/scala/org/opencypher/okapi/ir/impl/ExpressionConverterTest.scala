@@ -110,48 +110,57 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     }
 
     it("should convert bigdecimal addition") {
-      convert(parseExpr("bigdecimal(INTEGER, 4, 2) + bigdecimal(INTEGER, 10, 6)")) shouldEqual
-        Add(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))(CTBigDecimal(11, 6))
+      val result = convert(parseExpr("bigdecimal(INTEGER, 4, 2) + bigdecimal(INTEGER, 10, 6)"))
+      result shouldEqual Add(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))
+      result.cypherType shouldEqual CTBigDecimal(11, 6)
     }
 
     it("should convert bigdecimal subtraction") {
-      convert(parseExpr("bigdecimal(INTEGER, 4, 2) - bigdecimal(INTEGER, 10, 6)")) shouldEqual
-        Subtract(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))(CTBigDecimal(11, 6))
+      val result = convert(parseExpr("bigdecimal(INTEGER, 4, 2) - bigdecimal(INTEGER, 10, 6)"))
+      result shouldEqual Subtract(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))
+      result.cypherType shouldEqual CTBigDecimal(11, 6)
     }
 
     it("should convert bigdecimal multiplication") {
-      convert(parseExpr("bigdecimal(INTEGER, 4, 2) * bigdecimal(INTEGER, 10, 6)")) shouldEqual
-        Multiply(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))(CTBigDecimal(15, 8))
+      val result = convert(parseExpr("bigdecimal(INTEGER, 4, 2) * bigdecimal(INTEGER, 10, 6)"))
+      result shouldEqual Multiply(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))
+      result.cypherType shouldEqual CTBigDecimal(15, 8)
     }
 
     it("should convert bigdecimal division") {
-      convert(parseExpr("bigdecimal(INTEGER, 4, 2) / bigdecimal(INTEGER, 10, 6)")) shouldEqual
-        Divide(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))(CTBigDecimal(21, 13))
+      val result = convert(parseExpr("bigdecimal(INTEGER, 4, 2) / bigdecimal(INTEGER, 10, 6)"))
+      result shouldEqual Divide(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))
+      result.cypherType shouldEqual CTBigDecimal(21, 13)
     }
 
     it("should convert bigdecimal division (magic number 6)") {
-      convert(parseExpr("bigdecimal(INTEGER, 3, 1) / bigdecimal(INTEGER, 2, 1)")) shouldEqual
-        Divide(BigDecimal('INTEGER, 3, 1), BigDecimal('INTEGER, 2, 1))(CTBigDecimal(9, 6))
+      val result = convert(parseExpr("bigdecimal(INTEGER, 3, 1) / bigdecimal(INTEGER, 2, 1)"))
+      result shouldEqual Divide(BigDecimal('INTEGER, 3, 1), BigDecimal('INTEGER, 2, 1))
+      result.cypherType shouldEqual CTBigDecimal(9, 6)
     }
 
     it("should convert bigdecimal addition with int") {
-      convert(parseExpr("bigdecimal(INTEGER, 2, 2) + 2")) shouldEqual
-        Add(BigDecimal('INTEGER, 2, 2), IntegerLit(2))(CTBigDecimal(23, 2))
+      val result = convert(parseExpr("bigdecimal(INTEGER, 2, 2) + 2"))
+      result shouldEqual Add(BigDecimal('INTEGER, 2, 2), IntegerLit(2))
+      result.cypherType shouldEqual CTBigDecimal(23, 2)
     }
 
     it("should convert bigdecimal multiplication with int") {
-      convert(parseExpr("bigdecimal(INTEGER, 2, 2) + 2")) shouldEqual
-        Add(BigDecimal('INTEGER, 2, 2), IntegerLit(2))(CTBigDecimal(23, 2))
+      val result = convert(parseExpr("bigdecimal(INTEGER, 2, 2) + 2"))
+      result shouldEqual Add(BigDecimal('INTEGER, 2, 2), IntegerLit(2))
+      result.cypherType shouldEqual CTBigDecimal(23, 2)
     }
 
     it("should lose bigdecimal when adding with float") {
-      convert(parseExpr("bigdecimal(FLOAT, 4, 2) + 2.5")) shouldEqual
-        Add(BigDecimal('FLOAT, 4, 2), FloatLit(2.5))(CTFloat)
+      val result = convert(parseExpr("bigdecimal(FLOAT, 4, 2) + 2.5"))
+      result shouldEqual Add(BigDecimal('FLOAT, 4, 2), FloatLit(2.5))
+      result.cypherType shouldEqual CTFloat
     }
 
     it("should lose bigdecimal when dividing by float") {
-      convert(parseExpr("bigdecimal(FLOAT, 4, 2) / 2.5")) shouldEqual
-        Divide(BigDecimal('FLOAT, 4, 2), FloatLit(2.5))(CTFloat)
+      val result = convert(parseExpr("bigdecimal(FLOAT, 4, 2) / 2.5"))
+      result shouldEqual Divide(BigDecimal('FLOAT, 4, 2), FloatLit(2.5))
+      result.cypherType shouldEqual CTFloat
     }
 
     it("should not allow scale to be greater than precision") {
@@ -311,23 +320,27 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   it("can convert add") {
-    convert("INTEGER + INTEGER") shouldEqual
-      Add('INTEGER, 'INTEGER)(CTInteger)
+    val result = convert("INTEGER + INTEGER")
+    result shouldEqual Add('INTEGER, 'INTEGER)
+    result.cypherType shouldEqual CTInteger
   }
 
   it("can convert subtract") {
-    convert("INTEGER - INTEGER") shouldEqual
-      Subtract('INTEGER, 'INTEGER)(CTInteger)
+    val result = convert("INTEGER - INTEGER")
+    result shouldEqual Subtract('INTEGER, 'INTEGER)
+    result.cypherType shouldEqual CTInteger
   }
 
   it("can convert multiply") {
-    convert("FLOAT * INTEGER_OR_NULL") shouldEqual
-      Multiply('FLOAT, 'INTEGER_OR_NULL)(CTFloat.nullable)
+    val result = convert("FLOAT * INTEGER_OR_NULL")
+    result shouldEqual Multiply('FLOAT, 'INTEGER_OR_NULL)
+    result.cypherType shouldEqual CTFloat.nullable
   }
 
   it("can convert divide") {
-    convert("FLOAT / FLOAT") shouldEqual
-      Divide('FLOAT, 'FLOAT)(CTFloat)
+    val result = convert("FLOAT / FLOAT")
+    result shouldEqual Divide('FLOAT, 'FLOAT)
+    result.cypherType shouldEqual CTFloat
   }
 
   it("can convert type function calls used as predicates") {
