@@ -663,9 +663,13 @@ final case class Keys(expr: Expr) extends UnaryFunctionExpr {
   override def cypherType: CypherType = childNullPropagatesTo(CTList(CTString))
 }
 
-final case class StartNodeFunction(expr: Expr)(val cypherType: CypherType) extends UnaryFunctionExpr
+final case class StartNodeFunction(expr: Expr) extends UnaryFunctionExpr {
+  override def cypherType: CypherType = childNullPropagatesTo(CTNode)
+}
 
-final case class EndNodeFunction(expr: Expr)(val cypherType: CypherType) extends UnaryFunctionExpr
+final case class EndNodeFunction(expr: Expr) extends UnaryFunctionExpr {
+  override def cypherType: CypherType = childNullPropagatesTo(CTNode)
+}
 
 final case class ToFloat(expr: Expr) extends UnaryFunctionExpr {
   override val cypherType: CypherType = CTFloat.asNullableAs(expr.cypherType)

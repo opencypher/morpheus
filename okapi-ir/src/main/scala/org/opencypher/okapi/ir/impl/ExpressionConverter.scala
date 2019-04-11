@@ -31,14 +31,12 @@ import org.opencypher.okapi.api.value.CypherValue.CypherInteger
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.impl.BigDecimalSignatures.{Addition, Division, Multiplication}
-import org.opencypher.okapi.ir.impl.SignatureTyping._
-import org.opencypher.okapi.ir.impl.parse.functions.FunctionExtensions
 import org.opencypher.okapi.ir.impl.parse.{functions => f}
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter.Signature
-import org.opencypher.okapi.ir.impl.typer.{InvalidArgument, InvalidContainerAccess, MissingParameter, NoSuitableSignatureForExpr, SignatureConverter, UnTypedExpr, WrongNumberOfArguments}
-import org.opencypher.v9_0.expressions.{OperatorExpression, RegexMatch, TypeSignatures, functions}
+import org.opencypher.okapi.ir.impl.typer.{InvalidArgument, InvalidContainerAccess, MissingParameter, UnTypedExpr, WrongNumberOfArguments}
+import org.opencypher.v9_0.expressions.{RegexMatch, functions}
 import org.opencypher.v9_0.{expressions => ast}
+import SignatureTyping._
 
 import scala.language.implicitConversions
 
@@ -146,10 +144,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
       case _: ast.Multiply => Multiply(child0, child1)
       case _: ast.Divide => Divide(child0, child1)
 
-      case funcInv: ast.FunctionInvocation =>
-        def returnType: CypherType = funcInv.returnTypeFor(convertedChildren.map(_.cypherType): _*)
-
-        funcInv.function match {
+      case funcInv: ast.FunctionInvocation => funcInv.function match {
           case functions.Id => Id(child0)
           case functions.Labels => Labels(child0)
           case functions.Type => Type(child0)
@@ -162,8 +157,8 @@ final class ExpressionConverter(context: IRBuilderContext) {
           case functions.Exists => Exists(child0)
           case functions.Size => Size(child0)
           case functions.Keys => Keys(child0)
-          case functions.StartNode => StartNodeFunction(child0)(returnType)
-          case functions.EndNode => EndNodeFunction(child0)(returnType)
+          case functions.StartNode => StartNodeFunction(child0)
+          case functions.EndNode => EndNodeFunction(child0)
           case functions.ToFloat => ToFloat(child0)
           case functions.ToInteger => ToInteger(child0)
           case functions.ToString => ToString(child0)
@@ -350,58 +345,10 @@ object BigDecimalSignatures {
       p1 - s1 + s2 + max(6, s1 + p2 + 1) -> max(6, s1 + p2 + 1)
     }
   }
+
 }
 
 object SignatureTyping {
-
-  /**
-    * Determines the output type given a set of signatures and a sequence of argument types.
-    * This uses the frontend's signatures, which we enrich with nulls and allow coercions for.
-    * Signatures from the frontend may be extended with additional signatures.
-    */
-  def returnTypeFor(
-    signatures: Seq[ast.TypeSignature],
-    args: Seq[CypherType],
-    extensions: Set[Signature] = Set.empty
-  ): Option[CypherType] = {
-    // TODO: shrink signature of this call to just take in one collection of Signature
-    val expandedSignatures = SignatureConverter.from(signatures)
-      .expandWithNulls
-      .expandWithSubstitutions(CTFloat, CTInteger)
-      .signatures
-
-    val extendedSignatures = expandedSignatures ++ extensions
-
-    val possibleReturnTypes = extendedSignatures.flatMap(sig => sig(args))
-
-    possibleReturnTypes.reduceLeftOption(_ join _)
-  }
-
-  implicit class RichOperatorExpression(val o: ast.Expression with OperatorExpression) {
-    def returnTypeFor(args: CypherType*): CypherType = {
-      SignatureTyping.returnTypeFor(o.signatures, args).getOrElse(throw NoSuitableSignatureForExpr(o, args))
-    }
-
-    def returnTypeFor(signatures: Set[Signature], args: CypherType*): CypherType = {
-      SignatureTyping.returnTypeFor(o.signatures, args, signatures).getOrElse(throw NoSuitableSignatureForExpr(o, args))
-    }
-
-    def returnTypeFor(signature: Signature, args: CypherType*): CypherType = {
-      returnTypeFor(Set(signature), args: _*)
-    }
-  }
-
-  implicit class RichTypeSignatures(val f: ast.FunctionInvocation) {
-    def returnTypeFor(args: CypherType*): CypherType = {
-
-      val signatures = FunctionExtensions.getOrElse(f.function.name, f.function) match {
-        case t: TypeSignatures => t.signatures
-        case _ => throw NoSuitableSignatureForExpr(f, args)
-      }
-
-      SignatureTyping.returnTypeFor(signatures, args).getOrElse(throw NoSuitableSignatureForExpr(f, args))
-    }
-  }
 
   implicit class ArgumentChecker(val e: ast.Expression) {
     def checkNbrArgs(expected: Int, actual: Int): Unit = {
@@ -410,4 +357,5 @@ object SignatureTyping {
       }
     }
   }
+
 }

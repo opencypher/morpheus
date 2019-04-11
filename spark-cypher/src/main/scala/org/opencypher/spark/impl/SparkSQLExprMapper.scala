@@ -283,9 +283,9 @@ object SparkSQLExprMapper {
         case _: Atan => atan(child0)
         case _: Atan2 => atan2(child0, child1)
         case _: Cos => cos(child0)
-        case Cot(e) => Divide(IntegerLit(1), Tan(e))(CTFloat).asSparkSQLExpr
+        case Cot(e) => Divide(IntegerLit(1), Tan(e)).asSparkSQLExpr
         case _: Degrees => degrees(child0)
-        case Haversin(e) => Divide(Subtract(IntegerLit(1), Cos(e))(CTFloat), IntegerLit(2))(CTFloat).asSparkSQLExpr
+        case Haversin(e) => Divide(Subtract(IntegerLit(1), Cos(e)), IntegerLit(2)).asSparkSQLExpr
         case _: Radians => radians(child0)
         case _: Sin => sin(child0)
         case _: Tan => tan(child0)
