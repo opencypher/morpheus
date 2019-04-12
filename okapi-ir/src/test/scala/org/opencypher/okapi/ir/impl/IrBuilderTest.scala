@@ -36,6 +36,7 @@ import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
 import org.opencypher.okapi.ir.impl.exception.ParsingException
+import org.opencypher.okapi.ir.impl.typer.UnTypedExpr
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 
@@ -903,8 +904,7 @@ class IrBuilderTest extends IrTestSuite {
 
   describe("SET in construct") {
 
-    // TODO: Ensure this semantic check happens in the frontend
-    ignore("fails when setting a label on an entity that is not in scope") {
+    it("fails when setting a label on an entity that is not in scope") {
       val query =
         """
           |CONSTRUCT
@@ -913,11 +913,10 @@ class IrBuilderTest extends IrTestSuite {
           |  SET a :Label
           |RETURN GRAPH""".stripMargin
 
-      intercept[UnsupportedOperationException](query.asCypherQuery().model)
+      intercept[UnTypedExpr](query.asCypherQuery().model) //todo: also correct to throw UnTypedExpr instead of UnsupportedOperationException?
     }
 
-    // TODO: Ensure this semantic check happens in the frontend
-    ignore("fails when setting a label on a relationship that is out of scope") {
+    it("fails when setting a label on a relationship that is out of scope") {
       val query =
         """
           |CONSTRUCT

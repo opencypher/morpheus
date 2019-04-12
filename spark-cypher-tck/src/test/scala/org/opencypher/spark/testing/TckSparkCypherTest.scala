@@ -131,7 +131,8 @@ class TckSparkCypherTest extends CAPSTestSuite {
 
   }
 
-  ignore("run custom scenario") {
+  //todo: remove as no customtest?
+  it("run custom scenario") {
     val file = new File(getClass.getResource("/CustomTest.feature").toURI)
 
     CypherTCK
