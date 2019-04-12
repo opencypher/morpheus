@@ -58,8 +58,9 @@ object YelpConstants {
   val businessTrendsGraphName = GraphName("businessTrends")
 
   def reviewGraphName(year: Int) = GraphName(s"$cityGraphName.review.y$year")
-  def coReviewGraphName(year: Int) = GraphName(s"$cityGraphName.coReview.y$year")
-  def coReviewAndBusinessGraphName(year: Int) = GraphName(s"$cityGraphName.coReviewAndBusiness.y$year")
+  def coReviewsGraphName(year: Int) = GraphName(s"$cityGraphName.coReviews.y$year")
+  def coReviewedGraphName(year: Int) = GraphName(s"$cityGraphName.coReviewed.y$year")
+  def coReviewAndBusinessGraphName(year: Int) = GraphName(s"$cityGraphName.coReviewsAndBusiness.y$year")
 
   def pageRankProp(year: Int) = s"pageRank$year"
   def pageRankCoReviewProp(year: Int) = s"pageRankCoReview$year"

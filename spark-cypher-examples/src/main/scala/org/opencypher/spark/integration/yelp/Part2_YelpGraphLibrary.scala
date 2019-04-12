@@ -49,10 +49,10 @@ object Part2_YelpGraphLibrary extends App {
     s"""
        |CATALOG CREATE GRAPH $cityGraphName {
        |  FROM GRAPH $fsNamespace.$yelpGraphName
-       |  MATCH (b:Business)<-[r:REVIEWS]-(user1:User)
-       |  WHERE b.city = '$city'
+       |  MATCH (business:Business)<-[r:REVIEWS]-(user1:User)
+       |  WHERE business.city = '$city'
        |  CONSTRUCT
-       |   CREATE (user1)-[r]->(b)
+       |   CREATE (user1)-[r]->(business)
        |  RETURN GRAPH
        |}
       """.stripMargin)
@@ -69,10 +69,26 @@ object Part2_YelpGraphLibrary extends App {
       s"""
          |CATALOG CREATE GRAPH $fsNamespace.${reviewGraphName(year)} {
          |  FROM GRAPH $cityGraphName
-         |  MATCH (b:Business)<-[r:REVIEWS]-(user:User)
+         |  MATCH (business:Business)<-[r:REVIEWS]-(user:User)
          |  WHERE r.date.year = $year AND user.yelping_since.year <= $year
          |  CONSTRUCT
-         |   CREATE (user)-[r]->(b)
+         |   CREATE (user)-[r]->(business)
+         |  RETURN GRAPH
+         |}
+     """.stripMargin)
+
+    // Compute (:Business)-[:CO_REVIEWED]->(:Business) graph
+    cypher(
+      s"""
+         |CATALOG CREATE GRAPH $fsNamespace.${coReviewedGraphName(year)} {
+         |  FROM GRAPH $fsNamespace.${reviewGraphName(year)}
+         |  MATCH (business1:Business)<-[r1:REVIEWS]-(user:User)-[r2:REVIEWS]->(business2:Business)
+         |  WHERE r1.date.year = $year
+         |    AND r2.date.year = $year
+         |    AND user.yelping_since.year <= $year
+         |  WITH business1, business2, count(user) AS reviewCount
+         |  CONSTRUCT
+         |    CREATE (business1)-[r:CO_REVIEWED { reviewCount : reviewCount }]->(business2)
          |  RETURN GRAPH
          |}
      """.stripMargin)
@@ -80,34 +96,34 @@ object Part2_YelpGraphLibrary extends App {
     // Compute (:User)-[:CO_REVIEWS]->(:User) graph
     cypher(
       s"""
-         |CATALOG CREATE GRAPH $fsNamespace.${coReviewGraphName(year)} {
+         |CATALOG CREATE GRAPH $fsNamespace.${coReviewsGraphName(year)} {
          |  FROM GRAPH $fsNamespace.${reviewGraphName(year)}
-         |  MATCH (b:Business)<-[r1:REVIEWS]-(user1:User),
-         |        (b)<-[r2:REVIEWS]-(user2:User)
+         |  MATCH (business:Business)<-[r1:REVIEWS]-(user1:User),
+         |        (business)<-[r2:REVIEWS]-(user2:User)
          |  WHERE r1.date.year = $year
          |    AND r2.date.year = $year
          |    AND user1.yelping_since.year <= $year AND user2.yelping_since.year <= $year
-         |  WITH user1, user2, count(b) AS reviewCount
+         |  WITH user1, user2, count(business) AS reviewCount
          |  CONSTRUCT
          |    CREATE (user1)-[r:CO_REVIEWS { reviewCount : reviewCount }]->(user2)
          |  RETURN GRAPH
          |}
      """.stripMargin)
 
-    // Compute (u1:User)-[:CO_REVIEWS]->(u2:User)-[:REVIEWS]->(:Business)<-[:REVIEWS]-(u1) graph
+    // Compute (:User)-[:CO_REVIEWS]->(:User), (:User)-[:REVIEWS]->(:Business) graph
     cypher(
       s"""
          |CATALOG CREATE GRAPH $fsNamespace.${coReviewAndBusinessGraphName(year)} {
          |  FROM GRAPH $fsNamespace.${reviewGraphName(year)}
-         |  MATCH (b:Business)<-[r1:REVIEWS]-(user1:User),
-         |        (b)<-[r2:REVIEWS]-(user2:User)
+         |  MATCH (business:Business)<-[r1:REVIEWS]-(user1:User),
+         |        (business)<-[r2:REVIEWS]-(user2:User)
          |  WHERE r1.date.year = $year
          |    AND r2.date.year = $year
          |    AND user1.yelping_since.year <= $year AND user2.yelping_since.year <= $year
-         |  WITH b, user1, r1, user2, r2, count(b) AS reviewCount
+         |  WITH business, user1, r1, user2, r2, count(business) AS reviewCount
          |  CONSTRUCT
-         |    CREATE (user1)-[r1]->(b)
-         |    CREATE (user2)-[r2]->(b)
+         |    CREATE (user1)-[r1]->(business)
+         |    CREATE (user2)-[r2]->(business)
          |    CREATE (user1)-[r:CO_REVIEWS { reviewCount : reviewCount }]->(user2)
          |  RETURN GRAPH
          |}

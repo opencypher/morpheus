@@ -47,7 +47,7 @@ object Part3c_BusinessRecommendations extends App {
 
   val year = 2017
 
-  log("Import Graph into Neo4j", 1)
+  log("Write to Neo4j, detect communities and find similar users within communities", 1)
   cypher(
     s"""
        |CATALOG CREATE GRAPH $neo4jNamespace.${coReviewAndBusinessGraphName(year)} {
@@ -60,17 +60,20 @@ object Part3c_BusinessRecommendations extends App {
   neo4jConfig.withSession { implicit session =>
 
     log("Find communities via Louvain", 1)
-    val communityNumber = neo4jCypher(
+    val louvainStats = neo4jCypher(
       s"""
          |CALL algo.louvain('${coReviewAndBusinessGraphName(year).metaLabel}', 'CO_REVIEWS', {
          |  write:           true,
          |  weightProperty: 'reviewCount',
          |  writeProperty:  '${communityProp(year)}'
          |})
-         |YIELD communityCount;
-    """.stripMargin).head("communityCount").cast[CypherInteger].value.toInt
+         |YIELD communityCount, nodes, loadMillis, computeMillis, writeMillis
+         |RETURN communityCount, nodes, loadMillis + computeMillis + writeMillis AS total""".stripMargin).head
+    log(s"Computing Louvain modularity on ${louvainStats("nodes")} nodes took ${louvainStats("total")} ms", 1)
 
-    log("Find similar users within $communityNumber communities", 1)
+    val communityNumber = louvainStats("communityCount").cast[CypherInteger].value.toInt
+
+    log(s"Find similar users within $communityNumber communities", 1)
     // We use Jaccard similarity because it doesn't require equal length vectors
     (0 until communityNumber).foreach { communityNumber =>
       neo4jCypher(
@@ -90,7 +93,7 @@ object Part3c_BusinessRecommendations extends App {
     }
   }
 
-  log("Find recommendations", 1)
+  log("Load graphs back to Spark and compute recommendations", 1)
 
   // Reset schema cache to enable loading new properties
   catalog.source(neo4jNamespace).reset()

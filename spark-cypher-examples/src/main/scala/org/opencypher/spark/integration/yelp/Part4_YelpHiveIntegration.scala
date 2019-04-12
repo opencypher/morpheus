@@ -31,7 +31,7 @@ import java.nio.file.Paths
 import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
 import org.opencypher.graphddl.GraphDdl
-import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.graph.{GraphName, Namespace}
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Jdbc
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
@@ -85,13 +85,18 @@ object Part4_YelpHiveIntegration extends App {
      """.stripMargin
 
   // Load integrated graph using SQL Property Graph Data Source using above DDL script and two data sources
-  val integratedGraph = GraphSources
+  val sqlPgds = GraphSources
     .sql(GraphDdl(graphDdl))
     .withSqlDataSourceConfigs("HIVE" -> SqlDataSourceConfig.Hive, "H2" -> h2Config)
-    .graph(integratedGraphName)
 
-  integratedGraph.cypher("MATCH (n)-[r:FRIEND]->(m) RETURN n, r, m LIMIT 10").show
-  integratedGraph.cypher("MATCH (n)-[r:REVIEWS]->(m) RETURN n, r, m LIMIT 10").show
+  caps.registerSource(Namespace("federation"), sqlPgds)
+
+  caps.cypher(
+    s"""
+       |FROM GRAPH federation.$integratedGraphName
+       |MATCH (user1:User)-[:REVIEWS]->(b:Business)<-[:REVIEWS]-(user2:User)
+       |RETURN EXISTS((user1)-[:FRIEND]-(user2)), count(b) AS coReviews
+     """.stripMargin).show
 
   def initH2(conf: Jdbc): Unit = {
     spark.read
