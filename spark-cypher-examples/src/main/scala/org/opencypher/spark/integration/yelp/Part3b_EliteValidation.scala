@@ -47,7 +47,9 @@ object Part3b_EliteValidation extends App {
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
   registerSource(neo4jNamespace, GraphSources.cypher.neo4j(neo4jConfig))
 
+  log("Write to Neo4j and compute pageRank", 1)
   val (eliteRanks, nonEliteRanks) = (2015 to 2018).map { year =>
+    log(s"For year $year", 2)
     cypher(
       s"""
          |CATALOG CREATE GRAPH $neo4jNamespace.${coReviewsGraphName(year)} {
@@ -58,7 +60,7 @@ object Part3b_EliteValidation extends App {
 
     // Compute PageRank using Neo4j Graph Algorithms
     neo4jConfig.withSession { implicit session =>
-      println(neo4jCypher(
+      val pageRankStats = neo4jCypher(
         s"""
            |CALL algo.pageRank('${coReviewsGraphName(year).metaLabel}', null, {
            |  iterations:     20,
@@ -69,7 +71,8 @@ object Part3b_EliteValidation extends App {
            |  weightProperty: "reviewCount"
            |})
            |YIELD nodes, loadMillis, computeMillis, writeMillis
-    """.stripMargin))
+           |RETURN nodes, loadMillis + computeMillis + writeMillis AS total""".stripMargin).head
+      log(s"Computing page rank on ${pageRankStats("nodes")} nodes took ${pageRankStats("total")} ms", 2)
 
       val elitePageRank = neo4jCypher(
         s"""
@@ -77,6 +80,7 @@ object Part3b_EliteValidation extends App {
            |WHERE $year IN u.elite AND exists(u.${pageRankCoReviewProp(year)})
            |RETURN avg(u.${pageRankCoReviewProp(year)}) AS avg
          """.stripMargin).head("avg").cast[CypherFloat].value
+      log(s"Average elite page rank: $elitePageRank", 2)
 
       val noneElitePageRank = neo4jCypher(
         s"""
@@ -84,6 +88,7 @@ object Part3b_EliteValidation extends App {
            |WHERE u.elite IS NULL OR NOT $year IN u.elite AND exists(u.${pageRankCoReviewProp(year)})
            |RETURN avg(u.${pageRankCoReviewProp(year)}) AS avg
          """.stripMargin).head("avg").cast[CypherFloat].value
+      log(s"Average non-elite page rank: $noneElitePageRank", 2)
 
       elitePageRank -> noneElitePageRank
     }
