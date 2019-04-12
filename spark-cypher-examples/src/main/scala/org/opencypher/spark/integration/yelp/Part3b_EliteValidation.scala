@@ -50,8 +50,8 @@ object Part3b_EliteValidation extends App {
   val (eliteRanks, nonEliteRanks) = (2015 to 2018).map { year =>
     cypher(
       s"""
-         |CATALOG CREATE GRAPH $neo4jNamespace.${coReviewGraphName(year)} {
-         |  FROM $fsNamespace.${coReviewGraphName(year)}
+         |CATALOG CREATE GRAPH $neo4jNamespace.${coReviewsGraphName(year)} {
+         |  FROM $fsNamespace.${coReviewsGraphName(year)}
          |  RETURN GRAPH
          |}
      """.stripMargin)
@@ -60,7 +60,7 @@ object Part3b_EliteValidation extends App {
     neo4jConfig.withSession { implicit session =>
       println(neo4jCypher(
         s"""
-           |CALL algo.pageRank('${coReviewGraphName(year).metaLabel}', null, {
+           |CALL algo.pageRank('${coReviewsGraphName(year).metaLabel}', null, {
            |  iterations:     20,
            |  dampingFactor:  0.85,
            |  direction:      "BOTH",

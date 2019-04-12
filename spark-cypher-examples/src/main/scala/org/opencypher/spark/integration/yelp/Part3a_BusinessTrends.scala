@@ -41,6 +41,7 @@ object Part3a_BusinessTrends extends App {
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
   implicit val caps: CAPSSession = CAPSSession.local()
+
   import caps._
 
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
@@ -51,26 +52,27 @@ object Part3a_BusinessTrends extends App {
     log(s"For year $year", 2)
     cypher(
       s"""
-         |CATALOG CREATE GRAPH $neo4jNamespace.${reviewGraphName(year)} {
-         |  FROM $fsNamespace.${reviewGraphName(year)}
+         |CATALOG CREATE GRAPH $neo4jNamespace.${coReviewedGraphName(year)} {
+         |  FROM $fsNamespace.${coReviewedGraphName(year)}
          |  RETURN GRAPH
          |}
      """.stripMargin)
 
     // Compute PageRank using Neo4j Graph Algorithms
     neo4jConfig.withSession { implicit session =>
-      println(neo4jCypher(
+      val pageRankStats = neo4jCypher(
         s"""
-           |CALL algo.pageRank('${reviewGraphName(year).metaLabel}', null, {
+           |CALL algo.pageRank('${coReviewedGraphName(year).metaLabel}', null, {
            |  iterations:     20,
            |  dampingFactor:  0.85,
            |  direction:      "BOTH",
            |  write:          true,
            |  writeProperty:  "pageRank$year",
-           |  weightProperty: "stars"
+           |  weightProperty: "reviewCount"
            |})
            |YIELD nodes, loadMillis, computeMillis, writeMillis
-    """.stripMargin))
+           |RETURN nodes, loadMillis + computeMillis + writeMillis AS total""".stripMargin).head
+      log(s"Computing page rank on ${pageRankStats("nodes")} nodes took ${pageRankStats("total")} ms", 2)
     }
   }
 
@@ -82,9 +84,9 @@ object Part3a_BusinessTrends extends App {
   cypher(
     s"""
        |CATALOG CREATE GRAPH $businessTrendsGraphName {
-       |  FROM GRAPH $neo4jNamespace.${reviewGraphName(2017)}
+       |  FROM GRAPH $neo4jNamespace.${coReviewedGraphName(2017)}
        |  MATCH (b1:Business)
-       |  FROM GRAPH $neo4jNamespace.${reviewGraphName(2018)}
+       |  FROM GRAPH $neo4jNamespace.${coReviewedGraphName(2018)}
        |  MATCH (b2:Business)
        |  WHERE b1.businessId = b2.businessId
        |  WITH b1 AS b, (b2.${pageRankProp(2018)} / ${normalizationFactor(2018)}) - (b1.${pageRankProp(2017)} / ${normalizationFactor(2017)}) AS trendRank
@@ -95,23 +97,13 @@ object Part3a_BusinessTrends extends App {
        |}
      """.stripMargin)
 
-  // Increasing popularity
+  // Top 10 Increasing popularity
   cypher(
     s"""
        |FROM GRAPH $businessTrendsGraphName
        |MATCH (b:Business)
        |RETURN b.name AS name, b.address AS address, b.trendRank AS trendRank
        |ORDER BY trendRank DESC
-       |LIMIT 10
-     """.stripMargin).show
-
-  // Decreasing popularity
-  cypher(
-    s"""
-       |FROM GRAPH $businessTrendsGraphName
-       |MATCH (b:Business)
-       |RETURN b.name AS name, b.address AS address, b.trendRank AS trendRank
-       |ORDER BY trendRank ASC
        |LIMIT 10
      """.stripMargin).show
 
