@@ -51,8 +51,19 @@ object CreateStringGenerator {
           case _ => s"TCKCypherValue.apply(${escapeString(l.toString)}, false)"
         }
       case TCKCypherNull => "TCKCypherNull"
-      case TCKCypherNode(labels, properties) => s"TCKCypherNode(Set(${labels.map(escapeString).mkString(",")}), ${tckCypherValueToCreateString(properties)})"
-      case TCKCypherRelationship(typ, properties) => s"TCKCypherRelationship(${escapeString(typ)}, ${tckCypherValueToCreateString(properties)})"
+      case TCKCypherNode(labels, properties) =>
+        val labelsString = if (labels.isEmpty) "" else s"Set(${labels.map(escapeString).mkString(",")})"
+        val propertyString = if (properties.properties.isEmpty) "" else s"${tckCypherValueToCreateString(properties)}"
+        val separatorString =
+          if (labels.isEmpty && properties.properties.isEmpty) ""
+          else if (labels.isEmpty) "properties = "
+          else if (properties.properties.isEmpty) ""
+          else ", "
+
+        s"TCKCypherNode($labelsString$separatorString$propertyString)"
+      case TCKCypherRelationship(typ, properties) =>
+        val propertyString = if (properties.properties.isEmpty) "" else s", ${tckCypherValueToCreateString(properties)}"
+        s"TCKCypherRelationship(${escapeString(typ)}$propertyString)"
       case TCKCypherPath(start, connections) =>
         val connectionsCreateString = connections.map {
           case TCKForward(r, n) => s"TCKForward(${tckCypherValueToCreateString(r)},${tckCypherValueToCreateString(n)})"
@@ -93,8 +104,8 @@ object CreateStringGenerator {
     s"CypherMap(${mapElementsString.mkString(",")})"
   }
 
-  def diffToCreateString(diff : Diff): String = {
-    val diffs = diff.v.map{case (s,i) => escapeString(s) -> i}
+  def diffToCreateString(diff: Diff): String = {
+    val diffs = diff.v.map { case (s, i) => escapeString(s) -> i }
     s"Diff(Map(${diffs.mkString(",")}}))"
   }
 

@@ -115,8 +115,8 @@ case class AcceptanceTestGenerator(
          | */
          |package $targetPackageName.${packageName.get}
          |
-         |import org.scalatest.junit.JUnitRunner
          |import org.junit.runner.RunWith
+         |import org.scalatestplus.junit.JUnitRunner
          |import scala.util.{Failure, Success, Try}
          |import org.opencypher.okapi.api.value.CypherValue._
          |import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
