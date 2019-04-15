@@ -913,7 +913,7 @@ class IrBuilderTest extends IrTestSuite {
           |  SET a :Label
           |RETURN GRAPH""".stripMargin
 
-      intercept[UnTypedExpr](query.asCypherQuery().model) //todo: also correct to throw UnTypedExpr instead of UnsupportedOperationException?
+      intercept[UnTypedExpr](query.asCypherQuery().model)
     }
 
     it("fails when setting a label on a relationship that is out of scope") {
