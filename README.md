@@ -61,8 +61,14 @@ The SPIP describing the motivation and goals is published here
 [SPARK-25994](https://issues.apache.org/jira/browse/SPARK-25994). 
 Additionally [SPARK-26028](https://issues.apache.org/jira/browse/SPARK-26028) proposes an API design and implementation strategies. 
 
+## Supported Spark and Scala versions
+
+As of CAPS `0.3.0`, the project has migrated to Scala 2.12 and Spark 2.4 series.
+[As of Spark 2.4.1](https://spark.apache.org/releases/spark-release-2-4-1.html) Scala 2.12 is the default Scala version for Spark, and CAPS is attempting to mimic this.
+
 ## Get started with CAPS
-CAPS is currently easiest to use with Scala. Below we explain how you can import a simple graph and run a Cypher query on it.
+CAPS is currently easiest to use with Scala. 
+Below we explain how you can import a simple graph and run a Cypher query on it.
 
 ### Building CAPS
 
