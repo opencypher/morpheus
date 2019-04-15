@@ -131,16 +131,6 @@ class TckSparkCypherTest extends CAPSTestSuite {
 
   }
 
-  //todo: remove as no customtest?
-  it("run custom scenario") {
-    val file = new File(getClass.getResource("/CustomTest.feature").toURI)
-
-    CypherTCK
-      .parseFilesystemFeature(file)
-      .scenarios
-      .foreach(scenario => scenario(TCKGraph(defaultFactory, caps.graphs.empty)).execute())
-  }
-
   ignore("run single scenario") {
     scenarios.get("Should add or subtract duration to or from date")
       .foreach(scenario => scenario(TCKGraph(defaultFactory, caps.graphs.empty)).execute())
