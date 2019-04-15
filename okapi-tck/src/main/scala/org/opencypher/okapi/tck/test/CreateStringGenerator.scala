@@ -55,9 +55,8 @@ object CreateStringGenerator {
         val labelsString = if (labels.isEmpty) "" else s"Set(${labels.map(escapeString).mkString(",")})"
         val propertyString = if (properties.properties.isEmpty) "" else s"${tckCypherValueToCreateString(properties)}"
         val separatorString =
-          if (labels.isEmpty && properties.properties.isEmpty) ""
+          if (properties.properties.isEmpty) ""
           else if (labels.isEmpty) "properties = "
-          else if (properties.properties.isEmpty) ""
           else ", "
 
         s"TCKCypherNode($labelsString$separatorString$propertyString)"
