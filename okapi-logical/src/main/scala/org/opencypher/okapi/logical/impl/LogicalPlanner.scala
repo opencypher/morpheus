@@ -48,8 +48,27 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     ir match {
       case sq: SingleQuery => planModel(sq.model.result, sq.model)
       case UnionQuery(left, right, distinct) =>
-        val union = TabularUnionAll(process(left), process(right))
+        val leftChildren = getQueryChildren(left)
+        val rightChildren = getQueryChildren(right)
+
+        val union =
+          if (leftChildren.exists {
+            case g: GraphResultBlock => true
+            case _ => false
+          } && rightChildren.exists {
+            case g: GraphResultBlock => true
+            case _ => false
+          }) GraphUnionAll(process(left), process(right))
+          else TabularUnionAll(process(left), process(right))
+
         if (distinct) Distinct(union.fields, union, union.solved) else union
+    }
+  }
+
+  def getQueryChildren(ir: CypherQuery): Set[Block] = {
+    ir match {
+      case SingleQuery(model) => model.childrenAsSet
+      case UnionQuery(left, right, _) => getQueryChildren(left) ++ getQueryChildren(right)
     }
   }
 

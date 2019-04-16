@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.relational.impl.planning
 
+import cats.data.NonEmptyList
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.types._
@@ -121,6 +122,9 @@ object RelationalPlanner {
 
       case logical.TabularUnionAll(left, right) =>
         process[T](left).unionAll(process[T](right))
+
+      case logical.GraphUnionAll(left, right) =>
+        process[T](left).graphUnionAll(process[T](right))
 
       // TODO: This needs to be a ternary operator taking source, rels and target records instead of just source and target and planning rels only at the physical layer
       case logical.Expand(source, rel, target, direction, sourceOp, targetOp, _) =>
@@ -361,6 +365,11 @@ object RelationalPlanner {
 
     def join(other: RelationalOperator[T], joinExprs: Seq[(Expr, Expr)], joinType: JoinType): RelationalOperator[T] = {
       relational.Join(op, other.withDisjointColumnNames(op.header), joinExprs, joinType)
+    }
+
+    def graphUnionAll(other: RelationalOperator[T]): RelationalOperator[T] = {
+      //todo: use of n-ary operation (now only 2) (how does a 3-ary query look like?)
+      relational.GraphUnionAll(NonEmptyList(op, List(other)), QualifiedGraphName("ConstructedGraph"))
     }
 
     def unionAll(other: RelationalOperator[T]): RelationalOperator[T] = {

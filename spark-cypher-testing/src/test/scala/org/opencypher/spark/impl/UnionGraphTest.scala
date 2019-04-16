@@ -27,6 +27,10 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
+import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
+import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintOptimizedRelationalPlan, PrintRelationalPlan}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
@@ -114,4 +118,24 @@ class UnionGraphTest extends CAPSGraphTest
     verify(nodes, cols, data)
   }
 
+  it("union all on graphs") {
+    PrintIr.set()
+    PrintLogicalPlan.set()
+    PrintRelationalPlan.set()
+    val a = initGraph("CREATE ()")
+    caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("a"), a)
+    caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("b"), a)
+    //todo: maybeRelational.graph  how to return graph?
+    val result = caps.cypher(
+      """
+        |FROM a
+        |RETURN GRAPH
+        |UNION ALL
+        |FROM b
+        |RETURN GRAPH
+      """.stripMargin)
+
+    //node size = 2?
+    result.maybeRelational.get.graph.nodes("n").size should equal(2)
+  }
 }
