@@ -28,6 +28,7 @@ package org.opencypher.spark.impl.acceptance
 
 import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.impl.temporal.Duration
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -125,6 +126,26 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
 
       result.records.toMaps should equal(Bag(
         CypherMap("res" -> null)
+      ))
+    }
+
+    it("avg on dates") {
+      val result = caps.graphs.empty.cypher("UNWIND [date('2018-01-01'), date('2019-01-01')] AS d RETURN AVG(d) as res")
+      val errorMessage = an[Exception] shouldBe thrownBy{result.records}
+    }
+
+    //todo: in cypher avg on datetimes should not be possible
+    ignore("avg on datetimes") {
+      val result = caps.graphs.empty.cypher("UNWIND [localdatetime('2010-10-10T12:00'), localdatetime('2010-10-10T12:01')] AS d RETURN AVG(d) as res")
+      val errorMessage = an[Exception] shouldBe thrownBy{result.records}
+    }
+
+    //todo: cypher should allow avg on durations, but spark does not support avg on durations (calendarintervals)
+    ignore("avg on durations") {
+      val result = caps.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT200H')] AS d RETURN AVG(d) as res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> Duration(days = 1, hours = 12))
       ))
     }
   }
@@ -342,6 +363,39 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
         CypherMap("res" -> null)
       ))
     }
+
+    it("min on dates") {
+      val result = caps.graphs.empty.cypher("UNWIND [date('2018-01-01'), date('2019-01-01')] AS d RETURN MIN(d) as res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> java.time.LocalDate.parse("2018-01-01"))
+      ))
+    }
+
+    it("min on datetimes") {
+      val result = caps.graphs.empty.cypher("UNWIND [localdatetime('2010-10-10T12:00'), localdatetime('2010-10-10T12:01')] AS d RETURN MIN(d) as res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> java.time.LocalDateTime.parse("2010-10-10T12:00"))
+      ))
+    }
+
+    //todo: spark does not support min on durations (calendarintervals)
+    ignore("min on durations") {
+      val result = caps.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT200H')] AS d RETURN MIN(d) as res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> Duration(days = 1, hours = 12))
+      ))
+    }
+
+    it("min on combination of temporal types") {
+      val result = caps.graphs.empty.cypher("UNWIND [date('2018-01-01'), localdatetime('2010-10-10T12:01')] AS d RETURN MIN(d) as res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> java.time.LocalDateTime.parse("2010-10-10T12:01"))
+      ))
+    }
   }
 
   describe("MAX") {
@@ -415,6 +469,40 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
         CypherMap("res" -> null)
       ))
     }
+
+    it("max on dates") {
+      val result = caps.graphs.empty.cypher("UNWIND [date('2018-01-01'), date('2019-01-01')] AS d RETURN MAX(d) as res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> java.time.LocalDate.parse("2019-01-01"))
+      ))
+    }
+
+    it("max on datetimes") {
+      val result = caps.graphs.empty.cypher("UNWIND [localdatetime('2010-10-10T12:00'), localdatetime('2010-10-10T12:01')] AS d RETURN MAX(d) as res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> java.time.LocalDateTime.parse("2010-10-10T12:01"))
+      ))
+    }
+
+    //todo: spark does not support max on durations (calendarintervals)
+    ignore("max on durations") {
+      val result = caps.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT200H')] AS d RETURN MAX(d) as res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> Duration(days = 1, hours = 200))
+      ))
+    }
+
+    it("max on combination of temporal types") {
+      val result = caps.graphs.empty.cypher("UNWIND [date('2018-01-01'), localdatetime('2010-10-10T12:01')] AS d RETURN MAX(d) as res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> java.time.LocalDateTime.parse("2018-01-01T00:00"))
+      ))
+    }
+
   }
 
 
@@ -507,6 +595,26 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
 
       result.records.toMaps should equal(Bag(
         CypherMap("res" -> null)
+      ))
+    }
+
+    it("sum on dates") {
+      val result = caps.graphs.empty.cypher("UNWIND [date('2018-01-01'), date('2019-01-01')] AS d RETURN SUM(d) as res")
+      val errorMessage = an[Exception] shouldBe thrownBy{result.records}
+    }
+
+    //todo: in cypher sum on datetimes should not be possible
+    ignore("sum on datetimes") {
+      val result = caps.graphs.empty.cypher("UNWIND [localdatetime('2010-10-10T12:00'), localdatetime('2010-10-10T12:01')] AS d RETURN SUM(d) as res")
+      val errorMessage = an[Exception] shouldBe thrownBy{result.records}
+    }
+
+    //todo: cypher should sum avg on durations, but spark does not support avg on durations (calendarintervals)
+    ignore("sum on durations") {
+      val result = caps.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT200H')] AS d RETURN SUM(d) as res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> Duration(days = 2, hours = 12))
       ))
     }
   }
