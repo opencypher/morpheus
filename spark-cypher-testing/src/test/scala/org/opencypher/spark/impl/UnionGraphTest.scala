@@ -125,7 +125,6 @@ class UnionGraphTest extends CAPSGraphTest
     val a = initGraph("CREATE ()")
     caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("a"), a)
     caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("b"), a)
-    //todo: maybeRelational.graph  how to return graph?
     val result = caps.cypher(
       """
         |FROM a
@@ -136,6 +135,6 @@ class UnionGraphTest extends CAPSGraphTest
       """.stripMargin)
 
     //node size = 2?
-    result.maybeRelational.get.graph.nodes("n").size should equal(2)
+    result.graph.nodes("n").size should equal(2)
   }
 }

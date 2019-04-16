@@ -31,7 +31,7 @@ import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.okapi.logical.impl.LogicalOperator
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
-import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, ReturnGraph}
+import org.opencypher.okapi.relational.impl.operators.{GraphUnionAll, RelationalOperator, ReturnGraph}
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
 import scala.reflect.runtime.universe.TypeTag
@@ -47,6 +47,7 @@ case class RelationalCypherResult[T <: Table[T] : TypeTag](
 
   override def getGraph: Option[Graph] = maybeRelational.flatMap {
     case r: ReturnGraph[T] => Some(r.graph)
+    case g: GraphUnionAll[T] => Some(g.graph)
     case _ => None
   }
 
