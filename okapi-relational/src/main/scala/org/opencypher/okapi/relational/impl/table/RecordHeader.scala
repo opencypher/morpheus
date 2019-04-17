@@ -201,7 +201,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
 
   def relationshipEntities: Set[Var] = {
     exprToColumn.keySet.collect {
-      case v: Var if v.cypherType.subTypeOf(CTRelationship) => v
+      case v: Var if v.cypherType.material.subTypeOf(CTRelationship) => v
     }
   }
 

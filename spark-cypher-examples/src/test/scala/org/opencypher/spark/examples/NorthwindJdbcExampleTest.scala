@@ -46,7 +46,7 @@ class NorthwindJdbcExampleTest extends ExampleTest {
 
   it("verifies the correctness of the output") {
     val dataSourceConfig = SqlDataSourceConfig.Jdbc(
-      url = "jdbc:h2:mem:NORTHWIND.db;DB_CLOSE_DELAY=30;",
+      url = "jdbc:h2:mem:NORTHWIND.db;DB_CLOSE_DELAY=60;",
       driver = "org.h2.Driver"
     )
 

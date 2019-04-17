@@ -28,6 +28,7 @@ package org.opencypher.okapi.ir.api.expr
 
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.testing.BaseTestSuite
+import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 
 class ExprTest extends BaseTestSuite {
 
@@ -67,6 +68,66 @@ class ExprTest extends BaseTestSuite {
     val n = Var("n")(CTNode)
     val aliasVar = Var("m")()
     (n as aliasVar).cypherType should equal(aliasVar.cypherType)
+  }
+
+  describe("CypherType computation") {
+    val a = Var("a")(CTNode)
+    val b = Var("b")(CTUnion(CTInteger, CTString))
+    val c = Var("c")(CTUnion(CTInteger, CTString.nullable))
+    val d = Var("d")(CTInteger.nullable)
+    val e = Var("e")(CTString.nullable)
+
+    it("types Coalesce correctly") {
+      Coalesce(List(a, b)).cypherType should equal(CTUnion(CTNode, CTInteger, CTString))
+      Coalesce(List(b, c)).cypherType should equal(CTUnion(CTInteger, CTString))
+      Coalesce(List(a, b, c, d)).cypherType should equal(CTUnion(CTNode, CTInteger, CTString))
+
+      Coalesce(List(d,e)).cypherType should equal(CTUnion(CTInteger, CTString).nullable)
+    }
+
+    it("types ListSegment correctly") {
+      ListSegment(3, Var("list")(CTList(CTNode))).cypherType should equalWithTracing(
+        CTNode.nullable
+      )
+
+      ListSegment(3, Var("list")(CTUnion(CTList(CTString), CTList(CTInteger)))).cypherType should equalWithTracing(
+        CTUnion(CTString, CTInteger).nullable
+      )
+
+      ListSegment(3, Var("list")(CTNull)).cypherType should equalWithTracing(
+        CTNull
+      )
+    }
+
+    it("types MapExpression correctly") {
+      val mapFields = Map(
+        "a" -> a,
+        "b" -> b,
+        "c" -> c,
+        "d" -> d
+      )
+      MapExpression(mapFields).cypherType should equalWithTracing(CTMap(mapFields.mapValues(_.cypherType)))
+    }
+
+    it("types ListLit correctly") {
+      ListLit(List(a, b)).cypherType should equal(CTList(CTUnion(CTNode, CTInteger, CTString)))
+      ListLit(List(b, c)).cypherType should equal(CTList(CTUnion(CTInteger, CTString.nullable)))
+      ListLit(List(a, b, c, d)).cypherType should equal(CTList(CTUnion(CTNode, CTInteger, CTString).nullable))
+    }
+
+    it("types Explode correctly") {
+      Explode(Var("list")(CTList(CTNode))).cypherType should equalWithTracing(
+        CTNode
+      )
+
+      Explode(Var("list")(CTUnion(CTList(CTString), CTList(CTInteger)))).cypherType should equalWithTracing(
+        CTUnion(CTString, CTInteger)
+      )
+
+      Explode(Var("list")(CTNull)).cypherType should equalWithTracing(
+        CTVoid
+      )
+    }
   }
 
 }

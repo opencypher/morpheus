@@ -266,7 +266,7 @@ object ConstructGraphPlanner {
   }
 
   def prefixId(id: Expr, maybeCreatedEntityIdPrefix: Option[GraphIdPrefix]): Expr = {
-    maybeCreatedEntityIdPrefix.map(PrefixId(id, _)(CTIdentity)).getOrElse(id)
+    maybeCreatedEntityIdPrefix.map(PrefixId(id, _)).getOrElse(id)
   }
 
   // TODO: improve documentation and add specific tests
@@ -280,7 +280,7 @@ object ConstructGraphPlanner {
     // The first half of the id space is protected
     val columnPartitionOffset = columnIdPartition.toLong << columnIdShift
 
-    ToId(Add(MonotonicallyIncreasingId(), IntegerLit(columnPartitionOffset))(CTInteger))()
+    ToId(Add(MonotonicallyIncreasingId(), IntegerLit(columnPartitionOffset)))
   }
 
   /**
