@@ -317,7 +317,7 @@ final case class GraphUnionAll(
   rhs: LogicalOperator
 ) extends BinaryLogicalOperator {
   //todo: what happens when 2 graphs have common Var names?
-  override val fields: Set[Var] = lhs.fields.union(rhs.fields)
+  override val fields: Set[Var] = Set.empty
   override def solved: SolvedQueryModel = lhs.solved ++ rhs.solved
 }
 

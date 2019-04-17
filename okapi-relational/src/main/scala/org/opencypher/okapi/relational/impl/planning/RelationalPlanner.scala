@@ -369,7 +369,7 @@ object RelationalPlanner {
 
     def graphUnionAll(other: RelationalOperator[T]): RelationalOperator[T] = {
       //todo: use of n-ary operation (now only 2) (how does a 3-ary query look like?)
-      relational.GraphUnionAll(NonEmptyList(op, List(other)), QualifiedGraphName("ConstructedGraph"))
+      relational.GraphUnionAll(NonEmptyList(op, List(other)), QualifiedGraphName("UnionAllGraph"))
     }
 
     def unionAll(other: RelationalOperator[T]): RelationalOperator[T] = {

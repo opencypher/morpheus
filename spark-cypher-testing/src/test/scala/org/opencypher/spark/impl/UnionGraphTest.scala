@@ -137,4 +137,26 @@ class UnionGraphTest extends CAPSGraphTest
     //node size = 2?
     result.graph.nodes("n").size should equal(2)
   }
+
+  ignore("union all on graphs with common properties") {
+    PrintIr.set()
+    PrintLogicalPlan.set()
+    PrintRelationalPlan.set()
+    val a = initGraph("CREATE (:two{test:1})")
+    val b = initGraph("CREATE (:one{test:'hello'})") //todo: this should be possible right?
+    caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("a"), a)
+    caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("b"), b)
+    val result = caps.cypher(
+      """
+        |FROM a
+        |RETURN GRAPH
+        |UNION ALL
+        |FROM b
+        |RETURN GRAPH
+      """.stripMargin)
+
+    //node size = 2?
+    result.graph.nodes("n").size should equal(2)
+  }
+
 }
