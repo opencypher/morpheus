@@ -49,15 +49,15 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case sq: SingleQuery => planModel(sq.model.result, sq.model)
       case UnionQuery(left, right, distinct) =>
         val leftOperator = process(left)
-          val rightOperator = process(right)
+        val rightOperator = process(right)
 
         val isLeftGraph = leftOperator match {
-          case g: ReturnGraph => true
+          case _: ReturnGraph | _: GraphUnionAll => true
           case _ => false
         }
 
         val isRightGraph = rightOperator match {
-          case g: ReturnGraph => true
+          case _: ReturnGraph | _: GraphUnionAll => true
           case _ => false
         }
 
