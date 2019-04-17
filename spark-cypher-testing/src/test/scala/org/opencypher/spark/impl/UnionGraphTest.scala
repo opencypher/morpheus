@@ -27,7 +27,9 @@
 package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
+import org.junit.runner.RunWith
 import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintOptimizedRelationalPlan, PrintRelationalPlan}
