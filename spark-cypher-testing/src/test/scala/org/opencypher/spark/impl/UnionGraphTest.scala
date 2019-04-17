@@ -36,7 +36,9 @@ import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{Prin
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
+import org.scalatestplus.junit.JUnitRunner
 
+@RunWith(classOf[JUnitRunner])
 class UnionGraphTest extends CAPSGraphTest
   with GraphConstructionFixture
   with RecordsVerificationFixture
@@ -118,47 +120,6 @@ class UnionGraphTest extends CAPSGraphTest
     )
 
     verify(nodes, cols, data)
-  }
-
-  it("union all on graphs") {
-    PrintIr.set()
-    PrintLogicalPlan.set()
-    PrintRelationalPlan.set()
-    val a = initGraph("CREATE ()")
-    caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("a"), a)
-    caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("b"), a)
-    val result = caps.cypher(
-      """
-        |FROM a
-        |RETURN GRAPH
-        |UNION ALL
-        |FROM b
-        |RETURN GRAPH
-      """.stripMargin)
-
-    //node size = 2?
-    result.graph.nodes("n").size should equal(2)
-  }
-
-  ignore("union all on graphs with common properties") {
-    PrintIr.set()
-    PrintLogicalPlan.set()
-    PrintRelationalPlan.set()
-    val a = initGraph("CREATE (:two{test:1})")
-    val b = initGraph("CREATE (:one{test:'hello'})") //todo: this should be possible right?
-    caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("a"), a)
-    caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("b"), b)
-    val result = caps.cypher(
-      """
-        |FROM a
-        |RETURN GRAPH
-        |UNION ALL
-        |FROM b
-        |RETURN GRAPH
-      """.stripMargin)
-
-    //node size = 2?
-    result.graph.nodes("n").size should equal(2)
   }
 
 }
