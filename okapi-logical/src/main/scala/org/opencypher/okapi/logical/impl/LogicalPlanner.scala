@@ -48,35 +48,28 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     ir match {
       case sq: SingleQuery => planModel(sq.model.result, sq.model)
       case UnionQuery(left, right, distinct) =>
-        val leftChildren = getQueryChildren(left)
-        val rightChildren = getQueryChildren(right)
+        val leftOperator = process(left)
+          val rightOperator = process(right)
 
-        val isLeftGraph = leftChildren.exists {
-          case g: GraphResultBlock => true
+        val isLeftGraph = leftOperator match {
+          case g: ReturnGraph => true
           case _ => false
         }
 
-        val isRightGraph = rightChildren.exists {
-          case g: GraphResultBlock => true
+        val isRightGraph = rightOperator match {
+          case g: ReturnGraph => true
           case _ => false
         }
 
         (isLeftGraph, isRightGraph) match {
           case (true, true) =>
             if (distinct) throw UnsupportedOperationException("Distinct Union between graphs")
-            else GraphUnionAll(process(left), process(right))
+            else GraphUnionAll(leftOperator, rightOperator)
           case (false, false) =>
-            val union = TabularUnionAll(process(left), process(right))
+            val union = TabularUnionAll(leftOperator, rightOperator)
             if (distinct) Distinct(union.fields, union, union.solved) else union
           case _ => throw UnsupportedOperationException("Union between graph and table is not supported")
         }
-    }
-  }
-
-  def getQueryChildren(ir: CypherQuery): Set[Block] = {
-    ir match {
-      case SingleQuery(model) => model.childrenAsSet
-      case UnionQuery(left, right, _) => getQueryChildren(left) ++ getQueryChildren(right)
     }
   }
 
