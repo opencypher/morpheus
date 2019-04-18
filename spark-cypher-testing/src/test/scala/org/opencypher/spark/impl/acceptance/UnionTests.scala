@@ -27,7 +27,12 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.junit.runner.RunWith
+import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.impl.exception.SchemaException
+import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
+import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintRelationalPlan
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -262,6 +267,43 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
       result.toMaps should equal(Bag(
         CypherMap("rel" -> CAPSRelationship(1, 0, 0, "REL", CypherMap("val" -> 42)))
       ))
+    }
+  }
+
+  describe("Graph union all") {
+    it("union all on graphs") {
+      val a = initGraph("CREATE ()")
+      caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("a"), a)
+      caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("b"), a)
+      val result = caps.cypher(
+        """
+          |FROM a
+          |RETURN GRAPH
+          |UNION ALL
+          |FROM b
+          |RETURN GRAPH
+        """.stripMargin)
+
+      result.graph.nodes("n").size should equal(2)
+    }
+
+    it("union all fails on graphs with common properties") {
+      val a = initGraph("CREATE (:one{test:1})")
+      val b = initGraph("CREATE (:one{test:'hello'})")
+      caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("a"), a)
+      caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("b"), b)
+      val e: SchemaException = the[SchemaException] thrownBy {
+        caps.cypher(
+          """
+            |FROM a
+            |RETURN GRAPH
+            |UNION ALL
+            |FROM b
+            |RETURN GRAPH
+          """.stripMargin).graph
+      }
+
+      e.getMessage should (include("one") and include("test") and include("STRING") and include("INTEGER"))
     }
   }
 }

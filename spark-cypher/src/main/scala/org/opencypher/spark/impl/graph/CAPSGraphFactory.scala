@@ -27,9 +27,16 @@
 package org.opencypher.spark.impl.graph
 
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherGraphFactory}
+import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
+import org.opencypher.spark.schema.CAPSSchema._
 
 case class CAPSGraphFactory()(implicit val session: CAPSSession) extends RelationalCypherGraphFactory[DataFrameTable] {
   override type Graph = RelationalCypherGraph[DataFrameTable]
+  override def unionGraph(graphs: RelationalCypherGraph[DataFrameTable]*)(implicit context: RelationalRuntimeContext[DataFrameTable]): Graph = {
+    val unionGraph = super.unionGraph(graphs:_*)
+    unionGraph.schema.asCaps //to check for schema compatibility
+    unionGraph
+  }
 }

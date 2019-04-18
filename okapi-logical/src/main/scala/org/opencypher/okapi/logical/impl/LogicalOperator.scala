@@ -312,6 +312,14 @@ final case class TabularUnionAll(
   override def solved: SolvedQueryModel = lhs.solved ++ rhs.solved
 }
 
+final case class GraphUnionAll(
+  lhs: LogicalOperator,
+  rhs: LogicalOperator
+) extends BinaryLogicalOperator {
+  override val fields: Set[Var] = Set.empty
+  override def solved: SolvedQueryModel = lhs.solved ++ rhs.solved
+}
+
 final case class FromGraph(
   override val graph: LogicalGraph,
   in: LogicalOperator,

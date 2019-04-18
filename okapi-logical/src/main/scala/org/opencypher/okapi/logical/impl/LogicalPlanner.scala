@@ -27,7 +27,7 @@
 package org.opencypher.okapi.logical.impl
 
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException, UnsupportedOperationException}
 import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
@@ -48,8 +48,28 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     ir match {
       case sq: SingleQuery => planModel(sq.model.result, sq.model)
       case UnionQuery(left, right, distinct) =>
-        val union = TabularUnionAll(process(left), process(right))
-        if (distinct) Distinct(union.fields, union, union.solved) else union
+        val leftOperator = process(left)
+        val rightOperator = process(right)
+
+        val isLeftGraph = leftOperator match {
+          case _: ReturnGraph | _: GraphUnionAll => true
+          case _ => false
+        }
+
+        val isRightGraph = rightOperator match {
+          case _: ReturnGraph | _: GraphUnionAll => true
+          case _ => false
+        }
+
+        (isLeftGraph, isRightGraph) match {
+          case (true, true) =>
+            if (distinct) throw UnsupportedOperationException("Distinct Union between graphs")
+            else GraphUnionAll(leftOperator, rightOperator)
+          case (false, false) =>
+            val union = TabularUnionAll(leftOperator, rightOperator)
+            if (distinct) Distinct(union.fields, union, union.solved) else union
+          case _ => throw UnsupportedOperationException("Union between graph and table is not supported")
+        }
     }
   }
 
