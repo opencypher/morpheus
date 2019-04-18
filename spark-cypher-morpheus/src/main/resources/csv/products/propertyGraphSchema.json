@@ -1,0 +1,33 @@
+{
+  "version": "1.0",
+  "labelPropertyMap": [
+    {
+      "labels": [
+        "Product"
+      ],
+      "properties": {
+        "title": "STRING",
+        "rank": "INTEGER",
+        "category": "STRING"
+      }
+    },
+    {
+      "labels": [
+        "Customer"
+      ],
+      "properties": {
+        "name": "STRING"
+      }
+    }
+  ],
+  "relTypePropertyMap": [
+    {
+      "relType": "BOUGHT",
+      "properties": {
+        "rating": "INTEGER",
+        "helpful": "INTEGER",
+        "votes": "INTEGER"
+      }
+    }
+  ]
+}
