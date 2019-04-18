@@ -15,13 +15,6 @@ import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
 object MorpheusSession {
   def create(implicit spark: SparkSession): MorpheusSession = new MorpheusSession(spark)
-
-  implicit class CypherSessionOps(val cypherSession: CypherSession) extends AnyVal {
-    def withCypher10: MorpheusSession = cypherSession match {
-      case ms: MorpheusSession => ms
-      case other => ???
-    }
-  }
 }
 
 case class SparkCypherResult(relationalTable: RelationalCypherRecords[DataFrameTable]) extends CypherResult {
@@ -31,6 +24,8 @@ case class SparkCypherResult(relationalTable: RelationalCypherRecords[DataFrameT
 private[morpheus] class MorpheusSession(override val sparkSession: SparkSession) extends RelationalCypherSession[DataFrameTable] with CypherSession {
 
   implicit val caps: CAPSSession = new CAPSSession(sparkSession)
+
+  // org.opencypher.okapi.relational.api.graph.RelationalCypherSession
 
   override type Records = caps.Records
 
@@ -54,7 +49,6 @@ private[morpheus] class MorpheusSession(override val sparkSession: SparkSession)
   ): CypherResult = {
     val relationalGraph = toRelationalGraph(graph)
     SparkCypherResult(relationalGraph.cypher(query, CypherMap(parameters.toSeq: _*)).records)
-
   }
 
   override def createGraph(
