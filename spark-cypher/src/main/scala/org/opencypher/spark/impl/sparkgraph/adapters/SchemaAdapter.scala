@@ -1,4 +1,4 @@
-package org.opencypher.morpheus.adapters
+package org.opencypher.spark.impl.sparkgraph.adapters
 
 import org.apache.spark.graph.api.PropertyGraphType
 import org.opencypher.okapi.api.schema.Schema

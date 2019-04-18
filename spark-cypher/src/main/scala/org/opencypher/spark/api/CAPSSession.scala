@@ -37,6 +37,7 @@ import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.relational.api.graph.RelationalCypherSession
 import org.opencypher.okapi.relational.api.planning.RelationalCypherResult
 import org.opencypher.spark.api.io._
+import org.opencypher.spark.impl.sparkgraph.SparkGraphSupport
 import org.opencypher.spark.impl.graph.CAPSGraphFactory
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.impl.{CAPSRecords, CAPSRecordsFactory}
@@ -51,7 +52,7 @@ import scala.reflect.runtime.universe._
   *
   * @param sparkSession The Spark session representing the cluster to execute on
   */
-sealed class CAPSSession(val sparkSession: SparkSession) extends RelationalCypherSession[DataFrameTable] with Serializable {
+sealed class CAPSSession(val sparkSession: SparkSession) extends RelationalCypherSession[DataFrameTable] with SparkGraphSupport with Serializable {
 
   override type Result = RelationalCypherResult[DataFrameTable]
 

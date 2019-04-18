@@ -1,4 +1,4 @@
-package org.opencypher.morpheus.adapters
+package org.opencypher.spark.impl.sparkgraph.adapters
 
 import org.apache.spark.graph.api.{NodeFrame, RelationshipFrame}
 import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMappingBuilder, RelationshipMappingBuilder}

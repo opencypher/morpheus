@@ -1,41 +1,18 @@
-package org.opencypher.morpheus
+package org.opencypher.spark.impl.sparkgraph
 
-import org.apache.spark.graph.api._
-import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
-import org.opencypher.morpheus.adapters.RelationalGraphAdapter
+import org.apache.spark.graph.api.{CypherResult, CypherSession, NodeFrame, PropertyGraph, RelationshipFrame}
+import org.apache.spark.sql.{DataFrame, SaveMode}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
+import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.CAPSEntityTableFactory
-import org.opencypher.spark.impl.CAPSRecordsFactory
-import org.opencypher.spark.impl.graph.CAPSGraphFactory
+import org.opencypher.spark.impl.sparkgraph.adapters.RelationalGraphAdapter
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
-object MorpheusSession {
-  def create(implicit spark: SparkSession): MorpheusSession = new MorpheusSession(spark)
-}
+trait SparkGraphSupport extends CypherSession {
 
-case class SparkCypherResult(relationalTable: RelationalCypherRecords[DataFrameTable]) extends CypherResult {
-  override val df: DataFrame = relationalTable.table.df
-}
-
-private[morpheus] class MorpheusSession(override val sparkSession: SparkSession) extends RelationalCypherSession[DataFrameTable] with CypherSession {
-
-  implicit val caps: CAPSSession = new CAPSSession(sparkSession)
-
-  // org.opencypher.okapi.relational.api.graph.RelationalCypherSession
-
-  override type Records = caps.Records
-
-  override val records: CAPSRecordsFactory = caps.records
-
-  override val graphs: CAPSGraphFactory = caps.graphs
-
-  override val entityTables: CAPSEntityTableFactory.type = caps.entityTables
-
-  // org.apache.spark.graph.api.CypherSession
+  this: CAPSSession =>
 
   override def cypher(
     graph: PropertyGraph,
@@ -49,6 +26,7 @@ private[morpheus] class MorpheusSession(override val sparkSession: SparkSession)
   ): CypherResult = {
     val relationalGraph = toRelationalGraph(graph)
     SparkCypherResult(relationalGraph.cypher(query, CypherMap(parameters.toSeq: _*)).records)
+
   }
 
   override def createGraph(
@@ -81,6 +59,6 @@ private[morpheus] class MorpheusSession(override val sparkSession: SparkSession)
   }
 }
 
-
-
-
+case class SparkCypherResult(relationalTable: RelationalCypherRecords[DataFrameTable]) extends org.apache.spark.graph.api.CypherResult {
+  override val df: DataFrame = relationalTable.table.df
+}
