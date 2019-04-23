@@ -44,8 +44,9 @@ object Part4_YelpHiveIntegration extends App {
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpSubsetFolder)
 
-  implicit val caps: CAPSSession = CAPSSession.local()
-  implicit val spark: SparkSession = caps.sparkSession
+  implicit val morpheus: CAPSSession = CAPSSession.local()
+  implicit val spark: SparkSession = morpheus.sparkSession
+  import morpheus._
 
   val integratedGraphName = GraphName(s"${yelpDB}_and_$yelpBookDB")
 
@@ -89,9 +90,9 @@ object Part4_YelpHiveIntegration extends App {
     .sql(GraphDdl(graphDdl))
     .withSqlDataSourceConfigs("HIVE" -> SqlDataSourceConfig.Hive, "H2" -> h2Config)
 
-  caps.registerSource(Namespace("federation"), sqlPgds)
+  registerSource(Namespace("federation"), sqlPgds)
 
-  caps.cypher(
+  cypher(
     s"""
        |FROM GRAPH federation.$integratedGraphName
        |MATCH (user1:User)-[:REVIEWS]->(b:Business)<-[:REVIEWS]-(user2:User)

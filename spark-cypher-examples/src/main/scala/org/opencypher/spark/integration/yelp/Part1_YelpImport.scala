@@ -45,8 +45,8 @@ object Part1_YelpImport extends App {
   lazy val inputPath = args.headOption.getOrElse(defaultYelpJsonFolder)
   lazy val outputPath = args.lift(1).getOrElse(defaultYelpGraphFolder)
 
-  implicit val caps: CAPSSession = CAPSSession.local()
-  implicit val spark: SparkSession = caps.sparkSession
+  implicit val morpheus: CAPSSession = CAPSSession.local()
+  implicit val spark: SparkSession = morpheus.sparkSession
 
   storeGraph(inputPath, outputPath)
 
@@ -109,6 +109,6 @@ object Part1_YelpImport extends App {
         .prependIdColumn(sourceEndNodeKey, businessLabel))
 
     // Create property graph
-    caps.graphs.create(businessNodeTable, userNodeTable, reviewRelTable)
+    morpheus.graphs.create(businessNodeTable, userNodeTable, reviewRelTable)
   }
 }

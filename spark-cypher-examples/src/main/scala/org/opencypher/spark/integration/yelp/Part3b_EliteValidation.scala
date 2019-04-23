@@ -41,8 +41,8 @@ object Part3b_EliteValidation extends App {
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
-  implicit val caps: CAPSSession = CAPSSession.local()
-  import caps._
+  implicit val morpheus: CAPSSession = CAPSSession.local()
+  import morpheus._
 
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
   registerSource(neo4jNamespace, GraphSources.cypher.neo4j(neo4jConfig))
