@@ -115,8 +115,6 @@ case class AcceptanceTestGenerator(
          | */
          |package $targetPackageName.${packageName.get}
          |
-         |import org.junit.runner.RunWith
-         |import org.scalatestplus.junit.JUnitRunner
          |import scala.util.{Failure, Success, Try}
          |import org.opencypher.okapi.api.value.CypherValue._
          |import org.opencypher.okapi.testing.propertygraph.InMemoryTestGraph
@@ -131,7 +129,6 @@ case class AcceptanceTestGenerator(
          |           CypherPropertyMap => TCKCypherPropertyMap, CypherNull => TCKCypherNull, CypherPath => TCKCypherPath}
          |${specificImports.mkString("\n")}
          |
-         |@RunWith(classOf[JUnitRunner])
          |class $className extends $testSuiteName{
          |
          |$testCases
