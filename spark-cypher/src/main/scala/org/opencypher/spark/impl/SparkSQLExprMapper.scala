@@ -348,10 +348,22 @@ object SparkSQLExprMapper {
           else collect_list(child0)
 
         case CountStar => count(ONE_LIT)
-        case _: Avg => avg(child0)
+        case a: Avg =>
+          a.inner.get.cypherType match {
+            case CTLocalDateTime | CTDate => throw IllegalArgumentException("avg over LocalDateTime is not allowed")
+            case CTDuration => throw NotImplementedException("avg over durations")
+            case _ => avg(child0)
+          }
         case _: Max => max(child0)
         case _: Min => min(child0)
-        case _: Sum => sum(child0)
+        case s: Sum =>
+          //todo: catch error earlier? (build method into Expression or even in frontend?)
+          s.cypherType match {
+            case CTLocalDateTime | CTDate => throw IllegalArgumentException("sum over LocalDateTime is not allowed")
+            case CTDuration => throw NotImplementedException("sum over durations")
+            case _ => sum(child0)
+          }
+
 
         case BigDecimal(_, precision, scale) =>
           make_big_decimal(child0, precision.toInt, scale.toInt)

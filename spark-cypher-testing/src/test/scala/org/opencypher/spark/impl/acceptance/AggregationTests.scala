@@ -28,6 +28,7 @@ package org.opencypher.spark.impl.acceptance
 
 import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.impl.exception._
 import org.opencypher.okapi.impl.temporal.Duration
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
@@ -131,13 +132,16 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
 
     it("avg on dates") {
       val result = caps.graphs.empty.cypher("UNWIND [date('2018-01-01'), date('2019-01-01')] AS d RETURN AVG(d) as res")
-      val errorMessage = an[Exception] shouldBe thrownBy{result.records}
+      val errorMessage = an[IllegalArgumentException] shouldBe thrownBy {
+        result.records
+      }
     }
 
-    //todo: in cypher avg on datetimes should not be possible
-    ignore("avg on datetimes") {
+    it("avg on datetimes") {
       val result = caps.graphs.empty.cypher("UNWIND [localdatetime('2010-10-10T12:00'), localdatetime('2010-10-10T12:01')] AS d RETURN AVG(d) as res")
-      val errorMessage = an[Exception] shouldBe thrownBy{result.records}
+      val errorMessage = an[IllegalArgumentException] shouldBe thrownBy {
+        result.records
+      }
     }
 
     //todo: cypher should allow avg on durations, but spark does not support avg on durations (calendarintervals)
@@ -600,16 +604,19 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
 
     it("sum on dates") {
       val result = caps.graphs.empty.cypher("UNWIND [date('2018-01-01'), date('2019-01-01')] AS d RETURN SUM(d) as res")
-      val errorMessage = an[Exception] shouldBe thrownBy{result.records}
+      val errorMessage = an[IllegalArgumentException] shouldBe thrownBy {
+        result.records
+      }
     }
 
-    //todo: in cypher sum on datetimes should not be possible
-    ignore("sum on datetimes") {
+    it("sum on datetimes") {
       val result = caps.graphs.empty.cypher("UNWIND [localdatetime('2010-10-10T12:00'), localdatetime('2010-10-10T12:01')] AS d RETURN SUM(d) as res")
-      val errorMessage = an[Exception] shouldBe thrownBy{result.records}
+      val errorMessage = an[IllegalArgumentException] shouldBe thrownBy {
+        result.records
+      }
     }
 
-    //todo: cypher should sum avg on durations, but spark does not support avg on durations (calendarintervals)
+    //todo: cypher should sum over durations, but spark does not support sum over durations (calendarintervals)
     ignore("sum on durations") {
       val result = caps.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT200H')] AS d RETURN SUM(d) as res")
 
