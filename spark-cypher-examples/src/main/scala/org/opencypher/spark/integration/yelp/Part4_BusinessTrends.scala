@@ -33,7 +33,7 @@ import org.opencypher.okapi.neo4j.io.Neo4jHelpers.{cypher => neo4jCypher, _}
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants._
 
-object Part3a_BusinessTrends extends App {
+object Part4_BusinessTrends extends App {
   Logger.getRootLogger.setLevel(Level.ERROR)
 
   log("Part 3a - Business trends")

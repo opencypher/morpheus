@@ -37,7 +37,7 @@ import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Jdbc
 import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants._
 
-object Part4_YelpHiveIntegration extends App {
+object Part3_YelpHiveIntegration extends App {
   Logger.getRootLogger.setLevel(Level.ERROR)
 
   log("Part 4 - Hive Integration")
@@ -70,8 +70,8 @@ object Part4_YelpHiveIntegration extends App {
        |  FRIEND,
        |
        |  -- Load Yelp users and businesses from Hive
-       |  (Business) FROM HIVE.$yelpDB.business (business_id AS businessId),
        |  (User)     FROM HIVE.$yelpDB.user,
+       |  (Business) FROM HIVE.$yelpDB.business (business_id AS businessId),
        |
        |  -- Load Yelp reviews from Hive
        |  (User)-[REVIEWS]->(Business) FROM HIVE.$yelpDB.review e

@@ -32,7 +32,7 @@ import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants._
 import org.apache.log4j.{Level, Logger}
 
-object Part3c_BusinessRecommendations extends App {
+object Part5_BusinessRecommendations extends App {
   Logger.getRootLogger.setLevel(Level.ERROR)
 
   log("Part 3c - Business Recommendation")

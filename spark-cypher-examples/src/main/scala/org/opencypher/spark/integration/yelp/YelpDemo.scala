@@ -30,8 +30,7 @@ object YelpDemo extends App {
   private val emptyArgs: Array[String] = Array.empty
   Part1_YelpImport.main(emptyArgs)
   Part2_YelpGraphLibrary.main(emptyArgs)
-  Part3a_BusinessTrends.main(emptyArgs)
-  Part3b_EliteValidation.main(emptyArgs)
-  Part3c_BusinessRecommendations.main(emptyArgs)
-  Part4_YelpHiveIntegration.main(emptyArgs)
+  Part3_YelpHiveIntegration.main(emptyArgs)
+  Part4_BusinessTrends.main(emptyArgs)
+  Part5_BusinessRecommendations.main(emptyArgs)
 }
