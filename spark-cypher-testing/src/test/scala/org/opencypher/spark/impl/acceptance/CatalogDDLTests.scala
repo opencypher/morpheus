@@ -26,7 +26,6 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.junit.runner.RunWith
 import org.opencypher.okapi.api.graph.{GraphName, QualifiedGraphName}
 import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
@@ -35,9 +34,7 @@ import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.v9_0.util.SyntaxException
 import org.scalatest.BeforeAndAfterAll
-import org.scalatestplus.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAfterAll {
 
   override def afterEach(): Unit = {

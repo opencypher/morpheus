@@ -27,7 +27,6 @@
 package org.opencypher.spark.impl.acceptance
 
 import org.apache.spark.sql.Row
-import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.testing.Bag
@@ -36,9 +35,7 @@ import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatestplus.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class ReturnTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("RETURN") {

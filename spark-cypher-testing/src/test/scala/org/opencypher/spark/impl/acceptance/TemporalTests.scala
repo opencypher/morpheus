@@ -29,15 +29,12 @@ package org.opencypher.spark.impl.acceptance
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
-import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.temporal.Duration
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatestplus.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class TemporalTests extends CAPSTestSuite with ScanGraphInit {
   private def shouldParseDate(given: String, expected: String): Unit = {
     caps.cypher(s"RETURN date('$given') AS time").records.toMaps should equal(

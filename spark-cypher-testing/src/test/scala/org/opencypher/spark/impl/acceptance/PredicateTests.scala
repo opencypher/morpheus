@@ -33,7 +33,6 @@ import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalatestplus.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class PredicateTests extends CAPSTestSuite with ScanGraphInit {
 
   it("can evaluate predicates on non-existing properties") {
