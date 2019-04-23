@@ -26,6 +26,7 @@
  */
 package org.opencypher.spark.impl.acceptance
 
+import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
