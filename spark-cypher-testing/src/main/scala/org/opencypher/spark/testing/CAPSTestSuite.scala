@@ -26,7 +26,6 @@
  */
 package org.opencypher.spark.testing
 
-import org.junit.runner.RunWith
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
@@ -34,9 +33,7 @@ import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.fixture.{CAPSSessionFixture, SparkSessionFixture}
 import org.opencypher.spark.testing.support.{GraphMatchingTestSupport, RecordMatchingTestSupport}
-import org.scalatestplus.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 abstract class CAPSTestSuite
     extends BaseTestSuite
     with SparkSessionFixture

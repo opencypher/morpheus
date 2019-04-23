@@ -26,15 +26,12 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.junit.runner.RunWith
 import org.opencypher.okapi.api.graph.{NodeRelPattern, TripletPattern}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatestplus.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class PatternScanTests extends CAPSTestSuite with ScanGraphInit {
 
   it("resolves simple expands") {

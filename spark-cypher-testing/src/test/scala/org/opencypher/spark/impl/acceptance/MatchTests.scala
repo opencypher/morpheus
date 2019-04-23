@@ -26,7 +26,6 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.junit.runner.RunWith
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
@@ -34,9 +33,7 @@ import org.opencypher.okapi.relational.impl.graph.ScanGraph
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatestplus.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class MatchTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("match on empty graphs / table") {

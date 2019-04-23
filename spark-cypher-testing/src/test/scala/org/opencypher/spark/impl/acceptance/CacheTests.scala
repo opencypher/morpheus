@@ -26,14 +26,11 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.junit.runner.RunWith
 import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.okapi.relational.impl.operators.Cache
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatestplus.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class CacheTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("scan caching") {

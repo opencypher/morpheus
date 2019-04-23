@@ -27,7 +27,6 @@
 package org.opencypher.spark.impl.acceptance
 
 import claimant.Claim
-import org.junit.runner.RunWith
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.Format.defaultValueFormatter
 import org.opencypher.okapi.api.value.CypherValue.{CypherFloat, CypherInteger, CypherList, CypherMap}
@@ -40,10 +39,8 @@ import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.SparkSQLMappingException
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalacheck.Prop
-import org.scalatestplus.junit.JUnitRunner
 import org.scalatestplus.scalacheck.Checkers
 
-@RunWith(classOf[JUnitRunner])
 class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
   describe("list slice") {

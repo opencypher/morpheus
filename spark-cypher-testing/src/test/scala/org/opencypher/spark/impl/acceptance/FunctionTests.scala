@@ -26,17 +26,14 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.junit.runner.RunWith
-import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap, CypherNull}
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.value.CAPSEntity._
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.testing.CAPSTestSuite
-import org.scalatestplus.junit.JUnitRunner
 
-@RunWith(classOf[JUnitRunner])
 class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("Acos") {
