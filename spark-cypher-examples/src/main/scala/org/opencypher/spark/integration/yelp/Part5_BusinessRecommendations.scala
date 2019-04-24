@@ -32,15 +32,15 @@ import org.opencypher.spark.api.{CAPSSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants._
 import org.apache.log4j.{Level, Logger}
 
-object Part3c_BusinessRecommendations extends App {
+object Part5_BusinessRecommendations extends App {
   Logger.getRootLogger.setLevel(Level.ERROR)
 
-  log("Part 3c - Business Recommendation")
+  log("Part 5 - Business Recommendation")
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
-  implicit val caps: CAPSSession = CAPSSession.local()
-  import caps._
+  implicit val morpheus: CAPSSession = CAPSSession.local()
+  import morpheus._
 
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
   registerSource(neo4jNamespace, GraphSources.cypher.neo4j(neo4jConfig))
