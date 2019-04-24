@@ -40,7 +40,7 @@ import org.opencypher.spark.integration.yelp.YelpConstants._
 object Part3_YelpHiveIntegration extends App {
   Logger.getRootLogger.setLevel(Level.ERROR)
 
-  log("Part 4 - Hive Integration")
+  log("Part 3 - Hive Integration")
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpSubsetFolder)
 

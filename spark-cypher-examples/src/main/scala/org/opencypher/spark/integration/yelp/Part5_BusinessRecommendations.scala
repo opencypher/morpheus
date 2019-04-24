@@ -35,7 +35,7 @@ import org.apache.log4j.{Level, Logger}
 object Part5_BusinessRecommendations extends App {
   Logger.getRootLogger.setLevel(Level.ERROR)
 
-  log("Part 3c - Business Recommendation")
+  log("Part 5 - Business Recommendation")
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 

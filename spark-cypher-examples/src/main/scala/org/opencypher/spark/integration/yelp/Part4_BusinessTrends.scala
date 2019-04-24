@@ -36,7 +36,7 @@ import org.opencypher.spark.integration.yelp.YelpConstants._
 object Part4_BusinessTrends extends App {
   Logger.getRootLogger.setLevel(Level.ERROR)
 
-  log("Part 3a - Business trends")
+  log("Part 4 - Business trends")
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
