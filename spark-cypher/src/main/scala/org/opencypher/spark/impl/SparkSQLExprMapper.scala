@@ -357,7 +357,8 @@ object SparkSQLExprMapper {
         case _: Max => max(child0)
         case _: Min => min(child0)
         case s: Sum =>
-          //todo: catch error earlier? (build method into Expression or even in frontend?)
+          //other illegal types like string are already caught at the frontend
+          //these cannot be catched at the frontend as functions like date are currently unknown there
           s.cypherType match {
             case CTLocalDateTime | CTDate => throw IllegalArgumentException("sum over LocalDateTime is not allowed")
             case CTDuration => throw NotImplementedException("sum over durations")
