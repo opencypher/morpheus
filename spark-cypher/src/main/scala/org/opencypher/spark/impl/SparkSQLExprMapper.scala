@@ -348,22 +348,12 @@ object SparkSQLExprMapper {
           else collect_list(child0)
 
         case CountStar => count(ONE_LIT)
-        case a: Avg =>
-          a.inner.get.cypherType match {
-            case CTLocalDateTime | CTDate => throw IllegalArgumentException("avg over LocalDateTime is not allowed")
-            case CTDuration => throw NotImplementedException("avg over durations")
-            case _ => avg(child0)
-          }
+        case a: Avg => avg(child0)
+
         case _: Max => max(child0)
         case _: Min => min(child0)
-        case s: Sum =>
-          //other illegal types like string are already caught at the frontend
-          //these cannot be catched at the frontend as functions like date are currently unknown there
-          s.cypherType match {
-            case CTLocalDateTime | CTDate => throw IllegalArgumentException("sum over LocalDateTime is not allowed")
-            case CTDuration => throw NotImplementedException("sum over durations")
-            case _ => sum(child0)
-          }
+        case s: Sum => sum(child0)
+
 
 
         case BigDecimal(_, precision, scale) =>

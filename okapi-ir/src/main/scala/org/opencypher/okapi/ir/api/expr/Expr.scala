@@ -522,7 +522,7 @@ final case class Add(lhs: Expr, rhs: Expr) extends ArithmeticExpr {
 
   override val op = "+"
 
-  override def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = lhsType ->  rhsType match {
+  override def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = lhsType -> rhsType match {
     case (CTVoid, _) | (_, CTVoid) => Some(CTNull)
     case (left: CTList, r) => Some(listConcatJoin(left, r))
     case (l, right: CTList) => Some(listConcatJoin(right, l))
@@ -542,7 +542,7 @@ final case class Add(lhs: Expr, rhs: Expr) extends ArithmeticExpr {
   }
 
 
-  def listConcatJoin(lhsType: CTList, rhsType: CypherType): CypherType = lhsType ->  rhsType match {
+  def listConcatJoin(lhsType: CTList, rhsType: CypherType): CypherType = lhsType -> rhsType match {
     case (CTList(lInner), CTList(rInner)) => CTList(lInner join rInner)
     case (CTList(lInner), _) => CTList(lInner join rhsType)
   }
@@ -552,7 +552,7 @@ final case class Subtract(lhs: Expr, rhs: Expr) extends ArithmeticExpr {
 
   override val op = "-"
 
-  override def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = lhsType ->  rhsType match {
+  override def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = lhsType -> rhsType match {
     case (CTVoid, _) | (_, CTVoid) => Some(CTNull)
     case (CTInteger, CTInteger) => Some(CTInteger)
     case (CTFloat, CTFloat) => Some(CTFloat)
@@ -569,7 +569,7 @@ final case class Multiply(lhs: Expr, rhs: Expr) extends ArithmeticExpr {
 
   override val op = "*"
 
-  override def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = lhsType ->  rhsType match {
+  override def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = lhsType -> rhsType match {
     case (CTVoid, _) | (_, CTVoid) => Some(CTNull)
     case (CTInteger, CTInteger) => Some(CTInteger)
     case (CTFloat, CTFloat) => Some(CTFloat)
@@ -587,7 +587,7 @@ final case class Divide(lhs: Expr, rhs: Expr) extends ArithmeticExpr {
 
   override val op = "/"
 
-  override def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = lhsType ->  rhsType match {
+  override def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = lhsType -> rhsType match {
     case (CTVoid, _) | (_, CTVoid) => Some(CTNull)
     case (CTInteger, CTInteger) => Some(CTInteger)
     case (CTFloat, CTFloat) => Some(CTFloat)
@@ -919,10 +919,31 @@ sealed trait Aggregator extends Expr {
   override def nullInNullOut: Boolean = false
 }
 
-final case class Avg(expr: Expr) extends Aggregator {
+sealed trait TypedAggregator extends Aggregator {
+  def expr: Expr
+
+  override def cypherType: CypherType = {
+    val maybeType = signature(expr.cypherType.material)
+
+    maybeType match {
+      case Some(typ) => childNullPropagatesTo(typ)
+      case None => throw UnsupportedOperationException(s"Type signature ${getClass.getSimpleName}(${expr.cypherType}) is not supported.")
+    }
+  }
+
+  def signature(exprType: CypherType): Option[CypherType] = {
+    exprType match {
+      case CTDuration => Some(CTDuration)
+      case x if CTNumber.superTypeOf(x) => Some(x)
+      case _ => None
+    }
+  }
+}
+
+final case class Avg(expr: Expr) extends TypedAggregator {
 
   override val inner: Option[Expr] = Some(expr)
-  override val cypherType: CypherType = childNullPropagatesTo(CTFloat)
+
   override def toString = s"avg($expr)"
   override def withoutType: String = s"avg(${expr.withoutType})"
 
@@ -963,12 +984,13 @@ final case class Min(expr: Expr) extends Aggregator {
 
 }
 
-final case class Sum(expr: Expr) extends Aggregator {
+final case class Sum(expr: Expr) extends TypedAggregator {
 
   override val inner: Option[Expr] = Some(expr)
-  override val cypherType: CypherType = expr.cypherType
+
   override def toString = s"sum($expr)"
   override def withoutType: String = s"sum(${expr.withoutType})"
+
 }
 
 final case class Collect(expr: Expr, distinct: Boolean) extends Aggregator {

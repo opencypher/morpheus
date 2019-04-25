@@ -130,20 +130,6 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
       ))
     }
 
-    it("avg on dates") {
-      val result = caps.graphs.empty.cypher("UNWIND [date('2018-01-01'), date('2019-01-01')] AS d RETURN AVG(d) as res")
-      val errorMessage = an[IllegalArgumentException] shouldBe thrownBy {
-        result.records
-      }
-    }
-
-    it("avg on datetimes") {
-      val result = caps.graphs.empty.cypher("UNWIND [localdatetime('2010-10-10T12:00'), localdatetime('2010-10-10T12:01')] AS d RETURN AVG(d) as res")
-      val errorMessage = an[IllegalArgumentException] shouldBe thrownBy {
-        result.records
-      }
-    }
-
     //todo: cypher should allow avg on durations, but spark does not support avg on durations (calendarintervals)
     ignore("avg on durations") {
       val result = caps.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT200H')] AS d RETURN AVG(d) as res")
@@ -600,20 +586,6 @@ class AggregationTests extends CAPSTestSuite with ScanGraphInit {
       result.records.toMaps should equal(Bag(
         CypherMap("res" -> null)
       ))
-    }
-
-    it("sum on dates") {
-      val result = caps.graphs.empty.cypher("UNWIND [date('2018-01-01'), date('2019-01-01')] AS d RETURN SUM(d) as res")
-      val errorMessage = an[IllegalArgumentException] shouldBe thrownBy {
-        result.records
-      }
-    }
-
-    it("sum on datetimes") {
-      val result = caps.graphs.empty.cypher("UNWIND [localdatetime('2010-10-10T12:00'), localdatetime('2010-10-10T12:01')] AS d RETURN SUM(d) as res")
-      val errorMessage = an[IllegalArgumentException] shouldBe thrownBy {
-        result.records
-      }
     }
 
     //todo: cypher should sum over durations, but spark does not support sum over durations (calendarintervals)
