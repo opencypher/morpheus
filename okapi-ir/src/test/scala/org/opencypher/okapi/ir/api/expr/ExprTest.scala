@@ -29,6 +29,7 @@ package org.opencypher.okapi.ir.api.expr
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
+import org.opencypher.okapi.impl.exception._
 
 class ExprTest extends BaseTestSuite {
 
@@ -76,6 +77,9 @@ class ExprTest extends BaseTestSuite {
     val c = Var("c")(CTUnion(CTInteger, CTString.nullable))
     val d = Var("d")(CTInteger.nullable)
     val e = Var("e")(CTString.nullable)
+    val datetime = Var("datetime")(CTLocalDateTime)
+    val duration = Var("duration")(CTDuration)
+    val number = Var("number")(CTNumber)
 
     it("types Coalesce correctly") {
       Coalesce(List(a, b)).cypherType should equal(CTUnion(CTNode, CTInteger, CTString))
@@ -127,6 +131,18 @@ class ExprTest extends BaseTestSuite {
       Explode(Var("list")(CTNull)).cypherType should equalWithTracing(
         CTVoid
       )
+    }
+
+    it("types Avg correctly") {
+      Avg(duration).cypherType shouldBe CTDuration
+      Avg(number).cypherType shouldBe CTNumber
+      an[UnsupportedOperationException] shouldBe thrownBy {Avg(datetime).cypherType}
+    }
+
+    it("types Sum correctly") {
+      Sum(duration).cypherType shouldBe CTDuration
+      Sum(number).cypherType shouldBe CTNumber
+      an[UnsupportedOperationException] shouldBe thrownBy {Sum(datetime).cypherType}
     }
   }
 

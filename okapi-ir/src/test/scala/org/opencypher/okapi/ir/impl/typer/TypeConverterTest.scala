@@ -40,6 +40,9 @@ class TypeConverterTest extends BaseTestSuite {
     frontend.CTNumber shouldBeConvertedTo CTNumber
     frontend.CTString shouldBeConvertedTo CTString
     frontend.CTAny shouldBeConvertedTo CTAny
+    frontend.CTDate shouldBeConvertedTo CTDate
+    frontend.CTLocalDateTime shouldBeConvertedTo CTLocalDateTime
+    frontend.CTDuration shouldBeConvertedTo CTDuration
   }
 
   test("should convert entity types") {

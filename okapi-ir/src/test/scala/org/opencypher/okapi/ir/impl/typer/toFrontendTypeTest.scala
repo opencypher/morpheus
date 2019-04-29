@@ -46,6 +46,12 @@ class toFrontendTypeTest extends BaseTestSuite {
     CTBoolean.nullable shouldBeConvertedTo frontend.CTBoolean
     CTString shouldBeConvertedTo frontend.CTString
     CTString.nullable shouldBeConvertedTo frontend.CTString
+    CTDate shouldBeConvertedTo frontend.CTDate
+    CTDate.nullable shouldBeConvertedTo frontend.CTDate
+    CTLocalDateTime shouldBeConvertedTo frontend.CTLocalDateTime
+    CTLocalDateTime.nullable shouldBeConvertedTo frontend.CTLocalDateTime
+    CTDuration shouldBeConvertedTo frontend.CTDuration
+    CTDuration.nullable shouldBeConvertedTo frontend.CTDuration
   }
 
   test("should convert entity types") {

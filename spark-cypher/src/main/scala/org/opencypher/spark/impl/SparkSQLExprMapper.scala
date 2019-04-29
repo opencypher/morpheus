@@ -349,9 +349,11 @@ object SparkSQLExprMapper {
 
         case CountStar => count(ONE_LIT)
         case _: Avg => avg(child0)
+
         case _: Max => max(child0)
         case _: Min => min(child0)
         case _: Sum => sum(child0)
+
 
         case BigDecimal(_, precision, scale) =>
           make_big_decimal(child0, precision.toInt, scale.toInt)
