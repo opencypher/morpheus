@@ -42,7 +42,7 @@ import org.opencypher.okapi.ir.api.expr.{EndNode, Property, StartNode}
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
-import org.opencypher.okapi.neo4j.io.{EntityReader, EntityWriter, Neo4jConfig}
+import org.opencypher.okapi.neo4j.io.{ElementReader, ElementWriter, Neo4jConfig}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSRecords
@@ -111,7 +111,7 @@ case class Neo4jPropertyGraphDataSource(
     sparkSchema: StructType
   ): DataFrame = {
     val graphSchema = schema(graphName).get
-    val flatQuery = EntityReader.flatExactLabelQuery(labels, graphSchema, graphName.getMetaLabel)
+    val flatQuery = ElementReader.flatExactLabelQuery(labels, graphSchema, graphName.getMetaLabel)
 
     val neo4jConnection = Neo4j(config, caps.sparkSession)
     val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
@@ -128,7 +128,7 @@ case class Neo4jPropertyGraphDataSource(
     sparkSchema: StructType
   ): DataFrame = {
     val graphSchema = schema(graphName).get
-    val flatQuery = EntityReader.flatRelTypeQuery(relKey, graphSchema, graphName.getMetaLabel)
+    val flatQuery = ElementReader.flatRelTypeQuery(relKey, graphSchema, graphName.getMetaLabel)
 
     val neo4jConnection = Neo4j(config, caps.sparkSession)
     val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
@@ -193,7 +193,7 @@ case object Writers {
         .encodeBinaryToHexString
         .rdd
         .foreachPartitionAsync { i =>
-          if (i.nonEmpty) EntityWriter.createNodes(i, mapping, config, combo + metaLabel)(rowToListValue)
+          if (i.nonEmpty) ElementWriter.createNodes(i, mapping, config, combo + metaLabel)(rowToListValue)
         }
     }
     result
@@ -206,7 +206,7 @@ case object Writers {
       val mapping = computeMapping(relScan)
 
       val header = relScan.header
-      val relVar = header.entityVars.head
+      val relVar = header.elementVars.head
       val startExpr = header.expressionsFor(relVar).collect { case s: StartNode => s }.head
       val endExpr = header.expressionsFor(relVar).collect { case e: EndNode => e }.head
       val startColumn = relScan.header.column(startExpr)
@@ -220,7 +220,7 @@ case object Writers {
         .rdd
         .foreachPartitionAsync { i =>
           if (i.nonEmpty) {
-            EntityWriter.createRelationships(
+            ElementWriter.createRelationships(
               i,
               startIndex,
               endIndex,
@@ -255,7 +255,7 @@ case object Writers {
 
   private def computeMapping(nodeScan: CAPSRecords): Array[String] = {
     val header = nodeScan.header
-    val nodeVar = header.entityVars.head
+    val nodeVar = header.elementVars.head
     val properties: Set[Property] = header.expressionsFor(nodeVar).collect {
       case p: Property => p
     }

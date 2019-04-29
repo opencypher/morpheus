@@ -37,7 +37,7 @@ import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure._
 import org.opencypher.spark.api.io.fs.{CsvGraphSource, FSGraphSource}
 import org.opencypher.spark.api.io.fs.HadoopFSHelpers._
 import org.opencypher.spark.api.io.neo4j.Neo4jBulkCSVDataSink._
-import org.opencypher.spark.api.io.{FileFormat, GraphEntity, Relationship}
+import org.opencypher.spark.api.io.{FileFormat, GraphElement, Relationship}
 import org.opencypher.spark.schema.CAPSSchema
 
 object Neo4jBulkCSVDataSink {
@@ -148,7 +148,7 @@ class Neo4jBulkCSVDataSink(override val rootPath: String, arrayDelimiter: String
     relKey: String,
     table: DataFrame
   ): Unit = {
-    val tableWithoutId = table.drop(table.schema.fieldNames.find(_ == GraphEntity.sourceIdKey).get)
+    val tableWithoutId = table.drop(table.schema.fieldNames.find(_ == GraphElement.sourceIdKey).get)
 
     super.writeRelationshipTable(graphName, relKey, stringifyArrayColumns(tableWithoutId))
 
@@ -168,7 +168,7 @@ class Neo4jBulkCSVDataSink(override val rootPath: String, arrayDelimiter: String
   private def writeHeaderFile(path: String, fields: Array[StructField]): Unit = {
     val neoSchema = fields.map {
       //TODO: use Neo4jDefaults here
-      case field if field.name == GraphEntity.sourceIdKey => s"___capsID:ID"
+      case field if field.name == GraphElement.sourceIdKey => s"___capsID:ID"
       case field if field.name == Relationship.sourceStartNodeKey => ":START_ID"
       case field if field.name == Relationship.sourceEndNodeKey => ":END_ID"
       case field if field.name.isPropertyColumnName => s"${field.name.toProperty}:${field.dataType.toNeo4jBulkImportType}"

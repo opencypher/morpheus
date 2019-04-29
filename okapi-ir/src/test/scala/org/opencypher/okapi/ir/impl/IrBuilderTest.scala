@@ -45,7 +45,7 @@ import scala.collection.immutable.Set
 class IrBuilderTest extends IrTestSuite {
 
   describe("CONSTRUCT") {
-    it("sets the correct type for new entities") {
+    it("sets the correct type for new elements") {
       val query =
         """
           |CONSTRUCT
@@ -61,7 +61,7 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
-    it("computes the correct schema for new entities") {
+    it("computes the correct schema for new elements") {
       val query =
         """
           |CONSTRUCT
@@ -819,8 +819,8 @@ class IrBuilderTest extends IrTestSuite {
               deps should equalWithTracing(List(matchBlock))
               map should equal(
                 Map(
-                  toField('name) -> EntityProperty(Var("a")(CTNode), PropertyKey("name"))(CTString),
-                  toField('age) -> EntityProperty(Var("a")(CTNode), PropertyKey("age"))(CTInteger)
+                  toField('name) -> ElementProperty(Var("a")(CTNode), PropertyKey("name"))(CTString),
+                  toField('age) -> ElementProperty(Var("a")(CTNode), PropertyKey("age"))(CTInteger)
                 ))
           }
 
@@ -904,7 +904,7 @@ class IrBuilderTest extends IrTestSuite {
 
   describe("SET in construct") {
 
-    it("fails when setting a label on an entity that is not in scope") {
+    it("fails when setting a label on an element that is not in scope") {
       val query =
         """
           |CONSTRUCT

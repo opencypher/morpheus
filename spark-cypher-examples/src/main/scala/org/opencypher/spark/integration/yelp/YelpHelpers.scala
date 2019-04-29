@@ -28,7 +28,7 @@ package org.opencypher.spark.integration.yelp
 
 import org.apache.spark.sql.types.{ArrayType, DateType, IntegerType, LongType}
 import org.apache.spark.sql.{Column, DataFrame, SparkSession, functions}
-import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
+import org.opencypher.spark.api.io.GraphElement.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.integration.yelp.YelpConstants._

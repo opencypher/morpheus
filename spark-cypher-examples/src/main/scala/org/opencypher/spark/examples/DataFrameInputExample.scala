@@ -53,7 +53,7 @@ object DataFrameInputExample extends App {
     (1L, 1L, 2L, "12/12/2009")
   )).toDF("id", "source", "target", "since")
 
-  // 3) Generate node- and relationship tables that wrap the DataFrames. The mapping between graph entities and columns
+  // 3) Generate node- and relationship tables that wrap the DataFrames. The mapping between graph elements and columns
   //    is derived using naming conventions for identifier columns.
   val personTable = CAPSNodeTable(Set("Person"), nodesDF)
   val friendsTable = CAPSRelationshipTable("KNOWS", relsDF)

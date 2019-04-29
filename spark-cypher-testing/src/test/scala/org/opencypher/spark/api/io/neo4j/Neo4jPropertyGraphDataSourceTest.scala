@@ -42,7 +42,7 @@ import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.CypherGraphSources
-import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, CAPSEntityTable}
+import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, CAPSElementTable}
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -138,8 +138,8 @@ class Neo4jPropertyGraphDataSourceTest
     val node2DF = sparkSession.createDataFrame(List(Row(1L)).asJava, schema)
 
     val nodeMapping = NodeMappingBuilder.create("id")
-    val node1Table = CAPSEntityTable.create(nodeMapping, node1DF)
-    val node2Table = CAPSEntityTable.create(nodeMapping, node2DF)
+    val node1Table = CAPSElementTable.create(nodeMapping, node1DF)
+    val node2Table = CAPSElementTable.create(nodeMapping, node2DF)
 
     val graph = caps.readFrom(node1Table, node2Table)
 

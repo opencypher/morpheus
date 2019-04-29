@@ -32,13 +32,13 @@ import org.apache.spark.sql.types.{DataType, DecimalType, IntegerType, LongType}
 import org.apache.spark.sql.{Column, DataFrame, DataFrameReader, functions}
 import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph._
-import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMappingBuilder, RelationshipMappingBuilder}
+import org.opencypher.okapi.api.io.conversion.{ElementMapping, NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CTVoid}
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
+import org.opencypher.spark.api.io.GraphElement.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.api.io.sql.GraphDdlConversions._
@@ -111,7 +111,7 @@ case class SqlPropertyGraphDataSource(
   private def extractNodeTables(
     ddlGraph: Graph,
     schema: Schema
-  ): Seq[CAPSEntityTable] = {
+  ): Seq[CAPSElementTable] = {
     ddlGraph.nodeToViewMappings.mapValues(nvm => readTable(nvm.view)).map {
       case (nodeViewKey, df) =>
         val nodeViewMapping = ddlGraph.nodeToViewMappings(nodeViewKey)
@@ -124,14 +124,14 @@ case class SqlPropertyGraphDataSource(
           .withPropertyKeyMappings(propertyMapping.toSeq: _*)
           .build
 
-        CAPSEntityTable.create(mapping, nodeDf)
+        CAPSElementTable.create(mapping, nodeDf)
     }.toSeq
   }
 
   private def extractRelationshipTables(
     ddlGraph: Graph,
     schema: Schema
-  ): Seq[CAPSEntityTable] = {
+  ): Seq[CAPSElementTable] = {
     ddlGraph.edgeToViewMappings.map(evm => evm -> readTable(evm.view)).map {
       case (evm, df) =>
         val (propertyMapping, relColumns) = extractRelationship(ddlGraph, schema, evm, df)
@@ -148,7 +148,7 @@ case class SqlPropertyGraphDataSource(
           .withPropertyKeyMappings(propertyMapping.toSeq: _*)
           .build
 
-        CAPSEntityTable.create(mapping, relDf)
+        CAPSElementTable.create(mapping, relDf)
     }
   }
 
@@ -156,7 +156,7 @@ case class SqlPropertyGraphDataSource(
     ddlGraph: Graph,
     schema: Schema,
     strategy: IdGenerationStrategy
-  ): Seq[CAPSEntityTable] = {
+  ): Seq[CAPSElementTable] = {
     ddlGraph.edgeToViewMappings
       .filter(evm => evm.view == evm.startNode.nodeViewKey.viewId)
       .map(evm => evm -> readTable(evm.view))
@@ -172,19 +172,19 @@ case class SqlPropertyGraphDataSource(
           val patternDf = df.select(patternColumns: _*)
 
           val pattern = NodeRelPattern(CTNode(nodeViewMapping.nodeType.labels), CTRelationship(evm.relType.labels))
-          val patternMapping = EntityMapping(
+          val patternMapping = ElementMapping(
             pattern,
             Map(
-              pattern.nodeEntity -> nodePropertyMapping,
-              pattern.relEntity -> relPropertyMapping
+              pattern.nodeElement -> nodePropertyMapping,
+              pattern.relElement -> relPropertyMapping
             ),
             Map(
-              pattern.nodeEntity -> Map(SourceIdKey -> sourceIdKey),
-              pattern.relEntity -> Map(SourceIdKey -> relSourceIdKey, SourceStartNodeKey -> sourceStartNodeKey, SourceEndNodeKey -> sourceEndNodeKey)
+              pattern.nodeElement -> Map(SourceIdKey -> sourceIdKey),
+              pattern.relElement -> Map(SourceIdKey -> relSourceIdKey, SourceStartNodeKey -> sourceStartNodeKey, SourceEndNodeKey -> sourceEndNodeKey)
             )
           )
 
-          CAPSEntityTable.create(patternMapping, patternDf)
+          CAPSElementTable.create(patternMapping, patternDf)
       }
   }
 

@@ -39,8 +39,8 @@ import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
-import org.opencypher.spark.api.io.CAPSEntityTable
-import org.opencypher.spark.api.value.CAPSEntity._
+import org.opencypher.spark.api.io.CAPSElementTable
+import org.opencypher.spark.api.value.CAPSElement._
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.schema.CAPSSchema._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -63,7 +63,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
       |CREATE (martin)-[:SPEAKS]->(orbital)
     """.stripMargin
 
-  val personAstronautTable: CAPSEntityTable = CAPSEntityTable.create(NodeMappingBuilder
+  val personAstronautTable: CAPSElementTable = CAPSElementTable.create(NodeMappingBuilder
     .on("ID")
     .withImpliedLabels("Person", "Astronaut")
     .withPropertyKey("name" -> "NAME")
@@ -71,14 +71,14 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
     .build, caps.sparkSession.createDataFrame(
     Seq((0L, "Max", Date.valueOf("1991-07-10")))).toDF("ID", "NAME", "BIRTHDAY"))
 
-  val personMartianTable: CAPSEntityTable = CAPSEntityTable.create(NodeMappingBuilder
+  val personMartianTable: CAPSElementTable = CAPSElementTable.create(NodeMappingBuilder
     .on("ID")
     .withImpliedLabels("Person", "Martian")
     .withPropertyKey("name" -> "NAME")
     .build, caps.sparkSession.createDataFrame(
     Seq((1L, "Martin"))).toDF("ID", "NAME"))
 
-  val languageTable: CAPSEntityTable = CAPSEntityTable.create(NodeMappingBuilder
+  val languageTable: CAPSElementTable = CAPSElementTable.create(NodeMappingBuilder
     .on("ID")
     .withImpliedLabel("Language")
     .withPropertyKey("title" -> "TITLE")
@@ -89,7 +89,7 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
       (4L, "Orbital"))
   ).toDF("ID", "TITLE"))
 
-  val knowsScan: CAPSEntityTable = CAPSEntityTable.create(RelationshipMappingBuilder
+  val knowsScan: CAPSElementTable = CAPSElementTable.create(RelationshipMappingBuilder
     .on("ID")
     .from("SRC").to("DST").relType("KNOWS").build, caps.sparkSession.createDataFrame(
     Seq(
@@ -156,14 +156,14 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
     g.patterns should contain(tripletPattern)
 
     {
-      val nodeVar = nodeRelPattern.nodeEntity.toVar
-      val relVar = nodeRelPattern.relEntity.toVar
+      val nodeVar = nodeRelPattern.nodeElement.toVar
+      val relVar = nodeRelPattern.relElement.toVar
 
       val cols = Seq(
         nodeVar,
         HasLabel(nodeVar, Label("Person")),
         HasLabel(nodeVar, Label("Martian")),
-        EntityProperty(nodeVar, PropertyKey("name"))(CTString),
+        ElementProperty(nodeVar, PropertyKey("name"))(CTString),
         relVar,
         HasType(relVar, RelType("SPEAKS")),
         StartNode(relVar)(CTAny),
@@ -181,22 +181,22 @@ abstract class CAPSTestGraphFactoryTest extends CAPSTestSuite with GraphMatching
     }
 
     {
-      val sourceVar = tripletPattern.sourceEntity.toVar
-      val targetVar = tripletPattern.targetEntity.toVar
-      val relVar = tripletPattern.relEntity.toVar
+      val sourceVar = tripletPattern.sourceElement.toVar
+      val targetVar = tripletPattern.targetElement.toVar
+      val relVar = tripletPattern.relElement.toVar
 
       val cols = Seq(
         sourceVar,
         HasLabel(sourceVar, Label("Person")),
         HasLabel(sourceVar, Label("Martian")),
-        EntityProperty(sourceVar, PropertyKey("name"))(CTString),
+        ElementProperty(sourceVar, PropertyKey("name"))(CTString),
         relVar,
         HasType(relVar, RelType("SPEAKS")),
         StartNode(relVar)(CTAny),
         EndNode(relVar)(CTAny),
         targetVar,
         HasLabel(targetVar, Label("Language")),
-        EntityProperty(targetVar, PropertyKey("title"))(CTString)
+        ElementProperty(targetVar, PropertyKey("title"))(CTString)
       )
 
       val data = Bag(

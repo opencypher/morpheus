@@ -31,7 +31,7 @@ import java.util.Collections
 import org.apache.spark.sql._
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
-import org.opencypher.okapi.relational.api.io.EntityTable
+import org.opencypher.okapi.relational.api.io.ElementTable
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, RelationalCypherRecordsFactory}
 import org.opencypher.okapi.relational.impl.table._
 import org.opencypher.spark.api.CAPSSession
@@ -56,9 +56,9 @@ case class CAPSRecordsFactory()(implicit caps: CAPSSession) extends RelationalCy
     CAPSRecords(initialHeader, initialDataFrame)
   }
 
-  override def fromEntityTable(entityTable: EntityTable[DataFrameTable]): CAPSRecords = {
-    val withCypherCompatibleTypes = entityTable.table.df.withCypherCompatibleTypes
-    CAPSRecords(entityTable.header, withCypherCompatibleTypes)
+  override def fromElementTable(elementTable: ElementTable[DataFrameTable]): CAPSRecords = {
+    val withCypherCompatibleTypes = elementTable.table.df.withCypherCompatibleTypes
+    CAPSRecords(elementTable.header, withCypherCompatibleTypes)
   }
 
   override def from(

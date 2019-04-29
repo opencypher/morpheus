@@ -32,7 +32,7 @@ import org.apache.spark.sql.functions
 import org.apache.spark.sql.functions.typedLit
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.scalacheck.Prop.propBoolean
-import org.opencypher.spark.api.value.CAPSEntity._
+import org.opencypher.spark.api.value.CAPSElement._
 import org.opencypher.spark.impl.expressions.EncodeLong
 import org.opencypher.spark.impl.expressions.EncodeLong._
 import org.scalatestplus.scalacheck.Checkers

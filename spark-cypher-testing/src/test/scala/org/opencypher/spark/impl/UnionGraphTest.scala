@@ -28,7 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.api.value.CAPSEntity._
+import org.opencypher.spark.api.value.CAPSElement._
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
 
 class UnionGraphTest extends CAPSGraphTest

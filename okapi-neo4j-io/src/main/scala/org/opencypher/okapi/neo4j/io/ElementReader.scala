@@ -31,24 +31,24 @@ import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 
-object EntityReader {
+object ElementReader {
 
   def flatExactLabelQuery(labels: Set[String], schema: Schema, maybeMetaLabel: Option[String] = None): String ={
     val props = schema.nodePropertyKeys(labels).propertyExtractorString
     val allLabels = labels ++ maybeMetaLabel
     val labelCount = allLabels.size
 
-    s"""|MATCH ($entityVarName${allLabels.cypherLabelPredicate})
-        |WHERE length(labels($entityVarName)) = $labelCount
-        |RETURN id($entityVarName) AS $idPropertyKey$props""".stripMargin
+    s"""|MATCH ($elementVarName${allLabels.cypherLabelPredicate})
+        |WHERE length(labels($elementVarName)) = $labelCount
+        |RETURN id($elementVarName) AS $idPropertyKey$props""".stripMargin
   }
 
   def flatRelTypeQuery(relType: String, schema: Schema, maybeMetaLabel: Option[String] = None): String ={
     val props = schema.relationshipPropertyKeys(relType).propertyExtractorString
     val metaLabel = maybeMetaLabel.map(_.cypherLabelPredicate).getOrElse("")
 
-    s"""|MATCH (s$metaLabel)-[$entityVarName:$relType]->(t$metaLabel)
-        |RETURN id($entityVarName) AS $idPropertyKey, id(s) AS $startIdPropertyKey, id(t) AS $endIdPropertyKey$props""".stripMargin
+    s"""|MATCH (s$metaLabel)-[$elementVarName:$relType]->(t$metaLabel)
+        |RETURN id($elementVarName) AS $idPropertyKey, id(s) AS $startIdPropertyKey, id(t) AS $endIdPropertyKey$props""".stripMargin
   }
 
   implicit class RichPropertyTypes(val properties: PropertyKeys) extends AnyVal {
@@ -57,7 +57,7 @@ object EntityReader {
         .keys
         .toList
         .sorted
-        .map(k => s"$entityVarName.$k")
+        .map(k => s"$elementVarName.$k")
 
       if (propertyStrings.isEmpty) ""
       else propertyStrings.mkString(", ", ", ", "")

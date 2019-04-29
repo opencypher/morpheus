@@ -28,15 +28,15 @@ package org.opencypher.okapi.api.io.conversion
 
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
-trait SingleEntityMappingBuilder {
+trait SingleElementMappingBuilder {
 
-  type BuilderType <: SingleEntityMappingBuilder
+  type BuilderType <: SingleElementMappingBuilder
 
   def propertyMapping: Map[String, String]
 
   protected def updatePropertyMapping(propertyMapping: Map[String, String]): BuilderType
 
-  def build: EntityMapping
+  def build: ElementMapping
 
   protected def validate(): Unit
 

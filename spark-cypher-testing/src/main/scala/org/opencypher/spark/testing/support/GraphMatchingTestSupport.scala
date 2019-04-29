@@ -39,21 +39,21 @@ trait GraphMatchingTestSupport {
 
   self: BaseTestSuite with SparkSessionFixture with CAPSSessionFixture =>
 
-  private def getEntityIds(records: RelationalCypherRecords[DataFrameTable]): Set[List[Byte]] = {
-    val entityVar = records.header.vars.toSeq match {
+  private def getElementIds(records: RelationalCypherRecords[DataFrameTable]): Set[List[Byte]] = {
+    val elementVar = records.header.vars.toSeq match {
       case Seq(v) => v
-      case other => throw new UnsupportedOperationException(s"Expected records with 1 entity, got $other")
+      case other => throw new UnsupportedOperationException(s"Expected records with 1 element, got $other")
     }
 
-    records.table.df.select(records.header.column(entityVar)).collect().map(_.getAs[Array[Byte]](0).toList).toSet
+    records.table.df.select(records.header.column(elementVar)).collect().map(_.getAs[Array[Byte]](0).toList).toSet
   }
 
   private def verify(actual: RelationalCypherGraph[DataFrameTable], expected: RelationalCypherGraph[DataFrameTable]): Assertion = {
-    val expectedNodeIds = getEntityIds(expected.nodes("n"))
-    val expectedRelIds = getEntityIds(expected.relationships("r"))
+    val expectedNodeIds = getElementIds(expected.nodes("n"))
+    val expectedRelIds = getElementIds(expected.relationships("r"))
 
-    val actualNodeIds = getEntityIds(actual.nodes("n"))
-    val actualRelIds = getEntityIds(actual.relationships("r"))
+    val actualNodeIds = getElementIds(actual.nodes("n"))
+    val actualRelIds = getElementIds(actual.relationships("r"))
 
     expectedNodeIds should equal(actualNodeIds)
     expectedRelIds should equal(actualRelIds)

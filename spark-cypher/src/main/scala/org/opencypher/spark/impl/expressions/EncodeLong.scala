@@ -30,7 +30,7 @@ import org.apache.spark.sql.Column
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{ExpectsInputTypes, Expression, NullIntolerant, UnaryExpression}
 import org.apache.spark.sql.types.{BinaryType, DataType, LongType}
-import org.opencypher.spark.api.value.CAPSEntity._
+import org.opencypher.spark.api.value.CAPSElement._
 
 /**
   * Spark expression that encodes a long into a byte array using variable-length encoding.

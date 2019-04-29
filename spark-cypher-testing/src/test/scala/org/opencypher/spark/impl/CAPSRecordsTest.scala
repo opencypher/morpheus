@@ -36,8 +36,8 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.io.CAPSEntityTable
-import org.opencypher.spark.api.value.CAPSEntity._
+import org.opencypher.spark.api.io.CAPSElementTable
+import org.opencypher.spark.api.value.CAPSElement._
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -120,7 +120,7 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
 
   it("can be registered and queried from SQL") {
     // Given
-    caps.records.fromEntityTable(personTable).df.createOrReplaceTempView("people")
+    caps.records.fromElementTable(personTable).df.createOrReplaceTempView("people")
 
     // When
     val df = sparkSession.sql("SELECT * FROM people")
@@ -148,15 +148,15 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
       .withPropertyKey("name" -> "NAME")
       .build
 
-    val nodeTable = CAPSEntityTable.create(givenMapping, givenDF)
+    val nodeTable = CAPSElementTable.create(givenMapping, givenDF)
 
-    val records = caps.records.fromEntityTable(nodeTable)
+    val records = caps.records.fromElementTable(nodeTable)
 
-    val entityVar = Var("node")(CTNode("Person"))
+    val elementVar = Var("node")(CTNode("Person"))
     records.header.expressions should equal(
       Set(
-        entityVar,
-        EntityProperty(entityVar, PropertyKey("name"))(CTString.nullable)
+        elementVar,
+        ElementProperty(elementVar, PropertyKey("name"))(CTString.nullable)
       ))
   }
 
@@ -177,18 +177,18 @@ class CAPSRecordsTest extends CAPSTestSuite with GraphConstructionFixture with T
       .withPropertyKey("color" -> "COLOR")
       .build
 
-    val relTable = CAPSEntityTable.create(givenMapping, givenDF)
+    val relTable = CAPSElementTable.create(givenMapping, givenDF)
 
-    val records = caps.records.fromEntityTable(relTable)
+    val records = caps.records.fromElementTable(relTable)
 
-    val entityVar = Var("rel")(CTRelationship("NEXT"))
+    val elementVar = Var("rel")(CTRelationship("NEXT"))
 
     records.header.expressions should equal(
       Set(
-        entityVar,
-        StartNode(entityVar)(CTNode),
-        EndNode(entityVar)(CTNode),
-        EntityProperty(entityVar, PropertyKey("color"))(CTString.nullable)
+        elementVar,
+        StartNode(elementVar)(CTNode),
+        EndNode(elementVar)(CTNode),
+        ElementProperty(elementVar, PropertyKey("color"))(CTString.nullable)
       )
     )
   }

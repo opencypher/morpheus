@@ -48,15 +48,15 @@ class SolvedQueryModelTest extends BaseTestSuite with IrConstruction {
   }
 
   test("contains a block") {
-    val block = matchBlock(Pattern.empty.withEntity('a).withEntity('b).withEntity('c))
+    val block = matchBlock(Pattern.empty.withElement('a).withElement('b).withElement('c))
     val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c)
 
     s.contains(block) shouldBe true
   }
 
   test("contains several blocks") {
-    val block1 = matchBlock(Pattern.empty.withEntity('a -> CTNode))
-    val block2 = matchBlock(Pattern.empty.withEntity('b -> CTNode))
+    val block1 = matchBlock(Pattern.empty.withElement('a -> CTNode))
+    val block2 = matchBlock(Pattern.empty.withElement('b -> CTNode))
     val binds: Fields = Fields(Map(toField('c) -> Equals('a, 'b)))
     val block3 = project(binds)
     val block4 = project(ProjectedFieldsOf(toField('d) -> Equals('c, 'b)))
@@ -71,13 +71,13 @@ class SolvedQueryModelTest extends BaseTestSuite with IrConstruction {
 
   test("solves") {
     val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c)
-    val p = Pattern.empty.withEntity('a -> CTNode).withEntity('b -> CTNode).withEntity('c -> CTNode)
+    val p = Pattern.empty.withElement('a -> CTNode).withElement('b -> CTNode).withElement('c -> CTNode)
 
     s.solves(toField('a)) shouldBe true
     s.solves(toField('b)) shouldBe true
     s.solves(toField('x)) shouldBe false
     s.solves(p) shouldBe true
-    s.solves(p.withEntity('x -> CTNode)) shouldBe false
+    s.solves(p.withElement('x -> CTNode)) shouldBe false
   }
 
   it("can solve a relationship") {

@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.api.io
 
 import org.opencypher.okapi.api.graph.{SourceEndNodeKey, SourceIdKey, SourceStartNodeKey}
-import org.opencypher.okapi.api.io.conversion.EntityMapping
+import org.opencypher.okapi.api.io.conversion.ElementMapping
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
@@ -37,17 +37,18 @@ import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 /**
-  * An entity table describes how to map an input data frame to a Cypher entity (i.e. nodes or relationships).
+  * An element table describes how to map an input data frame to a Property Graph element
+  * (i.e. nodes or relationships).
   */
-trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
+trait ElementTable[T <: Table[T]] extends RelationalCypherRecords[T] {
 
   verify()
 
   def schema: Schema = {
-    mapping.pattern.entities.map { entity =>
-      entity.cypherType match {
+    mapping.pattern.elements.map { element =>
+      element.cypherType match {
         case CTNode(impliedTypes, _) =>
-          val propertyKeys = mapping.properties(entity).toSeq.map {
+          val propertyKeys = mapping.properties(element).toSeq.map {
             case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
           }
 
@@ -55,7 +56,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
 
         case CTRelationship(relTypes, _) =>
 
-          val propertyKeys = mapping.properties(entity).toSeq.map {
+          val propertyKeys = mapping.properties(element).toSeq.map {
             case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
           }
 
@@ -63,43 +64,43 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
             case (partialSchema, relType) => partialSchema.withRelationshipPropertyKeys(relType)(propertyKeys: _*)
           }
 
-        case other => throw IllegalArgumentException("an entity with type CTNode or CTRelationship", other)
+        case other => throw IllegalArgumentException("an element with type CTNode or CTRelationship", other)
       }
     }.reduce(_ ++ _)
   }
 
-  def mapping: EntityMapping
+  def mapping: ElementMapping
 
   def header: RecordHeader = {
-    mapping.pattern.entities.map { entity =>
-      entity.cypherType match {
+    mapping.pattern.elements.map { element =>
+      element.cypherType match {
         case n :CTNode =>
-          val nodeVar = Var(entity.name)(n)
+          val nodeVar = Var(element.name)(n)
 
-          val idMapping = Map(nodeVar -> mapping.idKeys(entity).head._2)
+          val idMapping = Map(nodeVar -> mapping.idKeys(element).head._2)
 
-          val propertyMapping = mapping.properties(entity).map {
-            case (key, source) => EntityProperty(nodeVar, PropertyKey(key))(table.columnType(source)) -> source
+          val propertyMapping = mapping.properties(element).map {
+            case (key, source) => ElementProperty(nodeVar, PropertyKey(key))(table.columnType(source)) -> source
           }
 
           RecordHeader(idMapping ++ propertyMapping)
 
         case r :CTRelationship =>
-          val relVar = Var(entity.name)(r)
+          val relVar = Var(element.name)(r)
 
-          val idMapping = mapping.idKeys(entity).map {
+          val idMapping = mapping.idKeys(element).map {
             case (SourceIdKey, source) => relVar -> source
             case (SourceStartNodeKey, source) => StartNode(relVar)(CTNode) -> source
             case (SourceEndNodeKey, source) => EndNode(relVar)(CTNode) -> source
           }
 
-          val propertyMapping = mapping.properties(entity).map {
-            case (key, source) => EntityProperty(relVar, PropertyKey(key))(table.columnType(source)) -> source
+          val propertyMapping = mapping.properties(element).map {
+            case (key, source) => ElementProperty(relVar, PropertyKey(key))(table.columnType(source)) -> source
           }
 
           RecordHeader(idMapping ++ propertyMapping)
 
-        case other => throw IllegalArgumentException("an entity with type CTNode or CTRelationship", other)
+        case other => throw IllegalArgumentException("an element with type CTNode or CTRelationship", other)
       }
     }.reduce(_ ++ _)
   }
@@ -112,7 +113,7 @@ trait EntityTable[T <: Table[T]] extends RelationalCypherRecords[T] {
     if (table.physicalColumns.toSet != mapping.allSourceKeys.toSet) throw IllegalArgumentException(
       s"Columns: ${mapping.allSourceKeys.mkString(", ")}",
       s"Columns: ${table.physicalColumns.mkString(", ")}",
-      s"Use CAPS[Node|Relationship]Table#fromMapping to create a valid EntityTable")
+      s"Use CAPS[Node|Relationship]Table#fromMapping to create a valid ElementTable")
   }
 }
 

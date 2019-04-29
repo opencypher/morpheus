@@ -56,8 +56,8 @@ final case class PrefixedGraph[T <: Table[T]](graph: RelationalCypherGraph[T], p
     searchPattern: Pattern,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {
-    searchPattern.entities.foldLeft(graph.scanOperator(searchPattern, exactLabelMatch)) {
-      case (acc, entity) => acc.prefixVariableId(entity.toVar, prefix)
+    searchPattern.elements.foldLeft(graph.scanOperator(searchPattern, exactLabelMatch)) {
+      case (acc, patternElement) => acc.prefixVariableId(patternElement.toVar, prefix)
     }
 
   }

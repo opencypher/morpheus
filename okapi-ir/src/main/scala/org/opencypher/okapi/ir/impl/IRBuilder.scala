@@ -307,7 +307,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
             val cloneItemMap = implicitCloneItemMap ++ explicitCloneItemMap
 
             // Fields inside of CONSTRUCT could have been matched on other graphs than just the workingGraph
-            val cloneSchema = schemaForEntityTypes(context, cloneItemMap.values.map(_.cypherType).toSet)
+            val cloneSchema = schemaForElementTypes(context, cloneItemMap.values.map(_.cypherType).toSet)
 
             // Make sure that there are no dangling relationships
             // we can currently only clone relationships that are also part of a new pattern
@@ -341,7 +341,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
                     updatedSchema -> rewrittenVarTypes.updated(variable, CTNode(labelsAfterSet, existingQgn))
                   case SetPropertyItem(propertyKey, variable, setValue) =>
                     val propertyType = setValue.cypherType
-                    val updatedSchema = currentSchema.addPropertyToEntity(propertyKey, propertyType, variable.cypherType)
+                    val updatedSchema = currentSchema.addPropertyToElement(propertyKey, propertyType, variable.cypherType)
                     updatedSchema -> rewrittenVarTypes
                 }
             }
@@ -397,14 +397,14 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
     }
   }
 
-  def schemaForEntityTypes(context: IRBuilderContext, cypherTypes: Set[CypherType]): Schema =
+  def schemaForElementTypes(context: IRBuilderContext, cypherTypes: Set[CypherType]): Schema =
     cypherTypes
-      .map(schemaForEntityType(context, _))
+      .map(schemaForElementType(context, _))
       .foldLeft(Schema.empty)(_ ++ _)
 
-  def schemaForEntityType(context: IRBuilderContext, cypherType: CypherType): Schema = {
+  def schemaForElementType(context: IRBuilderContext, cypherType: CypherType): Schema = {
     val graphSchema = cypherType.graph.map(context.schemaFor).getOrElse(context.workingGraph.schema)
-    graphSchema.forEntityType(cypherType)
+    graphSchema.forElementType(cypherType)
   }
 
   private def registerProjectBlock(
@@ -606,7 +606,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
   private def schemaForNewField(field: IRField, pattern: Pattern, context: IRBuilderContext): Schema = {
     val baseFieldSchema = pattern.baseFields.get(field).map { baseNode =>
-      schemaForEntityType(context, baseNode.cypherType)
+      schemaForElementType(context, baseNode.cypherType)
     }.getOrElse(Schema.empty)
 
     val newPropertyKeys: Map[String, CypherType] = pattern.properties.get(field)

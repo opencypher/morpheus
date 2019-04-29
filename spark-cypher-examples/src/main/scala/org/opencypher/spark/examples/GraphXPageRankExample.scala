@@ -31,7 +31,7 @@ import org.apache.spark.graphx._
 import org.opencypher.okapi.api.io.conversion.NodeMappingBuilder
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.CAPSSession._
-import org.opencypher.spark.api.io.CAPSEntityTable
+import org.opencypher.spark.api.io.CAPSElementTable
 import org.opencypher.spark.impl.expressions.EncodeLong.decodeLong
 import org.opencypher.spark.util.App
 
@@ -75,7 +75,7 @@ object GraphXPageRankExample extends App {
 
   // 7) Create property graph from rank data
   val ranksNodeMapping = NodeMappingBuilder.on("id").withPropertyKey("rank").build
-  val rankNodes = session.readFrom(CAPSEntityTable.create(ranksNodeMapping, rankTable))
+  val rankNodes = session.readFrom(CAPSElementTable.create(ranksNodeMapping, rankTable))
 
   // 8) Mount both graphs in the session
   session.catalog.store("ranks", rankNodes)

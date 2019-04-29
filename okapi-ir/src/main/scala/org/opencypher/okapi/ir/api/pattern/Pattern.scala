@@ -48,16 +48,16 @@ final case class Pattern(
   baseFields: Map[IRField, IRField]= Map.empty
 ) extends Binds {
 
-  lazy val nodes: Set[IRField] = getEntity(CTNode)
-  lazy val rels: Set[IRField] = getEntity(CTRelationship)
+  lazy val nodes: Set[IRField] = getElement(CTNode)
+  lazy val rels: Set[IRField] = getElement(CTRelationship)
 
-  private def getEntity(t: CypherType) =
+  private def getElement(t: CypherType) =
     fields.collect { case e if e.cypherType.subTypeOf(t) => e }
 
   /**
-    * Fuse patterns but fail if they disagree in the definitions of entities or connections
+    * Fuse patterns but fail if they disagree in the definitions of elements or connections
     *
-    * @return A pattern that contains all entities and connections of their input
+    * @return A pattern that contains all elements and connections of their input
     */
   def ++(other: Pattern): Pattern = {
     val thisMap = fields.map(f => f.name -> f.cypherType).toMap
@@ -82,7 +82,7 @@ final case class Pattern(
       map1.get(f) -> map2.get(f) match {
         case (Some(t1), Some(t2)) =>
           if (t1 != t2)
-            throw PatternConversionException(s"Expected disjoint patterns but found conflicting entities $f")
+            throw PatternConversionException(s"Expected disjoint patterns but found conflicting elements $f")
         case _ =>
       }
     }
@@ -105,7 +105,7 @@ final case class Pattern(
     if (topology.get(key).contains(connection)) withProperties else withProperties.copy(topology = topology.updated(key, connection))
   }
 
-  def withEntity(field: IRField, propertiesOpt: Option[MapExpression] = None): Pattern = {
+  def withElement(field: IRField, propertiesOpt: Option[MapExpression] = None): Pattern = {
     val withProperties: Pattern = propertiesOpt match {
       case Some(props) => copy(properties = properties.updated(field, props))
       case None => this
@@ -144,7 +144,7 @@ final case class Pattern(
         val newPattern = Pattern(
           fields = fields intersect endpoints,
           topology = ListMap(field -> connection)
-        ).withEntity(field)
+        ).withElement(field)
         val newComponents = components.updated(count, newPattern)
         val newFields = endpoints.foldLeft(fieldToComponentIndex) { case (m, endpoint) => m.updated(endpoint, count) }
         computeComponents(tail, newComponents, newCount, newFields)
@@ -154,7 +154,7 @@ final case class Pattern(
         val oldPattern = components(link) // This is not supposed to fail
         val newPattern = oldPattern
           .withConnection(field, connection)
-          .withEntity(field)
+          .withElement(field)
         val newComponents = components.updated(link, newPattern)
         computeComponents(tail, newComponents, count, fieldToComponentIndex)
       } else {
@@ -162,7 +162,7 @@ final case class Pattern(
         val fusedPattern = links.flatMap(components.get).reduce(_ ++ _)
         val newPattern = fusedPattern
           .withConnection(field, connection)
-          .withEntity(field)
+          .withElement(field)
         val newCount = count + 1
         val newComponents = links
           .foldLeft(components) { case (m, l) => m - l }

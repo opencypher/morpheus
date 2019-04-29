@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.testing.BaseTestSuite
 
-class EntityReaderTest extends BaseTestSuite {
+class PatternElementReaderTest extends BaseTestSuite {
 
   private val schema = Schema.empty
     .withNodePropertyKeys("A")("foo" -> CTInteger, "bar" -> CTString.nullable)
@@ -41,32 +41,32 @@ class EntityReaderTest extends BaseTestSuite {
     .withRelationshipPropertyKeys("TYPE2")()
 
   it("constructs flat node queries from schema") {
-    EntityReader.flatExactLabelQuery(Set("A"), schema) should equal(
-      s"""|MATCH ($entityVarName:`A`)
-          |WHERE length(labels($entityVarName)) = 1
-          |RETURN id($entityVarName) AS $idPropertyKey, $entityVarName.bar, $entityVarName.foo""".stripMargin
+    ElementReader.flatExactLabelQuery(Set("A"), schema) should equal(
+      s"""|MATCH ($elementVarName:`A`)
+          |WHERE length(labels($elementVarName)) = 1
+          |RETURN id($elementVarName) AS $idPropertyKey, $elementVarName.bar, $elementVarName.foo""".stripMargin
     )
   }
 
   it("constructs flat node queries from schema without properties") {
-    EntityReader.flatExactLabelQuery(Set("B"), schema) should equal(
-      s"""|MATCH ($entityVarName:`B`)
-          |WHERE length(labels($entityVarName)) = 1
-          |RETURN id($entityVarName) AS $idPropertyKey""".stripMargin
+    ElementReader.flatExactLabelQuery(Set("B"), schema) should equal(
+      s"""|MATCH ($elementVarName:`B`)
+          |WHERE length(labels($elementVarName)) = 1
+          |RETURN id($elementVarName) AS $idPropertyKey""".stripMargin
     )
   }
 
   it("constructs flat relationship queries from schema") {
-    EntityReader.flatRelTypeQuery("TYPE", schema) should equal(
-      s"""|MATCH (s)-[$entityVarName:TYPE]->(t)
-          |RETURN id($entityVarName) AS $idPropertyKey, id(s) AS $startIdPropertyKey, id(t) AS $endIdPropertyKey, $entityVarName.f, $entityVarName.foo""".stripMargin
+    ElementReader.flatRelTypeQuery("TYPE", schema) should equal(
+      s"""|MATCH (s)-[$elementVarName:TYPE]->(t)
+          |RETURN id($elementVarName) AS $idPropertyKey, id(s) AS $startIdPropertyKey, id(t) AS $endIdPropertyKey, $elementVarName.f, $elementVarName.foo""".stripMargin
     )
   }
 
   it("constructs flat relationship queries from schema with no properties") {
-    EntityReader.flatRelTypeQuery("TYPE2", schema) should equal(
-      s"""|MATCH (s)-[$entityVarName:TYPE2]->(t)
-          |RETURN id($entityVarName) AS $idPropertyKey, id(s) AS $startIdPropertyKey, id(t) AS $endIdPropertyKey""".stripMargin
+    ElementReader.flatRelTypeQuery("TYPE2", schema) should equal(
+      s"""|MATCH (s)-[$elementVarName:TYPE2]->(t)
+          |RETURN id($elementVarName) AS $idPropertyKey, id(s) AS $startIdPropertyKey, id(t) AS $endIdPropertyKey""".stripMargin
     )
   }
 

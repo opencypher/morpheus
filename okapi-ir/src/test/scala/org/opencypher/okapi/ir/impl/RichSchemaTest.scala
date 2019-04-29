@@ -52,7 +52,7 @@ class RichSchemaTest extends BaseTestSuite {
           ListMap(
             IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode("Person")))
           )
-        ).fields.map(f => schema.forEntityType(f.cypherType)).reduce(_ ++ _)
+        ).fields.map(f => schema.forElementType(f.cypherType)).reduce(_ ++ _)
 
         val expected = Schema.empty
           .withNodePropertyKeys("Person")("name" -> CTString)
@@ -77,7 +77,7 @@ class RichSchemaTest extends BaseTestSuite {
           ListMap(
             IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode()))
           )
-        ).fields.map(f => schema.forEntityType(f.cypherType)).reduce(_ ++ _)
+        ).fields.map(f => schema.forElementType(f.cypherType)).reduce(_ ++ _)
 
         val expected = Schema.empty
           .withNodePropertyKeys("Person")("name" -> CTString)

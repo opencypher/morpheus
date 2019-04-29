@@ -120,9 +120,9 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       val startA = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
       val startB = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
       val varA = Var("a")(CTNode)
-      val propA = expr.EntityProperty(varA, PropertyKey("name"))(CTString)
+      val propA = expr.ElementProperty(varA, PropertyKey("name"))(CTString)
       val varB = Var("b")(CTNode)
-      val propB = expr.EntityProperty(varB, PropertyKey("name"))(CTString)
+      val propB = expr.ElementProperty(varB, PropertyKey("name"))(CTString)
       val equals = Equals(propA, propB)
       val irFieldA = IRField(varA.name)(varA.cypherType)
       val irFieldB = IRField(varB.name)(varB.cypherType)
@@ -146,9 +146,9 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       val startA = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
       val startB = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
       val varA = Var("a")(CTNode)
-      val propA = expr.EntityProperty(varA, PropertyKey("name"))(CTString)
+      val propA = expr.ElementProperty(varA, PropertyKey("name"))(CTString)
       val varB = Var("b")(CTNode)
-      val propB = expr.EntityProperty(varB, PropertyKey("name"))(CTString)
+      val propB = expr.ElementProperty(varB, PropertyKey("name"))(CTString)
       val equals = Equals(propB, propA)
       val irFieldA = IRField(varA.name)(varA.cypherType)
       val irFieldB = IRField(varB.name)(varB.cypherType)
@@ -175,7 +175,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
 
       val startB = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
       val varB = Var("b")(CTNode)
-      val propB = expr.EntityProperty(varB, PropertyKey("name"))(CTString)
+      val propB = expr.ElementProperty(varB, PropertyKey("name"))(CTString)
 
       val equals = Equals(nameField, propB)
       val irFieldB = IRField(varB.name)(varB.cypherType)
@@ -224,7 +224,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-          map == Map(Var("a")(CTNode) -> pattern.nodeEntity, Var("b")(CTRelationship) -> pattern.relEntity)
+          map == Map(Var("a")(CTNode) -> pattern.nodeElement, Var("b")(CTRelationship) -> pattern.relElement)
         case _ => false
       } should be(true)
     }
@@ -250,14 +250,14 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-            map == Map(Var("a")(CTNode) -> pattern.nodeEntity, Var("b1")(CTRelationship) -> pattern.relEntity)
+            map == Map(Var("a")(CTNode) -> pattern.nodeElement, Var("b1")(CTRelationship) -> pattern.relElement)
         case _ => false
       } should be(true)
 
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-            map == Map(Var("a")(CTNode) -> pattern.nodeEntity, Var("b2")(CTRelationship) -> pattern.relEntity)
+            map == Map(Var("a")(CTNode) -> pattern.nodeElement, Var("b2")(CTRelationship) -> pattern.relElement)
         case _ => false
       } should be(true)
     }
@@ -289,7 +289,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-            map == Map(Var("a")(CTNode) -> pattern.sourceEntity, Var("b")(CTRelationship) -> pattern.relEntity, Var("c")(CTNode) -> pattern.targetEntity)
+            map == Map(Var("a")(CTNode) -> pattern.sourceElement, Var("b")(CTRelationship) -> pattern.relElement, Var("c")(CTNode) -> pattern.targetElement)
         case _ => false
       } should be(true)
     }
@@ -319,14 +319,14 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-            map == Map(Var("a")(CTNode) -> pattern.sourceEntity, Var("b1")(CTRelationship) -> pattern.relEntity, Var("c1")(CTNode) -> pattern.targetEntity)
+            map == Map(Var("a")(CTNode) -> pattern.sourceElement, Var("b1")(CTRelationship) -> pattern.relElement, Var("c1")(CTNode) -> pattern.targetElement)
         case _ => false
       } should be(true)
 
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-            map == Map(Var("a")(CTNode) -> pattern.sourceEntity, Var("b2")(CTRelationship) -> pattern.relEntity, Var("c2")(CTNode) -> pattern.targetEntity)
+            map == Map(Var("a")(CTNode) -> pattern.sourceElement, Var("b2")(CTRelationship) -> pattern.relElement, Var("c2")(CTNode) -> pattern.targetElement)
         case _ => false
       } should be(true)
     }

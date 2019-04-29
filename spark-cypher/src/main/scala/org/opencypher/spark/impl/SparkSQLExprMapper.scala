@@ -144,7 +144,7 @@ object SparkSQLExprMapper {
           case _ => explode(child0)
         }
 
-        case _: EntityProperty => if (!header.contains(expr)) NULL_LIT else column_for(expr)
+        case _: ElementProperty => if (!header.contains(expr)) NULL_LIT else column_for(expr)
         case MapProperty(_, key) => if (expr.cypherType.material == CTVoid) NULL_LIT else child0.getField(key.name)
         case DateProperty(_, key) => temporalAccessor[java.sql.Date](child0, key.name)
         case LocalDateTimeProperty(_, key) => temporalAccessor[java.sql.Timestamp](child0, key.name)
@@ -214,7 +214,7 @@ object SparkSQLExprMapper {
 
         case Keys(e) =>
           e.cypherType.material match {
-            case entity if entity.subTypeOf(CTEntity) =>
+            case element if element.subTypeOf(CTElement) =>
               val possibleProperties = header.propertiesFor(e.owner.get).toSeq.sortBy(_.key.name)
               val propertyNames = possibleProperties.map(_.key.name)
               val propertyValues = possibleProperties.map(_.asSparkSQLExpr)
@@ -233,7 +233,7 @@ object SparkSQLExprMapper {
 
         case Properties(e) =>
           e.cypherType.material match {
-            case entity if entity.subTypeOf(CTEntity) =>
+            case element if element.subTypeOf(CTElement) =>
               val propertyExpressions = header.propertiesFor(e.owner.get).toSeq.sortBy(_.key.name)
               val propertyColumns = propertyExpressions
                 .map(propertyExpression => propertyExpression.asSparkSQLExpr.as(propertyExpression.key.name))

@@ -93,7 +93,7 @@ class LogicalOperatorProducer {
       case _ => solvedWithField
     }
     val pattern = NodePattern(nodeType)
-    PatternScan(pattern, Map(node.toVar -> pattern.nodeEntity), prev, solvedWithPredicates)
+    PatternScan(pattern, Map(node.toVar -> pattern.nodeElement), prev, solvedWithPredicates)
   }
 
   def planFilter(expr: Expr, prev: LogicalOperator): Filter = {

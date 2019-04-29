@@ -38,7 +38,7 @@ import org.opencypher.okapi.ir.api.expr.{EndNode, Property, StartNode}
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
-import org.opencypher.okapi.neo4j.io.{EntityWriter, Neo4jConfig}
+import org.opencypher.okapi.neo4j.io.{ElementWriter, Neo4jConfig}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.impl.CAPSRecords
@@ -119,7 +119,7 @@ object Neo4jGraphMerge extends Logging {
     * Merges the given graph into the sub-graph specified by `graphName` within an existing Neo4j database.
     * Properties in the Neo4j graph will be overwritten by values in the merge graph, missing ones are added.
     *
-    * Nodes and relationships are identified by their entity keys defined by the graph's schema. They can be overridden
+    * Nodes and relationships are identified by their element keys defined by the graph's schema. They can be overridden
     * by optional node and relationship keys
     *
     * @param graphName        which sub-graph in the Neo4j graph to merge the delta to
@@ -136,7 +136,7 @@ object Neo4jGraphMerge extends Logging {
     nodeKeys: Option[NodeKeys] = None,
     relationshipKeys: Option[RelationshipKeys] = None
   )(implicit caps: CAPSSession): Unit = {
-    val updatedSchema = combineEntityKeys(graph.schema, nodeKeys, relationshipKeys)
+    val updatedSchema = combineElementKeys(graph.schema, nodeKeys, relationshipKeys)
 
     val maybeMetaLabel = graphName.getMetaLabel
     val maybeMetaLabelString = maybeMetaLabel.toSet[String].cypherLabelPredicate
@@ -155,7 +155,7 @@ object Neo4jGraphMerge extends Logging {
     logger.debug(s"Merge successful")
   }
 
-  private def combineEntityKeys(
+  private def combineElementKeys(
     schema: Schema,
     nodeKeys: Option[NodeKeys],
     relationshipKeys: Option[RelationshipKeys]
@@ -188,7 +188,7 @@ case object MergeWriters {
         .df
         .rdd
         .foreachPartitionAsync { i =>
-          if (i.nonEmpty) EntityWriter.mergeNodes(i, mapping, config, comboWithMetaLabel, keys)(rowToListValue)
+          if (i.nonEmpty) ElementWriter.mergeNodes(i, mapping, config, comboWithMetaLabel, keys)(rowToListValue)
         }
     }
     result
@@ -205,7 +205,7 @@ case object MergeWriters {
       val mapping = computeMapping(relScan, includeId = false)
 
       val header = relScan.header
-      val relVar = header.entityVars.head
+      val relVar = header.elementVars.head
       val startExpr = header.expressionsFor(relVar).collect { case s: StartNode => s }.head
       val endExpr = header.expressionsFor(relVar).collect { case e: EndNode => e }.head
       val startColumn = relScan.header.column(startExpr)
@@ -218,7 +218,7 @@ case object MergeWriters {
         .rdd
         .foreachPartitionAsync { i =>
           if (i.nonEmpty) {
-            EntityWriter.mergeRelationships(
+            ElementWriter.mergeRelationships(
               i,
               maybeMetaLabel,
               startIndex,
@@ -243,14 +243,14 @@ case object MergeWriters {
     new ListValue(array: _*)
   }
 
-  private def computeMapping(entityScan: CAPSRecords, includeId: Boolean): Array[String] = {
-    val header = entityScan.header
-    val nodeVar = header.entityVars.head
+  private def computeMapping(elementScan: CAPSRecords, includeId: Boolean): Array[String] = {
+    val header = elementScan.header
+    val nodeVar = header.elementVars.head
     val properties: Set[Property] = header.expressionsFor(nodeVar).collect {
       case p: Property => p
     }
 
-    val columns = entityScan.df.columns
+    val columns = elementScan.df.columns
     val mapping = Array.fill[String](columns.length)(null)
 
     if (includeId) {

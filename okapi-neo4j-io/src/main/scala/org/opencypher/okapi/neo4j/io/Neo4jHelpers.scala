@@ -66,7 +66,7 @@ object Neo4jHelpers {
 
     val endIdPropertyKey: String = s"${metaPrefix}capsEND_ID"
 
-    val entityVarName = "e"
+    val elementVarName = "e"
   }
 
   implicit class RichLabelString(val label: String) extends AnyVal {

@@ -43,7 +43,7 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
 
   val materialTypes: Seq[CypherType] = Seq(
     CTAnyMaterial,
-    CTEntity,
+    CTElement,
     CTTrue,
     CTFalse,
     CTBoolean,

@@ -33,7 +33,7 @@ import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.GraphEntity.sourceIdKey
+import org.opencypher.spark.api.io.GraphElement.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io.edgelist.EdgeListDataSource._
 import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}

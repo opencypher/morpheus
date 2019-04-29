@@ -34,7 +34,7 @@ import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.GraphSources
 import org.opencypher.spark.api.io.FileFormat
 import org.opencypher.spark.api.io.util.HiveTableName
-import org.opencypher.spark.api.value.CAPSEntity._
+import org.opencypher.spark.api.value.CAPSElement._
 import org.opencypher.spark.api.value.CAPSNode
 import org.opencypher.spark.impl.acceptance.ScanGraphInit
 import org.opencypher.spark.testing.CAPSTestSuite

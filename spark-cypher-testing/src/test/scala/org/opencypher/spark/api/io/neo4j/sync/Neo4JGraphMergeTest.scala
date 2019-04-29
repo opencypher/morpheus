@@ -121,7 +121,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with Neo4jServerFixture with Sca
       ))
     }
 
-    it("merges when using the same entity key for all labels") {
+    it("merges when using the same element key for all labels") {
       val nodeKeys = Map("Person" -> Set("id"), "Employee" -> Set("id"))
       val relKeys = Map("R" -> Set("id"))
 
@@ -147,7 +147,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with Neo4jServerFixture with Sca
       ))
     }
 
-    it("merges when using multiple entity keys with different names") {
+    it("merges when using multiple element keys with different names") {
       val nodeKeys = Map("Person" -> Set("nId"), "Employee" -> Set("mId"))
       val relKeys = Map("R" -> Set("id"))
 
@@ -173,7 +173,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with Neo4jServerFixture with Sca
       ))
     }
 
-    it("merges with entity keys set in the schema") {
+    it("merges with element keys set in the schema") {
       val data = List(
         Row(1L, "baz")
       ).asJava
@@ -209,7 +209,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with Neo4jServerFixture with Sca
       ))
     }
 
-    it("checks if entity keys are present in the merge graph") {
+    it("checks if element keys are present in the merge graph") {
       val nodeKeys = Map("Person" -> Set("name"), "Employee" -> Set("mId"))
       val relKeys = Map("R" -> Set("id"))
       Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
@@ -325,7 +325,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with Neo4jServerFixture with Sca
       a[SchemaException] should be thrownBy Neo4jGraphMerge.merge(entireGraphName, initialGraph, neo4jConfig)
     }
 
-    it("should throw when a missing entity key is not only appearing with an implied label that has an entity key") {
+    it("should throw when a missing element key is not only appearing with an implied label that has an element key") {
       val nodeKeys = Map("Person" -> Set("id"))
       Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
       val graph = initGraph(

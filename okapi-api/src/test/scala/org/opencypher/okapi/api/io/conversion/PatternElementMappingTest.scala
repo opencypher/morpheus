@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
-class EntityMappingTest extends ApiBaseTest {
+class PatternElementMappingTest extends ApiBaseTest {
   describe("NodeMappingBuilder") {
     it("Construct node mapping") {
       val given = NodeMappingBuilder.on("id")
@@ -41,13 +41,13 @@ class EntityMappingTest extends ApiBaseTest {
 
 
       val pattern = NodePattern(CTNode("Person"))
-      val expected = EntityMapping(
+      val expected = ElementMapping(
         pattern,
         Map(
-          pattern.nodeEntity -> Map("name" -> "name", "age" -> "YEARS")
+          pattern.nodeElement -> Map("name" -> "name", "age" -> "YEARS")
         ),
         Map(
-          pattern.nodeEntity -> Map(SourceIdKey -> "id")
+          pattern.nodeElement -> Map(SourceIdKey -> "id")
         )
       )
 
@@ -69,13 +69,13 @@ class EntityMappingTest extends ApiBaseTest {
         .withPropertyKey("age" -> "YEARS").build
 
       val pattern = RelationshipPattern(CTRelationship("KNOWS"))
-      val actual = EntityMapping(
+      val actual = ElementMapping(
         pattern,
         Map(
-          pattern.relEntity -> Map("name" -> "name", "age" -> "YEARS")
+          pattern.relElement -> Map("name" -> "name", "age" -> "YEARS")
         ),
         Map(
-          pattern.relEntity -> Map(SourceIdKey -> "r", SourceStartNodeKey -> "src", SourceEndNodeKey -> "dst")
+          pattern.relElement -> Map(SourceIdKey -> "r", SourceStartNodeKey -> "src", SourceEndNodeKey -> "dst")
         )
       )
 
@@ -101,12 +101,12 @@ class EntityMappingTest extends ApiBaseTest {
   }
 
   describe("validation") {
-    it("throws an error if relationship entities do not have exactly one type") {
+    it("throws an error if relationship elements do not have exactly one type") {
       val pattern1 = RelationshipPattern(CTRelationship("Foo", "Bar"))
-      raisesIllegalArgument(EntityMapping.empty(pattern1))
+      raisesIllegalArgument(ElementMapping.empty(pattern1))
 
       val pattern2 = RelationshipPattern(CTRelationship())
-      raisesIllegalArgument(EntityMapping.empty(pattern2))
+      raisesIllegalArgument(ElementMapping.empty(pattern2))
     }
   }
 

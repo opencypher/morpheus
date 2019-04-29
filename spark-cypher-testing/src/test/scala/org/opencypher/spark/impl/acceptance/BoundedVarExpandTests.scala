@@ -118,9 +118,8 @@ class BoundedVarExpandTests extends CAPSTestSuite with ScanGraphInit {
     val rel2 = CAPSRelationship(4, 1, 3, "REL")
     val rel3 = CAPSRelationship(5, 3, 0, "REL")
 
-
-    val entities = result.records.toMaps
-    entities should equal(Bag(
+    val elements = result.records.toMaps
+    elements should equal(Bag(
       CypherMap("r" -> CypherList(Seq(rel1))),
       CypherMap("r" -> CypherList(Seq(rel1, rel2))),
       CypherMap("r" -> CypherList(Seq(rel1, rel2, rel3))),

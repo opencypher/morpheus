@@ -175,11 +175,11 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     exprToColumn.keys.collect {
       case n: Var if name == n => n
       case h@HasLabel(n: Var, _) if name == n => h
-      case p@EntityProperty(n: Var, _) if name == n => p
+      case p@ElementProperty(n: Var, _) if name == n => p
     }.toSet
   }
 
-  def entityVars: Set[Var] = nodeVars ++ relationshipVars
+  def elementVars: Set[Var] = nodeVars ++ relationshipVars
 
   def nodeVars[T >: NodeVar <: Var]: Set[T] = {
     exprToColumn.keySet.collect {
@@ -187,7 +187,7 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     }
   }
 
-  def nodeEntities: Set[Var] = {
+  def nodeElements: Set[Var] = {
     exprToColumn.keySet.collect {
       case v: Var if v.cypherType.subTypeOf(CTNode) => v
     }
@@ -199,17 +199,17 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     }
   }
 
-  def relationshipEntities: Set[Var] = {
+  def relationshipElements: Set[Var] = {
     exprToColumn.keySet.collect {
       case v: Var if v.cypherType.material.subTypeOf(CTRelationship) => v
     }
   }
 
-  def entitiesForType(ct: CypherType, exactMatch: Boolean = false): Set[Var] = {
+  def elementsForType(ct: CypherType, exactMatch: Boolean = false): Set[Var] = {
     ct match {
       case n: CTNode => nodesForType(n, exactMatch)
       case r: CTRelationship => relationshipsForType(r)
-      case other => throw IllegalArgumentException("Entity", other)
+      case other => throw IllegalArgumentException("Element", other)
     }
   }
 
@@ -344,14 +344,14 @@ case class RecordHeader(exprToColumn: Map[Expr, String]) {
     val to = expr.expr
     val alias = expr.alias
     to match {
-      // Entity case
-      case entityExpr: Var if exprToColumn.contains(to) =>
-        val withEntityExpr = addExprToColumn(alias, exprToColumn(to))
-        ownedBy(entityExpr).filterNot(_ == entityExpr).foldLeft(withEntityExpr) {
+      // Element case
+      case elementExpr: Var if exprToColumn.contains(to) =>
+        val withElementExpr = addExprToColumn(alias, exprToColumn(to))
+        ownedBy(elementExpr).filterNot(_ == elementExpr).foldLeft(withElementExpr) {
           case (current, nextExpr) => current.addExprToColumn(nextExpr.withOwner(alias), exprToColumn(nextExpr))
         }
 
-      // Non-entity case
+      // Non-element case
       case e if exprToColumn.contains(e) => addExprToColumn(alias, exprToColumn(e))
 
       // No expression to alias

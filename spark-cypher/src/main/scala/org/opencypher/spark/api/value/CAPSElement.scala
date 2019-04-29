@@ -27,11 +27,11 @@
 package org.opencypher.spark.api.value
 
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.spark.api.value.CAPSEntity._
+import org.opencypher.spark.api.value.CAPSElement._
 import org.opencypher.spark.impl.expressions.AddPrefix.addPrefix
 import org.opencypher.spark.impl.expressions.EncodeLong._
 
-object CAPSEntity {
+object CAPSElement {
 
   implicit class RichId(id: Seq[Byte]) {
 

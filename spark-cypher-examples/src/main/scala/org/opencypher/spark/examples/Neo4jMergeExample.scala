@@ -37,7 +37,7 @@ import org.opencypher.spark.util.App
 /**
   * Demonstrates merging a graph into an existing Neo4j database.
   *
-  * This merge requires node and relationship keys to identify same entities in the merge graph and the Neo4j database.
+  * This merge requires node and relationship keys to identify same elements in the merge graph and the Neo4j database.
   */
 object Neo4jMergeExample extends App {
   // Create CAPS session

@@ -35,7 +35,7 @@ import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 import org.opencypher.okapi.ir.api.expr.{NodeVar, RelationshipVar}
 import org.opencypher.okapi.ir.impl.util.VarConverters._
-import org.opencypher.okapi.relational.api.io.EntityTable
+import org.opencypher.okapi.relational.api.io.ElementTable
 import org.opencypher.okapi.relational.api.planning.{RelationalCypherResult, RelationalRuntimeContext}
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.graph.{EmptyGraph, PrefixedGraph, ScanGraph, UnionGraph}
@@ -60,20 +60,20 @@ trait RelationalCypherGraphFactory[T <: Table[T]] {
 
   def empty: Graph = EmptyGraph()
 
-  def create(nodeTable: EntityTable[T], entityTables: EntityTable[T]*): Graph = {
-    create(None, nodeTable +: entityTables: _*)
+  def create(nodeTable: ElementTable[T], elementTables: ElementTable[T]*): Graph = {
+    create(None, nodeTable +: elementTables: _*)
   }
 
-  def create(maybeSchema: Option[Schema], nodeTable: EntityTable[T], entityTables: EntityTable[T]*): Graph = {
-    create(maybeSchema, nodeTable +: entityTables: _*)
+  def create(maybeSchema: Option[Schema], nodeTable: ElementTable[T], elementTables: ElementTable[T]*): Graph = {
+    create(maybeSchema, nodeTable +: elementTables: _*)
   }
 
   def create(
     maybeSchema: Option[Schema],
-    entityTables: EntityTable[T]*
+    elementTables: ElementTable[T]*
   ): Graph = {
     implicit val runtimeContext: RelationalRuntimeContext[T] = session.basicRuntimeContext()
-    val allTables = entityTables
+    val allTables = elementTables
     val schema = maybeSchema.getOrElse(allTables.map(_.schema).reduce[Schema](_ ++ _))
     new ScanGraph(allTables, schema)
   }
@@ -109,7 +109,7 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
     val pattern = NodePattern(nodeCypherType)
     val scan = scanOperator(pattern, exactLabelMatch)
     val nodeVar = NodeVar(name)(nodeCypherType)
-    val namedScan = Select(scan.assignScanName(Map(pattern.nodeEntity.toVar -> nodeVar)), List(nodeVar)).alignColumnsWithReturnItems
+    val namedScan = Select(scan.assignScanName(Map(pattern.nodeElement.toVar -> nodeVar)), List(nodeVar)).alignColumnsWithReturnItems
     session.records.from(namedScan.header, namedScan.table)
   }
 
@@ -117,7 +117,7 @@ trait RelationalCypherGraph[T <: Table[T]] extends PropertyGraph {
     val pattern = RelationshipPattern(relCypherType)
     val scan = scanOperator(pattern)
     val relVar = RelationshipVar(name)(relCypherType)
-    val namedScan = Select(scan.assignScanName(Map(pattern.relEntity.toVar -> relVar)), List(relVar)).alignColumnsWithReturnItems
+    val namedScan = Select(scan.assignScanName(Map(pattern.relElement.toVar -> relVar)), List(relVar)).alignColumnsWithReturnItems
     session.records.from(namedScan.header, namedScan.table)
   }
 

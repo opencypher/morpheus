@@ -32,12 +32,12 @@ import java.sql.Date
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.CAPSEntityTable
+import org.opencypher.spark.api.io.CAPSElementTable
 import org.opencypher.spark.util.App
 
 /**
   * Demonstrates basic usage of the CAPS API by loading an example network from existing [[DataFrame]]s including
-  * custom entity mappings and running a Cypher query on it.
+  * custom element mappings and running a Cypher query on it.
   */
 object CustomDataFrameInputExample extends App {
 
@@ -67,7 +67,7 @@ object CustomDataFrameInputExample extends App {
   // end::prepare-dataframes[]
 
   // 3) Generate node- and relationship tables that wrap the DataFrames and describe their contained data.
-  //    Node and relationship mappings are used to explicitly define which DataFrame column stores which specific entity
+  //    Node and relationship mappings are used to explicitly define which DataFrame column stores which specific element
   //    component (identifiers, properties, optional labels, relationship types).
 
   // tag::create-node-relationship-tables[]
@@ -87,8 +87,8 @@ object CustomDataFrameInputExample extends App {
     .withPropertyKey("since", "CONNECTED_SINCE")
     .build
 
-  val personTable = CAPSEntityTable.create(personNodeMapping, nodesDF)
-  val friendsTable = CAPSEntityTable.create(friendOfMapping, relsDF)
+  val personTable = CAPSElementTable.create(personNodeMapping, nodesDF)
+  val friendsTable = CAPSElementTable.create(friendOfMapping, relsDF)
   // end::create-node-relationship-tables[]
 
   // 4) Create property graph from graph scans

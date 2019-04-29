@@ -254,9 +254,9 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
           val allRelsDf = g.canonicalRelationshipTable(relationshipType).removePrefix(propertyPrefix)
           val relDfColumns = allRelsDf.columns.toSeq
 
-          val tmpNodeId = s"node_${GraphEntity.sourceIdKey}"
-          val tmpStartNodeDf = startNodeDf.withColumnRenamed(GraphEntity.sourceIdKey, tmpNodeId)
-          val tmpEndNodeDf = endNodeDf.withColumnRenamed(GraphEntity.sourceIdKey, tmpNodeId)
+          val tmpNodeId = s"node_${GraphElement.sourceIdKey}"
+          val tmpStartNodeDf = startNodeDf.withColumnRenamed(GraphElement.sourceIdKey, tmpNodeId)
+          val tmpEndNodeDf = endNodeDf.withColumnRenamed(GraphElement.sourceIdKey, tmpNodeId)
 
           val startNodesWithRelsDf = tmpStartNodeDf
             .join(allRelsDf, tmpStartNodeDf.col(tmpNodeId) === allRelsDf.col(Relationship.sourceStartNodeKey))

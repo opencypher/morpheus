@@ -26,11 +26,11 @@
  */
 package org.opencypher.okapi.api.value
 
-import java.math.{MathContext, RoundingMode}
+import java.math.MathContext
 import java.util.Objects
 
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.api.value.CypherValue.CypherEntity._
+import org.opencypher.okapi.api.value.CypherValue.CypherElement._
 import org.opencypher.okapi.api.value.CypherValue.CypherNode._
 import org.opencypher.okapi.api.value.CypherValue.CypherRelationship._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
@@ -371,8 +371,8 @@ object CypherValue {
     val empty: CypherList = List.empty[CypherValue]
   }
 
-  trait CypherEntity[Id] extends Product with MaterialCypherValue[CypherEntity[Id]] {
-    type I <: CypherEntity[Id]
+  trait CypherElement[Id] extends Product with MaterialCypherValue[CypherElement[Id]] {
+    type I <: CypherElement[Id]
 
     def id: Id
 
@@ -383,7 +383,7 @@ object CypherValue {
     }
 
     override def equals(other: Any): Boolean = other match {
-      case that: CypherEntity[_] =>
+      case that: CypherElement[_] =>
         (that canEqual this) && haveEqualValues(this.productIterator, that.productIterator)
       case _ =>
         false
@@ -404,14 +404,14 @@ object CypherValue {
 
   }
 
-  object CypherEntity {
+  object CypherElement {
 
     val idJsonKey: String = "id"
     val propertiesJsonKey: String = "properties"
 
   }
 
-  trait CypherNode[Id] extends CypherEntity[Id] with MaterialCypherValue[CypherNode[Id]] {
+  trait CypherNode[Id] extends CypherElement[Id] with MaterialCypherValue[CypherNode[Id]] {
     override type I <: CypherNode[Id]
 
     def id: Id
@@ -457,7 +457,7 @@ object CypherValue {
 
   }
 
-  trait CypherRelationship[Id] extends CypherEntity[Id] with MaterialCypherValue[CypherRelationship[Id]] with Product {
+  trait CypherRelationship[Id] extends CypherElement[Id] with MaterialCypherValue[CypherRelationship[Id]] with Product {
 
     override type I <: CypherRelationship[Id]
 

@@ -34,23 +34,23 @@ import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.api.value.CypherValue.{CypherEntity, CypherValue}
+import org.opencypher.okapi.api.value.CypherValue.{CypherElement, CypherValue}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException}
 import org.opencypher.okapi.impl.temporal.Duration
 import org.opencypher.okapi.relational.impl.graph.ScanGraph
 import org.opencypher.okapi.testing.propertygraph.{InMemoryTestGraph, InMemoryTestNode, InMemoryTestRelationship}
 import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.CAPSEntityTable
+import org.opencypher.spark.api.io.CAPSElementTable
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.impl.temporal.TemporalConversions._
 import org.opencypher.spark.schema.CAPSSchema._
-import org.opencypher.spark.testing.support.EntityTableCreationSupport
+import org.opencypher.spark.testing.support.ElementTableCreationSupport
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 
 import scala.collection.JavaConverters._
 
-object CAPSScanGraphFactory extends CAPSTestGraphFactory with EntityTableCreationSupport {
+object CAPSScanGraphFactory extends CAPSTestGraphFactory with ElementTableCreationSupport {
 
   override def apply(propertyGraph: InMemoryTestGraph, additionalPatterns: Seq[Pattern])
     (implicit caps: CAPSSession): ScanGraph[DataFrameTable] = {
@@ -62,7 +62,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with EntityTableCreatio
 
     val scans = (nodePatterns ++ relPatterns ++ additionalPatterns).map { pattern =>
       val data = extractEmbeddings(pattern, propertyGraph, schema)
-      createEntityTable(pattern, data, schema)
+      createElementTable(pattern, data, schema)
     }
 
     new ScanGraph(scans.toSeq, schema)
@@ -71,45 +71,45 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with EntityTableCreatio
   override def name: String = "CAPSScanGraphFactory"
 
   private def extractEmbeddings(pattern: Pattern, graph: InMemoryTestGraph, schema: Schema)
-    (implicit caps: CAPSSession): Seq[Map[Entity, CypherEntity[Long]]] = {
+    (implicit caps: CAPSSession): Seq[Map[PatternElement, CypherElement[Long]]] = {
 
-    val candidates = pattern.entities.map { entity =>
-      entity.cypherType match {
+    val candidates = pattern.elements.map { element =>
+      element.cypherType match {
         case CTNode(labels, _) =>
-          entity -> graph.nodes.filter(_.labels == labels)
+          element -> graph.nodes.filter(_.labels == labels)
         case CTRelationship(types, _) =>
-          entity -> graph.relationships.filter(rel => types.contains(rel.relType))
+          element -> graph.relationships.filter(rel => types.contains(rel.relType))
         case other => throw IllegalArgumentException("Node or Relationship type", other)
       }
     }.toMap
 
     val unitEmbedding = Seq(
-      Map.empty[Entity, CypherEntity[Long]]
+      Map.empty[PatternElement, CypherElement[Long]]
     )
-    val initialEmbeddings = pattern.entities.foldLeft(unitEmbedding) {
-      case (acc, entity) =>
-        val entityCandidates = candidates(entity)
+    val initialEmbeddings = pattern.elements.foldLeft(unitEmbedding) {
+      case (acc, patternElement) =>
+        val elementCandidates = candidates(patternElement)
 
         for {
           row <- acc
-          entityCandidate <- entityCandidates
-        } yield row.updated(entity, entityCandidate)
+          elementCandidate <- elementCandidates
+        } yield row.updated(patternElement, elementCandidate)
     }
 
     pattern.topology.foldLeft(initialEmbeddings) {
-      case (acc, (relEntity, connection)) =>
+      case (acc, (relElement, connection)) =>
         connection match {
           case Connection(Some(sourceNode), None, _) => acc.filter { row =>
-            row(sourceNode).id == row(relEntity).asInstanceOf[InMemoryTestRelationship].startId
+            row(sourceNode).id == row(relElement).asInstanceOf[InMemoryTestRelationship].startId
           }
 
-          case Connection(None, Some(targetEntity), _) => acc.filter { row =>
-            row(targetEntity).id == row(relEntity).asInstanceOf[InMemoryTestRelationship].endId
+          case Connection(None, Some(targetElement), _) => acc.filter { row =>
+            row(targetElement).id == row(relElement).asInstanceOf[InMemoryTestRelationship].endId
           }
 
-          case Connection(Some(sourceNode), Some(targetEntity), _) => acc.filter { row =>
-            val rel = row(relEntity).asInstanceOf[InMemoryTestRelationship]
-            row(sourceNode).id == rel.startId && row(targetEntity).id == rel.endId
+          case Connection(Some(sourceNode), Some(targetElement), _) => acc.filter { row =>
+            val rel = row(relElement).asInstanceOf[InMemoryTestRelationship]
+            row(sourceNode).id == rel.startId && row(targetElement).id == rel.endId
           }
 
           case Connection(None, None, _) => throw IllegalStateException("Connection without source or target node")
@@ -117,41 +117,41 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with EntityTableCreatio
     }
   }
 
-  private def createEntityTable(
+  private def createElementTable(
     pattern: Pattern,
-    embeddings: Seq[Map[Entity, CypherEntity[Long]]],
+    embeddings: Seq[Map[PatternElement, CypherElement[Long]]],
     schema: Schema
-  )(implicit caps: CAPSSession): CAPSEntityTable = {
+  )(implicit caps: CAPSSession): CAPSElementTable = {
 
     val unitData: Seq[Seq[Any]] = Seq(embeddings.indices.map(_ => Seq.empty[Any]): _*)
 
-    val (columns, data) = pattern.entities.foldLeft(Seq.empty[StructField] -> unitData) {
-      case ((accColumns, accData), entity) =>
+    val (columns, data) = pattern.elements.foldLeft(Seq.empty[StructField] -> unitData) {
+      case ((accColumns, accData), element) =>
 
-        entity.cypherType match {
+        element.cypherType match {
           case CTNode(labels, _) =>
             val propertyKeys = schema.nodePropertyKeys(labels)
-            val propertyFields = getPropertyStructFields(entity, propertyKeys)
+            val propertyFields = getPropertyStructFields(element, propertyKeys)
 
             val nodeData = embeddings.map { embedding =>
-              val node = embedding(entity).asInstanceOf[InMemoryTestNode]
+              val node = embedding(element).asInstanceOf[InMemoryTestNode]
 
               val propertyValues = propertyKeys.keySet.toSeq.map(p => node.properties.get(p).map(toSparkValue).orNull)
               Seq(node.id) ++ propertyValues
             }
 
             val newData = accData.zip(nodeData).map { case (l, r) => l ++ r }
-            val newColumns = accColumns ++ Seq(StructField(s"${entity.name.encodeSpecialCharacters}_id", LongType)) ++ propertyFields
+            val newColumns = accColumns ++ Seq(StructField(s"${element.name.encodeSpecialCharacters}_id", LongType)) ++ propertyFields
 
             newColumns -> newData
 
 
           case CTRelationship(types, _) =>
             val propertyKeys = schema.relationshipPropertyKeys(types.head)
-            val propertyFields = getPropertyStructFields(entity, propertyKeys)
+            val propertyFields = getPropertyStructFields(element, propertyKeys)
 
             val relData = embeddings.map { embedding =>
-              val rel = embedding(entity).asInstanceOf[InMemoryTestRelationship]
+              val rel = embedding(element).asInstanceOf[InMemoryTestRelationship]
               val propertyValues = propertyKeys.keySet.toSeq.map(p => rel.properties.get(p).map(toSparkValue).orNull)
               Seq(rel.id, rel.startId, rel.endId) ++ propertyValues
             }
@@ -159,9 +159,9 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with EntityTableCreatio
             val newData = accData.zip(relData).map { case (l, r) => l ++ r }
             val newColumns = accColumns ++
               Seq(
-                StructField(s"${entity.name.encodeSpecialCharacters}_id", LongType),
-                StructField(s"${entity.name.encodeSpecialCharacters}_source", LongType),
-                StructField(s"${entity.name.encodeSpecialCharacters}_target", LongType)
+                StructField(s"${element.name.encodeSpecialCharacters}_id", LongType),
+                StructField(s"${element.name.encodeSpecialCharacters}_source", LongType),
+                StructField(s"${element.name.encodeSpecialCharacters}_target", LongType)
               ) ++
               propertyFields
 
@@ -176,12 +176,12 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with EntityTableCreatio
       StructType(columns)
     )
 
-    constructEntityTable(pattern, df)
+    constructElementTable(pattern, df)
   }
 
-  protected def getPropertyStructFields(entity: Entity, propKeys: PropertyKeys): Seq[StructField] = {
-    propKeys.foldLeft(Seq.empty[StructField]) {
-      case (fields, key) => fields :+ StructField(s"${entity.name}_${key._1.encodeSpecialCharacters}_property", key._2.getSparkType, key._2.isNullable)
+  protected def getPropertyStructFields(patternElement: PatternElement, propKeys: PropertyKeys): Seq[StructField] = {
+    propKeys.foldLeft(Seq.empty[StructField]) { case (fields, key) =>
+      fields :+ StructField(s"${patternElement.name}_${key._1.encodeSpecialCharacters}_property", key._2.getSparkType, key._2.isNullable)
     }
   }
 

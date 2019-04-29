@@ -248,13 +248,13 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       // TODO: IRGraph
       case p: IRPatternGraph =>
         import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
-        val baseEntities = p.creates.baseFields.mapValues(_.toVar)
+        val baseElements = p.creates.baseFields.mapValues(_.toVar)
 
-        val clonePatternEntities = p.clones.keys
+        val clonePatternElements = p.clones.keys
 
-        val newPatternEntities = p.creates.fields
+        val newPatternElements = p.creates.fields
 
-        val entitiesToCreate = newPatternEntities -- clonePatternEntities
+        val elementsToCreate = newPatternElements -- clonePatternElements
 
         val clonedVarToInputVar: Map[Var, Var] = p.clones.map { case (clonedField, inputExpression) =>
           val inputVar = inputExpression match {
@@ -264,7 +264,7 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           clonedField.toVar -> inputVar
         }
 
-        val newEntities: Set[ConstructedEntity] = entitiesToCreate.map(e => extractConstructedEntities(p.creates, e, baseEntities.get(e)))
+        val newElements: Set[ConstructedElement] = elementsToCreate.map(e => extractConstructedElements(p.creates, e, baseElements.get(e)))
 
         val setItems = {
           val setPropertyItemsFromCreates = p.creates.properties.flatMap { case (irField, mapExpr) =>
@@ -276,21 +276,21 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           setPropertyItemsFromCreates ++ p.sets
         }.toList
 
-        LogicalPatternGraph(p.schema, clonedVarToInputVar, newEntities, setItems, p.onGraphs, p.qualifiedGraphName)
+        LogicalPatternGraph(p.schema, clonedVarToInputVar, newElements, setItems, p.onGraphs, p.qualifiedGraphName)
 
       case IRCatalogGraph(qgn, schema) => LogicalCatalogGraph(qgn, schema)
 
     }
   }
 
-  private def extractConstructedEntities(pattern: Pattern, e: IRField, baseField: Option[Var]) = e.cypherType match {
+  private def extractConstructedElements(pattern: Pattern, e: IRField, baseField: Option[Var]) = e.cypherType match {
     case CTRelationship(relTypes, _) if relTypes.size <= 1 =>
       val connection = pattern.topology(e)
       ConstructedRelationship(e, connection.source, connection.target, relTypes.headOption, baseField)
     case CTNode(labels, _) =>
       ConstructedNode(e, labels.map(Label), baseField)
     case other =>
-      throw InvalidCypherTypeException(s"Expected an entity type (CTNode, CTRelationship), got $other")
+      throw InvalidCypherTypeException(s"Expected an element type (CTNode, CTRelationship), got $other")
   }
 
   private def planStart(graph: IRGraph)(implicit context: LogicalPlannerContext): Start = {

@@ -32,8 +32,8 @@ import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.relational.impl.operators.Start
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.api.io.CAPSEntityTable
-import org.opencypher.spark.api.value.CAPSEntity._
+import org.opencypher.spark.api.io.CAPSElementTable
+import org.opencypher.spark.api.value.CAPSElement._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
@@ -93,7 +93,7 @@ abstract class CAPSGraphTest extends CAPSTestSuite
         (6L, false, "Hannes", 42L))
     ).toDF("ID", "IS_SWEDE", "NAME", "NUM")
 
-    val personTable2 = CAPSEntityTable.create(personTable.mapping, personsPart2)
+    val personTable2 = CAPSElementTable.create(personTable.mapping, personsPart2)
 
     val graph = caps.graphs.create(personTable, personTable2)
     graph.nodes("n").size shouldBe 6
@@ -107,7 +107,7 @@ abstract class CAPSGraphTest extends CAPSTestSuite
         (1L, 8L, 3L, 2016L))
     ).toDF("SRC", "ID", "DST", "SINCE")
 
-    val knowsTable2 = CAPSEntityTable.create(knowsTable.mapping, knowsParts2)
+    val knowsTable2 = CAPSElementTable.create(knowsTable.mapping, knowsParts2)
 
     val graph = caps.graphs.create(personTable, knowsTable, knowsTable2)
     graph.relationships("r").size shouldBe 8

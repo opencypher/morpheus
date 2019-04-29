@@ -693,7 +693,7 @@ class SchemaTest extends ApiBaseTest {
     }
   }
 
-  describe("entity keys") {
+  describe("element keys") {
     it("adds node keys") {
       val schema = Schema.empty
         .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
@@ -708,7 +708,7 @@ class SchemaTest extends ApiBaseTest {
       schema.relationshipKeys shouldEqual Map("A" -> Set("foo", "bar"))
     }
 
-    it("fails to add unknown entity keys") {
+    it("fails to add unknown element keys") {
       a[SchemaException] shouldBe thrownBy {
         Schema.empty.withNodeKey("A", Set.empty)
       }

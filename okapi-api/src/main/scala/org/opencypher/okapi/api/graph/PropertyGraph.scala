@@ -37,8 +37,8 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
   * A graph is always tied to and managed by a session. The lifetime of a graph is bounded
   * by the session lifetime.
   *
-  * A graph always has a schema, which describes the properties of the entities in the graph,
-  * grouped by the labels and relationship types of the entities.
+  * A graph always has a schema, which describes the properties of the elements in the graph,
+  * grouped by the labels and relationship types of the elements.
   *
   * @see [[https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc openCypher Property Graph Model]]
   */

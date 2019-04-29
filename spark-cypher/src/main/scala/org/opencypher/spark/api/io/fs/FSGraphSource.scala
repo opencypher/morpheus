@@ -199,15 +199,15 @@ class CsvGraphSource(rootPath: String, filesPerTable: Option[Int] = None)(overri
     super.writeTable(path, table.encodeBinaryToHexString)
 
   protected override def readNodeTable(graphName: GraphName, labels: Set[String], sparkSchema: StructType): DataFrame =
-    readEntityTable(graphName, Left(labels), sparkSchema)
+    readElementTable(graphName, Left(labels), sparkSchema)
 
   protected override def readRelationshipTable(
     graphName: GraphName,
     relKey: String,
     sparkSchema: StructType
-  ): DataFrame = readEntityTable(graphName, Right(relKey), sparkSchema)
+  ): DataFrame = readElementTable(graphName, Right(relKey), sparkSchema)
 
-  private def readEntityTable(
+  private def readElementTable(
     graphName: GraphName,
     labelsOrRelKey: Either[Set[String], String],
     sparkSchema: StructType

@@ -52,7 +52,7 @@ sealed case class EmptyGraph[T <: Table[T] : TypeTag]()(implicit val session: Re
   override def scanOperator(searchPattern: Pattern, exactLabelMatch: Boolean): RelationalOperator[T] = {
     implicit val context: RelationalRuntimeContext[T] = session.basicRuntimeContext()
 
-    val scanHeader = searchPattern.entities
+    val scanHeader = searchPattern.elements
       .map { e => RecordHeader.from(e.toVar)}
       .reduce(_ ++ _)
 

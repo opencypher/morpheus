@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.logical.impl
 
-import org.opencypher.okapi.api.graph.{Entity, NodePattern, Pattern, QualifiedGraphName}
+import org.opencypher.okapi.api.graph.{PatternElement, NodePattern, Pattern, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.impl.types.CypherTypeUtils._
@@ -73,37 +73,37 @@ case class LogicalCatalogGraph(qualifiedGraphName: QualifiedGraphName, schema: S
 case class LogicalPatternGraph(
   schema: Schema,
   clones: Map[Var, Var],
-  newEntities: Set[ConstructedEntity],
+  newElements: Set[ConstructedElement],
   sets: List[SetItem],
   onGraphs: List[QualifiedGraphName],
   qualifiedGraphName: QualifiedGraphName
 ) extends LogicalGraph {
 
   override protected def args: String = {
-    val variables = clones.keySet ++ newEntities.map(_.v)
+    val variables = clones.keySet ++ newElements.map(_.v)
     variables.mkString(", ")
   }
 }
 
-sealed trait ConstructedEntity {
+sealed trait ConstructedElement {
   def v: Var
 
-  def baseEntity: Option[Var]
+  def baseElement: Option[Var]
 }
 case class ConstructedNode(
   v: Var,
   labels: Set[Label],
-  baseEntity: Option[Var]
-) extends ConstructedEntity
+  baseElement: Option[Var]
+) extends ConstructedElement
 
 case class ConstructedRelationship(
   v: Var,
   source: Var,
   target: Var,
   typ: Option[String],
-  baseEntity: Option[Var]
-) extends ConstructedEntity {
-  require(typ.isDefined || baseEntity.isDefined, s"$this: Need to define either the rel type or an equivalence model to construct a relationship")
+  baseElement: Option[Var]
+) extends ConstructedElement {
+  require(typ.isDefined || baseElement.isDefined, s"$this: Need to define either the rel type or an equivalence model to construct a relationship")
 }
 
 sealed abstract class StackingLogicalOperator extends LogicalOperator {
@@ -129,11 +129,11 @@ sealed abstract class LogicalLeafOperator extends LogicalOperator
 object PatternScan {
   def nodeScan(node: Var, in: LogicalOperator, solved: SolvedQueryModel): PatternScan = {
     val pattern = NodePattern(node.cypherType.toCTNode)
-    PatternScan(pattern, Map(node -> pattern.nodeEntity), in, solved)
+    PatternScan(pattern, Map(node -> pattern.nodeElement), in, solved)
   }
 }
 
-final case class PatternScan(pattern: Pattern, mapping: Map[Var, Entity], in: LogicalOperator, solved: SolvedQueryModel)
+final case class PatternScan(pattern: Pattern, mapping: Map[Var, PatternElement], in: LogicalOperator, solved: SolvedQueryModel)
   extends StackingLogicalOperator {
 
   override val fields: Set[Var] = mapping.keySet

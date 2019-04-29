@@ -72,9 +72,9 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCyph
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {
 
-    val alignedEntityTableOps = graphs.flatMap { graph =>
+    val alignedElementTableOps = graphs.flatMap { graph =>
 
-      val isEmptyScan = searchPattern.entities.map(_.cypherType).exists {
+      val isEmptyScan = searchPattern.elements.map(_.cypherType).exists {
         case CTNode(knownLabels, _) if knownLabels.isEmpty =>
           graph.schema.allCombinations.isEmpty
         case CTNode(knownLabels, _) =>
@@ -90,27 +90,27 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCyph
         None
       } else {
         val selectedScan = graph.scanOperator(searchPattern, exactLabelMatch)
-        val alignedScanOp = searchPattern.entities.foldLeft(selectedScan) {
+        val alignedScanOp = searchPattern.elements.foldLeft(selectedScan) {
 
-          case (acc, entity) =>
-            val inputEntityExpressions = selectedScan.header.expressionsFor(entity.toVar)
-            val targetHeader = acc.header -- inputEntityExpressions ++ schema.headerForEntity(entity.toVar)
+          case (acc, element) =>
+            val inputElementExpressions = selectedScan.header.expressionsFor(element.toVar)
+            val targetHeader = acc.header -- inputElementExpressions ++ schema.headerForElement(element.toVar)
 
-            acc.alignWith(entity.toVar, entity.toVar, targetHeader)
+            acc.alignWith(element.toVar, element.toVar, targetHeader)
         }
         Some(alignedScanOp)
       }
     }
 
-    alignedEntityTableOps match {
+    alignedElementTableOps match {
       case Nil =>
         val scanHeader = searchPattern
-          .entities
-          .map { e => schema.headerForEntity(e.toVar) }
+          .elements
+          .map { e => schema.headerForElement(e.toVar) }
           .reduce(_ ++ _)
         Start.fromEmptyGraph(session.records.empty(scanHeader))
       case _ =>
-        alignedEntityTableOps.reduce(TabularUnionAll(_, _))
+        alignedElementTableOps.reduce(TabularUnionAll(_, _))
     }
   }
 }

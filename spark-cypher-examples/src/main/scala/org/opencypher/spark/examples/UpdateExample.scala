@@ -38,7 +38,7 @@ import org.opencypher.spark.util.App
 import scala.collection.JavaConverters._
 
 /**
-  * Demonstrates how to retrieve Cypher entities as a Dataset and update them.
+  * Demonstrates how to retrieve Property Graph elements as a Dataset and update them.
   */
 object UpdateExample extends App {
   // 1) Create CAPS session and retrieve Spark session

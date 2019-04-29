@@ -54,7 +54,7 @@ class toFrontendTypeTest extends BaseTestSuite {
     CTDuration.nullable shouldBeConvertedTo frontend.CTDuration
   }
 
-  test("should convert entity types") {
+  test("should convert element types") {
     CTNode shouldBeConvertedTo frontend.CTNode
     CTNode.nullable shouldBeConvertedTo frontend.CTNode
     CTRelationship shouldBeConvertedTo frontend.CTRelationship

@@ -33,6 +33,6 @@ abstract class RelationalException(msg: String) extends InternalException(msg)
 
 final case class RecordHeaderException(msg: String) extends RelationalException(msg)
 
-final case class DuplicateSourceColumnException(columnName: String, entity: Var)
+final case class DuplicateSourceColumnException(columnName: String, element: Var)
     extends RelationalException(
-          s"The source column '$columnName' is used more than once to describe the mapping of $entity")
+          s"The source column '$columnName' is used more than once to describe the mapping of $element")

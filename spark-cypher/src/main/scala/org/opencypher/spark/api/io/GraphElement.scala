@@ -30,11 +30,11 @@ import org.opencypher.okapi.api.graph.{SourceEndNodeKey, SourceIdKey, SourceStar
 
 import scala.annotation.StaticAnnotation
 
-sealed trait GraphEntity extends Product {
+sealed trait GraphElement extends Product {
   def id: Long
 }
 
-object GraphEntity {
+object GraphElement {
   val sourceIdKey: String = SourceIdKey.name
   val nodeSourceIdKey: String = s"node_${SourceIdKey.name}"
   val relationshipSourceIdKey: String = s"relationship_${SourceIdKey.name}"
@@ -45,14 +45,14 @@ object GraphEntity {
   * If a `Labels` annotation, for example `@Labels("Person", "Mammal")`, is present,
   * then the labels from that annotation are used instead.
   */
-trait Node extends GraphEntity
+trait Node extends GraphElement
 
 object Relationship {
   val sourceStartNodeKey: String = SourceStartNodeKey.name
 
   val sourceEndNodeKey: String = SourceEndNodeKey.name
 
-  val nonPropertyAttributes: Set[String] = Set(GraphEntity.sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
+  val nonPropertyAttributes: Set[String] = Set(GraphElement.sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
 }
 
 /**
@@ -60,7 +60,7 @@ object Relationship {
   * If a `Type` annotation, for example `@RelationshipType("FRIEND_OF")` is present,
   * then the type from that annotation is used instead.
   */
-trait Relationship extends GraphEntity {
+trait Relationship extends GraphElement {
   def source: Long
 
   def target: Long

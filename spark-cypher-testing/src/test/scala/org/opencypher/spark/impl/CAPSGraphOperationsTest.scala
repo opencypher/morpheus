@@ -30,8 +30,8 @@ import org.apache.spark.sql.Row
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.api.value.CAPSEntity
-import org.opencypher.spark.api.value.CAPSEntity._
+import org.opencypher.spark.api.value.CAPSElement
+import org.opencypher.spark.api.value.CAPSElement._
 import org.opencypher.spark.testing.CAPSTestSuite
 import org.opencypher.spark.testing.fixture.{RecordsVerificationFixture, TeamDataFixture}
 

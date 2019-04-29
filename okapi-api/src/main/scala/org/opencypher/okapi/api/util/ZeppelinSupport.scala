@@ -29,7 +29,7 @@ package org.opencypher.okapi.api.util
 import org.opencypher.okapi.api.graph.{CypherResult, PropertyGraph}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue.CypherEntity._
+import org.opencypher.okapi.api.value.CypherValue.CypherElement._
 import org.opencypher.okapi.api.value.CypherValue.CypherNode._
 import org.opencypher.okapi.api.value.CypherValue.CypherRelationship._
 import org.opencypher.okapi.api.value.CypherValue.{CypherNode, CypherRelationship}
@@ -48,7 +48,7 @@ object ZeppelinSupport {
       * If the result contains a graph, it is shown as a network (see [[ZeppelinSupport.ZeppelinGraph#printGraph]]).
       * If the result contains a tabular result, they are:
       *   - visualized as a graph if the result only contains nodes and relationships (see [[ZeppelinSupport.ZeppelinRecords#printGraph]])
-      *   - TODO: visualized as a table if the result contains non entity values (see [[ZeppelinSupport.ZeppelinRecords#printTable]])
+      *   - TODO: visualized as a table if the result contains non element values (see [[ZeppelinSupport.ZeppelinRecords#printTable]])
       */
     def visualize()(implicit formatValue: Any => String = CypherValue.Format.defaultValueFormatter): Unit = {
       result.getGraph match {

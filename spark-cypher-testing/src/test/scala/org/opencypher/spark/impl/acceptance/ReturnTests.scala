@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.value.CAPSEntity._
+import org.opencypher.spark.api.value.CAPSElement._
 import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
 import org.opencypher.spark.impl.CAPSConverters._
 import org.opencypher.spark.testing.CAPSTestSuite
@@ -64,7 +64,7 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
     it("return only returned fields with trickier aliasing") {
       val g = initGraph("CREATE (:A {name: 'me'}), (:A)")
 
-      // we need to somehow track lineage of aliased entities
+      // we need to somehow track lineage of aliased elements
       // perhaps copy all child expressions in RecordHeader
       val result = g.cypher("MATCH (a:A) WITH a, a AS foo RETURN foo AS b")
 

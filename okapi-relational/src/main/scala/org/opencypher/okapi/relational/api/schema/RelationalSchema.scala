@@ -38,11 +38,11 @@ object RelationalSchema {
 
   implicit class SchemaOps(val schema: Schema) {
 
-    def headerForEntity(entity: Var, exactLabelMatch: Boolean = false): RecordHeader = {
-      entity.cypherType match {
-        case _: CTNode => schema.headerForNode(entity, exactLabelMatch)
-        case _: CTRelationship => schema.headerForRelationship(entity)
-        case other => throw IllegalArgumentException("Entity", other)
+    def headerForElement(element: Var, exactLabelMatch: Boolean = false): RecordHeader = {
+      element.cypherType match {
+        case _: CTNode => schema.headerForNode(element, exactLabelMatch)
+        case _: CTRelationship => schema.headerForRelationship(element)
+        case other => throw IllegalArgumentException("Element", other)
       }
     }
 
@@ -70,7 +70,7 @@ object RelationalSchema {
       }
 
       val propertyExpressions = schema.nodePropertyKeysForCombinations(labelCombos).map {
-        case (k, t) => EntityProperty(node, PropertyKey(k))(t)
+        case (k, t) => ElementProperty(node, PropertyKey(k))(t)
       }
 
       RecordHeader.from(labelExpressions ++ propertyExpressions + node)
@@ -101,7 +101,7 @@ object RelationalSchema {
         }
 
       val propertyExpressions: Set[Expr] = relKeyHeaderProperties.map {
-        case (k, t) => EntityProperty(rel, PropertyKey(k))(t)
+        case (k, t) => ElementProperty(rel, PropertyKey(k))(t)
       }.toSet
 
       val startNodeExpr = StartNode(rel)(CTNode)

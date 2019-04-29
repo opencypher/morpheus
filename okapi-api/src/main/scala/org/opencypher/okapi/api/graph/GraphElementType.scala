@@ -27,14 +27,14 @@
 package org.opencypher.okapi.api.graph
 
 /**
-  * This trait represents different types of id keys a graph entity can have.
+  * This trait represents different types of id keys a graph element can have.
   */
 sealed trait IdKey {
   def name: String
 }
 
 /**
-  * A SourceIdKey represents an id which uniquely identifies it's containing entity
+  * A SourceIdKey represents an id which uniquely identifies it's containing element
   */
 case object SourceIdKey extends IdKey {
   override def name: String = "id"
@@ -55,16 +55,16 @@ case object SourceEndNodeKey extends IdKey {
 }
 
 /**
-  * Enum trait to distinguish between different graph entity types
+  * Enum trait to distinguish between different graph element types
   */
-sealed trait GraphEntityType {
+sealed trait GraphElementType {
   def name: String
 }
 
-case object Node extends GraphEntityType {
+case object Node extends GraphElementType {
   override val name: String = "Node"
 }
 
-case object Relationship extends GraphEntityType {
+case object Relationship extends GraphElementType {
   override val name: String = "Relationship"
 }

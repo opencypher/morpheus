@@ -66,8 +66,8 @@ trait Schema {
   def labels: Set[String]
 
   /**
-    * Returns a mapping from a node label to a set of property keys that together form an entity key for that
-    * label. An entity key uniquely identifies a node with the given label.
+    * Returns a mapping from a node label to a set of property keys that together form an element key for that
+    * label. An element key uniquely identifies a node with the given label.
     */
   @experimental
   def nodeKeys: Map[String, Set[String]]
@@ -78,8 +78,8 @@ trait Schema {
   def relationshipTypes: Set[String]
 
   /**
-    * Returns a mapping from a relationship type to a set of property keys that together form an entity key for that
-    * relationship type. An entity key uniquely identifies a relationship with the given type.
+    * Returns a mapping from a relationship type to a set of property keys that together form an element key for that
+    * relationship type. An element key uniquely identifies a relationship with the given type.
     */
   @experimental
   def relationshipKeys: Map[String, Set[String]]

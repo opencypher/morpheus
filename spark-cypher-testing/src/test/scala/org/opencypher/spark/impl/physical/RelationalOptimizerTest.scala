@@ -68,11 +68,11 @@ class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixtur
 
     val pattern = NodePattern(CTNode)
 
-    val aPlan = planScan(None, logicalGraph, pattern, Map(aVar -> pattern.nodeEntity))
-    val bPlan = planScan(None, logicalGraph, pattern, Map(bVar -> pattern.nodeEntity))
+    val aPlan = planScan(None, logicalGraph, pattern, Map(aVar -> pattern.nodeElement))
+    val bPlan = planScan(None, logicalGraph, pattern, Map(bVar -> pattern.nodeElement))
 
-    val cPlan = planScan(None, logicalGraph, pattern, Map(cVar -> pattern.nodeEntity))
-    val dPlan = planScan(None, logicalGraph, pattern, Map(dVar -> pattern.nodeEntity))
+    val cPlan = planScan(None, logicalGraph, pattern, Map(cVar -> pattern.nodeElement))
+    val dPlan = planScan(None, logicalGraph, pattern, Map(dVar -> pattern.nodeElement))
 
     val join1 = aPlan.join(bPlan, Seq.empty, CrossJoin)
     val join2 = cPlan.join(dPlan, Seq.empty, CrossJoin)

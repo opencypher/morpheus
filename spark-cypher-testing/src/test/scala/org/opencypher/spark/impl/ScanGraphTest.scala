@@ -28,7 +28,7 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.{Row, functions}
 import org.opencypher.okapi.api.graph._
-import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMappingBuilder, RelationshipMappingBuilder}
+import org.opencypher.okapi.api.io.conversion.{ElementMapping, NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr._
@@ -37,14 +37,14 @@ import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
-import org.opencypher.spark.api.io.CAPSEntityTable
-import org.opencypher.spark.api.value.CAPSEntity._
+import org.opencypher.spark.api.io.CAPSElementTable
+import org.opencypher.spark.api.value.CAPSElement._
 import org.opencypher.spark.api.value.CAPSRelationship
 import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.testing.support.EntityTableCreationSupport
+import org.opencypher.spark.testing.support.ElementTableCreationSupport
 import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
 
-class ScanGraphTest extends CAPSGraphTest with EntityTableCreationSupport {
+class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
 
   override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
 
@@ -108,7 +108,7 @@ class ScanGraphTest extends CAPSGraphTest with EntityTableCreationSupport {
   }
 
   it("dont lose schema information when mapping") {
-    val nodes = CAPSEntityTable.create(NodeMappingBuilder.on("id").build,
+    val nodes = CAPSElementTable.create(NodeMappingBuilder.on("id").build,
       caps.sparkSession.createDataFrame(
         Seq(
           Tuple1(10L),
@@ -123,7 +123,7 @@ class ScanGraphTest extends CAPSGraphTest with EntityTableCreationSupport {
         )
       ).toDF("id"))
 
-    val rs = CAPSEntityTable.create(RelationshipMappingBuilder.on("ID").from("SRC").to("DST").relType("FOO").build,
+    val rs = CAPSElementTable.create(RelationshipMappingBuilder.on("ID").from("SRC").to("DST").relType("FOO").build,
       caps.sparkSession.createDataFrame(
         Seq(
           (10L, 1000L, 20L),
@@ -207,20 +207,20 @@ class ScanGraphTest extends CAPSGraphTest with EntityTableCreationSupport {
     val aDf = caps.sparkSession.createDataFrame(Seq(
       (0L, "A")
     )).toDF("_node_id", "name").withColumn("size", functions.lit(null))
-    val aMapping: EntityMapping = NodeMappingBuilder.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("A").build
-    val aTable = CAPSEntityTable.create(aMapping, aDf)
+    val aMapping: ElementMapping = NodeMappingBuilder.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("A").build
+    val aTable = CAPSElementTable.create(aMapping, aDf)
 
     val bDf = caps.sparkSession.createDataFrame(Seq(
       (1L, "B")
     )).toDF("_node_id", "name").withColumn("size", functions.lit(null))
     val bMapping = NodeMappingBuilder.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("B").build
-    val bTable = CAPSEntityTable.create(bMapping, bDf)
+    val bTable = CAPSElementTable.create(bMapping, bDf)
 
     val comboDf = caps.sparkSession.createDataFrame(Seq(
       (2L, "COMBO", 2)
     )).toDF("_node_id", "name", "size")
     val comboMapping = NodeMappingBuilder.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabels("A", "B").build
-    val comboTable = CAPSEntityTable.create(comboMapping, comboDf)
+    val comboTable = CAPSElementTable.create(comboMapping, comboDf)
 
     val graph = caps.graphs.create(aTable, bTable, comboTable)
 
@@ -434,8 +434,8 @@ class ScanGraphTest extends CAPSGraphTest with EntityTableCreationSupport {
       val scan = graph.scanOperator(pattern)
       val renamedScan = scan.assignScanName(
         Map(
-          pattern.nodeEntity.toVar -> n,
-          pattern.relEntity.toVar -> r
+          pattern.nodeElement.toVar -> n,
+          pattern.relElement.toVar -> r
         )
       )
       val result = caps.records.from(renamedScan.header, renamedScan.table)
@@ -471,21 +471,21 @@ class ScanGraphTest extends CAPSGraphTest with EntityTableCreationSupport {
 
       val result = caps.records.from(scan.header, scan.table)
 
-      val sourceVar = pattern.sourceEntity.toVar
-      val targetVar = pattern.targetEntity.toVar
-      val relVar = pattern.relEntity.toVar
+      val sourceVar = pattern.sourceElement.toVar
+      val targetVar = pattern.targetElement.toVar
+      val relVar = pattern.relElement.toVar
       val cols = Seq(
         sourceVar,
         HasLabel(sourceVar, Label("Person")),
-        EntityProperty(sourceVar, PropertyKey("name"))(CTString),
+        ElementProperty(sourceVar, PropertyKey("name"))(CTString),
         relVar,
         HasType(relVar, RelType("KNOWS")),
         StartNode(relVar)(CTAny),
         EndNode(relVar)(CTAny),
-        EntityProperty(relVar, PropertyKey("since"))(CTInteger),
+        ElementProperty(relVar, PropertyKey("since"))(CTInteger),
         targetVar,
         HasLabel(targetVar, Label("Person")),
-        EntityProperty(targetVar, PropertyKey("name"))(CTString)
+        ElementProperty(targetVar, PropertyKey("name"))(CTString)
       )
 
       val data = Bag(
@@ -514,22 +514,22 @@ class ScanGraphTest extends CAPSGraphTest with EntityTableCreationSupport {
 
       val result = caps.records.from(scan.header, scan.table)
 
-      val sourceVar = scanPattern.sourceEntity.toVar
-      val targetVar = scanPattern.targetEntity.toVar
-      val relVar = scanPattern.relEntity.toVar
+      val sourceVar = scanPattern.sourceElement.toVar
+      val targetVar = scanPattern.targetElement.toVar
+      val relVar = scanPattern.relElement.toVar
       val cols = Seq(
         sourceVar,
         HasLabel(sourceVar, Label("Person")),
-        EntityProperty(sourceVar, PropertyKey("name"))(CTString),
+        ElementProperty(sourceVar, PropertyKey("name"))(CTString),
         relVar,
         HasType(relVar, RelType("KNOWS")),
         StartNode(relVar)(CTAny),
         EndNode(relVar)(CTAny),
-        EntityProperty(relVar, PropertyKey("since"))(CTInteger.nullable),
+        ElementProperty(relVar, PropertyKey("since"))(CTInteger.nullable),
         targetVar,
         HasLabel(targetVar, Label("Person")),
         HasLabel(targetVar, Label("Animal")),
-        EntityProperty(targetVar, PropertyKey("name"))(CTString)
+        ElementProperty(targetVar, PropertyKey("name"))(CTString)
       )
 
       val data = Bag(

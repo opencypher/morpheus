@@ -33,7 +33,7 @@ import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.ir.api.expr.{Property, Var}
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.spark.api.io.{GraphEntity, Relationship}
+import org.opencypher.spark.api.io.{GraphElement, Relationship}
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 
@@ -43,7 +43,7 @@ object CAPSGraphExport {
   implicit class CanonicalTableSparkSchema(val schema: Schema) extends AnyVal {
 
     def canonicalNodeStructType(labels: Set[String]): StructType = {
-      val id = StructField(GraphEntity.sourceIdKey, BinaryType, nullable = false)
+      val id = StructField(GraphElement.sourceIdKey, BinaryType, nullable = false)
       val properties = schema.nodePropertyKeys(labels).toSeq
         .map { case (propertyName, cypherType) => propertyName.toPropertyColumnName -> cypherType }
         .sortBy { case (propertyColumnName, _) => propertyColumnName }
@@ -54,7 +54,7 @@ object CAPSGraphExport {
     }
 
     def canonicalRelStructType(relType: String): StructType = {
-      val id = StructField(GraphEntity.sourceIdKey, BinaryType, nullable = false)
+      val id = StructField(GraphElement.sourceIdKey, BinaryType, nullable = false)
       val sourceId = StructField(Relationship.sourceStartNodeKey, BinaryType, nullable = false)
       val targetId = StructField(Relationship.sourceEndNodeKey, BinaryType, nullable = false)
       val properties = schema.relationshipPropertyKeys(relType).toSeq.sortBy(_._1).map { case (propertyName, cypherType) =>
@@ -72,7 +72,7 @@ object CAPSGraphExport {
       val nodeRecords = graph.nodes(v.name, ct, exactLabelMatch = true)
       val header = nodeRecords.header
 
-      val idRename = header.column(v) -> GraphEntity.sourceIdKey
+      val idRename = header.column(v) -> GraphElement.sourceIdKey
       val properties: Set[Property] = header.propertiesFor(v)
       val propertyRenames = properties.map { p => header.column(p) -> p.key.name.toPropertyColumnName }
 
@@ -89,7 +89,7 @@ object CAPSGraphExport {
       val relRecords = graph.relationships(v.name, ct)
       val header = relRecords.header
 
-      val idRename = header.column(v) -> GraphEntity.sourceIdKey
+      val idRename = header.column(v) -> GraphElement.sourceIdKey
       val sourceIdRename = header.column(header.startNodeFor(v)) -> Relationship.sourceStartNodeKey
       val targetIdRename = header.column(header.endNodeFor(v)) -> Relationship.sourceEndNodeKey
       val properties: Set[Property] = relRecords.header.propertiesFor(v)

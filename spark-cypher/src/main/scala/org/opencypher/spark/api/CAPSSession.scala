@@ -63,7 +63,7 @@ sealed class CAPSSession(val sparkSession: SparkSession) extends RelationalCyphe
 
   override val graphs: CAPSGraphFactory = CAPSGraphFactory()
 
-  override val entityTables: CAPSEntityTableFactory.type = CAPSEntityTableFactory
+  override val elementTables: CAPSElementTableFactory$.type = CAPSElementTableFactory$
   /**
     * Reads a graph from sequences of nodes and relationships.
     *
@@ -140,7 +140,7 @@ object CAPSSession extends Serializable {
 
     /**
       * Converts all values stored in this table to instances of the corresponding CypherValue class.
-      * In particular, this de-flattens, or collects, flattened entities (nodes and relationships) into
+      * In particular, this de-flattens, or collects, flattened elements (nodes and relationships) into
       * compact CypherNode/CypherRelationship objects.
       *
       * All values on each row are inserted into a CypherMap object mapped to the corresponding field name.

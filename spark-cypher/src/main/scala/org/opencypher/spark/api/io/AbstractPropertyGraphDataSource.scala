@@ -53,7 +53,7 @@ object AbstractPropertyGraphDataSource {
     val propertyColsWithCypherType = schema.nodePropertyKeysForCombinations(Set(labelCombination)).map {
       case (key, cypherType) => key.toPropertyColumnName -> cypherType
     }
-    propertyColsWithCypherType + (GraphEntity.sourceIdKey -> CTIdentity)
+    propertyColsWithCypherType + (GraphElement.sourceIdKey -> CTIdentity)
   }
 
   def relColsWithCypherType(schema: Schema, relType: String): Map[String, CypherType] = {

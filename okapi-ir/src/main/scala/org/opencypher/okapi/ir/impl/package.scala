@@ -58,12 +58,12 @@ package object impl {
 
   implicit final class RichSchema(schema: Schema) {
 
-    def forEntityType(cypherType: CypherType): Schema = cypherType match {
+    def forElementType(cypherType: CypherType): Schema = cypherType match {
       case CTNode(labels, _) =>
         schema.forNode(labels)
       case r: CTRelationship =>
         schema.forRelationship(r)
-      case x => throw IllegalArgumentException("entity type", x)
+      case x => throw IllegalArgumentException("element type", x)
     }
 
     def addLabelsToCombo(labels: Set[String], combo: Set[String]): Schema = {
@@ -73,8 +73,8 @@ package object impl {
         .withNodePropertyKeys(labelsWithAddition, schema.nodePropertyKeys(combo))
     }
 
-    def addPropertyToEntity(propertyKey: String, propertyType: CypherType, entityType: CypherType): Schema = {
-      entityType match {
+    def addPropertyToElement(propertyKey: String, propertyType: CypherType, elementType: CypherType): Schema = {
+      elementType match {
         case CTNode(labels, _) =>
           val allRelevantLabelCombinations = schema.combinationsFor(labels)
           val property = if (allRelevantLabelCombinations.size == 1) propertyType else propertyType.nullable

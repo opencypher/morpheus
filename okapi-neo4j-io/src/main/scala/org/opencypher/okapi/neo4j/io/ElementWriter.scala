@@ -36,7 +36,7 @@ import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 
 import scala.util.{Failure, Success, Try}
 
-object EntityWriter extends Logging {
+object ElementWriter extends Logging {
 
   private val ROW_IDENTIFIER = "row"
 
@@ -69,7 +69,7 @@ object EntityWriter extends Logging {
          |$setStatements
          """.stripMargin
 
-    writeEntities(nodes, rowMapping, createQ, config, config.mergeNodeBatchSize)(rowToListValue)
+    writeElements(nodes, rowMapping, createQ, config, config.mergeNodeBatchSize)(rowToListValue)
   }
 
   // TODO: Share more code with `createRelationships`
@@ -107,7 +107,7 @@ object EntityWriter extends Logging {
          |$setStatements
          """.stripMargin
 
-    writeEntities(relationships, rowMapping, createQ, config, config.mergeRelationshipBatchSize)(rowToListValue)
+    writeElements(relationships, rowMapping, createQ, config, config.mergeRelationshipBatchSize)(rowToListValue)
   }
 
   def createNodes[T](
@@ -131,7 +131,7 @@ object EntityWriter extends Logging {
          |$setStatements
          """.stripMargin
 
-    writeEntities(nodes, rowMapping, createQ, config, config.createNodeBatchSize)(rowToListValue)
+    writeElements(nodes, rowMapping, createQ, config, config.createNodeBatchSize)(rowToListValue)
   }
 
   def createRelationships[T](
@@ -160,11 +160,11 @@ object EntityWriter extends Logging {
          |$setStatements
          """.stripMargin
 
-    writeEntities(relationships, rowMapping, createQ, config, config.createRelationshipBatchSize)(rowToListValue)
+    writeElements(relationships, rowMapping, createQ, config, config.createRelationshipBatchSize)(rowToListValue)
   }
 
-  private def writeEntities[T](
-    entities: Iterator[T],
+  private def writeElements[T](
+    elements: Iterator[T],
     rowMapping: Array[String],
     query: String,
     config: Neo4jConfig,
@@ -175,7 +175,7 @@ object EntityWriter extends Logging {
     val reuseStatement = new Statement(query, reuseParameters)
 
     config.withSession { session =>
-      val batches = entities.grouped(batchSize)
+      val batches = elements.grouped(batchSize)
       while (batches.hasNext) {
         val batch = batches.next()
         val rowParameters = new Array[Value](batch.size)
@@ -200,7 +200,7 @@ object EntityWriter extends Logging {
           case Failure(exception: ClientException) if exception.getMessage.contains("already exists") =>
             val originalMessage = exception.getMessage
 
-            val entityType = if (originalMessage.contains("Node(")) "nodes" else "relationships"
+            val elementType = if (originalMessage.contains("Node(")) "nodes" else "relationships"
 
             val duplicateIdRegex = """.+('[0-9a-fA-F]+')$""".r
             val duplicateId = originalMessage match {
@@ -208,7 +208,7 @@ object EntityWriter extends Logging {
               case _ => "UNKNOWN"
             }
 
-            val message = s"Could not write the graph to Neo4j. The graph you are attempting to write contains at least two $entityType with CAPS id $duplicateId"
+            val message = s"Could not write the graph to Neo4j. The graph you are attempting to write contains at least two $elementType with CAPS id $duplicateId"
             throw IllegalStateException(message, Some(exception))
 
           case Failure(e) => throw e

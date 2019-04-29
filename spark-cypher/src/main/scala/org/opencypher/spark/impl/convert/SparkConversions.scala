@@ -64,7 +64,7 @@ object SparkConversions {
           case CTDuration => Some(CalendarIntervalType)
           case CTIdentity => Some(BinaryType)
           case b if b.subTypeOf(CTBoolean) => Some(BooleanType)
-          case n if n.subTypeOf(CTEntity.nullable) => Some(BinaryType)
+          case n if n.subTypeOf(CTElement.nullable) => Some(BinaryType)
           // Spark uses String as the default array inner type
           case CTMap(inner) => Some(StructType(inner.map { case (key, vType) => vType.toStructField(key) }.toSeq))
           case CTEmptyList => Some(ArrayType(StringType, containsNull = false))

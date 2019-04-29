@@ -26,35 +26,34 @@
  */
 package org.opencypher.okapi.api.io.conversion
 
-import org.opencypher.okapi.api.graph.{Entity, IdKey, Pattern}
+import org.opencypher.okapi.api.graph.{PatternElement, IdKey, Pattern}
 import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
-object EntityMapping {
-  def empty(pattern: Pattern) = EntityMapping(pattern, Map.empty, Map.empty)
+object ElementMapping {
+  def empty(pattern: Pattern) = ElementMapping(pattern, Map.empty, Map.empty)
 }
 
-// TODO add builder in Node/RelPattern style
 /**
-  * Represents a mapping from a source with key-based access of entity components (e.g. a table definition) to a Pattern.
+  * Represents a mapping from a source with key-based access of element components (e.g. a table definition) to a Pattern.
   * The purpose of this class is to define a mapping from an external data source to a property graph.
   *
   * The [[pattern]] describes the shape of the pattern that is described by this mapping
   *
-  * The [[idKeys]] describe the mappings for each pattern entity, which map the the entities identifiers
+  * The [[idKeys]] describe the mappings for each pattern element, which map the element identifiers
   * to columns within the source data.
   *
-  * The [[properties]] represent mappings for every pattern entity from property keys to keys in the source data.
+  * The [[properties]] represent mappings for every pattern element from property keys to keys in the source data.
   * The retrieved value from the source is expected to be convertible to a valid [[org.opencypher.okapi.api.value.CypherValue]].
   *
   * @param pattern    the pattern described by this mapping
   * @param properties mapping from property key to source property key
-  * @param idKeys     mapping for the key to access the entity identifier in the source data
+  * @param idKeys     mapping for the key to access the element identifier in the source data
   */
-case class EntityMapping(
+case class ElementMapping(
   pattern: Pattern,
-  properties: Map[Entity, Map[String, String]],
-  idKeys: Map[Entity, Map[IdKey, String]]
+  properties: Map[PatternElement, Map[String, String]],
+  idKeys: Map[PatternElement, Map[IdKey, String]]
 ) {
 
   validate()
@@ -70,14 +69,14 @@ case class EntityMapping(
     if (allSourceKeys.size != sourceKeys.toSet.size) {
       val duplicateColumns = sourceKeys.groupBy(identity).filter { case (_, items) => items.size > 1 }
       throw IllegalArgumentException(
-        "One-to-one mapping from entity elements to source keys",
+        "One-to-one mapping from element elements to source keys",
         s"Duplicate columns: $duplicateColumns")
     }
 
-    pattern.entities.foreach {
-      case e@Entity(_, CTRelationship(types, _)) if types.size != 1 =>
+    pattern.elements.foreach {
+      case e@PatternElement(_, CTRelationship(types, _)) if types.size != 1 =>
         throw IllegalArgumentException(
-          s"A single implied type for entity $e",
+          s"A single implied type for element $e",
           types
         )
       case _ => ()

@@ -30,7 +30,7 @@ import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure.{concatDirectoryNames, nodeTableDirectoryName, relKeyTableDirectoryName}
-import org.opencypher.spark.api.io.{GraphEntity, Relationship}
+import org.opencypher.spark.api.io.{GraphElement, Relationship}
 
 object DdlUtils {
   implicit class PropertyGraphOps(pg: PropertyGraph) {
@@ -44,8 +44,8 @@ object DdlUtils {
     )(implicit caps: CAPSSession): GraphDdl = {
       val schema = graphType
       val pathPrefixParts: List[String] = List(maybeDataSourceName, maybeDatabaseName).flatten
-      val joinFromStartNode: List[Join] = List(Join(GraphEntity.sourceIdKey, Relationship.sourceStartNodeKey))
-      val joinFromEndNode: List[Join] = List(Join(GraphEntity.sourceIdKey, Relationship.sourceEndNodeKey))
+      val joinFromStartNode: List[Join] = List(Join(GraphElement.sourceIdKey, Relationship.sourceStartNodeKey))
+      val joinFromEndNode: List[Join] = List(Join(GraphElement.sourceIdKey, Relationship.sourceEndNodeKey))
       val tablePrefix = graphName.value.replaceAll("\\.", "_")
 
       def nodeViewId(labelCombination: Set[String]): ViewId = {

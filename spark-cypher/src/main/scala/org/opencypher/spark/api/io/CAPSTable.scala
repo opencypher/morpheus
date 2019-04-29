@@ -27,10 +27,10 @@
 package org.opencypher.spark.api.io
 
 import org.apache.spark.sql.DataFrame
-import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMappingBuilder, RelationshipMappingBuilder}
+import org.opencypher.okapi.api.io.conversion.{ElementMapping, NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
-import org.opencypher.okapi.relational.api.io.EntityTable
-import org.opencypher.okapi.relational.api.table.RelationalEntityTableFactory
+import org.opencypher.okapi.relational.api.io.ElementTable
+import org.opencypher.okapi.relational.api.table.RelationalElementTableFactory
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.impl.table.SparkTable.{DataFrameTable, _}
 import org.opencypher.spark.impl.util.Annotation
@@ -38,93 +38,93 @@ import org.opencypher.spark.impl.{CAPSRecords, RecordBehaviour}
 
 import scala.reflect.runtime.universe._
 
-case object CAPSEntityTableFactory extends RelationalEntityTableFactory[DataFrameTable] {
-  override def entityTable(
-    nodeMapping: EntityMapping,
+case object CAPSElementTableFactory$ extends RelationalElementTableFactory[DataFrameTable] {
+  override def elementTable(
+    nodeMapping: ElementMapping,
     table: DataFrameTable
-  ): EntityTable[DataFrameTable] = {
-    CAPSEntityTable.create(nodeMapping, table)
+  ): ElementTable[DataFrameTable] = {
+    CAPSElementTable.create(nodeMapping, table)
   }
 }
 
-case class CAPSEntityTable private[spark](
-  override val mapping: EntityMapping,
+case class CAPSElementTable private[spark](
+  override val mapping: ElementMapping,
   override val table: DataFrameTable
-) extends EntityTable[DataFrameTable] with RecordBehaviour {
+) extends ElementTable[DataFrameTable] with RecordBehaviour {
 
-  override type Records = CAPSEntityTable
+  override type Records = CAPSElementTable
 
-  private[spark] def records(implicit caps: CAPSSession): CAPSRecords = caps.records.fromEntityTable(entityTable = this)
+  private[spark] def records(implicit caps: CAPSSession): CAPSRecords = caps.records.fromElementTable(elementTable = this)
 
-  override def cache(): CAPSEntityTable = {
+  override def cache(): CAPSElementTable = {
     table.cache()
     this
   }
 }
 
-object CAPSEntityTable {
-  def create(mapping: EntityMapping, table: DataFrameTable): CAPSEntityTable = {
+object CAPSElementTable {
+  def create(mapping: ElementMapping, table: DataFrameTable): CAPSElementTable = {
     val sourceIdColumns = mapping.allSourceIdKeys
     val idCols = table.df.encodeIdColumns(sourceIdColumns: _*)
     val remainingCols = mapping.allSourcePropertyKeys.map(table.df.col)
     val colsToSelect = idCols ++ remainingCols
 
-    CAPSEntityTable(mapping, table.df.select(colsToSelect: _*))
+    CAPSElementTable(mapping, table.df.select(colsToSelect: _*))
   }
 }
 
 object CAPSNodeTable {
 
-  def apply[E <: Node : TypeTag](nodes: Seq[E])(implicit caps: CAPSSession): CAPSEntityTable = {
+  def apply[E <: Node : TypeTag](nodes: Seq[E])(implicit caps: CAPSSession): CAPSElementTable = {
     val nodeLabels = Annotation.labels[E]
     val nodeDF = caps.sparkSession.createDataFrame(nodes)
-    val nodeProperties = nodeDF.columns.filter(_ != GraphEntity.sourceIdKey).toSet
-    val nodeMapping = NodeMappingBuilder.create(nodeIdKey = GraphEntity.sourceIdKey, impliedLabels = nodeLabels, propertyKeys = nodeProperties)
-    CAPSEntityTable.create(nodeMapping, nodeDF)
+    val nodeProperties = nodeDF.columns.filter(_ != GraphElement.sourceIdKey).toSet
+    val nodeMapping = NodeMappingBuilder.create(nodeIdKey = GraphElement.sourceIdKey, impliedLabels = nodeLabels, propertyKeys = nodeProperties)
+    CAPSElementTable.create(nodeMapping, nodeDF)
   }
 
   /**
     * Creates a node table from the given [[DataFrame]]. By convention, there needs to be one column storing node
-    * identifiers and named after [[GraphEntity.sourceIdKey]]. All remaining columns are interpreted as node property columns, the column name is used as property
+    * identifiers and named after [[GraphElement.sourceIdKey]]. All remaining columns are interpreted as node property columns, the column name is used as property
     * key.
     *
     * @param impliedLabels  implied node labels
     * @param nodeDF         node data
     * @return a node table with inferred node mapping
     */
-  def apply(impliedLabels: Set[String], nodeDF: DataFrame): CAPSEntityTable = {
-    val propertyColumnNames = nodeDF.columns.filter(_ != GraphEntity.sourceIdKey).toSet
+  def apply(impliedLabels: Set[String], nodeDF: DataFrame): CAPSElementTable = {
+    val propertyColumnNames = nodeDF.columns.filter(_ != GraphElement.sourceIdKey).toSet
     val propertyKeyMapping = propertyColumnNames.map(p => p.toProperty -> p)
 
     val mapping = NodeMappingBuilder
-      .on(GraphEntity.sourceIdKey)
+      .on(GraphElement.sourceIdKey)
       .withImpliedLabels(impliedLabels.toSeq: _*)
       .withPropertyKeyMappings(propertyKeyMapping.toSeq: _*)
       .build
 
-    CAPSEntityTable.create(mapping, nodeDF)
+    CAPSElementTable.create(mapping, nodeDF)
   }
 }
 
 object CAPSRelationshipTable {
 
-  def apply[E <: Relationship : TypeTag](relationships: Seq[E])(implicit caps: CAPSSession): CAPSEntityTable = {
+  def apply[E <: Relationship : TypeTag](relationships: Seq[E])(implicit caps: CAPSSession): CAPSElementTable = {
     val relationshipType: String = Annotation.relType[E]
     val relationshipDF = caps.sparkSession.createDataFrame(relationships)
     val relationshipProperties = relationshipDF.columns.filter(!Relationship.nonPropertyAttributes.contains(_)).toSet
 
-    val relationshipMapping = RelationshipMappingBuilder.create(GraphEntity.sourceIdKey,
+    val relationshipMapping = RelationshipMappingBuilder.create(GraphElement.sourceIdKey,
       Relationship.sourceStartNodeKey,
       Relationship.sourceEndNodeKey,
       relationshipType,
       relationshipProperties)
 
-    CAPSEntityTable.create(relationshipMapping, relationshipDF)
+    CAPSElementTable.create(relationshipMapping, relationshipDF)
   }
 
   /**
     * Creates a relationship table from the given [[DataFrame]]. By convention, there needs to be one column storing
-    * relationship identifiers and named after [[GraphEntity.sourceIdKey]], one column storing source node identifiers
+    * relationship identifiers and named after [[GraphElement.sourceIdKey]], one column storing source node identifiers
     * and named after [[Relationship.sourceStartNodeKey]] and one column storing target node identifiers and named after
     * [[Relationship.sourceEndNodeKey]]. All remaining columns are interpreted as relationship property columns, the
     * column name is used as property key.
@@ -136,19 +136,19 @@ object CAPSRelationshipTable {
     * @param relationshipDF   relationship data
     * @return a relationship table with inferred relationship mapping
     */
-  def apply(relationshipType: String, relationshipDF: DataFrame): CAPSEntityTable = {
+  def apply(relationshipType: String, relationshipDF: DataFrame): CAPSElementTable = {
     val propertyColumnNames = relationshipDF.columns.filter(!Relationship.nonPropertyAttributes.contains(_)).toSet
     val propertyKeyMapping = propertyColumnNames.map(p => p.toProperty -> p)
 
     val mapping = RelationshipMappingBuilder
-      .on(GraphEntity.sourceIdKey)
+      .on(GraphElement.sourceIdKey)
       .from(Relationship.sourceStartNodeKey)
       .to(Relationship.sourceEndNodeKey)
       .withRelType(relationshipType)
       .withPropertyKeyMappings(propertyKeyMapping.toSeq: _*)
       .build
 
-    CAPSEntityTable.create(mapping, relationshipDF)
+    CAPSElementTable.create(mapping, relationshipDF)
   }
 }
 
