@@ -71,7 +71,7 @@ CREATE (:Person {name: 'Philip'})-[:LIKES]->(:Food {name: 'Oranges'});
 ----
 
 Note that the `id` fields do not automatically become properties.
-They are used to uniquely identify entities and to connect nodes with relationships.
+They are used to uniquely identify elements and to connect nodes with relationships.
 
 With the SQL Property Graph DataSource, this mapping can be described using the Graph DDL language.
 This means that CAPS can generate identifiers for nodes and relationships on the fly.
@@ -173,7 +173,7 @@ Here we create one mapping for each label and relationship type.
 These mappings allow to interpret tables as a graph.
 
 
-[[graphs-from-tables-entity-tables]]
+[[graphs-from-tables-element-tables]]
 ==== Create CAPS tables, and then the graph
 
 We combine the mappings with the tables in order to create node and relationship tables:

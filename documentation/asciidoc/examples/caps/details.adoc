@@ -60,8 +60,8 @@ include::{examples-dir}/CustomDataFrameInputExample.scala[tags=prepare-dataframe
 
 Having prepared the DataFrames we create node and relationship tables.
 These tables wrap the DataFrames and describe their contained data.
-Node and relationship mappings are used to explicitly define which DataFrame column stores which specific entity component.
-The entity components are: identifiers, properties, node labels (optional), and relationship types.
+Node and relationship mappings are used to explicitly define which DataFrame column stores which specific element component.
+The element components are: identifiers, properties, node labels (optional), and relationship types.
 
 [source, scala]
 ----

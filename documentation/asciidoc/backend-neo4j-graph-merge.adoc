@@ -4,22 +4,22 @@
 CAPS includes a utility class, called `Neo4jGraphMerge`, that allows to merge a graph into an existing Neo4j database.
 This can be useful in order to frequently update a Neo4j database with additional data that has been produced from other data sources.
 
-[[neo4j-graph-merge-entity-keys]]
-== Entity Keys
+[[neo4j-graph-merge-element-keys]]
+== Element Keys
 
-`Neo4jGraphMerge` uses entity keys to determine which nodes and relationships need to be merged or created.
-The utility merges entities with the same label/relationship type and the same values for their corresponding entity keys.
-Entities that do not exist in the target graph are created.
+`Neo4jGraphMerge` uses element keys to determine which nodes and relationships need to be merged or created.
+The utility merges elements with the same label/relationship type and the same values for their corresponding element keys.
+Elements that do not exist in the target graph are created.
 
-.Entity key definition
+.Element key definition
 ====
 
-Here is an example definition of entity keys for a simple social network.
+Here is an example definition of element keys for a simple social network.
 A person is uniquely identified by the property `name` while the `FRIEND_OF` and `MARRIED_TO` relationships are identified by the property `id`.
 
 [source, scala]
 ----
-val entityKeys = EntityKeys(
+val elementKeys = ElementKeys(
     Map("Person" -> Set("name")),
     Map("FRIEND_OF" -> Set("id"), "MARRIED_TO" -> Set("id"))
   )
@@ -27,17 +27,17 @@ val entityKeys = EntityKeys(
 
 Note that:
 
-* If a label always appears in conjunction with another label (e.g. `:Employee:Person`), it is enough to provide an entity key for one of the labels (e.g. `:Person`).
-* Entity keys for relationships are optional, if none are provided, there can be at most one relationship with a given type between two nodes.
+* If a label always appears in conjunction with another label (e.g. `:Employee:Person`), it is enough to provide an element key for one of the labels (e.g. `:Person`).
+* Element keys for relationships are optional, if none are provided, there can be at most one relationship with a given type between two nodes.
 
 ====
 
 [[neo4j-graph-merge-usage]]
 == Merging graphs
 
-To merge an existing property graph into Neo4j, we need a reference to the graph, a Neo4j config, and entity keys.
-Existing properties of merged entities in the Neo4j graph will be overwritten by values in the merge graph.
-Missing properties are added to the entity and existing properties remain.
+To merge an existing property graph into Neo4j, we need a reference to the graph, a Neo4j config, and element keys.
+Existing properties of merged elements in the Neo4j graph will be overwritten by values in the merge graph.
+Missing properties are added to the element and existing properties remain.
 
 .Merge a property graph into Neo4j
 ====
@@ -45,14 +45,14 @@ Missing properties are added to the entity and existing properties remain.
 [source, scala]
 ----
 // Merge graph into existing Neo4j database
-Neo4jGraphMerge.merge(mergeGraph, neo4jConfig, entityKeys)
+Neo4jGraphMerge.merge(mergeGraph, neo4jConfig, elementKeys)
 ----
 
 `mergeGraph` refers to a `PropertyGraph` that is e.g. loaded from another data source or created with a `CONSTRUCT` query.
 
 `neo4jConfig` contains information on how to connect to the Neo4j database.
 
-`entityKeys` refers to a set of entity keys where each key maps a label/relationship type to a set of properties that uniquely identify nodes/relationship entities.
+`elementKeys` refers to a set of element keys where each key maps a label/relationship type to a set of properties that uniquely identify nodes/relationship elements.
 
 ====
 
@@ -64,7 +64,7 @@ In addition, one can merge into a previously stored subgraph written by the <<ba
 [source, scala]
 ----
 // Merge graph into existing subgraph stored within the Neo4j database
-Neo4jGraphMerge.merge(graphName, mergeGraph, neo4jConfig, entityKeys)
+Neo4jGraphMerge.merge(graphName, mergeGraph, neo4jConfig, elementKeys)
 ----
 
 `graphName` refers to a subgraph that has been previously stored using the <<backend-neo4j-pgds,Neo4j PGDS>>.
@@ -80,17 +80,17 @@ Index creation needs to be done only once per Neo4j database.
 .Index definition
 ====
 
-Based on the previously defined entity keys, we use the Neo4jGraphMerge utility to create the indexes.
+Based on the previously defined element keys, we use the Neo4jGraphMerge utility to create the indexes.
 
 [source, scala]
 ----
 // Create indexes within the Neo4j database
-Neo4jGraphMerge.createIndexes(neo4jConfig, entityKeys)
+Neo4jGraphMerge.createIndexes(neo4jConfig, elementKeys)
 ----
 ====
 
-The values for entity keys need to be globally unique within the scope of the respective label/relationship type.
-If another graph with the same node key and colliding values is stored in the same Neo4j instance, this will result in errors either during index creation or entity creation.
+The values for element keys need to be globally unique within the scope of the respective label/relationship type.
+If another graph with the same node key and colliding values is stored in the same Neo4j instance, this will result in errors either during index creation or element creation.
 
 If the index feature is used for the whole Neo4j database, it is *not recommended* to use the <<backend-neo4j-pgds,Neo4j PGDS>> to store subgraphs in the same Neo4j database as this can potentially result in conflicting identifiers.
 
@@ -98,12 +98,12 @@ If the index feature is used for the whole Neo4j database, it is *not recommende
 ====
 
 It is also possible to create indexes for a particular subgraph.
-Entity key values need to be unique only within the subgraph.
+Element key values need to be unique only within the subgraph.
 
 [source, scala]
 ----
 // Create indexes for an existing subgraph stored within the Neo4j database
-Neo4jGraphMerge.createIndexes(graphName, neo4jConfig, entityKeys)
+Neo4jGraphMerge.createIndexes(graphName, neo4jConfig, elementKeys)
 ----
 
 
