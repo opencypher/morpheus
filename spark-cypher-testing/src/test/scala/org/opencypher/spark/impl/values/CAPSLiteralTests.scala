@@ -52,10 +52,10 @@ class CAPSLiteralTests extends CAPSTestSuite with Checkers with ScanGraphInit {
   }
 
   it("round trip for nodes") {
-    check(Prop.forAll(node) { n: CypherNode[CypherInteger] =>
+    check(Prop.forAll(node) { n: Node[CypherInteger] =>
       val graph = initGraph(s"CREATE ${n.toCypherString}")
       val query = s"MATCH (n) RETURN n"
-      val result = TestNode(graph.cypher(query).records.collect.head("n").cast[CypherNode[_]])
+      val result = TestNode(graph.cypher(query).records.collect.head("n").cast[Node[_]])
       Claim(result == n)
     }, minSuccessful(10))
   }
@@ -65,7 +65,7 @@ class CAPSLiteralTests extends CAPSTestSuite with Checkers with ScanGraphInit {
     check(Prop.forAll(nodeRelNodePattern()) { p: NodeRelNodePattern[_] =>
       val graph = initGraph(p.toCreateQuery)
       val query = s"MATCH ()-[r]->() RETURN r"
-      val result = TestRelationship(graph.cypher(query).records.collect.head("r").cast[CypherRelationship[_]])
+      val result = TestRelationship(graph.cypher(query).records.collect.head("r").cast[Relationship[_]])
       Claim(result == p.relationship)
     }, minSuccessful(1000))
   }

@@ -30,9 +30,9 @@ import java.math.MathContext
 import java.util.Objects
 
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.api.value.CypherValue.CypherElement._
-import org.opencypher.okapi.api.value.CypherValue.CypherNode._
-import org.opencypher.okapi.api.value.CypherValue.CypherRelationship._
+import org.opencypher.okapi.api.value.CypherValue.Element._
+import org.opencypher.okapi.api.value.CypherValue.Node._
+import org.opencypher.okapi.api.value.CypherValue.Relationship._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.temporal.Duration
 import ujson._
@@ -216,12 +216,12 @@ object CypherValue {
             .sortBy(_._1)
             .map { case (k, v) => s"`${escape(k)}`: ${v.toCypherString}" }
             .mkString("{", ", ", "}")
-        case CypherRelationship(_, _, _, relType, props) =>
+        case Relationship(_, _, _, relType, props) =>
           s"[:`${escape(relType)}`${
             if (props.isEmpty) ""
             else s" ${props.toCypherString}"
           }]"
-        case CypherNode(_, labels, props) =>
+        case Node(_, labels, props) =>
           val labelString =
             if (labels.isEmpty) ""
             else labels.toSeq.sorted.map(escape).mkString(":`", "`:`", "`")
@@ -240,7 +240,7 @@ object CypherValue {
         case CypherString(s) => Str(s)
         case CypherList(l) => l.map(_.toJson)
         case CypherMap(m) => m.mapValues(_.toJson).toSeq.sortBy(_._1)
-        case CypherRelationship(id, startId, endId, relType, properties) =>
+        case Relationship(id, startId, endId, relType, properties) =>
           Obj(
             idJsonKey -> Str(formatValue(id)),
             typeJsonKey -> Str(relType),
@@ -248,7 +248,7 @@ object CypherValue {
             endIdJsonKey -> Str(formatValue(endId)),
             propertiesJsonKey -> properties.toJson
           )
-        case CypherNode(id, labels, properties) =>
+        case Node(id, labels, properties) =>
           Obj(
             idJsonKey -> Str(formatValue(id)),
             labelsJsonKey -> labels.toSeq.sorted.map(Str),
@@ -371,8 +371,8 @@ object CypherValue {
     val empty: CypherList = List.empty[CypherValue]
   }
 
-  trait CypherElement[Id] extends Product with MaterialCypherValue[CypherElement[Id]] {
-    type I <: CypherElement[Id]
+  trait Element[Id] extends Product with MaterialCypherValue[Element[Id]] {
+    type I <: Element[Id]
 
     def id: Id
 
@@ -383,7 +383,7 @@ object CypherValue {
     }
 
     override def equals(other: Any): Boolean = other match {
-      case that: CypherElement[_] =>
+      case that: Element[_] =>
         (that canEqual this) && haveEqualValues(this.productIterator, that.productIterator)
       case _ =>
         false
@@ -404,25 +404,25 @@ object CypherValue {
 
   }
 
-  object CypherElement {
+  object Element {
 
     val idJsonKey: String = "id"
     val propertiesJsonKey: String = "properties"
 
   }
 
-  trait CypherNode[Id] extends CypherElement[Id] with MaterialCypherValue[CypherNode[Id]] {
-    override type I <: CypherNode[Id]
+  trait Node[Id] extends Element[Id] with MaterialCypherValue[Node[Id]] {
+    override type I <: Node[Id]
 
     def id: Id
 
     def labels: Set[String]
 
-    override def value: CypherNode[Id] = this
+    override def value: Node[Id] = this
 
     override def cypherType: CypherType = CTNode(labels)
 
-    override def unwrap: CypherNode[Id] = this
+    override def unwrap: Node[Id] = this
 
     override def productArity: Int = 3
 
@@ -433,7 +433,7 @@ object CypherValue {
       case other => throw IllegalArgumentException("a valid product index", s"$other")
     }
 
-    override def canEqual(that: Any): Boolean = that.isInstanceOf[CypherNode[_]]
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[Node[_]]
 
     def copy(id: Id = id, labels: Set[String] = labels, properties: CypherMap = properties): I
 
@@ -447,19 +447,19 @@ object CypherValue {
 
   }
 
-  object CypherNode {
+  object Node {
 
     val labelsJsonKey: String = "labels"
 
-    def unapply[Id](n: CypherNode[Id]): Option[(Id, Set[String], CypherMap)] = {
+    def unapply[Id](n: Node[Id]): Option[(Id, Set[String], CypherMap)] = {
       Option(n).map(node => (node.id, node.labels, node.properties))
     }
 
   }
 
-  trait CypherRelationship[Id] extends CypherElement[Id] with MaterialCypherValue[CypherRelationship[Id]] with Product {
+  trait Relationship[Id] extends Element[Id] with MaterialCypherValue[Relationship[Id]] with Product {
 
-    override type I <: CypherRelationship[Id]
+    override type I <: Relationship[Id]
 
     def id: Id
 
@@ -469,11 +469,11 @@ object CypherValue {
 
     def relType: String
 
-    override def value: CypherRelationship[Id] = this
+    override def value: Relationship[Id] = this
 
     override def cypherType: CypherType = CTRelationship(Set(relType))
 
-    override def unwrap: CypherRelationship[Id] = this
+    override def unwrap: Relationship[Id] = this
 
     override def productArity: Int = 5
 
@@ -486,7 +486,7 @@ object CypherValue {
       case other => throw IllegalArgumentException("a valid product index", s"$other")
     }
 
-    override def canEqual(that: Any): Boolean = that.isInstanceOf[CypherRelationship[_]]
+    override def canEqual(that: Any): Boolean = that.isInstanceOf[Relationship[_]]
 
     def copy(
       id: Id = id,
@@ -505,13 +505,13 @@ object CypherValue {
 
   }
 
-  object CypherRelationship {
+  object Relationship {
 
     val typeJsonKey: String = "type"
     val startIdJsonKey: String = "startId"
     val endIdJsonKey: String = "endId"
 
-    def unapply[Id](r: CypherRelationship[Id]): Option[(Id, Id, Id, String, CypherMap)] = {
+    def unapply[Id](r: Relationship[Id]): Option[(Id, Id, Id, String, CypherMap)] = {
       Option(r).map(rel => (rel.id, rel.startId, rel.endId, rel.relType, rel.properties))
     }
 

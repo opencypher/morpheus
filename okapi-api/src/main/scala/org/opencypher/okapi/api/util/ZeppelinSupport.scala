@@ -29,10 +29,10 @@ package org.opencypher.okapi.api.util
 import org.opencypher.okapi.api.graph.{CypherResult, PropertyGraph}
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.value.CypherValue
-import org.opencypher.okapi.api.value.CypherValue.CypherElement._
-import org.opencypher.okapi.api.value.CypherValue.CypherNode._
-import org.opencypher.okapi.api.value.CypherValue.CypherRelationship._
-import org.opencypher.okapi.api.value.CypherValue.{CypherNode, CypherRelationship}
+import org.opencypher.okapi.api.value.CypherValue.Element._
+import org.opencypher.okapi.api.value.CypherValue.Node._
+import org.opencypher.okapi.api.value.CypherValue.Relationship._
+import org.opencypher.okapi.api.value.CypherValue.{Node, Relationship}
 import ujson._
 
 import scala.util.Random
@@ -149,24 +149,24 @@ object ZeppelinSupport {
 
       val nodeCols = data.headOption.map { row =>
         row.value.collect {
-          case (key, _: CypherNode[_]) => key
+          case (key, _: Node[_]) => key
         }
       }.getOrElse(Seq.empty)
 
       val relCols = data.headOption.map { row =>
         row.value.collect {
-          case (key, _: CypherRelationship[_]) => key
+          case (key, _: Relationship[_]) => key
         }
       }.getOrElse(Seq.empty).toSet
 
       val nodes = data
-        .flatMap { row => nodeCols.map(row(_).cast[CypherNode[_]]) }
+        .flatMap { row => nodeCols.map(row(_).cast[Node[_]]) }
         .groupBy(_.id)
         .values
         .map(_.head)
 
       val rels = data
-        .flatMap { row => relCols.map(row(_).cast[CypherRelationship[_]]) }
+        .flatMap { row => relCols.map(row(_).cast[Relationship[_]]) }
         .groupBy(_.id)
         .values
         .map(_.head)
@@ -185,7 +185,7 @@ object ZeppelinSupport {
   private val sourceJsonKey: String = "source"
   private val targetJsonKey: String = "target"
 
-  private implicit class ZeppelinNode(n: CypherNode[_]) {
+  private implicit class ZeppelinNode(n: Node[_]) {
 
     /**
       * Returns a Zeppelin compatible Json representation of a node:
@@ -216,7 +216,7 @@ object ZeppelinSupport {
     }
   }
 
-  private implicit class ZeppelinRelationship(r: CypherRelationship[_]) {
+  private implicit class ZeppelinRelationship(r: Relationship[_]) {
 
     /**
       * Returns a Zeppelin compatible Json representation of a relationship:
@@ -261,8 +261,8 @@ object ZeppelinSupport {
       * }}}
       */
     def toZeppelinJson(
-      nodes: Iterator[CypherNode[_]],
-      rels: Iterator[CypherRelationship[_]],
+      nodes: Iterator[Node[_]],
+      rels: Iterator[Relationship[_]],
       labels: Set[String],
       types: Set[String]
     )(implicit formatValue: Any => String): Value = {
@@ -363,8 +363,8 @@ object ZeppelinSupport {
       * }}}
       */
     def toZeppelinJson()(implicit formatValue: Any => String): Value = {
-      val nodes = g.nodes("n").iterator.map(m => m("n").cast[CypherNode[_]])
-      val rels = g.relationships("r").iterator.map(m => m("r").cast[CypherRelationship[_]])
+      val nodes = g.nodes("n").iterator.map(m => m("n").cast[Node[_]])
+      val rels = g.relationships("r").iterator.map(m => m("r").cast[Relationship[_]])
 
       ZeppelinGraph.toZeppelinJson(
         nodes, rels, g.schema.labels, g.schema.relationshipTypes

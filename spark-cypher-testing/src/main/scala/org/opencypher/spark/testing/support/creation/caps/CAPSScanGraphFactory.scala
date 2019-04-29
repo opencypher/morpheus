@@ -34,7 +34,7 @@ import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.Schema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.api.value.CypherValue.{CypherElement, CypherValue}
+import org.opencypher.okapi.api.value.CypherValue.{Element, CypherValue}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException}
 import org.opencypher.okapi.impl.temporal.Duration
 import org.opencypher.okapi.relational.impl.graph.ScanGraph
@@ -71,7 +71,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with ElementTableCreati
   override def name: String = "CAPSScanGraphFactory"
 
   private def extractEmbeddings(pattern: Pattern, graph: InMemoryTestGraph, schema: Schema)
-    (implicit caps: CAPSSession): Seq[Map[PatternElement, CypherElement[Long]]] = {
+    (implicit caps: CAPSSession): Seq[Map[PatternElement, Element[Long]]] = {
 
     val candidates = pattern.elements.map { element =>
       element.cypherType match {
@@ -84,7 +84,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with ElementTableCreati
     }.toMap
 
     val unitEmbedding = Seq(
-      Map.empty[PatternElement, CypherElement[Long]]
+      Map.empty[PatternElement, Element[Long]]
     )
     val initialEmbeddings = pattern.elements.foldLeft(unitEmbedding) {
       case (acc, patternElement) =>
@@ -119,7 +119,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with ElementTableCreati
 
   private def createElementTable(
     pattern: Pattern,
-    embeddings: Seq[Map[PatternElement, CypherElement[Long]]],
+    embeddings: Seq[Map[PatternElement, Element[Long]]],
     schema: Schema
   )(implicit caps: CAPSSession): CAPSElementTable = {
 

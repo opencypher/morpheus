@@ -29,7 +29,7 @@ package org.opencypher.okapi.impl.util
 import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.Format._
-import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNode, CypherRelationship, CypherValue}
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship, CypherValue}
 import org.opencypher.okapi.impl.util.TablePrinter.toTable
 
 class TablePrinterTest extends ApiBaseTest {
@@ -142,13 +142,13 @@ class TablePrinterTest extends ApiBaseTest {
     )
   }
 
-  case class TestNode(id: Long, labels: Set[String], properties: CypherMap) extends CypherNode[Long] {
+  case class TestNode(id: Long, labels: Set[String], properties: CypherMap) extends Node[Long] {
     override type I = TestNode
     override def copy(id: Long, labels: Set[String], properties: CypherMap): TestNode =
       copy(id, labels, properties)
   }
 
-  case class TestRelationship(id: Long, startId: Long, endId: Long, relType: String, properties: CypherMap) extends CypherRelationship[Long] {
+  case class TestRelationship(id: Long, startId: Long, endId: Long, relType: String, properties: CypherMap) extends Relationship[Long] {
     override type I = TestRelationship
     override def copy(id: Long, source: Long, target: Long, relType: String, properties: CypherMap): TestRelationship =
       copy(id, source, target, relType, properties)

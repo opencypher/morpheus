@@ -52,7 +52,7 @@ class CAPSValueStructureTest extends CAPSValueTestSuite {
       }
       // ScalaTest is being silly, should equal fails, hashCode matches as well.
       assert(reconstructedValueGroups == originalValueGroups)
-      CypherRelationship.unapply(null) should equal(None)
+      Relationship.unapply(null) should equal(None)
     }
   }
 

@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.testing.propertygraph
 
-import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNode, CypherRelationship}
+import org.opencypher.okapi.api.value.CypherValue.{CypherMap, Node, Relationship}
 
 trait InMemoryGraph {
   def nodes: Seq[InMemoryTestNode]
@@ -59,7 +59,7 @@ case class InMemoryTestNode(
   override val id: Long,
   override val labels: Set[String],
   override val properties: CypherMap
-) extends CypherNode[Long] {
+) extends Node[Long] {
 
   type I = InMemoryTestNode
 
@@ -78,7 +78,7 @@ case class InMemoryTestRelationship(
   override val endId: Long,
   override val relType: String,
   override val properties: CypherMap
-) extends CypherRelationship[Long] {
+) extends Relationship[Long] {
 
   type I = InMemoryTestRelationship
 

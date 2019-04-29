@@ -81,7 +81,7 @@ case class CAPSNode(
   override val id: Seq[Byte],
   override val labels: Set[String] = Set.empty,
   override val properties: CypherMap = CypherMap.empty
-) extends CypherNode[Seq[Byte]] {
+) extends Node[Seq[Byte]] {
 
   override type I = CAPSNode
 
@@ -124,7 +124,7 @@ case class CAPSRelationship(
   override val endId: Seq[Byte],
   override val relType: String,
   override val properties: CypherMap = CypherMap.empty
-) extends CypherRelationship[Seq[Byte]] {
+) extends Relationship[Seq[Byte]] {
 
   override type I = CAPSRelationship
 
