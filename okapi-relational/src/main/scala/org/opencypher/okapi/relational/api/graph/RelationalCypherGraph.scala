@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.api.graph
 
 import org.opencypher.okapi.api.graph.{PropertyGraph, QualifiedGraphName, _}
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue
@@ -64,17 +64,17 @@ trait RelationalCypherGraphFactory[T <: Table[T]] {
     create(None, nodeTable +: elementTables: _*)
   }
 
-  def create(maybeSchema: Option[Schema], nodeTable: ElementTable[T], elementTables: ElementTable[T]*): Graph = {
+  def create(maybeSchema: Option[PropertyGraphSchema], nodeTable: ElementTable[T], elementTables: ElementTable[T]*): Graph = {
     create(maybeSchema, nodeTable +: elementTables: _*)
   }
 
   def create(
-    maybeSchema: Option[Schema],
+    maybeSchema: Option[PropertyGraphSchema],
     elementTables: ElementTable[T]*
   ): Graph = {
     implicit val runtimeContext: RelationalRuntimeContext[T] = session.basicRuntimeContext()
     val allTables = elementTables
-    val schema = maybeSchema.getOrElse(allTables.map(_.schema).reduce[Schema](_ ++ _))
+    val schema = maybeSchema.getOrElse(allTables.map(_.schema).reduce[PropertyGraphSchema](_ ++ _))
     new ScanGraph(allTables, schema)
   }
 }

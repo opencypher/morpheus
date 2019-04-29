@@ -31,7 +31,7 @@ import org.apache.spark.sql.Row
 import org.neo4j.driver.internal.value.ListValue
 import org.neo4j.driver.v1.{Value, Values}
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.ir.api.expr.{EndNode, Property, StartNode}
@@ -55,13 +55,13 @@ object Neo4jGraphMerge extends Logging {
   /**
     * Defines a set of properties which uniquely identify a node with a given label.
     *
-    * @see [[org.opencypher.okapi.api.schema.Schema#nodeKeys]]
+    * @see [[org.opencypher.okapi.api.schema.PropertyGraphSchema#nodeKeys]]
     */
   type NodeKeys = Map[String, Set[String]]
   /**
     * Defines a set of properties which uniquely identify a relationship with a given type.
     *
-    * @see [[org.opencypher.okapi.api.schema.Schema#relationshipKeys]]
+    * @see [[org.opencypher.okapi.api.schema.PropertyGraphSchema#relationshipKeys]]
     */
   type RelationshipKeys = Map[String, Set[String]]
 
@@ -156,10 +156,10 @@ object Neo4jGraphMerge extends Logging {
   }
 
   private def combineElementKeys(
-    schema: Schema,
+    schema: PropertyGraphSchema,
     nodeKeys: Option[NodeKeys],
     relationshipKeys: Option[RelationshipKeys]
-  ): Schema = {
+  ): PropertyGraphSchema = {
     val withNodeKeys = nodeKeys.getOrElse(Map.empty).foldLeft(schema) {
       case (acc, (label, keys)) => acc.withNodeKey(label, keys)
     }

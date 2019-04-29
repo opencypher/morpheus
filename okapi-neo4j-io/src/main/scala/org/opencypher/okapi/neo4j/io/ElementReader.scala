@@ -27,13 +27,13 @@
 package org.opencypher.okapi.neo4j.io
 
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 
 object ElementReader {
 
-  def flatExactLabelQuery(labels: Set[String], schema: Schema, maybeMetaLabel: Option[String] = None): String ={
+  def flatExactLabelQuery(labels: Set[String], schema: PropertyGraphSchema, maybeMetaLabel: Option[String] = None): String ={
     val props = schema.nodePropertyKeys(labels).propertyExtractorString
     val allLabels = labels ++ maybeMetaLabel
     val labelCount = allLabels.size
@@ -43,7 +43,7 @@ object ElementReader {
         |RETURN id($elementVarName) AS $idPropertyKey$props""".stripMargin
   }
 
-  def flatRelTypeQuery(relType: String, schema: Schema, maybeMetaLabel: Option[String] = None): String ={
+  def flatRelTypeQuery(relType: String, schema: PropertyGraphSchema, maybeMetaLabel: Option[String] = None): String ={
     val props = schema.relationshipPropertyKeys(relType).propertyExtractorString
     val metaLabel = maybeMetaLabel.map(_.cypherLabelPredicate).getOrElse("")
 

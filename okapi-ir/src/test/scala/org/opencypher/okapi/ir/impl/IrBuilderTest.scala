@@ -27,7 +27,7 @@
 package org.opencypher.okapi.ir.impl
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
-import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
+import org.opencypher.okapi.api.schema.{PropertyKeys, PropertyGraphSchema}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
@@ -70,7 +70,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema shouldEqual Schema.empty
+          schema shouldEqual PropertyGraphSchema.empty
             .withNodePropertyKeys("A")("name" -> CTString)
             .withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger)
         case _ => fail("no matching graph result found")
@@ -105,7 +105,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A")())
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A")())
         case _ => fail("no matching graph result found")
       }
     }
@@ -120,7 +120,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A")().withNodePropertyKeys("B", "C")())
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A")().withNodePropertyKeys("B", "C")())
         case _ => fail("no matching graph result found")
       }
     }
@@ -135,7 +135,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A", "D")().withNodePropertyKeys("B", "C")())
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A", "D")().withNodePropertyKeys("B", "C")())
         case _ => fail("no matching graph result found")
       }
     }
@@ -149,7 +149,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A", "B", "C")())
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A", "B", "C")())
         case _ => fail("no matching graph result found")
       }
     }
@@ -164,7 +164,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")().withNodePropertyKeys("A", "C")())
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A", "B")().withNodePropertyKeys("A", "C")())
         case _ => fail("no matching graph result found")
       }
     }
@@ -179,7 +179,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")())
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A", "B")())
         case _ => fail("no matching graph result found")
       }
     }
@@ -193,7 +193,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString))
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A")("name" -> CTString))
         case _ => fail("no matching graph result found")
       }
     }
@@ -207,7 +207,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")("name" -> CTString))
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A", "B")("name" -> CTString))
         case _ => fail("no matching graph result found")
       }
     }
@@ -221,7 +221,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys(Set.empty[String]).withRelationshipPropertyKeys("R")("level" -> CTString))
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys(Set.empty[String]).withRelationshipPropertyKeys("R")("level" -> CTString))
         case _ => fail("no matching graph result found")
       }
     }
@@ -235,7 +235,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys(Set("A"), PropertyKeys("category" -> CTString, "ports" -> CTInteger)))
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys(Set("A"), PropertyKeys("category" -> CTString, "ports" -> CTInteger)))
         case _ => fail("no matching graph result found")
       }
     }
@@ -243,7 +243,7 @@ class IrBuilderTest extends IrTestSuite {
     it("computes a pattern graph schema correctly -  for copied nodes") {
 
       val graphName = GraphName("input")
-      val inputSchema = Schema.empty
+      val inputSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
 
       val query =
@@ -264,7 +264,7 @@ class IrBuilderTest extends IrTestSuite {
     it("computes a pattern graph schema correctly -  for copied nodes with unspecified labels") {
 
       val graphName = GraphName("input")
-      val inputSchema = Schema.empty
+      val inputSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
         .withNodePropertyKeys("B")("category" -> CTString, "ports" -> CTInteger)
 
@@ -286,7 +286,7 @@ class IrBuilderTest extends IrTestSuite {
     it("computes a pattern graph schema correctly -  for copied nodes with additional Label") {
 
       val graphName = GraphName("input")
-      val inputSchema = Schema.empty
+      val inputSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
 
       val query =
@@ -299,7 +299,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty
+          schema should equal(PropertyGraphSchema.empty
             .withNodePropertyKeys("A", "B")("category" -> CTString, "ports" -> CTInteger))
         case _ => fail("no matching graph result found")
       }
@@ -308,7 +308,7 @@ class IrBuilderTest extends IrTestSuite {
     it("computes a pattern graph schema correctly -  for copied unspecified nodes with additional Label") {
 
       val graphName = GraphName("input")
-      val inputSchema = Schema.empty
+      val inputSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
         .withNodePropertyKeys("B")("foo" -> CTString, "bar" -> CTInteger)
 
@@ -322,7 +322,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty
+          schema should equal(PropertyGraphSchema.empty
             .withNodePropertyKeys("A", "C")("category" -> CTString, "ports" -> CTInteger)
             .withNodePropertyKeys("B", "C")("foo" -> CTString, "bar" -> CTInteger)
           )
@@ -333,7 +333,7 @@ class IrBuilderTest extends IrTestSuite {
     it("computes a pattern graph schema correctly -  for copied nodes with additional properties") {
 
       val graphName = GraphName("input")
-      val inputSchema = Schema.empty
+      val inputSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
 
       val query =
@@ -346,7 +346,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty
+          schema should equal(PropertyGraphSchema.empty
             .withNodePropertyKeys("A")("category" -> CTString, "ports" -> CTInteger, "memory" -> CTString))
         case _ => fail("no matching graph result found")
       }
@@ -355,7 +355,7 @@ class IrBuilderTest extends IrTestSuite {
     it("computes a pattern graph schema correctly -  for copied nodes with conflicting properties") {
 
       val graphName = GraphName("input")
-      val inputSchema = Schema.empty
+      val inputSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
 
       val query =
@@ -368,7 +368,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty
+          schema should equal(PropertyGraphSchema.empty
             .withNodePropertyKeys("A")("category" -> CTInteger, "ports" -> CTInteger))
         case _ => fail("no matching graph result found")
       }
@@ -377,7 +377,7 @@ class IrBuilderTest extends IrTestSuite {
     it("computes a pattern graph schema correctly -  for copied unspecified nodes with conflicting properties") {
 
       val graphName = GraphName("input")
-      val inputSchema = Schema.empty
+      val inputSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
         .withNodePropertyKeys("B")("category" -> CTInteger, "ports" -> CTInteger)
 
@@ -391,7 +391,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty
+          schema should equal(PropertyGraphSchema.empty
             .withNodePropertyKeys("A")("category" -> CTInteger, "ports" -> CTInteger)
             .withNodePropertyKeys("B")("category" -> CTInteger, "ports" -> CTInteger))
         case _ => fail("no matching graph result found")
@@ -401,7 +401,7 @@ class IrBuilderTest extends IrTestSuite {
     it("computes a pattern graph schema correctly -  for copied relationships") {
 
       val graphName = GraphName("input")
-      val inputSchema = Schema.empty
+      val inputSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys()()
         .withRelationshipPropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
 
@@ -423,7 +423,7 @@ class IrBuilderTest extends IrTestSuite {
     it("computes a pattern graph schema correctly -  for copied relationships with unspecified type") {
 
       val graphName = GraphName("input")
-      val inputSchema = Schema.empty
+      val inputSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys()()
         .withRelationshipPropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
         .withRelationshipPropertyKeys("B")("category" -> CTString, "ports" -> CTInteger)
@@ -446,7 +446,7 @@ class IrBuilderTest extends IrTestSuite {
     it("computes a pattern graph schema correctly -  for copied relationships with alternative types") {
 
       val graphName = GraphName("input")
-      val inputSchema = Schema.empty
+      val inputSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys()()
         .withRelationshipPropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
         .withRelationshipPropertyKeys("B")("category" -> CTString, "ports" -> CTInteger)
@@ -462,7 +462,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty
+          schema should equal(PropertyGraphSchema.empty
             .withNodePropertyKeys()()
             .withRelationshipPropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
             .withRelationshipPropertyKeys("B")("category" -> CTString, "ports" -> CTInteger)
@@ -474,7 +474,7 @@ class IrBuilderTest extends IrTestSuite {
     it("computes a pattern graph schema correctly -  for copied relationships with different type") {
 
       val graphName = GraphName("input")
-      val inputSchema = Schema.empty
+      val inputSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys()()
         .withRelationshipPropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
 
@@ -488,7 +488,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty
+          schema should equal(PropertyGraphSchema.empty
             .withNodePropertyKeys()()
             .withRelationshipPropertyKeys("B")("category" -> CTString, "ports" -> CTInteger)
           )
@@ -499,7 +499,7 @@ class IrBuilderTest extends IrTestSuite {
     it("computes a pattern graph schema correctly -  for copied relationships with unspecified types and different type") {
 
       val graphName = GraphName("input")
-      val inputSchema = Schema.empty
+      val inputSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys()()
         .withRelationshipPropertyKeys("A")("category" -> CTString)
         .withRelationshipPropertyKeys("B")("ports" -> CTInteger)
@@ -514,7 +514,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty
+          schema should equal(PropertyGraphSchema.empty
             .withNodePropertyKeys()()
             .withRelationshipPropertyKeys("C")("category" -> CTString.nullable, "ports" -> CTInteger.nullable)
           )
@@ -525,7 +525,7 @@ class IrBuilderTest extends IrTestSuite {
     it("computes a pattern graph schema correctly -  for copied relationships with additional properties") {
 
       val graphName = GraphName("input")
-      val inputSchema = Schema.empty
+      val inputSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys()()
         .withRelationshipPropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
 
@@ -539,7 +539,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty
+          schema should equal(PropertyGraphSchema.empty
             .withNodePropertyKeys()()
             .withRelationshipPropertyKeys("A")("category" -> CTString, "ports" -> CTInteger, "memory" -> CTString))
         case _ => fail("no matching graph result found")
@@ -549,7 +549,7 @@ class IrBuilderTest extends IrTestSuite {
     it("computes a pattern graph schema correctly -  for copied relationships with conflicting properties") {
 
       val graphName = GraphName("input")
-      val inputSchema = Schema.empty
+      val inputSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys()()
         .withRelationshipPropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
 
@@ -563,7 +563,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty
+          schema should equal(PropertyGraphSchema.empty
             .withNodePropertyKeys()()
             .withRelationshipPropertyKeys("A")("category" -> CTInteger, "ports" -> CTInteger))
         case _ => fail("no matching graph result found")
@@ -573,7 +573,7 @@ class IrBuilderTest extends IrTestSuite {
     it("computes a pattern graph schema correctly -  for copied unspecified relationships with conflicting properties") {
 
       val graphName = GraphName("input")
-      val inputSchema = Schema.empty
+      val inputSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys()()
         .withRelationshipPropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
         .withRelationshipPropertyKeys("B")("category" -> CTInteger, "ports" -> CTInteger)
@@ -588,7 +588,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty
+          schema should equal(PropertyGraphSchema.empty
             .withNodePropertyKeys()()
             .withRelationshipPropertyKeys("A")("category" -> CTInteger, "ports" -> CTInteger)
             .withRelationshipPropertyKeys("B")("category" -> CTInteger, "ports" -> CTInteger))
@@ -599,7 +599,7 @@ class IrBuilderTest extends IrTestSuite {
     it("computes a pattern graph schema correctly -  for copied relationships with unspecified types, different type and updated properties") {
 
       val graphName = GraphName("input")
-      val inputSchema = Schema.empty
+      val inputSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys()()
         .withRelationshipPropertyKeys("A")("category" -> CTString)
         .withRelationshipPropertyKeys("B")("ports" -> CTInteger)
@@ -614,7 +614,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty
+          schema should equal(PropertyGraphSchema.empty
             .withNodePropertyKeys()()
             .withRelationshipPropertyKeys("C")("category" -> CTString.nullable, "ports" -> CTInteger.nullable, "memory" -> CTString)
           )
@@ -625,7 +625,7 @@ class IrBuilderTest extends IrTestSuite {
     it("computes a pattern graph schema correctly -  for copied relationships with alternative types and additional property") {
 
       val graphName = GraphName("input")
-      val inputSchema = Schema.empty
+      val inputSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys()()
         .withRelationshipPropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
         .withRelationshipPropertyKeys("B")("category" -> CTString, "ports" -> CTInteger)
@@ -640,7 +640,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty
+          schema should equal(PropertyGraphSchema.empty
             .withNodePropertyKeys()()
             .withRelationshipPropertyKeys("A")("category" -> CTString, "ports" -> CTInteger, "memory" -> CTString)
             .withRelationshipPropertyKeys("B")("category" -> CTString, "ports" -> CTInteger, "memory" -> CTString)
@@ -673,7 +673,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty
+          schema should equal(PropertyGraphSchema.empty
             .withNodePropertyKeys("A")()
             .withNodePropertyKeys()()
             .withRelationshipPropertyKeys("REL")())
@@ -693,7 +693,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty
+          schema should equal(PropertyGraphSchema.empty
             .withNodePropertyKeys("A")()
             .withNodePropertyKeys()()
             .withRelationshipPropertyKeys("REL")())
@@ -712,7 +712,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty
+          schema should equal(PropertyGraphSchema.empty
             .withNodePropertyKeys("A")()
             .withNodePropertyKeys()()
             .withRelationshipPropertyKeys("REL")())
@@ -795,7 +795,7 @@ class IrBuilderTest extends IrTestSuite {
 
     it("matches node order by name and returns it") {
       "FROM GRAPH foo MATCH (a:Person) WITH a.name AS name, a.age AS age ORDER BY age RETURN age, name"
-        .asCypherQuery(GraphName("foo") -> Schema.empty
+        .asCypherQuery(GraphName("foo") -> PropertyGraphSchema.empty
           .withNodePropertyKeys("Person")(
             "name" -> CTString,
             "age" -> CTInteger
@@ -938,7 +938,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A")().withNodePropertyKeys("B", "C")())
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A")().withNodePropertyKeys("B", "C")())
         case _ => fail("no matching graph result found")
       }
     }
@@ -954,7 +954,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A", "D")().withNodePropertyKeys("B", "C")())
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A", "D")().withNodePropertyKeys("B", "C")())
         case _ => fail("no matching graph result found")
       }
     }
@@ -970,7 +970,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A", "B", "C")())
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A", "B", "C")())
         case _ => fail("no matching graph result found")
       }
     }
@@ -987,7 +987,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")().withNodePropertyKeys("A", "C")())
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A", "B")().withNodePropertyKeys("A", "C")())
         case _ => fail("no matching graph result found")
       }
     }
@@ -1004,7 +1004,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")())
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A", "B")())
         case _ => fail("no matching graph result found")
       }
     }
@@ -1019,7 +1019,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString))
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A")("name" -> CTString))
         case _ => fail("no matching graph result found")
       }
     }
@@ -1034,7 +1034,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")("name" -> CTString))
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A", "B")("name" -> CTString))
         case _ => fail("no matching graph result found")
       }
     }
@@ -1049,7 +1049,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys(Set.empty[String]).withRelationshipPropertyKeys("R")("level" -> CTString))
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys(Set.empty[String]).withRelationshipPropertyKeys("R")("level" -> CTString))
         case _ => fail("no matching graph result found")
       }
     }
@@ -1065,7 +1065,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys(Set("A"), PropertyKeys("category" -> CTString, "ports" -> CTInteger)))
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys(Set("A"), PropertyKeys("category" -> CTString, "ports" -> CTInteger)))
         case _ => fail("no matching graph result found")
       }
     }
@@ -1083,7 +1083,7 @@ class IrBuilderTest extends IrTestSuite {
 
       query.asCypherQuery().model.result match {
         case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(Schema.empty.withNodePropertyKeys("A", "B")())
+          schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A", "B")())
         case _ => fail("no matching graph result found")
       }
     }

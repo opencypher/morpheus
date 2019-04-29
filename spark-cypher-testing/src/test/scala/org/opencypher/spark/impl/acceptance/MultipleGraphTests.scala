@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
+import org.opencypher.okapi.api.schema.{PropertyKeys, PropertyGraphSchema}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
@@ -263,7 +263,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
 
     result.getRecords shouldBe None
     result.graph.schema.labels should equal(Set("A"))
-    result.graph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString))
+    result.graph.schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A")("name" -> CTString))
     result.graph.cypher("MATCH (a:A) RETURN a.name").records.iterator.toBag should equal(Bag(
       CypherMap("a.name" -> "Mats")
     ))
@@ -278,7 +278,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
     val result = caps.cypher(query)
 
     result.getRecords shouldBe None
-    result.graph.schema should equal(Schema.empty.withNodePropertyKeys()("name" -> CTString))
+    result.graph.schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys()("name" -> CTString))
     result.graph.cypher("MATCH (a) RETURN a.name").records.iterator.toBag should equal(Bag(
       CypherMap("a.name" -> "Donald")
     ))
@@ -294,7 +294,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
 
     result.getRecords shouldBe None
     result.graph.schema.labels should equal(Set("A"))
-    result.graph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString))
+    result.graph.schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A")("name" -> CTString))
     result.graph.cypher("MATCH (a:A) RETURN a.name").records.iterator.toBag should equal(Bag(
       CypherMap("a.name" -> "Donald")
     ))
@@ -311,7 +311,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
     result.getRecords shouldBe None
     result.graph.schema.labels should equal(Set("A", "B"))
     result.graph.schema should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withNodePropertyKeys(Set("A", "B"), PropertyKeys("name" -> CTString, "age" -> CTInteger))
     )
     result.graph.cypher("MATCH (a:A:B) RETURN a.name").records.iterator.toBag should equal(Bag(
@@ -331,7 +331,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
     result.getRecords shouldBe None
     result.graph.schema.labels should equal(Set("Person"))
     result.graph.schema should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withNodePropertyKeys(Set("Person"), PropertyKeys("name" -> CTString))
     )
     result.graph.cypher("MATCH (a:Person) RETURN a.name").records.iterator.toBag should equal(Bag(
@@ -349,7 +349,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
 
     result.getRecords shouldBe None
     result.graph.schema.relationshipTypes should equal(Set("FOO"))
-    result.graph.schema should equal(Schema.empty
+    result.graph.schema should equal(PropertyGraphSchema.empty
       .withNodePropertyKeys()()
       .withRelationshipPropertyKeys("FOO", PropertyKeys("val" -> CTInteger)))
     result.graph.cypher("MATCH ()-[r]->() RETURN r.val").records.iterator.toBag should equal(Bag(
@@ -410,7 +410,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
 
     result.getRecords shouldBe None
     result.graph.schema.labels should equal(Set("Foo"))
-    result.graph.schema should equal(Schema.empty
+    result.graph.schema should equal(PropertyGraphSchema.empty
       .withNodePropertyKeys("Foo")("foo" -> CTString)
     )
 
@@ -709,7 +709,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
 
     val graph = caps.cypher(query).graph
 
-    graph.schema should equal(Schema.empty.withNodePropertyKeys(Set.empty[String]))
+    graph.schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys(Set.empty[String]))
     graph.nodes("n").collect.toBag should equal(Bag(
       CypherMap("n" -> CAPSNode(0, Set.empty[String]))
     ))
@@ -846,7 +846,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
     result.getRecords shouldBe None
     result.graph.schema.relationshipTypes should equal(Set("KNOWS"))
     result.graph.schema.labels should equal(Set("A", "B"))
-    result.graph.schema should equal(Schema.empty
+    result.graph.schema should equal(PropertyGraphSchema.empty
       .withNodePropertyKeys("A")()
       .withNodePropertyKeys("B")()
       .withRelationshipPropertyKeys("KNOWS")()
@@ -870,7 +870,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
     result.getRecords shouldBe None
     result.graph.schema.relationshipTypes should equal(Set("KNOWS"))
     result.graph.schema.labels should equal(Set("A", "B"))
-    result.graph.schema should equal(Schema.empty
+    result.graph.schema should equal(PropertyGraphSchema.empty
       .withNodePropertyKeys("A")()
       .withNodePropertyKeys("B")()
       .withRelationshipPropertyKeys("KNOWS")())
@@ -935,7 +935,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
 
     result.getRecords shouldBe None
     result.graph.schema.labels should equal(Set("A"))
-    result.graph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString))
+    result.graph.schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A")("name" -> CTString))
     result.graph.cypher("MATCH (a:A) RETURN a.name").records.toMaps should equal(Bag(
       CypherMap("a.name" -> "Mats")
     ))
@@ -952,7 +952,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
 
     result.getRecords shouldBe None
     result.graph.schema.labels should equal(Set("A"))
-    result.graph.schema should equal(Schema.empty.withNodePropertyKeys("A")("name" -> CTString))
+    result.graph.schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys("A")("name" -> CTString))
     result.graph.cypher("MATCH (a:A) RETURN a.name").records.toMaps should equal(Bag(
       CypherMap("a.name" -> "Donald")
     ))

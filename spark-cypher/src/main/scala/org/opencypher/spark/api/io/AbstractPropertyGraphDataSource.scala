@@ -31,7 +31,7 @@ import java.util.concurrent.Executors
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.StructType
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.{CTIdentity, CypherType}
 import org.opencypher.okapi.impl.exception.GraphNotFoundException
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
@@ -49,14 +49,14 @@ import scala.util.{Failure, Success}
 
 object AbstractPropertyGraphDataSource {
 
-  def nodeColsWithCypherType(schema: Schema, labelCombination: Set[String]): Map[String, CypherType] = {
+  def nodeColsWithCypherType(schema: PropertyGraphSchema, labelCombination: Set[String]): Map[String, CypherType] = {
     val propertyColsWithCypherType = schema.nodePropertyKeysForCombinations(Set(labelCombination)).map {
       case (key, cypherType) => key.toPropertyColumnName -> cypherType
     }
     propertyColsWithCypherType + (GraphElement.sourceIdKey -> CTIdentity)
   }
 
-  def relColsWithCypherType(schema: Schema, relType: String): Map[String, CypherType] = {
+  def relColsWithCypherType(schema: PropertyGraphSchema, relType: String): Map[String, CypherType] = {
     val propertyColsWithCypherType = schema.relationshipPropertyKeys(relType).map {
       case (key, cypherType) => key.toPropertyColumnName -> cypherType
     }

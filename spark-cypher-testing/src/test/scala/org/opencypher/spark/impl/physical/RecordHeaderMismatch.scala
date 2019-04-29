@@ -27,7 +27,7 @@
 package org.opencypher.spark.impl.physical
 
 import org.opencypher.okapi.api.graph.Pattern
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.CTString
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
@@ -52,7 +52,7 @@ class RecordHeaderMismatch extends CAPSTestSuite {
 
       override type Records = CAPSRecords
 
-      override def schema: CAPSSchema = Schema.empty
+      override def schema: CAPSSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("name" -> CTString)
         .withRelationshipPropertyKeys("R")("name" -> CTString)
         .asCaps

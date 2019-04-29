@@ -27,7 +27,7 @@
 package org.opencypher.okapi.logical.impl
 
 import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block._
@@ -51,7 +51,7 @@ trait IrConstruction {
     ProjectBlock(after, fields, given, testGraph)
 
 
-  private def testGraph()(implicit schema: Schema = testGraphSchema) =
+  private def testGraph()(implicit schema: PropertyGraphSchema = testGraphSchema) =
     IRCatalogGraph(testQualifiedGraphName, schema)
 
   protected def leafPlan: Start =
@@ -73,17 +73,17 @@ trait IrConstruction {
     MatchBlock(List(leafBlock), pattern, Set.empty, false, testGraph)
 
   implicit class RichString(queryText: String) {
-    def parseIR[T <: CypherStatement : ClassTag](graphsWithSchema: (GraphName, Schema)*)
-      (implicit schema: Schema = Schema.empty): T =
+    def parseIR[T <: CypherStatement : ClassTag](graphsWithSchema: (GraphName, PropertyGraphSchema)*)
+      (implicit schema: PropertyGraphSchema = PropertyGraphSchema.empty): T =
       ir(graphsWithSchema: _ *) match {
         case cq: T => cq
         case other => throw new IllegalArgumentException(s"Cannot convert $other")
       }
 
-    def asCypherQuery(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): SingleQuery =
+    def asCypherQuery(graphsWithSchema: (GraphName, PropertyGraphSchema)*)(implicit schema: PropertyGraphSchema = PropertyGraphSchema.empty): SingleQuery =
       parseIR[SingleQuery](graphsWithSchema: _*)
 
-    def ir(graphsWithSchema: (GraphName, Schema)*)(implicit schema: Schema = Schema.empty): CypherStatement = {
+    def ir(graphsWithSchema: (GraphName, PropertyGraphSchema)*)(implicit schema: PropertyGraphSchema = PropertyGraphSchema.empty): CypherStatement = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       val parameters = Map.empty[String, CypherValue]
       IRBuilder(stmt)(
@@ -99,7 +99,7 @@ trait IrConstruction {
       )
     }
 
-    def irWithParams(params: (String, CypherValue)*)(implicit schema: Schema = Schema.empty): CypherStatement = {
+    def irWithParams(params: (String, CypherValue)*)(implicit schema: PropertyGraphSchema = PropertyGraphSchema.empty): CypherStatement = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       IRBuilder(stmt)(
         IRBuilderContext.initial(queryText,

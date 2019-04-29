@@ -28,7 +28,7 @@ package org.opencypher.spark.testing.fixture
 
 import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.okapi.api.io.conversion.{ElementMapping, NodeMappingBuilder, RelationshipMappingBuilder}
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
 import org.opencypher.okapi.ir.api.expr._
@@ -77,7 +77,7 @@ trait TeamDataFixture extends TestDataFixture {
        CREATE (c)-[:KNOWS {since: 2016}]->(d)
     """
 
-  lazy val dataFixtureSchema: Schema = Schema.empty
+  lazy val dataFixtureSchema: PropertyGraphSchema = PropertyGraphSchema.empty
     .withNodePropertyKeys("Person", "German")("name" -> CTString, "luckyNumber" -> CTInteger, "languages" -> CTList(CTString).nullable)
     .withNodePropertyKeys("Person", "Swede")("name" -> CTString, "luckyNumber" -> CTInteger)
     .withNodePropertyKeys("Person")("name" -> CTString, "luckyNumber" -> CTInteger, "languages" -> CTEmptyList)

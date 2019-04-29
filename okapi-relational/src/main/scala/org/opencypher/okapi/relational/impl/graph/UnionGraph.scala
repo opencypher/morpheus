@@ -29,13 +29,13 @@ package org.opencypher.okapi.relational.impl.graph
 import org.opencypher.okapi.api.graph.Pattern
 import org.opencypher.okapi.api.schema.LabelPropertyMap._
 import org.opencypher.okapi.api.schema.RelTypePropertyMap._
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
-import org.opencypher.okapi.relational.api.schema.RelationalSchema._
+import org.opencypher.okapi.relational.api.schema.RelationalPropertyGraphSchema._
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, Start, TabularUnionAll}
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
@@ -63,7 +63,7 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCyph
 
   override def tables: Seq[T] = graphs.flatMap(_.tables)
 
-  override lazy val schema: Schema = graphs.map(g => g.schema).foldLeft(Schema.empty)(_ ++ _)
+  override lazy val schema: PropertyGraphSchema = graphs.map(g => g.schema).foldLeft(PropertyGraphSchema.empty)(_ ++ _)
 
   override def toString = s"UnionGraph(graphs=[${graphs.mkString(",")}])"
 

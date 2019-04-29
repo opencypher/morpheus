@@ -26,18 +26,18 @@
  */
 package org.opencypher.okapi.relational.api.schema
 
-import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
+import org.opencypher.okapi.api.schema.{PropertyKeys, PropertyGraphSchema}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
-import org.opencypher.okapi.relational.api.schema.RelationalSchema._
+import org.opencypher.okapi.relational.api.schema.RelationalPropertyGraphSchema._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.BaseTestSuite
 
-class RelationalSchemaTest extends BaseTestSuite {
+class RelationalPropertyGraphSchemaTest extends BaseTestSuite {
 
   it("creates a header for given node") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys(Set("A", "B"), PropertyKeys("foo" -> CTBoolean))
 
     val n = Var("n")(CTNode(Set("A", "B")))
@@ -50,7 +50,7 @@ class RelationalSchemaTest extends BaseTestSuite {
   }
 
   it("creates a header for a given node and changes nullability if necessary") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys(Set("A", "B"), PropertyKeys.empty)
       .withNodePropertyKeys(Set("A", "C"), PropertyKeys("foo" -> CTString))
 
@@ -65,7 +65,7 @@ class RelationalSchemaTest extends BaseTestSuite {
   }
 
   it("creates a header for given node with implied labels") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys(Set("A"), PropertyKeys("foo" -> CTBoolean))
       .withNodePropertyKeys(Set("A", "B"), PropertyKeys("bar" -> CTBoolean))
 
@@ -80,7 +80,7 @@ class RelationalSchemaTest extends BaseTestSuite {
   }
 
   it("creates a header for a given relationship") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withRelationshipPropertyKeys("A", PropertyKeys("foo" -> CTBoolean))
 
     val r = Var("r")(CTRelationship("A"))

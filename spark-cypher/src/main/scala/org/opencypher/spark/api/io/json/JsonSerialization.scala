@@ -27,7 +27,7 @@
 package org.opencypher.spark.api.io.json
 
 import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.spark.api.io.AbstractPropertyGraphDataSource
 import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
 import org.opencypher.spark.schema.CAPSSchema
@@ -46,7 +46,7 @@ trait JsonSerialization {
   protected def writeJsonCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: String): Unit
 
   override protected[io] def readSchema(graphName: GraphName): CAPSSchema = {
-    Schema.fromJson(readJsonSchema(graphName)).asCaps
+    PropertyGraphSchema.fromJson(readJsonSchema(graphName)).asCaps
   }
 
   override protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit = {

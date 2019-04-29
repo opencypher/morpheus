@@ -29,16 +29,16 @@ package org.opencypher.spark.schema
 import org.opencypher.okapi.api.schema.LabelPropertyMap.LabelPropertyMap
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.RelTypePropertyMap.RelTypePropertyMap
-import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
+import org.opencypher.okapi.api.schema.{PropertyGraphSchema, SchemaPattern}
 import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.{SchemaException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations}
 import org.opencypher.spark.impl.convert.SparkConversions._
 
 object CAPSSchema {
-  val empty: CAPSSchema = Schema.empty.asCaps
+  val empty: CAPSSchema = PropertyGraphSchema.empty.asCaps
 
-  implicit class CAPSSchemaConverter(schema: Schema) {
+  implicit class CAPSSchemaConverter(schema: PropertyGraphSchema) {
 
     /**
       * Converts a given schema into a CAPS specific schema. The conversion fails if the schema specifies property types
@@ -47,7 +47,7 @@ object CAPSSchema {
     def asCaps: CAPSSchema = {
       schema match {
         case s: CAPSSchema => s
-        case s: Schema =>
+        case s: PropertyGraphSchema =>
           val combosByLabel = schema.labels.map(label => label -> s.labelCombinations.combos.filter(_.contains(label)))
 
           combosByLabel.foreach {
@@ -83,7 +83,7 @@ object CAPSSchema {
 
 }
 
-case class CAPSSchema private[schema](schema: Schema) extends Schema {
+case class CAPSSchema private[schema](schema: PropertyGraphSchema) extends PropertyGraphSchema {
 
   override def labels: Set[String] = schema.labels
 
@@ -99,7 +99,7 @@ case class CAPSSchema private[schema](schema: Schema) extends Schema {
 
   override def schemaPatterns: Set[SchemaPattern] = schema.schemaPatterns
 
-  override def withSchemaPatterns(patterns: SchemaPattern*): Schema = schema.withSchemaPatterns(patterns: _*)
+  override def withSchemaPatterns(patterns: SchemaPattern*): PropertyGraphSchema = schema.withSchemaPatterns(patterns: _*)
 
   override def impliedLabels: ImpliedLabels = schema.impliedLabels
 
@@ -123,25 +123,25 @@ case class CAPSSchema private[schema](schema: Schema) extends Schema {
 
   override def relationshipPropertyKeysForTypes(knownTypes: Set[String]): PropertyKeys = schema.relationshipPropertyKeysForTypes(knownTypes)
 
-  override def withNodePropertyKeys(nodeLabels: Set[String], keys: PropertyKeys): Schema = schema.withNodePropertyKeys(nodeLabels, keys)
+  override def withNodePropertyKeys(nodeLabels: Set[String], keys: PropertyKeys): PropertyGraphSchema = schema.withNodePropertyKeys(nodeLabels, keys)
 
-  override def withRelationshipPropertyKeys(typ: String, keys: PropertyKeys): Schema = schema.withRelationshipPropertyKeys(typ, keys)
+  override def withRelationshipPropertyKeys(typ: String, keys: PropertyKeys): PropertyGraphSchema = schema.withRelationshipPropertyKeys(typ, keys)
 
-  override def ++(other: Schema): Schema = schema ++ other
+  override def ++(other: PropertyGraphSchema): PropertyGraphSchema = schema ++ other
 
   override def pretty: String = schema.pretty
 
   override def isEmpty: Boolean = schema.isEmpty
 
-  override def forNode(labelConstraints: Set[String]): Schema = schema.forNode(labelConstraints)
+  override def forNode(labelConstraints: Set[String]): PropertyGraphSchema = schema.forNode(labelConstraints)
 
-  override def forRelationship(relType: CTRelationship): Schema = schema.forRelationship(relType)
+  override def forRelationship(relType: CTRelationship): PropertyGraphSchema = schema.forRelationship(relType)
 
-  override def dropPropertiesFor(combo: Set[String]): Schema = schema.dropPropertiesFor(combo)
+  override def dropPropertiesFor(combo: Set[String]): PropertyGraphSchema = schema.dropPropertiesFor(combo)
 
-  override def withOverwrittenNodePropertyKeys(nodeLabels: Set[String], propertyKeys: PropertyKeys): Schema = schema.withOverwrittenNodePropertyKeys(nodeLabels, propertyKeys)
+  override def withOverwrittenNodePropertyKeys(nodeLabels: Set[String], propertyKeys: PropertyKeys): PropertyGraphSchema = schema.withOverwrittenNodePropertyKeys(nodeLabels, propertyKeys)
 
-  override def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys): Schema = schema.withOverwrittenRelationshipPropertyKeys(relType, propertyKeys)
+  override def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys): PropertyGraphSchema = schema.withOverwrittenRelationshipPropertyKeys(relType, propertyKeys)
 
   override def toJson: String = schema.toJson
 
@@ -149,7 +149,7 @@ case class CAPSSchema private[schema](schema: Schema) extends Schema {
 
   override def schemaPatternsFor(knownSourceLabels: Set[String], knownRelTypes: Set[String], knownTargetLabels: Set[String]): Set[SchemaPattern] = schema.schemaPatternsFor(knownSourceLabels, knownRelTypes, knownTargetLabels)
 
-  override def withNodeKey(label: String, nodeKey: Set[String]): Schema = schema.withNodeKey(label, nodeKey)
+  override def withNodeKey(label: String, nodeKey: Set[String]): PropertyGraphSchema = schema.withNodeKey(label, nodeKey)
 
-  override def withRelationshipKey(relationshipType: String, relationshipKey: Set[String]): Schema = schema.withRelationshipKey(relationshipType, relationshipKey)
+  override def withRelationshipKey(relationshipType: String, relationshipKey: Set[String]): PropertyGraphSchema = schema.withRelationshipKey(relationshipType, relationshipKey)
 }

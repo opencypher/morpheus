@@ -26,7 +26,7 @@
  */
 package org.opencypher.spark.impl.acceptance
 
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.relational.impl.graph.ScanGraph
@@ -60,7 +60,7 @@ class MatchTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("return empty result on empty scan graph") {
-      val g = new ScanGraph(Seq.empty, Schema.empty)
+      val g = new ScanGraph(Seq.empty, PropertyGraphSchema.empty)
       val result = g.cypher(
         """
           |MATCH (n)

@@ -27,7 +27,7 @@
 package org.opencypher.okapi.logical.impl.logical
 
 import org.opencypher.okapi.api.graph._
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, _}
 import org.opencypher.okapi.ir.api.expr._
@@ -47,8 +47,8 @@ import scala.language.implicitConversions
 class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVerificationSupport {
 
   val emptySqm: SolvedQueryModel = SolvedQueryModel.empty
-  val logicalGraph = LogicalCatalogGraph(testQualifiedGraphName, Schema.empty)
-  val emptySchema: Schema = Schema.empty
+  val logicalGraph = LogicalCatalogGraph(testQualifiedGraphName, PropertyGraphSchema.empty)
+  val emptySchema: PropertyGraphSchema = PropertyGraphSchema.empty
   val emptyGraph = TestGraph(emptySchema)
 
   //  //Helper to create nicer expected results with `asCode`
@@ -85,7 +85,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
     val query =
       """|MATCH (a:Animal:Astronaut)
          |RETURN a""".stripMargin
-    val schema = Schema.empty.withNodePropertyKeys("Animal")().withNodePropertyKeys("Astronaut")()
+    val schema = PropertyGraphSchema.empty.withNodePropertyKeys("Animal")().withNodePropertyKeys("Astronaut")()
     val logicalGraph = LogicalCatalogGraph(testQualifiedGraphName, schema)
 
     val plan = logicalPlan(query, TestGraph(schema))
@@ -197,7 +197,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
   }
 
   describe("insert pattern scans") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys("A")()
       .withNodePropertyKeys("C")()
       .withRelationshipPropertyKeys("B")()
@@ -333,7 +333,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
 
     it("does not insert node rel patterns if not all node label combos are covered") {
       val pattern = NodeRelPattern(CTNode("Person"), CTRelationship("KNOWS"))
-      val schema = Schema.empty
+      val schema = PropertyGraphSchema.empty
         .withNodePropertyKeys("Person")()
         .withNodePropertyKeys("Person", "Employee")()
         .withRelationshipPropertyKeys("KNOWS")()
@@ -356,7 +356,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
 
     it("does not insert node rel patterns if not all rel types are covered") {
       val pattern = NodeRelPattern(CTNode("Person"), CTRelationship("KNOWS"))
-      val schema = Schema.empty
+      val schema = PropertyGraphSchema.empty
         .withNodePropertyKeys("Person")()
         .withRelationshipPropertyKeys("KNOWS")()
         .withRelationshipPropertyKeys("LOVES")()
@@ -375,7 +375,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
 
     it("does not insert triplet patterns if not all node label combos are covered") {
       val pattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Person"))
-      val schema = Schema.empty
+      val schema = PropertyGraphSchema.empty
         .withNodePropertyKeys("Person")()
         .withNodePropertyKeys("Person", "Employee")()
         .withRelationshipPropertyKeys("KNOWS")()
@@ -398,7 +398,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
 
     it("does not insert triplet patterns if not all rel types are covered") {
       val pattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Person"))
-      val schema = Schema.empty
+      val schema = PropertyGraphSchema.empty
         .withNodePropertyKeys("Person")()
         .withRelationshipPropertyKeys("KNOWS")()
         .withRelationshipPropertyKeys("LOVES")()
@@ -446,7 +446,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
   }
 
   case class TestGraph(
-    override val schema: Schema,
+    override val schema: PropertyGraphSchema,
     override val patterns: Set[Pattern] = Set.empty
   ) extends PropertyGraph {
 

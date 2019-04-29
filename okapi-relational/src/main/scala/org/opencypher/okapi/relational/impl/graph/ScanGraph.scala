@@ -27,20 +27,20 @@
 package org.opencypher.okapi.relational.impl.graph
 
 import org.opencypher.okapi.api.graph.{PatternElement, NodePattern, Pattern, RelationshipPattern}
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.io.ElementTable
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
-import org.opencypher.okapi.relational.api.schema.RelationalSchema._
+import org.opencypher.okapi.relational.api.schema.RelationalPropertyGraphSchema._
 import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table}
 import org.opencypher.okapi.relational.impl.operators._
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
 import scala.reflect.runtime.universe.TypeTag
 
-class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[ElementTable[T]], val schema: Schema)
+class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[ElementTable[T]], val schema: PropertyGraphSchema)
   (implicit val session: RelationalCypherSession[T])
   extends RelationalCypherGraph[T] {
 

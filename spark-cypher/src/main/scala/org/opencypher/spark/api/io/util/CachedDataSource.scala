@@ -29,7 +29,7 @@ package org.opencypher.spark.api.io.util
 import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.spark.impl.CAPSConverters._
 
 import scala.collection.mutable
@@ -67,7 +67,7 @@ case class CachedDataSource(
 
   override def hasGraph(name: GraphName): Boolean = cache.contains(name) || dataSource.hasGraph(name)
 
-  override def schema(name: GraphName): Option[Schema] = dataSource.schema(name)
+  override def schema(name: GraphName): Option[PropertyGraphSchema] = dataSource.schema(name)
 
   override def store(name: GraphName, graph: PropertyGraph): Unit = dataSource.store(name, graph)
 

@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.api.graph
 
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
@@ -49,7 +49,7 @@ trait PropertyGraph {
     *
     * @return the schema of this graph.
     */
-  def schema: Schema
+  def schema: PropertyGraphSchema
 
   /**
     * The session in which this graph is managed.

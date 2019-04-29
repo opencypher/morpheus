@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.impl.planning
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.ScalaUtils._
@@ -39,7 +39,7 @@ import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.io.ElementTable
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
-import org.opencypher.okapi.relational.api.schema.RelationalSchema._
+import org.opencypher.okapi.relational.api.schema.RelationalPropertyGraphSchema._
 import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.impl.operators.{ConstructGraph, RelationalOperator}
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner.RelationalOperatorOps
@@ -311,7 +311,7 @@ object ConstructGraphPlanner {
     val scansForCreated = createScans(createdElementScanTypes, inputOp, schema)
     val scansForCloned = createScans(clonedElementScanTypes, inputOp, schema, distinct = true)
 
-    val scanGraphSchema: Schema = computeScanGraphSchema(schema, createdElementScanTypes, clonedElementScanTypes)
+    val scanGraphSchema: PropertyGraphSchema = computeScanGraphSchema(schema, createdElementScanTypes, clonedElementScanTypes)
 
     // Construct the scan graph
     context.session.graphs.create(Some(scanGraphSchema), scansForCreated ++ scansForCloned: _*)
@@ -388,7 +388,7 @@ object ConstructGraphPlanner {
   private def createScans[T <: Table[T] : TypeTag](
     scanElements: Set[(Var, CypherType)],
     inputOp: RelationalOperator[T],
-    schema: Schema,
+    schema: PropertyGraphSchema,
     distinct: Boolean = false
   )(implicit context: RelationalRuntimeContext[T]): Seq[ElementTable[T]] = {
     val groupedScanElements = scanElements.map {
@@ -408,7 +408,7 @@ object ConstructGraphPlanner {
     ct: CypherType,
     vars: Seq[Var],
     inputOp: RelationalOperator[T],
-    schema: Schema,
+    schema: PropertyGraphSchema,
     distinct: Boolean = false
   ): ElementTable[T] = {
 
@@ -451,7 +451,7 @@ object ConstructGraphPlanner {
     extractionVar: Var,
     elementType: CypherType,
     op: RelationalOperator[T],
-    schema: Schema
+    schema: PropertyGraphSchema
   ): RelationalOperator[T] = {
     val targetElement = Var.unnamed(elementType)
     val targetElementHeader = schema.headerForElement(targetElement, exactLabelMatch = true)
@@ -486,10 +486,10 @@ object ConstructGraphPlanner {
   }
 
   private def computeScanGraphSchema[T <: Table[T]](
-    baseSchema: Schema,
+    baseSchema: PropertyGraphSchema,
     createdElementScanTypes: Set[(Var, CypherType)],
     clonedElementScanTypes: Set[(Var, CypherType)]
-  ): Schema = {
+  ): PropertyGraphSchema = {
     val (nodeTypes, relTypes) = (createdElementScanTypes ++ clonedElementScanTypes).partition {
       case (_, _: CTNode) => true
       case _ => false
@@ -503,7 +503,7 @@ object ConstructGraphPlanner {
       case (_, CTRelationship(types, _)) => types
     }.flatten
 
-    Schema.empty
+    PropertyGraphSchema.empty
       .foldLeftOver(scanGraphNodeLabelCombos) {
         case (acc, labelCombo) => acc.withNodePropertyKeys(labelCombo, baseSchema.nodePropertyKeys(labelCombo))
       }

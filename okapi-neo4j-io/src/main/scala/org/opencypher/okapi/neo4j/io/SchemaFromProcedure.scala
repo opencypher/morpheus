@@ -28,7 +28,7 @@ package org.opencypher.okapi.neo4j.io
 
 import org.apache.logging.log4j.scala.Logging
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
+import org.opencypher.okapi.api.schema.{PropertyKeys, PropertyGraphSchema}
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.value.CypherValue.{CypherBoolean, CypherList, CypherString, CypherValue}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, SchemaException}
@@ -51,7 +51,7 @@ object SchemaFromProcedure extends Logging {
     * @param omitImportFailures when set, incompatible properties are omitted from the schema and a warning is logged
     * @return schema for the Neo4j graph
     */
-  def apply(neo4j: Neo4jConfig, omitImportFailures: Boolean): Schema = {
+  def apply(neo4j: Neo4jConfig, omitImportFailures: Boolean): PropertyGraphSchema = {
     neo4j.withSession { implicit session =>
 
       // Checks if the Neo4j instance supports the required schema procedures
@@ -76,12 +76,12 @@ object SchemaFromProcedure extends Logging {
         case Success(true) =>
           val nodeRows = cypher(s"CALL $nodeSchemaProcedure")
           val nodeRowsGroupedByCombo = nodeRows.groupBy(_.labels)
-          val nodeSchema = nodeRowsGroupedByCombo.foldLeft(Schema.empty) { case (currentSchema, (combo, rows)) =>
+          val nodeSchema = nodeRowsGroupedByCombo.foldLeft(PropertyGraphSchema.empty) { case (currentSchema, (combo, rows)) =>
             currentSchema.withNodePropertyKeys(combo, propertyKeysForRows(rows))
           }
           val relRows = cypher(s"CALL $relSchemaProcedure")
           val relRowsGroupedByType = relRows.groupBy(_.relType)
-          val relSchema = relRowsGroupedByType.foldLeft(Schema.empty) { case (currentSchema, (tpe, rows)) =>
+          val relSchema = relRowsGroupedByType.foldLeft(PropertyGraphSchema.empty) { case (currentSchema, (tpe, rows)) =>
             currentSchema.withRelationshipPropertyKeys(tpe, propertyKeysForRows(rows))
           }
           nodeSchema ++ relSchema

@@ -33,7 +33,7 @@ import org.apache.spark.sql.{Column, DataFrame, DataFrameReader, functions}
 import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.conversion.{ElementMapping, NodeMappingBuilder, RelationshipMappingBuilder}
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CTVoid}
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
@@ -110,7 +110,7 @@ case class SqlPropertyGraphDataSource(
 
   private def extractNodeTables(
     ddlGraph: Graph,
-    schema: Schema
+    schema: PropertyGraphSchema
   ): Seq[CAPSElementTable] = {
     ddlGraph.nodeToViewMappings.mapValues(nvm => readTable(nvm.view)).map {
       case (nodeViewKey, df) =>
@@ -130,7 +130,7 @@ case class SqlPropertyGraphDataSource(
 
   private def extractRelationshipTables(
     ddlGraph: Graph,
-    schema: Schema
+    schema: PropertyGraphSchema
   ): Seq[CAPSElementTable] = {
     ddlGraph.edgeToViewMappings.map(evm => evm -> readTable(evm.view)).map {
       case (evm, df) =>
@@ -154,7 +154,7 @@ case class SqlPropertyGraphDataSource(
 
   private def extractNodeRelTables(
     ddlGraph: Graph,
-    schema: Schema,
+    schema: PropertyGraphSchema,
     strategy: IdGenerationStrategy
   ): Seq[CAPSElementTable] = {
     ddlGraph.edgeToViewMappings
@@ -190,7 +190,7 @@ case class SqlPropertyGraphDataSource(
 
   private def extractNode(
     ddlGraph: Graph,
-    schema: Schema,
+    schema: PropertyGraphSchema,
     nodeViewMapping: NodeToViewMapping,
     df: DataFrame
   ): (Map[String, String], Seq[Column]) = {
@@ -215,7 +215,7 @@ case class SqlPropertyGraphDataSource(
 
   private def extractRelationship(
     ddlGraph: Graph,
-    schema: Schema,
+    schema: PropertyGraphSchema,
     evm: EdgeToViewMapping,
     df: DataFrame
   ): (Map[String, String], Seq[Column]) = {
@@ -300,7 +300,7 @@ case class SqlPropertyGraphDataSource(
     mapping: ElementToViewMapping,
     df: DataFrame,
     ddlGraph: Graph,
-    schema: Schema,
+    schema: PropertyGraphSchema,
     maybePrefix: Option[String] = None
   ): Iterable[(String, String, Column)] = {
     val viewKey = mapping.key
@@ -349,7 +349,7 @@ case class SqlPropertyGraphDataSource(
     elementViewKey: ElementViewKey,
     idColumnNames: List[String],
     newIdColumn: String,
-    schema: Schema
+    schema: PropertyGraphSchema
   ): Column = {
     val idColumns = idColumnNames.map(_.toLowerCase.encodeSpecialCharacters).map(dataFrame.col)
     idGenerationStrategy match {

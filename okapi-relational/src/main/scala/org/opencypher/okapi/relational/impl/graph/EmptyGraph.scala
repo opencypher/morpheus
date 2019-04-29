@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.impl.graph
 
 import org.opencypher.okapi.api.graph.Pattern
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
@@ -43,7 +43,7 @@ sealed case class EmptyGraph[T <: Table[T] : TypeTag]()(implicit val session: Re
 
   override type Records = RelationalCypherRecords[T]
 
-  override val schema: Schema = Schema.empty
+  override val schema: PropertyGraphSchema = PropertyGraphSchema.empty
 
   override def cache(): EmptyGraph[T] = this
 

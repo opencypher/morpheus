@@ -27,7 +27,7 @@
 package org.opencypher.okapi.ir.impl
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
@@ -86,7 +86,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   private val propertiesJoined =
     simple ++ Seq("name" -> CTAny, "age" -> CTUnion(CTInteger, CTFloat))
 
-  private val schema: Schema = Schema.empty
+  private val schema: PropertyGraphSchema = PropertyGraphSchema.empty
     .withNodePropertyKeys("Node")(properties : _*)
     .withRelationshipPropertyKeys("REL")(properties: _*)
     .withNodePropertyKeys("Node2")(properties2 : _*)

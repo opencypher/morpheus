@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.relational.api.schema
 
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.{CTBoolean, CTNode, CTRelationship}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.types.CypherTypeUtils._
@@ -34,9 +34,9 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
-object RelationalSchema {
+object RelationalPropertyGraphSchema {
 
-  implicit class SchemaOps(val schema: Schema) {
+  implicit class PropertyGraphSchemaOps(val schema: PropertyGraphSchema) extends AnyVal {
 
     def headerForElement(element: Var, exactLabelMatch: Boolean = false): RecordHeader = {
       element.cypherType match {

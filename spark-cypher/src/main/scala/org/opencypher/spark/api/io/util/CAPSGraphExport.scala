@@ -28,7 +28,7 @@ package org.opencypher.spark.api.io.util
 
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{BinaryType, StructField, StructType}
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.ir.api.expr.{Property, Var}
@@ -40,7 +40,7 @@ import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
 // TODO: Add documentation that describes the canonical table format
 object CAPSGraphExport {
 
-  implicit class CanonicalTableSparkSchema(val schema: Schema) extends AnyVal {
+  implicit class CanonicalTableSparkSchema(val schema: PropertyGraphSchema) extends AnyVal {
 
     def canonicalNodeStructType(labels: Set[String]): StructType = {
       val id = StructField(GraphElement.sourceIdKey, BinaryType, nullable = false)

@@ -33,29 +33,29 @@ import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.impl.util.Version
 import org.scalatest.{FunSpec, Matchers}
 
-class SchemaTest extends ApiBaseTest {
+class PropertyGraphSchemaTest extends ApiBaseTest {
 
   it("lists of void and others") {
-    val s1 = Schema.empty.withNodePropertyKeys("A")("v" -> CTEmptyList)
-    val s2 = Schema.empty.withNodePropertyKeys("A")("v" -> CTList(CTString).nullable)
+    val s1 = PropertyGraphSchema.empty.withNodePropertyKeys("A")("v" -> CTEmptyList)
+    val s2 = PropertyGraphSchema.empty.withNodePropertyKeys("A")("v" -> CTList(CTString).nullable)
 
     val joined = s1 ++ s2
     joined should equal(s2)
   }
 
   it("should provide all labels") {
-    Schema.empty.withNodePropertyKeys("Person")().labels should equal(Set("Person"))
+    PropertyGraphSchema.empty.withNodePropertyKeys("Person")().labels should equal(Set("Person"))
   }
 
   it("should provide all types") {
-    Schema.empty
+    PropertyGraphSchema.empty
       .withRelationshipPropertyKeys("KNOWS")()
       .withRelationshipPropertyKeys("HAS")()
       .relationshipTypes should equal(Set("KNOWS", "HAS"))
   }
 
   it("should give correct node property schema") {
-    val schema = Schema.empty.withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger)
+    val schema = PropertyGraphSchema.empty.withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger)
 
     schema.nodePropertyKeys(Set("NotPerson")) shouldBe empty
     schema.nodePropertyKeys(Set("Person")) should equal(Map("name" -> CTString, "age" -> CTInteger))
@@ -63,7 +63,7 @@ class SchemaTest extends ApiBaseTest {
   }
 
   it("should give correct relationship property schema") {
-    val schema = Schema.empty.withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger, "relative" -> CTBoolean)
+    val schema = PropertyGraphSchema.empty.withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger, "relative" -> CTBoolean)
 
     schema.relationshipPropertyKeys("NOT_KNOWS") shouldBe empty
     schema.relationshipPropertyKeys("KNOWS") should equal(Map("since" -> CTInteger, "relative" -> CTBoolean))
@@ -71,7 +71,7 @@ class SchemaTest extends ApiBaseTest {
   }
 
   it("should get simple implication correct") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys("Foo", "Bar")("prop" -> CTBoolean)
       .withNodePropertyKeys("Person", "Employee")("name" -> CTString, "nbr" -> CTInteger)
       .withNodePropertyKeys("Person")("name" -> CTString)
@@ -88,7 +88,7 @@ class SchemaTest extends ApiBaseTest {
   }
 
   it("should get chained implications correct") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys("Employee", "Person", "Someone", "Human")()
       .withNodePropertyKeys("Person", "Someone", "Human")()
       .withNodePropertyKeys("Human")()
@@ -107,7 +107,7 @@ class SchemaTest extends ApiBaseTest {
   }
 
   it("should get chained combinations correct") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys("Person", "Employee")()
       .withNodePropertyKeys("Person", "Director")()
       .withNodePropertyKeys("Employee", "Director")()
@@ -120,7 +120,7 @@ class SchemaTest extends ApiBaseTest {
   }
 
   it("should get simple combinations correct") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys("Person", "Employee")()
       .withNodePropertyKeys("Dog", "Pet")()
 
@@ -133,7 +133,7 @@ class SchemaTest extends ApiBaseTest {
   }
 
   it("chaining calls should amend types") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys("Foo")("name" -> CTString)
       .withNodePropertyKeys("Foo")("name" -> CTString, "age" -> CTInteger)
       .withRelationshipPropertyKeys("BAR")("p1" -> CTBoolean)
@@ -144,15 +144,15 @@ class SchemaTest extends ApiBaseTest {
   }
 
   it("combining schemas, separate keys") {
-    val schema1 = Schema.empty.withNodePropertyKeys("A")("foo" -> CTString)
-    val schema2 = Schema.empty.withNodePropertyKeys("B")("bar" -> CTString)
-    val schema3 = Schema.empty
+    val schema1 = PropertyGraphSchema.empty.withNodePropertyKeys("A")("foo" -> CTString)
+    val schema2 = PropertyGraphSchema.empty.withNodePropertyKeys("B")("bar" -> CTString)
+    val schema3 = PropertyGraphSchema.empty
       .withNodePropertyKeys("C")("baz" -> CTString)
       .withNodePropertyKeys("A", "C")("baz" -> CTString)
       .withNodePropertyKeys("A", "C", "X")("baz" -> CTString)
 
     schema1 ++ schema2 ++ schema3 should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("foo" -> CTString)
         .withNodePropertyKeys("B")("bar" -> CTString)
         .withNodePropertyKeys("C")("baz" -> CTString)
@@ -161,50 +161,50 @@ class SchemaTest extends ApiBaseTest {
   }
 
   it("combining schemas, key subset") {
-    val schema1 = Schema.empty
+    val schema1 = PropertyGraphSchema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
-    val schema2 = Schema.empty
+    val schema2 = PropertyGraphSchema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString, "baz" -> CTString)
 
     schema1 ++ schema2 should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString, "baz" -> CTString.nullable))
   }
 
   it("combining schemas, partial key overlap") {
-    val schema1 = Schema.empty
+    val schema1 = PropertyGraphSchema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
-    val schema2 = Schema.empty
+    val schema2 = PropertyGraphSchema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "baz" -> CTString)
 
     schema1 ++ schema2 should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString.nullable, "baz" -> CTString.nullable))
   }
 
   it("combining type conflicting schemas should work across nullability") {
-    val schema1 = Schema.empty
+    val schema1 = PropertyGraphSchema.empty
       .withNodePropertyKeys("A")("foo" -> CTString.nullable, "bar" -> CTString)
-    val schema2 = Schema.empty
+    val schema2 = PropertyGraphSchema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString.nullable)
 
     schema1 ++ schema2 should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("foo" -> CTString.nullable, "bar" -> CTString.nullable))
   }
 
   it("combining schemas with restricting label implications") {
-    val schema1 = Schema.empty
+    val schema1 = PropertyGraphSchema.empty
       .withNodePropertyKeys("A", "B", "C")()
       .withNodePropertyKeys("B", "C")()
       .withNodePropertyKeys("A", "E", "B", "C")()
-    val schema2 = Schema.empty
+    val schema2 = PropertyGraphSchema.empty
       .withNodePropertyKeys("B", "C", "D")()
       .withNodePropertyKeys("C", "D")()
       .withNodePropertyKeys("B", "F", "C", "D")()
 
     schema1 ++ schema2 should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withNodePropertyKeys("A", "B", "C")()
         .withNodePropertyKeys("B", "C")()
         .withNodePropertyKeys("A", "E", "B", "C")()
@@ -214,7 +214,7 @@ class SchemaTest extends ApiBaseTest {
   }
 
   it("extract node schema") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
       .withNodePropertyKeys("Employee", "Person")("name" -> CTString, "salary" -> CTInteger)
       .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
@@ -222,24 +222,24 @@ class SchemaTest extends ApiBaseTest {
       .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
 
     schema.forNode(Set("Person")) should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withNodePropertyKeys("Person")("name" -> CTString)
         .withNodePropertyKeys("Employee", "Person")("name" -> CTString, "salary" -> CTInteger)
     )
 
     schema.forNode(Set("Dog")) should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
     )
 
     schema.forNode(Set("Dog", "Pet")) should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
     )
   }
 
   it("forRelationship") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
       .withNodePropertyKeys("Person", "Employee")("name" -> CTString)
       .withNodePropertyKeys("Employee")("name" -> CTString)
@@ -251,12 +251,12 @@ class SchemaTest extends ApiBaseTest {
       .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
 
     schema.forRelationship(CTRelationship("KNOWS")) should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
     )
 
     schema.forRelationship(CTRelationship) should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
         .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)
         .withRelationshipPropertyKeys("NEEDS")("rating" -> CTFloat)
@@ -264,14 +264,14 @@ class SchemaTest extends ApiBaseTest {
     )
 
     schema.forRelationship(CTRelationship("KNOWS", "LOVES")) should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
         .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)
     )
   }
 
   it("handles empty label set") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys(Set.empty[String], Map("name" -> CTString))
       .withNodePropertyKeys("A")("name" -> CTInteger)
 
@@ -280,7 +280,7 @@ class SchemaTest extends ApiBaseTest {
   }
 
   it("get node key type with all given semantics") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys(Set("A"), Map("a" -> CTInteger, "b" -> CTString, "c" -> CTFloat, "d" -> CTFloat.nullable))
       .withNodePropertyKeys(Set.empty[String], Map("a" -> CTString))
 
@@ -292,7 +292,7 @@ class SchemaTest extends ApiBaseTest {
   }
 
   it("get rel key type") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withRelationshipPropertyKeys("A")("a" -> CTInteger, "b" -> CTString, "c" -> CTFloat, "d" -> CTFloat.nullable)
       .withRelationshipPropertyKeys("B")(
         "a" -> CTFloat,
@@ -311,7 +311,7 @@ class SchemaTest extends ApiBaseTest {
   }
 
   it("get all keys") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys(Set.empty[String], Map("a" -> CTString, "c" -> CTString, "d" -> CTString.nullable, "f" -> CTString))
       .withNodePropertyKeys("A")("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger)
       .withNodePropertyKeys("B")("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger, "f" -> CTBoolean)
@@ -327,7 +327,7 @@ class SchemaTest extends ApiBaseTest {
   }
 
   it("get keys for") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys(Set.empty[String], Map("a" -> CTString, "c" -> CTString, "d" -> CTString.nullable, "f" -> CTString))
       .withNodePropertyKeys("A")("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger)
       .withNodePropertyKeys("B")("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger)
@@ -338,7 +338,7 @@ class SchemaTest extends ApiBaseTest {
   }
 
   it("get keys for label combinations") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys(Set.empty[String], Map("a" -> CTString, "c" -> CTString, "d" -> CTString.nullable, "f" -> CTString))
       .withNodePropertyKeys("A")("b" -> CTInteger, "c" -> CTString, "e" -> CTString, "f" -> CTInteger)
       .withNodePropertyKeys("B")("b" -> CTFloat, "c" -> CTString, "e" -> CTInteger)
@@ -351,66 +351,66 @@ class SchemaTest extends ApiBaseTest {
   }
 
   it("isEmpty") {
-    Schema.empty.isEmpty shouldBe true
-    (Schema.empty ++ Schema.empty).isEmpty shouldBe true
-    val empty = Schema.empty
+    PropertyGraphSchema.empty.isEmpty shouldBe true
+    (PropertyGraphSchema.empty ++ PropertyGraphSchema.empty).isEmpty shouldBe true
+    val empty = PropertyGraphSchema.empty
     empty.isEmpty shouldBe true
-    (empty ++ Schema.empty).isEmpty shouldBe true
+    (empty ++ PropertyGraphSchema.empty).isEmpty shouldBe true
 
-    Schema.empty.withNodePropertyKeys("label")().isEmpty shouldBe false
-    Schema.empty.withRelationshipPropertyKeys("type")("name" -> CTFloat).isEmpty shouldBe false
+    PropertyGraphSchema.empty.withNodePropertyKeys("label")().isEmpty shouldBe false
+    PropertyGraphSchema.empty.withRelationshipPropertyKeys("type")("name" -> CTFloat).isEmpty shouldBe false
   }
 
   it("should serialize and deserialize a schema") {
 
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys(Set("A"), PropertyKeys("foo" -> CTString, "bar" -> CTList(CTString.nullable)))
       .withNodePropertyKeys(Set("A", "B"), PropertyKeys("foo" -> CTString, "bar" -> CTInteger))
       .withRelationshipPropertyKeys("FOO", PropertyKeys.empty)
 
     val serialized = schema.toJson
 
-    schema should equal(Schema.fromJson(serialized))
+    schema should equal(PropertyGraphSchema.fromJson(serialized))
 
   }
 
   it("concatenating schemas should make missing relationship properties nullable") {
-    val schema1 = Schema.empty
+    val schema1 = PropertyGraphSchema.empty
       .withRelationshipPropertyKeys("FOO")()
 
-    val schema2 = Schema.empty
+    val schema2 = PropertyGraphSchema.empty
       .withRelationshipPropertyKeys("FOO")("p" -> CTString)
 
     val schemaSum = schema1 ++ schema2
 
     schemaSum should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withRelationshipPropertyKeys("FOO")("p" -> CTString.nullable)
     )
   }
 
   it("concatenating schemas should make missing node properties nullable") {
-    val schema1 = Schema.empty
+    val schema1 = PropertyGraphSchema.empty
       .withNodePropertyKeys("Foo")()
 
-    val schema2 = Schema.empty
+    val schema2 = PropertyGraphSchema.empty
       .withNodePropertyKeys("Foo")("p" -> CTString)
 
     val schemaSum = schema1 ++ schema2
 
     schemaSum should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withNodePropertyKeys("Foo")("p" -> CTString.nullable)
     )
   }
 
   it("concatenates explicit schema patterns") {
-    val schema1 = Schema.empty
+    val schema1 = PropertyGraphSchema.empty
       .withNodePropertyKeys("Foo")()
       .withRelationshipPropertyKeys("REL")()
       .withSchemaPatterns(SchemaPattern("Foo", "REL", "Foo"))
 
-    val schema2 = Schema.empty
+    val schema2 = PropertyGraphSchema.empty
       .withNodePropertyKeys("Bar")()
       .withRelationshipPropertyKeys("REL")()
       .withSchemaPatterns(SchemaPattern("Bar", "REL", "Bar"))
@@ -418,7 +418,7 @@ class SchemaTest extends ApiBaseTest {
     val schemaSum = schema1 ++ schema2
 
     schemaSum should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withNodePropertyKeys("Foo")()
         .withRelationshipPropertyKeys("REL")()
         .withNodePropertyKeys("Bar")()
@@ -429,7 +429,7 @@ class SchemaTest extends ApiBaseTest {
   }
 
   it("serializes to/from json when patterns and keys are not present") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withRelationshipPropertyKeys("FOO")("p" -> CTString)
       .withNodePropertyKeys("BAR")("q" -> CTInteger)
 
@@ -458,13 +458,13 @@ class SchemaTest extends ApiBaseTest {
          |    ]
          |}""".stripMargin)
 
-    val deserialized = Schema.fromJson(serialized)
+    val deserialized = PropertyGraphSchema.fromJson(serialized)
 
     deserialized should equal(schema)
   }
 
   it("serializes to/from json when patterns and keys are present") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withRelationshipPropertyKeys("FOO")("p" -> CTString)
       .withNodePropertyKeys("BAR")("q" -> CTInteger)
       .withSchemaPatterns(SchemaPattern(Set("BAR"), "FOO", Set("BAR")))
@@ -517,29 +517,29 @@ class SchemaTest extends ApiBaseTest {
          |    }
          |}""".stripMargin)
 
-    val deserialized = Schema.fromJson(serialized)
+    val deserialized = PropertyGraphSchema.fromJson(serialized)
 
     deserialized should equal(schema)
   }
 
   describe("pattern schemas") {
     it("is empty if the schema is empty") {
-      val schema = Schema.empty
+      val schema = PropertyGraphSchema.empty
       schema.schemaPatterns shouldBe empty
     }
 
     it("is empty if there are no relationships") {
-      val schema = Schema.empty.withNodePropertyKeys("A")()
+      val schema = PropertyGraphSchema.empty.withNodePropertyKeys("A")()
       schema.schemaPatterns shouldBe empty
     }
 
     it("is empty if there are no nodes") {
-      val schema = Schema.empty.withRelationshipPropertyKeys("A")()
+      val schema = PropertyGraphSchema.empty.withRelationshipPropertyKeys("A")()
       schema.schemaPatterns shouldBe empty
     }
 
     it("gives all the inferred patterns") {
-      val schema = Schema.empty
+      val schema = PropertyGraphSchema.empty
         .withNodePropertyKeys("A")()
         .withNodePropertyKeys("B")()
         .withRelationshipPropertyKeys("REL")()
@@ -553,7 +553,7 @@ class SchemaTest extends ApiBaseTest {
     }
 
     it("returns the explicit patterns if any were given") {
-      val schema = Schema.empty
+      val schema = PropertyGraphSchema.empty
         .withNodePropertyKeys("A")()
         .withNodePropertyKeys("B")()
         .withRelationshipPropertyKeys("REL")()
@@ -566,13 +566,13 @@ class SchemaTest extends ApiBaseTest {
 
     it("throws a SchemaException when adding a schema pattern into an empty schema") {
       a[SchemaException] should be thrownBy {
-        Schema.empty.withSchemaPatterns(SchemaPattern("A", "REL", "B"))
+        PropertyGraphSchema.empty.withSchemaPatterns(SchemaPattern("A", "REL", "B"))
       }
     }
 
     it("throws a SchemaException when adding a schema pattern for unknown start node labels") {
       a[SchemaException] should be thrownBy {
-        Schema.empty
+        PropertyGraphSchema.empty
           .withNodePropertyKeys("A")()
           .withRelationshipPropertyKeys("REL")()
           .withSchemaPatterns(SchemaPattern("A", "REL", "B"))
@@ -581,7 +581,7 @@ class SchemaTest extends ApiBaseTest {
 
     it("throws a SchemaException when adding a schema pattern for unknown end node labels") {
       a[SchemaException] should be thrownBy {
-        Schema.empty
+        PropertyGraphSchema.empty
           .withNodePropertyKeys("B")()
           .withRelationshipPropertyKeys("REL")()
           .withSchemaPatterns(SchemaPattern("A", "REL", "B"))
@@ -590,7 +590,7 @@ class SchemaTest extends ApiBaseTest {
 
     it("throws a SchemaException when adding a schema pattern for unknown rel type") {
       a[SchemaException] should be thrownBy {
-        Schema.empty
+        PropertyGraphSchema.empty
           .withNodePropertyKeys("A")()
           .withNodePropertyKeys("B")()
           .withSchemaPatterns(SchemaPattern("A", "REL", "B"))
@@ -605,7 +605,7 @@ class SchemaTest extends ApiBaseTest {
     val CDRel1A = SchemaPattern(Set("C", "D"), "REL1", Set("A"))
     val emptyRel1Empty = SchemaPattern(Set.empty[String], "REL1", Set.empty[String])
 
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys("A")()
       .withNodePropertyKeys("B")()
       .withNodePropertyKeys("C", "D")()
@@ -695,14 +695,14 @@ class SchemaTest extends ApiBaseTest {
 
   describe("element keys") {
     it("adds node keys") {
-      val schema = Schema.empty
+      val schema = PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
         .withNodeKey("A", Set("foo", "bar"))
       schema.nodeKeys shouldEqual Map("A" -> Set("foo", "bar"))
     }
 
     it("adds relationship keys") {
-      val schema = Schema.empty
+      val schema = PropertyGraphSchema.empty
         .withRelationshipPropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
         .withRelationshipKey("A", Set("foo", "bar"))
       schema.relationshipKeys shouldEqual Map("A" -> Set("foo", "bar"))
@@ -710,18 +710,18 @@ class SchemaTest extends ApiBaseTest {
 
     it("fails to add unknown element keys") {
       a[SchemaException] shouldBe thrownBy {
-        Schema.empty.withNodeKey("A", Set.empty)
+        PropertyGraphSchema.empty.withNodeKey("A", Set.empty)
       }
       a[SchemaException] shouldBe thrownBy {
-        Schema.empty.withRelationshipKey("A", Set.empty)
+        PropertyGraphSchema.empty.withRelationshipKey("A", Set.empty)
       }
     }
 
     it("merges overlapping keys during schema merge") {
-      val schema1 = Schema.empty
+      val schema1 = PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("foo" -> CTString)
         .withNodeKey("A", Set("foo"))
-      val schema2 = Schema.empty
+      val schema2 = PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("bar" -> CTString)
         .withNodeKey("A", Set("bar"))
       val joinedSchema = schema1 ++ schema2
@@ -731,7 +731,7 @@ class SchemaTest extends ApiBaseTest {
 
     it("fails if a node key refers to a non-existing label") {
       an[SchemaException] shouldBe thrownBy {
-        Schema.empty
+        PropertyGraphSchema.empty
           .withNodePropertyKeys("A")("foo" -> CTString)
           .withNodeKey("B", Set("foo"))
       }
@@ -739,7 +739,7 @@ class SchemaTest extends ApiBaseTest {
 
     it("fails if a node key refers to a non-existing property key for the label") {
       an[SchemaException] shouldBe thrownBy {
-        Schema.empty
+        PropertyGraphSchema.empty
           .withNodePropertyKeys("A")("foo" -> CTString)
           .withNodeKey("A", Set("bar"))
       }
@@ -747,7 +747,7 @@ class SchemaTest extends ApiBaseTest {
 
     it("fails if a node key refers to a nullable property key for the label") {
       an[SchemaException] shouldBe thrownBy {
-        Schema.empty
+        PropertyGraphSchema.empty
           .withNodePropertyKeys("A")("foo" -> CTString.nullable)
           .withNodeKey("A", Set("foo"))
       }
@@ -756,7 +756,7 @@ class SchemaTest extends ApiBaseTest {
 
     it("fails if a relationship key refers to a non-existing label") {
       an[SchemaException] shouldBe thrownBy {
-        Schema.empty
+        PropertyGraphSchema.empty
           .withRelationshipPropertyKeys("A")("foo" -> CTString)
           .withRelationshipKey("B", Set("foo"))
       }
@@ -764,7 +764,7 @@ class SchemaTest extends ApiBaseTest {
 
     it("fails if a relationship key refers to a non-existing property key for the label") {
       an[SchemaException] shouldBe thrownBy {
-        Schema.empty
+        PropertyGraphSchema.empty
           .withRelationshipPropertyKeys("A")("foo" -> CTString)
           .withRelationshipKey("A", Set("bar"))
       }
@@ -772,7 +772,7 @@ class SchemaTest extends ApiBaseTest {
 
     it("fails if a relationship key refers to a nullable property key for the label") {
       an[SchemaException] shouldBe thrownBy {
-        Schema.empty
+        PropertyGraphSchema.empty
           .withRelationshipPropertyKeys("A")("foo" -> CTString.nullable)
           .withRelationshipKey("A", Set("foo"))
       }
@@ -789,28 +789,28 @@ class SchemaTest extends ApiBaseTest {
 
     it("it allows to read compatible schema versions from string") {
       Seq(
-        Schema.CURRENT_VERSION.major.toString,
-        s"${Schema.CURRENT_VERSION.major}.0",
-        s"${Schema.CURRENT_VERSION.major}.5"
+        PropertyGraphSchema.CURRENT_VERSION.major.toString,
+        s"${PropertyGraphSchema.CURRENT_VERSION.major}.0",
+        s"${PropertyGraphSchema.CURRENT_VERSION.major}.5"
       ).foreach { v =>
-        Schema.fromJson(schemaJson(Version(v)))
+        PropertyGraphSchema.fromJson(schemaJson(Version(v)))
       }
     }
 
     it("raises an error when the version is incompatible") {
       Seq(
-        (Schema.CURRENT_VERSION.major + 1).toString,
-        s"${Schema.CURRENT_VERSION.major + 1}.0",
-        s"${Schema.CURRENT_VERSION.major - 1}.5"
+        (PropertyGraphSchema.CURRENT_VERSION.major + 1).toString,
+        s"${PropertyGraphSchema.CURRENT_VERSION.major + 1}.0",
+        s"${PropertyGraphSchema.CURRENT_VERSION.major - 1}.5"
       ).foreach { v =>
         an[SchemaException] shouldBe thrownBy {
-          Schema.fromJson(schemaJson(Version(v)))
+          PropertyGraphSchema.fromJson(schemaJson(Version(v)))
         }
       }
     }
   }
 
-  private def allNodePropertyKeys(schema: Schema): PropertyKeys = {
+  private def allNodePropertyKeys(schema: PropertyGraphSchema): PropertyKeys = {
     val keyToTypes = schema.allCombinations
       .map(schema.nodePropertyKeys)
       .toSeq

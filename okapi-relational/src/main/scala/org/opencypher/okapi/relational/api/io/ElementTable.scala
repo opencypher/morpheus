@@ -28,7 +28,7 @@ package org.opencypher.okapi.relational.api.io
 
 import org.opencypher.okapi.api.graph.{SourceEndNodeKey, SourceIdKey, SourceStartNodeKey}
 import org.opencypher.okapi.api.io.conversion.ElementMapping
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.PropertyKey
@@ -44,7 +44,7 @@ trait ElementTable[T <: Table[T]] extends RelationalCypherRecords[T] {
 
   verify()
 
-  def schema: Schema = {
+  def schema: PropertyGraphSchema = {
     mapping.pattern.elements.map { element =>
       element.cypherType match {
         case CTNode(impliedTypes, _) =>
@@ -52,7 +52,7 @@ trait ElementTable[T <: Table[T]] extends RelationalCypherRecords[T] {
             case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
           }
 
-          Schema.empty.withNodePropertyKeys(impliedTypes.toSeq: _*)(propertyKeys: _*)
+          PropertyGraphSchema.empty.withNodePropertyKeys(impliedTypes.toSeq: _*)(propertyKeys: _*)
 
         case CTRelationship(relTypes, _) =>
 
@@ -60,7 +60,7 @@ trait ElementTable[T <: Table[T]] extends RelationalCypherRecords[T] {
             case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
           }
 
-          relTypes.foldLeft(Schema.empty) {
+          relTypes.foldLeft(PropertyGraphSchema.empty) {
             case (partialSchema, relType) => partialSchema.withRelationshipPropertyKeys(relType)(propertyKeys: _*)
           }
 

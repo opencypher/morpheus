@@ -32,7 +32,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.{Element, CypherValue}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException}
@@ -70,7 +70,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with ElementTableCreati
 
   override def name: String = "CAPSScanGraphFactory"
 
-  private def extractEmbeddings(pattern: Pattern, graph: InMemoryTestGraph, schema: Schema)
+  private def extractEmbeddings(pattern: Pattern, graph: InMemoryTestGraph, schema: PropertyGraphSchema)
     (implicit caps: CAPSSession): Seq[Map[PatternElement, Element[Long]]] = {
 
     val candidates = pattern.elements.map { element =>
@@ -120,7 +120,7 @@ object CAPSScanGraphFactory extends CAPSTestGraphFactory with ElementTableCreati
   private def createElementTable(
     pattern: Pattern,
     embeddings: Seq[Map[PatternElement, Element[Long]]],
-    schema: Schema
+    schema: PropertyGraphSchema
   )(implicit caps: CAPSSession): CAPSElementTable = {
 
     val unitData: Seq[Seq[Any]] = Seq(embeddings.indices.map(_ => Seq.empty[Any]): _*)

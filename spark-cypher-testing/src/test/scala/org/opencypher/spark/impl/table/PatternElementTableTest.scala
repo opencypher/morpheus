@@ -32,7 +32,7 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.DecimalType
 import org.opencypher.okapi.api.graph.Pattern
 import org.opencypher.okapi.api.io.conversion.{ElementMapping, NodeMappingBuilder, RelationshipMappingBuilder}
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
@@ -112,7 +112,7 @@ class PatternElementTableTest extends CAPSTestSuite {
     val nodeTable = CAPSElementTable.create(nodeMapping, df)
 
     nodeTable.schema should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withNodePropertyKeys("A", "B")("foo" -> CTString.nullable, "bar" -> CTInteger))
   }
 
@@ -139,7 +139,7 @@ class PatternElementTableTest extends CAPSTestSuite {
     val relationshipTable = CAPSElementTable.create(relMapping, df)
 
     relationshipTable.schema should equal(
-      Schema.empty
+      PropertyGraphSchema.empty
         .withRelationshipPropertyKeys("A")("foo" -> CTString.nullable, "bar" -> CTInteger))
   }
 
@@ -176,7 +176,7 @@ class PatternElementTableTest extends CAPSTestSuite {
       val nodeTable = CAPSElementTable.create(nodeMapping, df)
 
       nodeTable.schema should equal(
-        Schema.empty
+        PropertyGraphSchema.empty
           .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "bar" -> CTFloat))
 
       nodeTable.records.df.collect().toSet should equal(Set(Row(49L.encodeAsCAPSId, 23.1f.toDouble, 10)))
@@ -225,7 +225,7 @@ class PatternElementTableTest extends CAPSTestSuite {
 
     val nodeTable = CAPSNodeTable(Set("Person"), df)
 
-    nodeTable.schema should equal(Schema.empty
+    nodeTable.schema should equal(PropertyGraphSchema.empty
       .withNodePropertyKeys("Person")(
         "name" -> CTString.nullable,
         "birthYear" -> CTInteger,
@@ -239,7 +239,7 @@ class PatternElementTableTest extends CAPSTestSuite {
 
     val relationshipTable = CAPSRelationshipTable("KNOWS", df)
 
-    relationshipTable.schema should equal(Schema.empty
+    relationshipTable.schema should equal(PropertyGraphSchema.empty
       .withRelationshipPropertyKeys("KNOWS")(
         "name" -> CTString.nullable,
         "birthYear" -> CTInteger,

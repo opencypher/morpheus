@@ -30,7 +30,7 @@ import org.apache.spark.sql.functions
 import org.apache.spark.sql.types.{LongType, StructField, StructType}
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.api.schema.{PropertyKeys, Schema}
+import org.opencypher.okapi.api.schema.{PropertyKeys, PropertyGraphSchema}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.spark.api.CAPSSession
 import org.opencypher.spark.api.io.GraphElement.sourceIdKey
@@ -47,7 +47,7 @@ object EdgeListDataSource {
 
   val GRAPH_NAME = GraphName("graph")
 
-  val SCHEMA: Schema = CAPSSchema.empty
+  val SCHEMA: PropertyGraphSchema = CAPSSchema.empty
     .withNodePropertyKeys(Set(NODE_LABEL), PropertyKeys.empty)
     .withRelationshipPropertyKeys(REL_TYPE, PropertyKeys.empty)
 }
@@ -93,7 +93,7 @@ case class EdgeListDataSource(path: String, options: Map[String, String] = Map.e
     caps.graphs.create(CAPSNodeTable(Set(NODE_LABEL), rawNodes), CAPSRelationshipTable(REL_TYPE, rawRels))
   }
 
-  override def schema(name: GraphName): Option[Schema] = Some(SCHEMA)
+  override def schema(name: GraphName): Option[PropertyGraphSchema] = Some(SCHEMA)
 
   override def store(name: GraphName, graph: PropertyGraph): Unit =
     throw UnsupportedOperationException("Storing an edge list is not supported")

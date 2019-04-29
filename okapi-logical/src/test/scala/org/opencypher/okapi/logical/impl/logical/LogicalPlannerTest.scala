@@ -28,7 +28,7 @@ package org.opencypher.okapi.logical.impl.logical
 
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api._
@@ -132,12 +132,12 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
           Outgoing,
           PatternScan.nodeScan(
             varA,
-            Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
+            Start(LogicalCatalogGraph(testQualifiedGraphName, PropertyGraphSchema.empty), emptySqm),
             SolvedQueryModel(Set(irFieldA), Set(HasLabel(varA, Label("Administrator"))))
           ),
           PatternScan.nodeScan(
             varG,
-            Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
+            Start(LogicalCatalogGraph(testQualifiedGraphName, PropertyGraphSchema.empty), emptySqm),
             SolvedQueryModel(Set(irFieldG), Set(HasLabel(varG, Label("Group"))))
           ),
           SolvedQueryModel(
@@ -170,7 +170,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
   }
 
   it("plans query with type information") {
-    implicit val schema: Schema = Schema.empty
+    implicit val schema: PropertyGraphSchema = PropertyGraphSchema.empty
       .withNodePropertyKeys("Group")("name" -> CTString)
       .withNodePropertyKeys("Administrator")("name" -> CTFloat)
 
@@ -251,7 +251,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
         Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))),
         PatternScan.nodeScan(
           varA2,
-          Start(LogicalCatalogGraph(testQualifiedGraphName, Schema.empty), emptySqm),
+          Start(LogicalCatalogGraph(testQualifiedGraphName, PropertyGraphSchema.empty), emptySqm),
           SolvedQueryModel(Set(irFieldA), Set())
         ),
         SolvedQueryModel(
@@ -267,13 +267,13 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
 
   private val planner = new LogicalPlanner(new LogicalOperatorProducer)
 
-  private def plan(ir: CypherStatement, schema: Schema = Schema.empty): LogicalOperator =
+  private def plan(ir: CypherStatement, schema: PropertyGraphSchema = PropertyGraphSchema.empty): LogicalOperator =
     plan(ir, schema, testGraphName -> schema)
 
   private def plan(
     ir: CypherStatement,
-    ambientSchema: Schema,
-    graphWithSchema: (GraphName, Schema)*
+    ambientSchema: PropertyGraphSchema,
+    graphWithSchema: (GraphName, PropertyGraphSchema)*
   ): LogicalOperator = {
     val withAmbientGraph = graphWithSchema :+ (testGraphName -> ambientSchema)
 
@@ -305,7 +305,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
     }
   }
 
-  def graphSource(graphWithSchema: (GraphName, Schema)*): PropertyGraphDataSource = {
+  def graphSource(graphWithSchema: (GraphName, PropertyGraphSchema)*): PropertyGraphDataSource = {
     import org.mockito.Mockito.when
 
     val graphSource = mock[PropertyGraphDataSource]

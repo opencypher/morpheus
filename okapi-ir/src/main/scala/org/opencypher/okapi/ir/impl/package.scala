@@ -30,7 +30,7 @@ import cats.data.State
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.atnos.eff.syntax.all._
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
@@ -56,9 +56,9 @@ package object impl {
   def error[R: _mayFail : _hasContext, A](err: IRBuilderError)(v: A): Eff[R, A] =
     left[R, IRBuilderError, BlockRegistry](err) >> pure(v)
 
-  implicit final class RichSchema(schema: Schema) {
+  implicit final class RichSchema(schema: PropertyGraphSchema) {
 
-    def forElementType(cypherType: CypherType): Schema = cypherType match {
+    def forElementType(cypherType: CypherType): PropertyGraphSchema = cypherType match {
       case CTNode(labels, _) =>
         schema.forNode(labels)
       case r: CTRelationship =>
@@ -66,14 +66,14 @@ package object impl {
       case x => throw IllegalArgumentException("element type", x)
     }
 
-    def addLabelsToCombo(labels: Set[String], combo: Set[String]): Schema = {
+    def addLabelsToCombo(labels: Set[String], combo: Set[String]): PropertyGraphSchema = {
       val labelsWithAddition = combo ++ labels
       schema
         .dropPropertiesFor(combo)
         .withNodePropertyKeys(labelsWithAddition, schema.nodePropertyKeys(combo))
     }
 
-    def addPropertyToElement(propertyKey: String, propertyType: CypherType, elementType: CypherType): Schema = {
+    def addPropertyToElement(propertyKey: String, propertyType: CypherType, elementType: CypherType): PropertyGraphSchema = {
       elementType match {
         case CTNode(labels, _) =>
           val allRelevantLabelCombinations = schema.combinationsFor(labels)

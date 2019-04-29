@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.impl.graph
 
 import org.opencypher.okapi.api.graph.Pattern
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
@@ -48,7 +48,7 @@ final case class PrefixedGraph[T <: Table[T]](graph: RelationalCypherGraph[T], p
 
   override def tables: Seq[T] = graph.tables
 
-  override lazy val schema: Schema = graph.schema
+  override lazy val schema: PropertyGraphSchema = graph.schema
 
   override def toString = s"PrefixedGraph(graph=$graph)"
 

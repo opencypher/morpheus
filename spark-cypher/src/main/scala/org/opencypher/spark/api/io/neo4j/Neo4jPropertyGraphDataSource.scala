@@ -33,11 +33,11 @@ import org.apache.spark.unsafe.types.CalendarInterval
 import org.neo4j.driver.v1.{Value, Values}
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.schema.LabelPropertyMap._
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherList
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
-import org.opencypher.okapi.impl.schema.SchemaImpl
+import org.opencypher.okapi.impl.schema.PropertyGraphSchemaImpl
 import org.opencypher.okapi.ir.api.expr.{EndNode, Property, StartNode}
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
@@ -61,7 +61,7 @@ import scala.concurrent.{Await, Future}
 
 case class Neo4jPropertyGraphDataSource(
   override val config: Neo4jConfig,
-  maybeSchema: Option[Schema] = None,
+  maybeSchema: Option[PropertyGraphSchema] = None,
   override val omitIncompatibleProperties: Boolean = false
 )(implicit val caps: CAPSSession) extends AbstractNeo4jDataSource with Logging {
 
@@ -88,7 +88,7 @@ case class Neo4jPropertyGraphDataSource(
     metaLabelGraphNames
   }
 
-  private lazy val entireGraphSchema: Schema = {
+  private lazy val entireGraphSchema: PropertyGraphSchema = {
     maybeSchema.getOrElse(super.readSchema(entireGraphName))
   }
 
@@ -100,7 +100,7 @@ case class Neo4jPropertyGraphDataSource(
         val containsMetaLabel = entireGraphSchema.labelPropertyMap.filterForLabels(metaLabel)
         val cleanLabelPropertyMap = containsMetaLabel.withoutMetaLabel(metaLabel).withoutMetaProperty
         val cleanRelTypePropertyMap = entireGraphSchema.relTypePropertyMap.withoutMetaProperty
-        SchemaImpl(cleanLabelPropertyMap, cleanRelTypePropertyMap)
+        PropertyGraphSchemaImpl(cleanLabelPropertyMap, cleanRelTypePropertyMap)
     }
     filteredSchema.asCaps
   }

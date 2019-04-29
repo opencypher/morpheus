@@ -26,14 +26,14 @@
  */
 package org.opencypher.okapi.neo4j.io
 
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.testing.BaseTestSuite
 
 class PatternElementReaderTest extends BaseTestSuite {
 
-  private val schema = Schema.empty
+  private val schema = PropertyGraphSchema.empty
     .withNodePropertyKeys("A")("foo" -> CTInteger, "bar" -> CTString.nullable)
     .withNodePropertyKeys("B")()
     .withNodePropertyKeys(s"${metaPrefix}C")()

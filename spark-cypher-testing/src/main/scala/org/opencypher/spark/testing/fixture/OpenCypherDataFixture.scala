@@ -41,7 +41,7 @@
   */
 package org.opencypher.spark.testing.fixture
 
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.spark.schema.CAPSSchema
 import org.opencypher.spark.schema.CAPSSchema._
@@ -118,7 +118,7 @@ trait OpenCypherDataFixture extends TestDataFixture {
 
   val nbrRels = 28
 
-  val schema: CAPSSchema = Schema.empty
+  val schema: CAPSSchema = PropertyGraphSchema.empty
     .withNodePropertyKeys("Person")("name" -> CTString, "birthyear" -> CTInteger)
     .withNodePropertyKeys("Person", "Actor")("name" -> CTString, "birthyear" -> CTInteger)
     .withNodePropertyKeys("City")("name" -> CTString)

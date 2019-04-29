@@ -29,7 +29,7 @@ package org.opencypher.spark.api.io.sql
 import org.opencypher.graphddl.GraphDdlParser.parseDdl
 import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph.GraphName
-import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
+import org.opencypher.okapi.api.schema.{PropertyGraphSchema, SchemaPattern}
 import org.opencypher.okapi.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
@@ -53,7 +53,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
           | (Book),
           | (Person)-[READS]->(Book)
           |)
-        """.stripMargin).graphs(GraphName("myGraph")).graphType.asOkapiSchema should equal(Schema.empty
+        """.stripMargin).graphs(GraphName("myGraph")).graphType.asOkapiSchema should equal(PropertyGraphSchema.empty
         .withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger)
         .withNodePropertyKeys("Book")("title" -> CTString)
         .withRelationshipPropertyKeys("READS")("rating" -> CTFloat)
@@ -72,7 +72,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
           |  (A)-[R]->(A),
           |  (A, B)-[R]->(A)
           |)
-        """.stripMargin).graphs(GraphName("myGraph")).graphType.asOkapiSchema should equal(Schema.empty
+        """.stripMargin).graphs(GraphName("myGraph")).graphType.asOkapiSchema should equal(PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("x" -> CTString)
         .withNodePropertyKeys("A", "B")("x" -> CTString, "y" -> CTString)
         .withRelationshipPropertyKeys("R")("y" -> CTString)
@@ -92,7 +92,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
           |  (A)-[R]->(A),
           |  (B)-[R]->(A)
           |)
-        """.stripMargin).graphs(GraphName("myGraph")).graphType.asOkapiSchema should equal(Schema.empty
+        """.stripMargin).graphs(GraphName("myGraph")).graphType.asOkapiSchema should equal(PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("x" -> CTString)
         .withNodePropertyKeys("A", "B")("x" -> CTString, "y" -> CTString)
         .withRelationshipPropertyKeys("R")("y" -> CTString)
@@ -112,7 +112,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
           """.stripMargin
 
       GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
-        Schema.empty
+        PropertyGraphSchema.empty
           .withNodePropertyKeys("A")("name" -> CTString)
       )
     }
@@ -130,7 +130,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
            |""".stripMargin
 
       GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
-        Schema.empty
+        PropertyGraphSchema.empty
           .withNodePropertyKeys("A")("name" -> CTString)
           .withRelationshipPropertyKeys("A")("name" -> CTString)
           .withSchemaPatterns(SchemaPattern("A", "A", "A"))
@@ -153,7 +153,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
 
 
       GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema shouldEqual
-        Schema.empty
+        PropertyGraphSchema.empty
           .withNodePropertyKeys("Node1")("val" -> CTString)
           .withNodePropertyKeys("Node2")("val" -> CTString)
           .withRelationshipPropertyKeys("REL")("name" -> CTString)
@@ -175,7 +175,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
 
 
       GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
-        Schema.empty.withNodePropertyKeys("Node")("foo" -> CTInteger)
+        PropertyGraphSchema.empty.withNodePropertyKeys("Node")("foo" -> CTInteger)
       )
     }
 
@@ -190,7 +190,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |""".stripMargin
 
       GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
-        Schema.empty
+        PropertyGraphSchema.empty
           .withNodePropertyKeys("Node")("val" -> CTString, "another" -> CTString)
           .withNodeKey("Node", Set("val"))
       )
@@ -209,7 +209,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |""".stripMargin
 
       GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
-        Schema.empty
+        PropertyGraphSchema.empty
           .withNodePropertyKeys("Node")("val" -> CTString)
           .withRelationshipPropertyKeys("REL")("name" -> CTString)
           .withSchemaPatterns(SchemaPattern("Node", "REL", "Node"))
@@ -241,7 +241,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |""".stripMargin
 
       GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
-        Schema.empty
+        PropertyGraphSchema.empty
           .withNodePropertyKeys("MyLabel")("property" -> CTString, "data" -> CTInteger.nullable)
           .withNodePropertyKeys("LocalLabel1")("property" -> CTString)
           .withNodePropertyKeys("LocalLabel1", "LocalLabel2")("property" -> CTString)
@@ -266,7 +266,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |""".stripMargin
 
       GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
-        Schema.empty
+        PropertyGraphSchema.empty
           .withNodePropertyKeys("A")("foo" -> CTString)
           .withNodePropertyKeys("A", "B")("foo" -> CTString, "bar" -> CTString)
       )
@@ -286,7 +286,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |""".stripMargin
 
       GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
-        Schema.empty
+        PropertyGraphSchema.empty
           .withNodePropertyKeys("A")("foo" -> CTString)
           .withNodePropertyKeys("A", "B")("foo" -> CTString, "bar" -> CTString)
       )
@@ -313,7 +313,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |""".stripMargin
 
       GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
-        Schema.empty
+        PropertyGraphSchema.empty
           .withNodePropertyKeys("A")("a" -> CTString)
           .withNodePropertyKeys("A", "B")("a" -> CTString, "b" -> CTString)
           .withNodePropertyKeys("A", "C")("a" -> CTString, "c" -> CTString)
@@ -337,7 +337,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |""".stripMargin
 
       GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
-        Schema.empty
+        PropertyGraphSchema.empty
           .withNodePropertyKeys("A")("foo" -> CTString)
           .withNodePropertyKeys("A", "B")("foo" -> CTString)
       )
@@ -418,7 +418,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
                 )))))
         ))
       )
-      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual Schema.empty
+      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("foo" -> CTInteger)
         .withNodePropertyKeys("B")("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
         .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
@@ -451,7 +451,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |)
             |""".stripMargin
       )
-      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual Schema.empty
+      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("foo" -> CTInteger)
         .withNodePropertyKeys("B")()
         .withNodePropertyKeys("A", "B")("foo" -> CTInteger)
@@ -483,7 +483,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |)
             |""".stripMargin
       )
-      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual Schema.empty
+      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("foo" -> CTInteger)
         .withNodePropertyKeys("B")()
         .withNodePropertyKeys("A", "B")("foo" -> CTInteger)
@@ -517,7 +517,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |)
             |""".stripMargin
       )
-      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual Schema.empty
+      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("bar" -> CTString)
         .withNodePropertyKeys("B")()
         .withNodePropertyKeys("A", "B")("bar" -> CTString)
@@ -542,7 +542,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |)
             |""".stripMargin
       )
-      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual Schema.empty
+      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual PropertyGraphSchema.empty
         .withNodePropertyKeys("X")("c" -> CTString)
     }
 
@@ -550,7 +550,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
 
   describe("OKAPI schema to GraphType") {
     it("converts single node type") {
-      Schema.empty
+      PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("foo" -> CTString)
         .asGraphType shouldEqual GraphType.empty
         .withElementType("A", "foo" -> CTString)
@@ -558,7 +558,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
     }
 
     it("converts multiple node types") {
-      Schema.empty
+      PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("foo" -> CTString)
         .withNodePropertyKeys("B")("bar" -> CTInteger)
         .asGraphType shouldEqual GraphType.empty
@@ -569,7 +569,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
     }
 
     it("converts single node type with multiple labels") {
-      Schema.empty
+      PropertyGraphSchema.empty
         .withNodePropertyKeys("A", "B")("foo" -> CTString)
         .asGraphType shouldEqual GraphType.empty
         .withElementType("A", "foo" -> CTString)
@@ -578,7 +578,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
     }
 
     it("converts multiple node types with overlapping labels") {
-      val schema = Schema.empty
+      val schema = PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("a" -> CTString)
         .withNodePropertyKeys("A", "B")("a" -> CTString, "b" -> CTInteger)
         .withNodePropertyKeys("A", "B", "C")("a" -> CTString, "b" -> CTInteger, "c" -> CTFloat)
@@ -603,7 +603,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
     }
 
     it("converts multiple node types with overlapping labels but non-overlapping properties") {
-      Schema.empty
+      PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("a" -> CTString)
         .withNodePropertyKeys("B")("b" -> CTString)
         .withNodePropertyKeys("A", "B")("c" -> CTString)

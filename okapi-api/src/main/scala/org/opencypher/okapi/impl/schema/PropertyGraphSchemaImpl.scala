@@ -35,12 +35,12 @@ import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, _}
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 import org.opencypher.okapi.api.types.{CypherType, _}
 import org.opencypher.okapi.impl.exception.SchemaException
-import org.opencypher.okapi.impl.schema.SchemaImpl._
+import org.opencypher.okapi.impl.schema.PropertyGraphSchemaImpl._
 import org.opencypher.okapi.impl.util.Version
 import ujson.{Num, Obj, Str, Value}
 import upickle.default.{macroRW, _}
 
-object SchemaImpl {
+object PropertyGraphSchemaImpl {
 
   val VERSION = "version"
   val LABEL_PROPERTY_MAP = "labelPropertyMap"
@@ -54,10 +54,10 @@ object SchemaImpl {
   val PROPERTIES = "properties"
 
 
-  implicit def rw: ReadWriter[Schema] = readwriter[Value].bimap[Schema](
+  implicit def rw: ReadWriter[PropertyGraphSchema] = readwriter[Value].bimap[PropertyGraphSchema](
     schema => {
       val tuples: Seq[(String, Value)] = Seq[(String, Value)](
-        VERSION -> writeJs(Schema.CURRENT_VERSION.toString),
+        VERSION -> writeJs(PropertyGraphSchema.CURRENT_VERSION.toString),
         LABEL_PROPERTY_MAP -> writeJs(schema.labelPropertyMap),
         REL_TYPE_PROPERTY_MAP -> writeJs(schema.relTypePropertyMap)) ++ {
         if (schema.explicitSchemaPatterns.nonEmpty) {
@@ -88,7 +88,7 @@ object SchemaImpl {
         case other => throw SchemaException(s"Expected Version to be a String or a Number but got $other")
       }
       val version = Version(versionString)
-      if(!version.compatibleWith(Schema.CURRENT_VERSION)) throw SchemaException("Incompatible Schema versions")
+      if(!version.compatibleWith(PropertyGraphSchema.CURRENT_VERSION)) throw SchemaException("Incompatible Schema versions")
 
       val labelPropertyMap = read[LabelPropertyMap](json.obj(LABEL_PROPERTY_MAP))
       val relTypePropertyMap = read[RelTypePropertyMap](json.obj(REL_TYPE_PROPERTY_MAP))
@@ -104,7 +104,7 @@ object SchemaImpl {
         case Obj(m) if m.keySet.contains(REL_KEYS) => read[Map[String, Set[String]]](json.obj(REL_KEYS))
         case _ => Map.empty[String, Set[String]]
       }
-      SchemaImpl(labelPropertyMap, relTypePropertyMap, explicitSchemaPatterns, nodeKeys, relKeys)
+      PropertyGraphSchemaImpl(labelPropertyMap, relTypePropertyMap, explicitSchemaPatterns, nodeKeys, relKeys)
     }
   )
 
@@ -133,15 +133,15 @@ object SchemaImpl {
   implicit def spRW: ReadWriter[SchemaPattern] = macroRW
 }
 
-final case class SchemaImpl(
+final case class PropertyGraphSchemaImpl(
   labelPropertyMap: LabelPropertyMap,
   relTypePropertyMap: RelTypePropertyMap,
   explicitSchemaPatterns: Set[SchemaPattern] = Set.empty,
   override val nodeKeys: Map[String, Set[String]] = Map.empty,
   override val relationshipKeys: Map[String, Set[String]] = Map.empty
-) extends Schema {
+) extends PropertyGraphSchema {
 
-  self: Schema =>
+  self: PropertyGraphSchema =>
 
   lazy val labels: Set[String] = labelPropertyMap.keySet.flatten
 
@@ -248,7 +248,7 @@ final case class SchemaImpl(
     possibleTargetPatterns
   }
 
-  override def withNodePropertyKeys(labelCombination: Set[String], keys: PropertyKeys): Schema = {
+  override def withNodePropertyKeys(labelCombination: Set[String], keys: PropertyKeys): PropertyGraphSchema = {
     if (labelCombination.exists(_.isEmpty))
       throw SchemaException("Labels must be non-empty")
     val propertyKeys = if (labelPropertyMap.labelCombinations(labelCombination)) {
@@ -259,7 +259,7 @@ final case class SchemaImpl(
     copy(labelPropertyMap = labelPropertyMap.register(labelCombination, propertyKeys))
   }
 
-  override def withNodeKey(label: String, nodeKey: Set[String]): Schema = {
+  override def withNodeKey(label: String, nodeKey: Set[String]): PropertyGraphSchema = {
     if (!labels.contains(label)) {
       throw SchemaException(
         s"""|Invalid node key for schema
@@ -294,7 +294,7 @@ final case class SchemaImpl(
 
   }
 
-  override def withRelationshipKey(relationshipType: String, relationshipKey: Set[String]): Schema = {
+  override def withRelationshipKey(relationshipType: String, relationshipKey: Set[String]): PropertyGraphSchema = {
     if (!relationshipTypes.contains(relationshipType)) {
       throw SchemaException(
         s"""|Invalid relationship key for schema
@@ -345,7 +345,7 @@ final case class SchemaImpl(
     propertiesMarkedOptional
   }
 
-  override def withRelationshipPropertyKeys(typ: String, keys: PropertyKeys): Schema = {
+  override def withRelationshipPropertyKeys(typ: String, keys: PropertyKeys): PropertyGraphSchema = {
     if (relationshipTypes contains typ) {
       val updatedTypes = computePropertyTypes(relTypePropertyMap.properties(typ), keys)
 
@@ -355,7 +355,7 @@ final case class SchemaImpl(
     }
   }
 
-  override def withSchemaPatterns(patterns: SchemaPattern*): Schema = {
+  override def withSchemaPatterns(patterns: SchemaPattern*): PropertyGraphSchema = {
     patterns.foreach { p =>
       if (!labelCombinations.combos.contains(p.sourceLabelCombination)) throw SchemaException(s"Unknown source node label combination: `${p.sourceLabelCombination}`. Should be one of: ${labelCombinations.combos.mkString("[", ",", "]")}")
       if (!relationshipTypes.contains(p.relType)) throw SchemaException(s"Unknown relationship type: `${p.relType}`. Should be one of ${relationshipTypes.mkString("[", ",", "]")}")
@@ -365,7 +365,7 @@ final case class SchemaImpl(
     copy(explicitSchemaPatterns = explicitSchemaPatterns ++ patterns.toSet)
   }
 
-  override def ++(other: Schema): SchemaImpl = {
+  override def ++(other: PropertyGraphSchema): PropertyGraphSchemaImpl = {
     val conflictingLabels = labelPropertyMap.labelCombinations intersect other.labelPropertyMap.labelCombinations
     val nulledOut = conflictingLabels.foldLeft(Map.empty[Set[String], PropertyKeys]) {
       case (acc, next) =>
@@ -396,7 +396,7 @@ final case class SchemaImpl(
     )
   }
 
-  def forNode(labelConstraints: Set[String]): Schema = {
+  def forNode(labelConstraints: Set[String]): PropertyGraphSchema = {
     val requiredLabels = {
       val explicitLabels = labelConstraints
       val impliedLabels = this.impliedLabels.transitiveImplicationsFor(explicitLabels)
@@ -418,13 +418,13 @@ final case class SchemaImpl(
       case (agg, combo) => agg.register(combo, agg.properties(combo))
     }
 
-    SchemaImpl(
+    PropertyGraphSchemaImpl(
       labelPropertyMap = updatedLabelPropertyMap,
       relTypePropertyMap = RelTypePropertyMap.empty
     )
   }
 
-  def forRelationship(relType: CTRelationship): Schema = {
+  def forRelationship(relType: CTRelationship): PropertyGraphSchema = {
     val givenRelTypes = if (relType.types.isEmpty) {
       relationshipTypes
     } else {
@@ -437,7 +437,7 @@ final case class SchemaImpl(
         if (!map.contains(givenRelType)) map.updated(givenRelType, PropertyKeys.empty) else map
     }
 
-    SchemaImpl(
+    PropertyGraphSchemaImpl(
       labelPropertyMap = LabelPropertyMap.empty,
       relTypePropertyMap = updatedMap
     )
@@ -499,7 +499,7 @@ final case class SchemaImpl(
       builder.toString
     }
 
-  override def isEmpty: Boolean = this == Schema.empty
+  override def isEmpty: Boolean = this == PropertyGraphSchema.empty
 
   override private[opencypher] def dropPropertiesFor(combo: Set[String]) =
     copy(labelPropertyMap = labelPropertyMap - combo)
@@ -516,5 +516,5 @@ final case class SchemaImpl(
   ) =
     copy(relTypePropertyMap = relTypePropertyMap.register(relType, propertyKeys))
 
-  override def toJson: String = upickle.default.write[Schema](this, indent = 4)
+  override def toJson: String = upickle.default.write[PropertyGraphSchema](this, indent = 4)
 }

@@ -28,7 +28,7 @@ package org.opencypher.okapi.ir.impl
 
 import org.opencypher.okapi.api.graph.{Namespace, PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.graph.QGNGenerator
@@ -63,7 +63,7 @@ final case class IRBuilderContext(
 
   def convertExpression(e: ast.Expression): Expr = exprConverter.convert(e)
 
-  def schemaFor(qgn: QualifiedGraphName): Schema = queryLocalCatalog.schema(qgn)
+  def schemaFor(qgn: QualifiedGraphName): PropertyGraphSchema = queryLocalCatalog.schema(qgn)
 
   def withBlocks(reg: BlockRegistry): IRBuilderContext = copy(blockRegistry = reg)
 
@@ -81,7 +81,7 @@ final case class IRBuilderContext(
   def registerGraph(qgn: QualifiedGraphName, graph: PropertyGraph): IRBuilderContext =
     copy(queryLocalCatalog = queryLocalCatalog.withGraph(qgn, graph))
 
-  def registerSchema(qgn: QualifiedGraphName, schema: Schema): IRBuilderContext =
+  def registerSchema(qgn: QualifiedGraphName, schema: PropertyGraphSchema): IRBuilderContext =
     copy(queryLocalCatalog = queryLocalCatalog.withSchema(qgn, schema))
 
   def resetRegistry: IRBuilderContext = {

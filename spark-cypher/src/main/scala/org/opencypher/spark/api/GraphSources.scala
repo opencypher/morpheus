@@ -29,7 +29,7 @@ package org.opencypher.spark.api
 import java.nio.file.Paths
 
 import org.opencypher.graphddl.GraphDdl
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.spark.api.io.FileFormat
 import org.opencypher.spark.api.io.fs.{CsvGraphSource, EscapeAtSymbol, FSGraphSource}
@@ -101,7 +101,7 @@ object CypherGraphSources {
     * @param session                    CAPS session
     * @return Neo4j Property Graph Data Source
     */
-  def neo4j(config: Neo4jConfig, maybeSchema: Option[Schema] = None, omitIncompatibleProperties: Boolean = false)
+  def neo4j(config: Neo4jConfig, maybeSchema: Option[PropertyGraphSchema] = None, omitIncompatibleProperties: Boolean = false)
     (implicit session: CAPSSession): Neo4jPropertyGraphDataSource =
     Neo4jPropertyGraphDataSource(config, maybeSchema = maybeSchema, omitIncompatibleProperties = omitIncompatibleProperties)
 
@@ -109,7 +109,7 @@ object CypherGraphSources {
   def neo4j(config: Neo4jConfig, schemaFile: String, omitIncompatibleProperties: Boolean)
     (implicit session: CAPSSession): Neo4jPropertyGraphDataSource = {
     val schemaString = using(Source.fromFile(Paths.get(schemaFile).toUri))(_.getLines().mkString(Properties.lineSeparator))
-    Neo4jPropertyGraphDataSource(config, maybeSchema = Some(Schema.fromJson(schemaString)), omitIncompatibleProperties = omitIncompatibleProperties)
+    Neo4jPropertyGraphDataSource(config, maybeSchema = Some(PropertyGraphSchema.fromJson(schemaString)), omitIncompatibleProperties = omitIncompatibleProperties)
   }
 }
 

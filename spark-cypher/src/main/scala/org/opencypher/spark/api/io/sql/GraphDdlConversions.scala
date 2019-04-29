@@ -28,7 +28,7 @@ package org.opencypher.spark.api.io.sql
 
 import org.opencypher.graphddl.{ElementType, GraphType, RelationshipType}
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.okapi.api.schema.{Schema, SchemaPattern}
+import org.opencypher.okapi.api.schema.{PropertyGraphSchema, SchemaPattern}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.util.ScalaUtils._
 
@@ -36,7 +36,7 @@ object GraphDdlConversions {
 
   private val NO_LABEL = "NO_LABEL"
 
-  implicit class SchemaOps(schema: Schema) {
+  implicit class SchemaOps(schema: PropertyGraphSchema) {
 
     def asGraphType: GraphType = {
       val allKeys = schema.nodeKeys ++ schema.relationshipKeys
@@ -166,7 +166,7 @@ object GraphDdlConversions {
         targetLabelCombination = relType.endNodeType.labels
       ))
 
-    def asOkapiSchema: Schema = Schema.empty
+    def asOkapiSchema: PropertyGraphSchema = PropertyGraphSchema.empty
       .foldLeftOver(graphType.nodeTypes) { case (schema, nodeType) =>
         val combo = if (nodeType.labels.contains(NO_LABEL)) Set.empty[String] else nodeType.labels
         schema.withNodePropertyKeys(combo, graphType.nodePropertyKeys(nodeType))

@@ -31,24 +31,24 @@ import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.RelTypePropertyMap._
 import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
 import org.opencypher.okapi.impl.annotations.experimental
-import org.opencypher.okapi.impl.schema.SchemaImpl._
-import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations, SchemaImpl}
+import org.opencypher.okapi.impl.schema.PropertyGraphSchemaImpl._
+import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations, PropertyGraphSchemaImpl}
 import org.opencypher.okapi.impl.util.Version
 
-object Schema {
+object PropertyGraphSchema {
   val CURRENT_VERSION: Version = Version("1.0")
 
   /**
     * Empty Schema. Start with this to construct a new Schema.
     * Use the `with*` functions to add information.
     */
-  val empty: Schema = SchemaImpl(
+  val empty: PropertyGraphSchema = PropertyGraphSchemaImpl(
     labelPropertyMap = LabelPropertyMap.empty,
     relTypePropertyMap = RelTypePropertyMap.empty
   )
 
-  def fromJson(jsonString: String): Schema =
-    upickle.default.read[Schema](jsonString)
+  def fromJson(jsonString: String): PropertyGraphSchema =
+    upickle.default.read[PropertyGraphSchema](jsonString)
 }
 
 /**
@@ -59,7 +59,7 @@ object Schema {
   * It also keeps track of properties and their types that appear on different labels, label combinations and
   * relationship types.
   */
-trait Schema {
+trait PropertyGraphSchema {
   /**
     * All labels present in this graph.
     */
@@ -242,12 +242,12 @@ trait Schema {
     * @param propertyKeys     the typed property keys to associate with the labels
     * @return a copy of the Schema with the provided new data
     */
-  def withNodePropertyKeys(labelCombination: Set[String], propertyKeys: PropertyKeys = PropertyKeys.empty): Schema
+  def withNodePropertyKeys(labelCombination: Set[String], propertyKeys: PropertyKeys = PropertyKeys.empty): PropertyGraphSchema
 
   /**
-    * @see [[org.opencypher.okapi.api.schema.Schema#withNodePropertyKeys(scala.collection.Seq, scala.collection.Seq)]]
+    * @see [[org.opencypher.okapi.api.schema.PropertyGraphSchema#withNodePropertyKeys(scala.collection.Seq, scala.collection.Seq)]]
     */
-  def withNodePropertyKeys(labelCombination: String*)(propertyKeys: (String, CypherType)*): Schema =
+  def withNodePropertyKeys(labelCombination: String*)(propertyKeys: (String, CypherType)*): PropertyGraphSchema =
     withNodePropertyKeys(labelCombination.toSet, propertyKeys.toMap)
 
   /**
@@ -269,18 +269,18 @@ trait Schema {
     * @param keys the properties (name and type) to associate with the relationship type
     * @return a copy of the Schema with the provided new data
     */
-  def withRelationshipPropertyKeys(typ: String, keys: PropertyKeys): Schema
+  def withRelationshipPropertyKeys(typ: String, keys: PropertyKeys): PropertyGraphSchema
 
   /**
-    * @see [[org.opencypher.okapi.api.schema.Schema#withRelationshipPropertyKeys(java.lang.String, scala.collection.Seq)]]
+    * @see [[org.opencypher.okapi.api.schema.PropertyGraphSchema#withRelationshipPropertyKeys(java.lang.String, scala.collection.Seq)]]
     */
-  def withRelationshipType(relType: String): Schema =
+  def withRelationshipType(relType: String): PropertyGraphSchema =
     withRelationshipPropertyKeys(relType)()
 
   /**
-    * @see [[org.opencypher.okapi.api.schema.Schema#withRelationshipPropertyKeys(java.lang.String, scala.collection.Seq)]]
+    * @see [[org.opencypher.okapi.api.schema.PropertyGraphSchema#withRelationshipPropertyKeys(java.lang.String, scala.collection.Seq)]]
     */
-  def withRelationshipPropertyKeys(typ: String)(keys: (String, CypherType)*): Schema =
+  def withRelationshipPropertyKeys(typ: String)(keys: (String, CypherType)*): PropertyGraphSchema =
     withRelationshipPropertyKeys(typ, keys.toMap)
 
   /**
@@ -289,7 +289,7 @@ trait Schema {
     * @note The label for which the key is added has to exist in this schema.
     */
   @experimental
-  def withNodeKey(label: String, nodeKey: Set[String]): Schema
+  def withNodeKey(label: String, nodeKey: Set[String]): PropertyGraphSchema
 
   /**
     * Adds a relationship key for relationship type `relationshipType`. A relationship key uniquely identifies a
@@ -298,7 +298,7 @@ trait Schema {
     * @note The relationship type for which the key is added has to exist in this schema.
     */
   @experimental
-  def withRelationshipKey(relationshipType: String, relationshipKey: Set[String]): Schema
+  def withRelationshipKey(relationshipType: String, relationshipKey: Set[String]): PropertyGraphSchema
 
   /**
     * Adds the given schema patterns to the explicitly defined schema patterns.
@@ -310,13 +310,13 @@ trait Schema {
     * @return schema with added explicit schema patterns
     */
   @experimental
-  def withSchemaPatterns(patterns: SchemaPattern*): Schema
+  def withSchemaPatterns(patterns: SchemaPattern*): PropertyGraphSchema
 
   /**
     * Returns the union of the input schemas.
     * Conflicting property key types are resolved into the joined type.
     */
-  def ++(other: Schema): Schema
+  def ++(other: PropertyGraphSchema): PropertyGraphSchema
 
   /**
     * Returns this schema with the properties for `combo` removed.
@@ -324,7 +324,7 @@ trait Schema {
     * @param labelCombination label combination for which properties are removed
     * @return updated schema
     */
-  private[opencypher] def dropPropertiesFor(labelCombination: Set[String]): Schema
+  private[opencypher] def dropPropertiesFor(labelCombination: Set[String]): PropertyGraphSchema
 
   /**
     * Returns the sub-schema for a node scan under the given constraints.
@@ -334,7 +334,7 @@ trait Schema {
     * @param knownLabels Specifies the labels that the node is guaranteed to have
     * @return sub-schema for `knownLabels`
     */
-  private[opencypher] def forNode(knownLabels: Set[String]): Schema
+  private[opencypher] def forNode(knownLabels: Set[String]): PropertyGraphSchema
 
   /**
     * Returns the sub-schema for `relType`
@@ -342,7 +342,7 @@ trait Schema {
     * @param relType Specifies the type for which the schema is extracted
     * @return sub-schema for `relType`
     */
-  private[opencypher] def forRelationship(relType: CTRelationship): Schema
+  private[opencypher] def forRelationship(relType: CTRelationship): PropertyGraphSchema
 
   /**
     * Returns the updated schema, but overwrites any existing node property keys for the given labels.
@@ -350,12 +350,12 @@ trait Schema {
   private[opencypher] def withOverwrittenNodePropertyKeys(
     labelCombination: Set[String],
     propertyKeys: PropertyKeys
-  ): Schema
+  ): PropertyGraphSchema
 
   /**
     * Returns the updated schema, but overwrites any existing relationship property keys for the given type.
     */
-  private[opencypher] def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys): Schema
+  private[opencypher] def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys): PropertyGraphSchema
 
   def toString: String
 

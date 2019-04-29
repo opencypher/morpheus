@@ -26,17 +26,66 @@
  */
 package org.opencypher.spark.schema
 
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.{PropertyGraphSchema, PropertyKeys}
 import org.opencypher.okapi.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 import org.opencypher.okapi.impl.exception.SchemaException
-import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.schema.CAPSSchema._
+import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.fixture.GraphConstructionFixture
 
-class CAPSSchemaTest extends BaseTestSuite {
+class CAPSSchemaTest extends CAPSTestSuite with GraphConstructionFixture {
+
+  it("constructs schema correctly for unlabeled nodes") {
+    val graph = initGraph("CREATE ({id: 1}), ({id: 2}), ({other: 'foo'}), ()")
+
+    graph.schema should equal(PropertyGraphSchema.empty
+      .withNodePropertyKeys(Set.empty[String], Map("id" -> CTInteger.nullable, "other" -> CTString.nullable))
+      .asCaps
+    )
+  }
+
+  it("constructs schema correctly for labeled nodes") {
+    val graph = initGraph("CREATE (:A {id: 1}), (:A {id: 2}), (:B {other: 'foo'})")
+
+    graph.schema should equal(PropertyGraphSchema.empty
+      .withNodePropertyKeys("A")("id" -> CTInteger)
+      .withNodePropertyKeys("B")("other" -> CTString)
+      .asCaps
+    )
+  }
+
+  it("constructs schema correctly for multi-labeled nodes") {
+    val graph = initGraph("CREATE (:A {id: 1}), (:A:B {id: 2}), (:B {other: 'foo'})")
+
+    graph.schema should equal(PropertyGraphSchema.empty
+      .withNodePropertyKeys("A")("id" -> CTInteger)
+      .withNodePropertyKeys("B")("other" -> CTString)
+      .withNodePropertyKeys("A", "B")("id" -> CTInteger)
+      .asCaps
+    )
+  }
+
+  it("constructs schema correctly for relationships") {
+    val graph = initGraph(
+      """
+        |CREATE ()-[:FOO {p: 1}]->()
+        |CREATE ()-[:BAR {p: 2, q: 'baz'}]->()
+        |CREATE ()-[:BAR {p: 3}]->()
+      """.stripMargin
+    )
+
+    graph.schema should equal(PropertyGraphSchema.empty
+      .withNodePropertyKeys(Set.empty[String], PropertyKeys.empty)
+      .withRelationshipPropertyKeys("FOO")("p" -> CTInteger)
+      .withRelationshipPropertyKeys("BAR")("p" -> CTInteger, "q" -> CTString.nullable)
+      .asCaps
+    )
+  }
+
   it("fails when combining type conflicting schemas resulting in type ANY") {
-    val schema1 = Schema.empty
+    val schema1 = PropertyGraphSchema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTString)
-    val schema2 = Schema.empty
+    val schema2 = PropertyGraphSchema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTInteger)
 
     the[SchemaException] thrownBy (schema1 ++ schema2).asCaps should have message
@@ -44,9 +93,9 @@ class CAPSSchemaTest extends BaseTestSuite {
   }
 
   it("fails when combining type conflicting schemas resulting in type NUMBER") {
-    val schema1 = Schema.empty
+    val schema1 = PropertyGraphSchema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "baz" -> CTInteger)
-    val schema2 = Schema.empty
+    val schema2 = PropertyGraphSchema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "baz" -> CTFloat)
 
     the[SchemaException] thrownBy (schema1 ++ schema2).asCaps should have message
@@ -54,11 +103,11 @@ class CAPSSchemaTest extends BaseTestSuite {
   }
 
   it("successfully verifies the empty schema") {
-    noException shouldBe thrownBy(Schema.empty.asCaps)
+    noException shouldBe thrownBy(PropertyGraphSchema.empty.asCaps)
   }
 
   it("successfully verifies a valid schema") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
       .withNodePropertyKeys("Employee")("name" -> CTString, "salary" -> CTInteger)
       .withNodePropertyKeys("Dog")("name" -> CTFloat)
@@ -68,7 +117,7 @@ class CAPSSchemaTest extends BaseTestSuite {
   }
 
   it("fails when verifying schema with conflict on implied labels") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
       .withNodePropertyKeys("Employee", "Person")("name" -> CTString, "salary" -> CTInteger)
       .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
@@ -79,7 +128,7 @@ class CAPSSchemaTest extends BaseTestSuite {
   }
 
   it("fails when verifying schema with conflict on combined labels") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
       .withNodePropertyKeys("Employee", "Person")("name" -> CTInteger, "salary" -> CTInteger)
       .withNodePropertyKeys("Employee")("name" -> CTInteger, "salary" -> CTInteger)

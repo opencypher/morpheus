@@ -27,7 +27,7 @@
 package org.opencypher.okapi.logical.impl
 
 import org.opencypher.okapi.api.graph.{PatternElement, NodePattern, Pattern, QualifiedGraphName}
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.CTRelationship
 import org.opencypher.okapi.impl.types.CypherTypeUtils._
 import org.opencypher.okapi.ir.api.Label
@@ -56,7 +56,7 @@ trait EmptyFields extends LogicalOperator {
 }
 
 sealed trait LogicalGraph {
-  def schema: Schema
+  def schema: PropertyGraphSchema
 
   override def toString = s"${getClass.getSimpleName}($args)"
 
@@ -66,12 +66,12 @@ sealed trait LogicalGraph {
 
 }
 
-case class LogicalCatalogGraph(qualifiedGraphName: QualifiedGraphName, schema: Schema) extends LogicalGraph {
+case class LogicalCatalogGraph(qualifiedGraphName: QualifiedGraphName, schema: PropertyGraphSchema) extends LogicalGraph {
   override protected def args: String = qualifiedGraphName.toString
 }
 
 case class LogicalPatternGraph(
-  schema: Schema,
+  schema: PropertyGraphSchema,
   clones: Map[Var, Var],
   newElements: Set[ConstructedElement],
   sets: List[SetItem],
