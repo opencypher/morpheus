@@ -3,10 +3,10 @@
 
 [abstract]
 --
-This section describes Cypher multiple graph support in CAPS.
+This section describes Cypher multiple graph support in Morpheus.
 --
 
-Neo4j CAPS ships with novel Cypher features under the title of Multiple-Graphs.
+Morpheus ships with novel Cypher features under the title of Multiple-Graphs.
 These enable a single Cypher query to reference and query several graphs.
 Cypher queries may also define new graphs, add them to the catalog of graphs, and return graphs as results.
 
@@ -72,26 +72,26 @@ To this end the openCypher Implementers Group (oCIG) accepted a retroactive spec
 The https://s3.amazonaws.com/artifacts.opencypher.org/openCypher9.pdf[Cypher 9 specification] may be found on the https://www.opencypher.org[opencypher.org] website, along with many other Cypher materials and resources.
 
 Now, the openCypher project is leading the standardisation of Cypher 10, which will include a chapter on Multiple-Graphs.
-Neo4j CAPS is the first implementation of the features proposed for Cypher 10 Multiple-Graphs.
+Morpheus is the first implementation of the features proposed for Cypher 10 Multiple-Graphs.
 
 
-[[mg-cypher-caps-and-neo4j]]
+[[mg-cypher-morpheus-and-neo4j]]
 == Cypher in Cypher for Apache Spark and Neo4j
 
 Neo4j supports full Cypher 9 plus specific extensions.
-CAPS supports a subset of Cypher 9 plus Multiple-Graphs from Cypher 10.
+Morpheus supports a subset of Cypher 9 plus Multiple-Graphs from Cypher 10.
 Across successive versions, these discrepancies will be removed.
 // TODO: Link to more details
 
-Due to the domain of CAPS being a popular integration platform in Apache Spark, the capability of referencing multiple, distinct graphs is a key feature.
-Similar to how the `SparkSession` manages tables in a catalog, the `CAPSSession` manages _named_ graphs in a catalog.
+Due to the domain of Morpheus being a popular integration platform in Apache Spark, the capability of referencing multiple, distinct graphs is a key feature.
+Similar to how the `SparkSession` manages tables in a catalog, the `MorpheusSession` manages _named_ graphs in a catalog.
 This enables referencing of graphs very similarly to how SQL references tables.
 
 
 [[mg-cypher-named-graphs]]
 == Named graphs and the catalog
 
-In Neo4j CAPS graphs are stored in a centrally managed, federated graph catalog.
+In Morpheus graphs are stored in a centrally managed, federated graph catalog.
 In this catalog graphs are distinguished by their _qualified graph names_.
 A qualified graph name consists of two or more parts, separated by a dot character (`.`), where the first part is called a _namespace_.
 The namespace is the handle to which the Property Graph Data Sources (PGDSs) are registered; all graphs managed by a PGDS registered at the namespace `foo` must be referenced with `foo.<name of graph>`.
@@ -189,10 +189,10 @@ The above example query produces the same graph as a result as using the Scala A
 
 [source, scala]
 ----
-val caps: CAPSSession = ...
-val graph1 = caps.catalog("graph1")
-val graph2 = caps.catalog("graph2")
-val graph3 = caps.catalog("graph3")
+val morpheus: MorpheusSession = ...
+val graph1 = morpheus.catalog("graph1")
+val graph2 = morpheus.catalog("graph2")
+val graph3 = morpheus.catalog("graph3")
 
 val result = graph1.unionAll(graph2, graph3)
 ----

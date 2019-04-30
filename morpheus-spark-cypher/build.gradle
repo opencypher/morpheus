@@ -1,6 +1,6 @@
 import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
-description = 'Cypher for Apache Spark - CAPS'
+description = 'Morpheus: Cypher for Apache Spark'
 
 dependencies {
     compile project(':okapi-relational')

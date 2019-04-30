@@ -1,13 +1,13 @@
-[[caps-overview]]
+[[morpheus-overview]]
 = Overview
 
 [abstract]
 --
-This chapter provides an overview of CAPS components: Property Graph Data Source backends and the Cypher graph query language.
+This chapter provides an overview of Morpheus components: Property Graph Data Source backends and the Cypher graph query language.
 --
 
 
-[[caps-components]]
+[[morpheus-components]]
 == Components
 
 Cypher for Apache Spark is made up of Property Graph Data Sources (PGDSs) -- software components for loading and saving graphs from various locations -- and the Cypher graph query language.

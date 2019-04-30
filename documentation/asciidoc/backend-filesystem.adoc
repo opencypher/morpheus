@@ -3,7 +3,7 @@
 
 [abstract]
 --
-This section describes the Filesystem backend for CAPS.
+This section describes the Filesystem backend for Morpheus.
 --
 
 

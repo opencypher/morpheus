@@ -4,7 +4,7 @@
 
 <!--put release notes here-->
 
-#### Using CAPS in your system
+#### Using Morpheus in your system
 
 The artifact is released to [Maven Central](https://search.maven.org/#artifactdetails%7Corg.opencypher%7Cmorpheus-spark-cypher%7C%RELEASE_VERSION%%7Cjar).
 To use it in a Maven project, add the following dependency to your pom:

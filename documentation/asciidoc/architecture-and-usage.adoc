@@ -3,23 +3,23 @@
 
 [abstract]
 --
-This chapter describes the architecture and technology choices of CAPS.
+This chapter describes the architecture and technology choices of Morpheus.
 --
 
-CAPS is a framework for Cypher-based graph processing in Spark.
+Morpheus is a framework for Cypher-based graph processing in Spark.
 It provides flexibility on where the data comes from and where it is going.
-CAPS is tightly coupled to Spark which we can think of here as a cluster computing framework, and as a programming model reliant on the idea of map/reduce.
+Morpheus is tightly coupled to Spark which we can think of here as a cluster computing framework, and as a programming model reliant on the idea of map/reduce.
 
 This suggests several possible future directions:
 
-* We can imagine CAPS extensions in the future to load data from new sources and save it to different targets.
+* We can imagine Morpheus extensions in the future to load data from new sources and save it to different targets.
   These would all be relatively straightforward pluggable new features.
   The intention here is to drive this in conjunction with user needs.
-* The level of Cypher 9 support will be increased, adding new functions, operators, etc -- which will naturally expand the kind of use cases that CAPS will be good at.
-* CAPS will tend to be better than the core Neo4j database at problems which are easily parallelizable, because it will exploit the programming model well.
+* The level of Cypher 9 support will be increased, adding new functions, operators, etc -- which will naturally expand the kind of use cases that Morpheus will be good at.
+* Morpheus will tend to be better than the core Neo4j database at problems which are easily parallelizable, because it will exploit the programming model well.
   Data integration falls into that category because it can be thought of as applying operations to individual records, where records in tables are trivially partitionable, parallelizable.
 * In the future, graph algorithms which are parallelizable will benefit heavily from that programming model.
-* Graph algorithms which are not parallelizable (e.g. algorithms that rely heavily on breadth first searches, or iterative approaches) will tend not to benefit from the Spark programming model, and so probably won't do as well with CAPS.
+* Graph algorithms which are not parallelizable (e.g. algorithms that rely heavily on breadth first searches, or iterative approaches) will tend not to benefit from the Spark programming model, and so probably won't do as well with Morpheus.
   A Neo4j database with heavy duty hardware would likely be preferred.
 
 
@@ -33,7 +33,7 @@ In choosing data sources and sinks, where the data resides is pretty important.
 
 When formulating queries that lift data from several different PGDSs, these queries are effectively federated, as they will be executed over data that is hosted by separate environments.
 This is opaque on the Cypher query level except for the qualified graph names that are referenced.
-In this regard CAPS is acting as a federated query processor.
+In this regard Morpheus is acting as a federated query processor.
 
 A design intention is to push down as much as possible of the operations to within the various PGDSs, but this is subject to each PGDS implementation and configuration
 For example, if using the SQL PGDS with Hive, the SQL queries executed over the Hive tables will be Spark execution plans that can be optimised globally together with the Cypher query that sits on top of this.
@@ -57,5 +57,5 @@ And other aspects of the Hadoop ecosystem are being replaced elsewhere.
 For example using Google Cloud Dataproc (hosted Spark) you can treat Google's object store as HDFS compatible in Spark jobs.
 Similar possibilities exist with Amazon S3.
 
-CAPS does not contain direct dependencies on Hadoop, but accesses the data lake through Spark's APIs.
-This architecture allows CAPS to be independent of the underlying data store platform.
+Morpheus does not contain direct dependencies on Hadoop, but accesses the data lake through Spark's APIs.
+This architecture allows Morpheus to be independent of the underlying data store platform.

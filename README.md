@@ -1,17 +1,17 @@
 [![Maven Central](https://img.shields.io/badge/Maven_Central-0.3.2-blue.svg?label=Maven%20Central)](https://search.maven.org/#artifactdetails%7Corg.opencypher%7Cmorpheus-spark-cypher%7C0.3.2%7Cjar)
-# CAPS: Cypher for Apache Spark
+# Morpheus: Cypher for Apache Spark
 
-CAPS extends [Apache Spark™](https://spark.apache.org) with [Cypher](https://neo4j.com/docs/developer-manual/current/cypher/), the industry's most widely used [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) query language defined and maintained by the [openCypher](http://www.opencypher.org) project.
+Morpheus extends [Apache Spark™](https://spark.apache.org) with [Cypher](https://neo4j.com/docs/developer-manual/current/cypher/), the industry's most widely used [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) query language defined and maintained by the [openCypher](http://www.opencypher.org) project.
 It allows for the **integration** of many **data sources** and supports **multiple graph** querying.
 It enables you to use your Spark cluster to run **analytical graph queries**.
 Queries can also return graphs to create **processing pipelines**.
 
 ## Intended audience
 
-CAPS allows you to develop complex processing pipelines orchestrated by a powerful and expressive high-level language.
-In addition to **developers** and **big data integration specialists**, CAPS is also of practical use to **data scientists**, offering tools allowing for disparate data sources to be integrated into a single graph. From this graph, queries can extract subgraphs of interest into new result graphs, which can be conveniently exported for further processing.
+Morpheus allows you to develop complex processing pipelines orchestrated by a powerful and expressive high-level language.
+In addition to **developers** and **big data integration specialists**, Morpheus is also of practical use to **data scientists**, offering tools allowing for disparate data sources to be integrated into a single graph. From this graph, queries can extract subgraphs of interest into new result graphs, which can be conveniently exported for further processing.
 
-CAPS builds on the Spark SQL DataFrame API, offering integration with standard Spark SQL processing and also allows
+Morpheus builds on the Spark SQL DataFrame API, offering integration with standard Spark SQL processing and also allows
 integration with GraphX. To learn more about this, please see our [examples](https://github.com/opencypher/cypher-for-apache-spark/tree/master/morpheus-examples).
  
 <!-- TODO: WIKI How does it relate to GraphFrames -->
@@ -28,21 +28,21 @@ Please note that this is an openCypher project and contributions can only be acc
 
 ## Documentation
 
-A preview of the documentation for Morpheus, which is a commercially supported version of CAPS, is [available from Neo4j](https://neo4j.com/docs/morpheus-user-guide/1.0-preview/).
+A preview of the documentation for Morpheus, which is a commercially supported version of Morpheus, is [available from Neo4j](https://neo4j.com/docs/morpheus-user-guide/1.0-preview/).
 
-## CAPS Features
+## Morpheus Features
 
-CAPS is built on top of the Spark DataFrame API and uses features such as the Catalyst optimizer.
+Morpheus is built on top of the Spark DataFrame API and uses features such as the Catalyst optimizer.
 The Spark representations are accessible and can be converted to representations that integrate with other Spark libraries.
 
-CAPS supports [a subset of Cypher](https://github.com/opencypher/cypher-for-apache-spark/blob/master/documentation/asciidoc/cypher-cypher9-features.adoc) and is the first implementation of [multiple graphs](https://github.com/boggle/openCypher/blob/CIP2017-06-18-multiple-graphs/cip/1.accepted/CIP2017-06-18-multiple-graphs.adoc) and graph query compositionality.
+Morpheus supports [a subset of Cypher](https://github.com/opencypher/cypher-for-apache-spark/blob/master/documentation/asciidoc/cypher-cypher9-features.adoc) and is the first implementation of [multiple graphs](https://github.com/boggle/openCypher/blob/CIP2017-06-18-multiple-graphs/cip/1.accepted/CIP2017-06-18-multiple-graphs.adoc) and graph query compositionality.
 
-CAPS currently supports importing graphs from both Neo4j and from custom [CSV format](https://github.com/opencypher/cypher-for-apache-spark/tree/master/caps-core/src/test/resources/csv/sn) in HDFS and local file system.
-CAPS has a data source API that allows you to plug in custom data importers for external graphs.
+Morpheus currently supports importing graphs from Hive, Neo4j, relational database systems via JDBC and from files stored either locally, in HDFS or S3.
+Morpheus has a data source API that allows you to plug in custom data importers for external graphs.
 
-## CAPS Roadmap
+## Morpheus Roadmap
 
-CAPS is under rapid development and we are planning to offer support for:
+Morpheus is under rapid development and we are planning to offer support for:
 - a large subset of the Cypher language
 - new Cypher Multiple Graph features
 - integration with Spark SQL
@@ -50,11 +50,11 @@ CAPS is under rapid development and we are planning to offer support for:
 
 ## Spark Project Improvement Proposal
 
-Currently CAPS is a third-party add-on to the Spark ecosystem. We, however, believe that property graphs and graph processing
+Currently Morpheus is a third-party add-on to the Spark ecosystem. We, however, believe that property graphs and graph processing
 has the potential to be come a vital part of data analytics. We are thus working, in cooperation with 
-*Databricks*, on making CAPS a core part of Spark. 
+*Databricks*, on making Morpheus a core part of Spark. 
 The first step on this road is the specification of a __PropertyGraph API__, similar to __SQL__ and __Dataframes__, along with porting
-Cypher 9 features of CAPS to the core Spark project in a so called __Spark Project Improvement Proposal__ (SPIP).
+Cypher 9 features of Morpheus to the core Spark project in a so called __Spark Project Improvement Proposal__ (SPIP).
 
 We are currently in the second phase of this process, after having successfully [passed the vote for inclusion](http://apache-spark-developers-list.1001551.n3.nabble.com/VOTE-RESULT-SPIP-DataFrame-based-Property-Graphs-Cypher-Queries-and-Algorithms-td26401.html) into Apache Spark 3.0.
 The SPIP describing the motivation and goals is published here
@@ -63,24 +63,24 @@ Additionally [SPARK-26028](https://issues.apache.org/jira/browse/SPARK-26028) pr
 
 ## Supported Spark and Scala versions
 
-As of CAPS `0.3.0`, the project has migrated to Scala 2.12 and Spark 2.4 series.
-[As of Spark 2.4.1](https://spark.apache.org/releases/spark-release-2-4-1.html) Scala 2.12 is the default Scala version for Spark, and CAPS is attempting to mimic this.
+As of Morpheus `0.3.0`, the project has migrated to Scala 2.12 and Spark 2.4 series.
+[As of Spark 2.4.1](https://spark.apache.org/releases/spark-release-2-4-1.html) Scala 2.12 is the default Scala version for Spark, and Morpheus is attempting to mimic this.
 
-## Get started with CAPS
-CAPS is currently easiest to use with Scala. 
+## Get started with Morpheus
+Morpheus is currently easiest to use with Scala. 
 Below we explain how you can import a simple graph and run a Cypher query on it.
 
-### Building CAPS
+### Building Morpheus
 
-CAPS is built using Gradle
+Morpheus is built using Gradle
 
 ```
 ./gradlew build
 ```
 
 
-#### Add the CAPS dependency to your project
-In order to use CAPS add the following dependency:
+#### Add the Morpheus dependency to your project
+In order to use Morpheus add the following dependency:
 
 Maven:
 
@@ -97,14 +97,14 @@ sbt:
 libraryDependencies += "org.opencypher" % "morpheus-spark-cypher" % "0.3.2"
 ```
 
-Remember to add `fork in run := true` in your `build.sbt` for scala projects; this is not CAPS
+Remember to add `fork in run := true` in your `build.sbt` for scala projects; this is not Morpheus
 specific, but a quirk of spark execution that will help 
 [prevent problems](https://stackoverflow.com/questions/44298847/why-do-we-need-to-add-fork-in-run-true-when-running-spark-sbt-application).
 
-### Hello CAPS
+### Hello Morpheus
 
 Cypher is based on the [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) data model, comprising labelled nodes and typed relationships, with a relationship either connecting two nodes, or forming a self-loop on a single node. 
-Both nodes and relationships are uniquely identified by an ID (in CAPS this is of type `Long`), and contain a set of properties. 
+Both nodes and relationships are uniquely identified by an ID (in Morpheus this is of type `Long`), and contain a set of properties. 
 
 The following example shows how to convert a social network represented as Scala case classes to a `PropertyGraph` representation. 
 The `PropertyGraph` representation is internally transformed into Spark data frames. 
@@ -181,7 +181,7 @@ CSV and the schema mappings that describe the graph structure for the underlying
 
 #### Next steps
 
-- How to use CAPS in [Apache Zeppelin](https://github.com/opencypher/cypher-for-apache-spark/wiki/Use-CAPS-in-a-Zeppelin-notebook)
+- How to use Morpheus in [Apache Zeppelin](https://github.com/opencypher/cypher-for-apache-spark/wiki/Use-CAPS-in-a-Zeppelin-notebook)
 - Look at and contribute to the [Wiki](https://github.com/opencypher/cypher-for-apache-spark/wiki)
 <!-- TODO: Steps needed to run the demo with toy data -->
 <!-- TODO: WIKI article that demonstrates a more realistic use case with HDFS data source -->

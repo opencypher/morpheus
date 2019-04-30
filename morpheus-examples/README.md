@@ -1,6 +1,6 @@
 # Cypher for Apache Spark - Examples
 
-This module contains a collection of small example programs illustrating intended use of CAPS.
+This module contains a collection of small example programs illustrating intended use of Morpheus.
 This includes standard Cypher processing, multiple graph processing, data ingestion and interoperability with
 Spark SQL and GraphX. 
 

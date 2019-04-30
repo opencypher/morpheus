@@ -9,7 +9,7 @@ This section introduces some of the building blocks of a Cypher for Apache Spark
 To introduce some of the building blocks of a Cypher for Apache Spark application, consider the custom DataFrame input example below.
 The following parts will be explained in detail:
 
-* <<example-detail-caps-session, Create a CAPS session>>.
+* <<example-detail-morpheus-session, Create a Morpheus session>>.
 * <<example-detail-prepare-dataframes, Prepare DataFrames>>.
 * <<example-detail-create-node-relationship-tables, Create node and relationship tables>>.
 * <<example-detail-create-graph, Create a graph>>.
@@ -27,10 +27,10 @@ include::{examples-dir}/CustomDataFrameInputExample.scala[tags=full-example]
 
 
 [discrete]
-[[example-detail-caps-session]]
-== CAPS session
+[[example-detail-morpheus-session]]
+== Morpheus session
 
-The first procedure in most CAPS applications is the creation of a CAPS session.
+The first procedure in most Morpheus applications is the creation of a Morpheus session.
 Here we create a local session.
 For production, users will in most cases want to run in distributed mode.
 

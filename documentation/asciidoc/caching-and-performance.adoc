@@ -15,12 +15,12 @@ This article contains some general guidelines on how caching is used with Spark:
 [[caching-and-performance-table-caching]]
 == Cache the backing table
 
-CAPS graphs are generally backed by tables that contain nodes/relationships, which are in turn implemented by Spark tables.
+Morpheus graphs are generally backed by tables that contain nodes/relationships, which are in turn implemented by Spark tables.
 The underlying Spark tables can be cached like this:
 
 [source, scala]
 ----
-val myTable = CAPSNodeTable(...)
+val myTable = MorpheusNodeTable(...)
 myTable.table.cache()
 ----
 

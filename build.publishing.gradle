@@ -34,8 +34,8 @@ subprojects {
                     }
                     developers {
                         developer {
-                            id = 'caps'
-                            name = 'The CAPS team'
+                            id = 'morpheus'
+                            name = 'The Morpheus team'
                             email = 'opencypher@neo4j.com'
                             url = 'https://www.opencypher.org'
                         }

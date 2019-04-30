@@ -39,7 +39,7 @@ Graph DDL has been developed in close collaboration with the SQL standards commi
 This also intersects with the standards process currently being undertaken for developing an official graph query language (GQL) where Cypher is one of the major input languages considered.
 Graph DDL could become part of this standard.
 
-Interoperability with SQL, and forward compatibility with a future GQL language, are important goals for both the Cypher for Apache Spark project and CAPS.
+Interoperability with SQL, and forward compatibility with a future GQL language, are important goals for both the Cypher for Apache Spark project and Morpheus.
 Graph DDL is one way in which the two worlds of SQL and graph querying can be tied together.
 This parallels the ability to use SQL tables as inputs to Cypher queries and to post-process Cypher query tabular result sets using SQL.
 
@@ -47,7 +47,7 @@ This parallels the ability to use SQL tables as inputs to Cypher queries and to 
 [[graphddl-approach]]
 == Approach
 
-As we described in the earlier sections, once you have data in a "tables for labels" format, CAPS can lift that data into a graph and you can query it with Cypher.
+As we described in the earlier sections, once you have data in a "tables for labels" format, Morpheus can lift that data into a graph and you can query it with Cypher.
 We have already covered how that is done if the data in question is already a set of DataFrames, or something that can conveniently be made a DataFrame (like a CSV file).
 
 However, for a relational database, one would approach this as follows:
@@ -185,7 +185,7 @@ Overlapping property names are allowed as long as the property data type is the 
 
 [NOTE]
 ====
-While the property graph data model supports nodes without labels, this is currently not expressible in the Graph DDL implementation for CAPS.
+While the property graph data model supports nodes without labels, this is currently not expressible in the Graph DDL implementation for Morpheus.
 ====
 
 Assume the following element types:
@@ -363,7 +363,7 @@ CREATE GRAPH movie_graph (
 
 
 [[graphddl-usage]]
-== How to use Graph DDL in CAPS
+== How to use Graph DDL in Morpheus
 
 The Graph DDL is a part of the SQL Property Graph Datasource, and used in conjunction with it.
 Please see <<backend-sql-pgds>> for information on how to configure and use it.

@@ -3,7 +3,7 @@
 
 [abstract]
 --
-This section describes using CAPS with Neo4j.
+This section describes using Morpheus with Neo4j.
 --
 
 include::backend-pgds-neo4j.adoc[leveloffset=+1]

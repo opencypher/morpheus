@@ -3,17 +3,17 @@
 
 [abstract]
 --
-This chapter documents the features and limitations of the Cypher graph query language as implemented in CAPS.
+This chapter documents the features and limitations of the Cypher graph query language as implemented in Morpheus.
 --
 
-When we refer to Cypher in CAPS, we are talking about the read-only part of Cypher 9, and the extensions for Multiple Graphs proposed in Cypher 10.
+When we refer to Cypher in Morpheus, we are talking about the read-only part of Cypher 9, and the extensions for Multiple Graphs proposed in Cypher 10.
 For the Cypher 9 specification and other openCypher language resources, see the link:https://opencypher.org/resources/[openCypher website].
 
 
 [[cypher-sparksql]]
 == Cypher on Spark SQL
 
-The https://github.com/opencypher/cypher-for-apache-spark[CAPS] layer essentially translates Cypher queries into Spark SQL operators.
+The https://github.com/opencypher/cypher-for-apache-spark[Morpheus] layer essentially translates Cypher queries into Spark SQL operators.
 As a result, certain aspects of Cypher like `USING INDEX` would not make sense to support in the Spark world.
 Additionally, other functions like `lower()` and `upper()` can easily be duplicated before the data is a graph by using Spark SQL functions and primitives.
 
@@ -21,12 +21,12 @@ Additionally, other functions like `lower()` and `upper()` can easily be duplica
 [[cypher-limitations]]
 == Limitations
 
-Because of the Spark programming model, CAPS does not support updates and deletes.
+Because of the Spark programming model, Morpheus does not support updates and deletes.
 The general approach should be to take one data source or graph, transform it into another, and store that.
 Underlying data sources should be treated as immutable.
 As a result, Cypher clauses like `MERGE`, `DELETE`, `CREATE`, `CREATE UNIQUE`, `LOAD CSV`, and others are not supported and won't be supported in the future.
 
-This means that if your use case is filtering/cleaning up data in an underlying data source, this would have to be modelled as transformations or filtering into new, distinct data sets in order for CAPS to be a good fit for the problem.
+This means that if your use case is filtering/cleaning up data in an underlying data source, this would have to be modelled as transformations or filtering into new, distinct data sets in order for Morpheus to be a good fit for the problem.
 
 
 include::cypher-cypher9-features.adoc[leveloffset=+1]
