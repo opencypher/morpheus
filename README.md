@@ -108,15 +108,15 @@ Both nodes and relationships are uniquely identified by an ID (in CAPS this is o
 
 The following example shows how to convert a social network represented as Scala case classes to a `PropertyGraph` representation. 
 The `PropertyGraph` representation is internally transformed into Spark data frames. 
-If you have existing data frames which you would like to treat as a graph, have a look at our [DataFrameInputExample](spark-cypher-examples/src/main/scala/org/opencypher/spark/examples/DataFrameInputExample.scala).   
+If you have existing data frames which you would like to treat as a graph, have a look at our [DataFrameInputExample](spark-cypher-examples/src/main/scala/org/opencypher/morpheus/examples/DataFrameInputExample.scala).   
 
 Once the property graph is constructed, it supports Cypher queries via its `cypher` method.
 
 ```scala
 import org.apache.spark.sql.DataFrame
-import org.opencypher.spark.api.MorpheusSession
-import org.opencypher.spark.api.io.{MorpheusNodeTable, MorpheusRelationshipTable}
-import org.opencypher.spark.util.App
+import org.opencypher.morpheus.api.MorpheusSession
+import org.opencypher.morpheus.api.io.{MorpheusNodeTable, MorpheusRelationshipTable}
+import org.opencypher.morpheus.util.App
 
 /**
   * Demonstrates basic usage of the Morpheus API by loading an example graph from [[DataFrame]]s.
@@ -163,7 +163,7 @@ The above program prints:
 Set(Alice, Bob, Eve)
 ```
 
-More examples, including [multiple graph features](spark-cypher-examples/src/main/scala/org/opencypher/spark/examples/MultipleGraphExample.scala), can be found [in the examples module](spark-cypher-examples).
+More examples, including [multiple graph features](spark-cypher-examples/src/main/scala/org/opencypher/morpheus/examples/MultipleGraphExample.scala), can be found [in the examples module](spark-cypher-examples).
 
 ### Run example Scala apps via command line
 
@@ -171,12 +171,12 @@ You can use Gradle to run a specific Scala application from command line. For ex
 within the `spark-cypher-examples` module, we just call:
 
 ```
-./gradlew spark-cypher-examples:runApp -PmainClass=org.opencypher.spark.examples.CaseClassExample
+./gradlew spark-cypher-examples:runApp -PmainClass=org.opencypher.morpheus.examples.CaseClassExample
 ```
 
 ### Loading CSV Data
 
-See the documentation in `org.opencypher.spark.impl.io.hdfs.CsvGraphLoader`, which specifies how to structure the
+See the documentation in `org.opencypher.morpheus.impl.io.hdfs.CsvGraphLoader`, which specifies how to structure the
 CSV and the schema mappings that describe the graph structure for the underlying data.
 
 #### Next steps

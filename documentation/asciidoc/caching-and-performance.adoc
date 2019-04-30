@@ -32,8 +32,8 @@ Alternatively, you can call `.persist()` on the Spark table and specify a storag
 
 [source, scala]
 ----
-import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.morpheus.impl.MorpheusConverters._
 
-val graph = session.readFrom(stuff, things).asCaps
+val graph = session.readFrom(stuff, things).asMorpheus
 graph.cache()
 ----
