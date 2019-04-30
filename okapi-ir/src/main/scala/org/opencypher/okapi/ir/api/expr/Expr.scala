@@ -608,16 +608,13 @@ sealed trait FunctionExpr extends Expr {
   def exprs: List[Expr]
 }
 
-final case class MonotonicallyIncreasingId() extends FunctionExpr {
-
-  override def exprs: List[Expr] = List.empty
-
-  override def cypherType: CypherType = CTInteger
-}
-
 sealed trait NullaryFunctionExpr extends FunctionExpr {
 
   def exprs: List[Expr] = List.empty[Expr]
+}
+
+final case class MonotonicallyIncreasingId() extends NullaryFunctionExpr {
+  override def cypherType: CypherType = CTInteger
 }
 
 sealed trait UnaryFunctionExpr extends FunctionExpr {

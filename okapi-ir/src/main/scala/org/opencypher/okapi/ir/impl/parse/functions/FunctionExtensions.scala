@@ -37,11 +37,6 @@ case object FunctionExtensions {
     LocalDateTime.name -> LocalDateTime,
     Date.name -> Date,
     Duration.name -> Duration,
-    ToBoolean.name -> ToBoolean,
-    ToString.name -> ToString,
-    Min.name -> Min,
-    Max.name -> Max,
-    Id.name -> Id
   ).map(p => p._1.toLowerCase -> p._2)
 
   def get(name: String): Option[Function with TypeSignatures] =
@@ -82,55 +77,10 @@ case object Date extends Function with TypeSignatures {
 
 case object Duration extends Function with TypeSignatures {
   override val name = "duration"
-
+  //todo: are these used?
   override val signatures = Vector(
     TypeSignature(argumentTypes = Vector(CTString), outputType = CTDuration),
     TypeSignature(argumentTypes = Vector(CTMap), outputType = CTDuration)
-  )
-}
-
-case object ToBoolean extends Function with TypeSignatures {
-  override val name = functions.ToBoolean.name
-
-  override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTString), outputType = CTBoolean),
-    TypeSignature(argumentTypes = Vector(CTBoolean), outputType = CTBoolean)
-  )
-}
-
-case object ToString extends Function with TypeSignatures {
-  override val name = functions.ToString.name
-
-  override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTInteger), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTBoolean), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTString), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTDuration), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTDate), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTTime), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTDateTime), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTLocalTime), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTLocalDateTime), outputType = CTString),
-    TypeSignature(argumentTypes = Vector(CTPoint), outputType = CTString)
-  )
-}
-
-case object Min extends AggregatingFunction with TypeSignatures {
-  override def name: String = functions.Min.name
-
-  override val signatures: Vector[TypeSignature] = Vector(
-    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat),
-    TypeSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger)
-  )
-}
-
-case object Max extends AggregatingFunction with TypeSignatures {
-  override def name: String = functions.Max.name
-
-  override val signatures: Vector[TypeSignature] = Vector(
-    TypeSignature(argumentTypes = Vector(CTFloat), outputType = CTFloat),
-    TypeSignature(argumentTypes = Vector(CTInteger), outputType = CTInteger)
   )
 }
 
@@ -139,11 +89,3 @@ object CTIdentity extends CypherType {
   override def toNeoTypeString: String = "IDENTITY"
 }
 
-case object Id extends Function with TypeSignatures {
-  def name: String = functions.Id.name
-
-  override val signatures: Vector[TypeSignature] = Vector(
-    TypeSignature(argumentTypes = Vector(CTNode), outputType = CTIdentity),
-    TypeSignature(argumentTypes = Vector(CTRelationship), outputType = CTIdentity)
-  )
-}
