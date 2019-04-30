@@ -28,7 +28,7 @@ Please note that this is an openCypher project and contributions can only be acc
 
 ## Documentation
 
-A preview of the documentation for Morpheus, which is a commercially supported version of Morpheus, is [available from Neo4j](https://neo4j.com/docs/morpheus-user-guide/1.0-preview/).
+A preview of the documentation for Morpheus is [available from Neo4j](https://neo4j.com/docs/morpheus-user-guide/1.0-preview/).
 
 ## Morpheus Features
 
@@ -45,7 +45,6 @@ Morpheus has a data source API that allows you to plug in custom data importers 
 Morpheus is under rapid development and we are planning to offer support for:
 - a large subset of the Cypher language
 - new Cypher Multiple Graph features
-- integration with Spark SQL
 - injection of custom graph data sources
 
 ## Spark Project Improvement Proposal
@@ -104,12 +103,9 @@ specific, but a quirk of spark execution that will help
 ### Hello Morpheus
 
 Cypher is based on the [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) data model, comprising labelled nodes and typed relationships, with a relationship either connecting two nodes, or forming a self-loop on a single node. 
-Both nodes and relationships are uniquely identified by an ID (in Morpheus this is of type `Long`), and contain a set of properties. 
+Both nodes and relationships are uniquely identified by an ID (Morpheus internally uses `Array[Byte]` to represent identifiers and auto-casts `Long`, `String` and `Integer` values), and contain a set of properties. 
 
-The following example shows how to convert a social network represented as Scala case classes to a `PropertyGraph` representation. 
-The `PropertyGraph` representation is internally transformed into Spark data frames. 
-If you have existing data frames which you would like to treat as a graph, have a look at our [DataFrameInputExample](morpheus-examples/src/main/scala/org/opencypher/morpheus/examples/DataFrameInputExample.scala).   
-
+The following example shows how to convert a social network represented by two DataFrames to a `PropertyGraph`. 
 Once the property graph is constructed, it supports Cypher queries via its `cypher` method.
 
 ```scala
@@ -167,17 +163,12 @@ More examples, including [multiple graph features](morpheus-examples/src/main/sc
 
 ### Run example Scala apps via command line
 
-You can use Gradle to run a specific Scala application from command line. For example, to run the `CaseClassExample` 
+You can use Gradle to run a specific Scala application from command line. For example, to run the `DataFrameInputExample` 
 within the `morpheus-examples` module, we just call:
 
 ```
-./gradlew morpheus-examples:runApp -PmainClass=org.opencypher.morpheus.examples.CaseClassExample
+./gradlew morpheus-examples:runApp -PmainClass=org.opencypher.morpheus.examples.DataFrameInputExample
 ```
-
-### Loading CSV Data
-
-See the documentation in `org.opencypher.morpheus.impl.io.hdfs.CsvGraphLoader`, which specifies how to structure the
-CSV and the schema mappings that describe the graph structure for the underlying data.
 
 #### Next steps
 
