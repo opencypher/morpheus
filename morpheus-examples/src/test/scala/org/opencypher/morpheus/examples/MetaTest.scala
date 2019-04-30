@@ -39,7 +39,7 @@ import scala.util.Try
 class MetaTest extends BaseTestSuite {
 
   val readmeName = "README.md"
-  val moduleName = "spark-cypher-examples"
+  val moduleName = "morpheus-examples"
 
   private val rootFolderPath = findRootFolderPath(Paths.get(".").toAbsolutePath.normalize.toString)
   private val examplePath = DataFrameInputExample.getClass.getName.dropRight(1).replace(".", File.separator)
