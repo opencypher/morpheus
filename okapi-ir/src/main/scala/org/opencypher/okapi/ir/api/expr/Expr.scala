@@ -646,7 +646,7 @@ sealed trait UnaryFunctionExpr extends FunctionExpr {
 }
 
 final case class Id(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = childNullPropagatesTo(CTIdentity)
+  override val cypherType: CypherType = cypherType(Some(ChildNullPropagation()))
 
   def signature(cypherType: CypherType): Option[CypherType] = cypherType match {
     case CTNode | CTRelationship => Some(CTIdentity)
@@ -893,10 +893,9 @@ final case class BitwiseOr(lhs: Expr, rhs: Expr) extends BinaryExpr {
 }
 
 // Mathematical functions
-trait UnaryMathematicalFunctionExpr extends UnaryFunctionExpr {
+//todo: abstract class instead of trait (get outPutCypherType as parameter)
+sealed abstract class UnaryMathematicalFunctionExpr(outPutCypherType : CypherType) extends UnaryFunctionExpr {
   def cypherType: CypherType = cypherType(Some(NullabilityPropagation()))
-
-  def outPutCypherType: CypherType
 
   def signature(cypherType: CypherType): Option[CypherType] = cypherType match {
     case CTNumber => Some(outPutCypherType)
@@ -904,21 +903,13 @@ trait UnaryMathematicalFunctionExpr extends UnaryFunctionExpr {
   }
 }
 
-final case class Sqrt(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTFloat
-}
+final case class Sqrt(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Log(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTFloat
-}
+final case class Log(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Log10(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTFloat
-}
+final case class Log10(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Exp(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTFloat
-}
+final case class Exp(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
 case object E extends NullaryFunctionExpr {
   override val cypherType: CypherType = CTFloat
@@ -930,76 +921,46 @@ case object Pi extends NullaryFunctionExpr {
 
 // Numeric functions
 
-final case class Abs(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTNumber
-}
+final case class Abs(expr: Expr) extends UnaryMathematicalFunctionExpr(CTNumber)
 
-final case class Ceil(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTInteger
-}
+final case class Ceil(expr: Expr) extends UnaryMathematicalFunctionExpr(CTInteger)
 
-final case class Floor(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTInteger
-}
+final case class Floor(expr: Expr) extends UnaryMathematicalFunctionExpr(CTInteger)
 
 case object Rand extends NullaryFunctionExpr {
   override val cypherType: CypherType = CTFloat
 }
 
-final case class Round(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTInteger
-}
+final case class Round(expr: Expr) extends UnaryMathematicalFunctionExpr(CTInteger)
 
-final case class Sign(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTInteger
-}
+final case class Sign(expr: Expr) extends UnaryMathematicalFunctionExpr(CTInteger)
 
 // Trigonometric functions
 
-final case class Acos(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTFloat
-}
+final case class Acos(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Asin(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTFloat
-}
+final case class Asin(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Atan(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTFloat
-}
+final case class Atan(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
 final case class Atan2(expr1: Expr, expr2: Expr) extends FunctionExpr {
   override val cypherType: CypherType = childNullPropagatesTo(CTFloat)
   override def exprs: List[Expr] = List(expr1, expr2)
 }
 
-final case class Cos(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTFloat
-}
+final case class Cos(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Cot(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTFloat
-}
+final case class Cot(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Degrees(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTFloat
-}
+final case class Degrees(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Haversin(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTFloat
-}
+final case class Haversin(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Radians(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTFloat
-}
+final case class Radians(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Sin(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTFloat
-}
+final case class Sin(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Tan(expr: Expr) extends UnaryMathematicalFunctionExpr {
-  override def outPutCypherType: CypherType = CTFloat
-}
+final case class Tan(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
 // Time functions
 
