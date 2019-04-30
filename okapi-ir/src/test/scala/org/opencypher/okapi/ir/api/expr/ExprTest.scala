@@ -144,6 +144,27 @@ class ExprTest extends BaseTestSuite {
       Sum(number).cypherType shouldBe CTNumber
       an[UnsupportedOperationException] shouldBe thrownBy {Sum(datetime).cypherType}
     }
-  }
 
+    it("types Size correctly") {
+      Size(e).cypherType shouldBe CTInteger.nullable
+      an[UnsupportedOperationException] shouldBe thrownBy {Size(datetime).cypherType}
+    }
+
+    it("types Trim correctly") {
+      Trim(e).cypherType shouldBe CTInteger.nullable
+      an[UnsupportedOperationException] shouldBe thrownBy {Trim(datetime).cypherType}
+    }
+
+    it("types Range correctly") {
+      Range(d, d, None).cypherType shouldBe CTList(CTInteger)
+      Range(d, d, Some(d)).cypherType
+      an[UnsupportedOperationException] shouldBe thrownBy {Range(e, d, None).cypherType}
+    }
+
+    it("types TemporalInstants correctly") {
+      Date(Some(e)).cypherType shouldBe CTDate.nullable
+      Duration(e).cypherType shouldBe CTDuration.nullable
+      LocalDateTime(Some(e)).cypherType shouldBe CTLocalDateTime.nullable
+    }
+  }
 }
