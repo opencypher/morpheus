@@ -51,16 +51,6 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
   val emptySchema: PropertyGraphSchema = PropertyGraphSchema.empty
   val emptyGraph = TestGraph(emptySchema)
 
-  //  //Helper to create nicer expected results with `asCode`
-  //  import org.opencypher.caps.impl.common.AsCode._
-  //  implicit val specialMappings = Map[Any, String](
-  //    schema -> "schema",
-  //    emptySqm -> "emptySqm",
-  //    logicalGraph -> "logicalGraph",
-  //    emptySqm -> "emptySqm",
-  //    (CTNode: CTNode) -> "CTNode"
-  //  )
-
   it("rewrites missing label scan to empty records") {
     val query =
       """|MATCH (a:Animal)

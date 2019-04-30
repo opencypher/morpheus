@@ -30,7 +30,7 @@ import org.apache.log4j.{Level, Logger}
 import org.opencypher.okapi.api.value.CypherValue.CypherFloat
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.{cypher => neo4jCypher, _}
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants._
 
 object Part4_BusinessTrends extends App {
@@ -40,7 +40,7 @@ object Part4_BusinessTrends extends App {
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
-  implicit val morpheus: CAPSSession = CAPSSession.local()
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
   import morpheus._
 
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)

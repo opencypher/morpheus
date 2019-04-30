@@ -32,13 +32,13 @@ import org.apache.spark.sql.{DataFrame, functions}
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
-import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.MorpheusSession
 import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure._
 import org.opencypher.spark.api.io.fs.{CsvGraphSource, FSGraphSource}
 import org.opencypher.spark.api.io.fs.HadoopFSHelpers._
 import org.opencypher.spark.api.io.neo4j.Neo4jBulkCSVDataSink._
 import org.opencypher.spark.api.io.{FileFormat, GraphElement, Relationship}
-import org.opencypher.spark.schema.CAPSSchema
+import org.opencypher.spark.schema.MorpheusSchema
 
 object Neo4jBulkCSVDataSink {
 
@@ -76,6 +76,7 @@ object Neo4jBulkCSVDataSink {
       }
     }
   }
+
 }
 
 /**
@@ -86,15 +87,15 @@ object Neo4jBulkCSVDataSink {
   * runs the import.
   *
   * @param rootPath       Directory where the graph is being stored in
-  * @param arrayDelimiter elimiter for array properties
-  * @param session        CAPS session
+  * @param arrayDelimiter Delimiter for array properties
+  * @param morpheus       Morpheus session
   */
-class Neo4jBulkCSVDataSink(override val rootPath: String, arrayDelimiter: String = "|")(implicit session: CAPSSession)
+class Neo4jBulkCSVDataSink(override val rootPath: String, arrayDelimiter: String = "|")(implicit morpheus: MorpheusSession)
   extends CsvGraphSource(rootPath) {
 
   override protected def writeSchema(
     graphName: GraphName,
-    schema: CAPSSchema
+    schema: MorpheusSchema
   ): Unit = {
     val nodeArguments = schema.labelCombinations.combos.toSeq.map { labels =>
       s"""--nodes:${labels.mkString(":")} "${schemaFileForNodes(graphName, labels)},${dataFileForNodes(graphName, labels)}""""
@@ -168,7 +169,7 @@ class Neo4jBulkCSVDataSink(override val rootPath: String, arrayDelimiter: String
   private def writeHeaderFile(path: String, fields: Array[StructField]): Unit = {
     val neoSchema = fields.map {
       //TODO: use Neo4jDefaults here
-      case field if field.name == GraphElement.sourceIdKey => s"___capsID:ID"
+      case field if field.name == GraphElement.sourceIdKey => s"___morpheusID:ID"
       case field if field.name == Relationship.sourceStartNodeKey => ":START_ID"
       case field if field.name == Relationship.sourceEndNodeKey => ":END_ID"
       case field if field.name.isPropertyColumnName => s"${field.name.toProperty}:${field.dataType.toNeo4jBulkImportType}"
@@ -178,8 +179,12 @@ class Neo4jBulkCSVDataSink(override val rootPath: String, arrayDelimiter: String
   }
 
   override def hasGraph(graphName: GraphName): Boolean = false
+
   override def graphNames: Set[GraphName] = throw UnsupportedOperationException("Write-only PGDS")
+
   override def delete(graphName: GraphName): Unit = throw UnsupportedOperationException("Write-only PGDS")
+
   override def graph(name: GraphName): PropertyGraph = throw UnsupportedOperationException("Write-only PGDS")
-  override def schema(graphName: GraphName): Option[CAPSSchema] = throw UnsupportedOperationException("Write-only PGDS")
+
+  override def schema(graphName: GraphName): Option[MorpheusSchema] = throw UnsupportedOperationException("Write-only PGDS")
 }

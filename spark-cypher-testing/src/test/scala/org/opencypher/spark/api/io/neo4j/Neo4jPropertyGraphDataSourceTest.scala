@@ -42,24 +42,24 @@ import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.CypherGraphSources
-import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, CAPSElementTable}
-import org.opencypher.spark.api.value.CAPSNode
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, MorpheusElementTable}
+import org.opencypher.spark.api.value.MorpheusNode
+import org.opencypher.spark.impl.MorpheusConverters._
+import org.opencypher.spark.testing.MorpheusTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
 import org.opencypher.spark.testing.utils.BagHelpers._
 
 class Neo4jPropertyGraphDataSourceTest
-  extends CAPSTestSuite
+  extends MorpheusTestSuite
     with Neo4jServerFixture
     with TeamDataFixture {
 
   it("should cache the schema during and between queries") {
     val spiedPGDS = spy(CypherGraphSources.neo4j(neo4jConfig))
 
-    caps.registerSource(Namespace("pgds"), spiedPGDS)
+    morpheus.registerSource(Namespace("pgds"), spiedPGDS)
 
-    caps.cypher(
+    morpheus.cypher(
       s"""
          |FROM pgds.$entireGraphName
          |MATCH (n)
@@ -67,7 +67,7 @@ class Neo4jPropertyGraphDataSourceTest
       """.stripMargin
     ).records.size
 
-    caps.cypher(
+    morpheus.cypher(
       s"""
          |FROM pgds.$entireGraphName
          |MATCH (n)
@@ -81,7 +81,7 @@ class Neo4jPropertyGraphDataSourceTest
   }
 
   it("can read lists from Neo4j") {
-    val graph = CypherGraphSources.neo4j(neo4jConfig).graph(entireGraphName).asCaps
+    val graph = CypherGraphSources.neo4j(neo4jConfig).graph(entireGraphName).asMorpheus
     graph.cypher("MATCH (n) RETURN n.languages").records.iterator.toBag should equal(Bag(
       CypherMap("n.languages" -> Seq("German", "English", "Klingon")),
       CypherMap("n.languages" -> Seq()),
@@ -92,20 +92,20 @@ class Neo4jPropertyGraphDataSourceTest
   }
 
   it("should load a graph from Neo4j via DataSource") {
-    val graph = CypherGraphSources.neo4j(neo4jConfig).graph(entireGraphName).asCaps
-    graph.nodes("n").asCaps.toCypherMaps.collect.toBag.nodeValuesWithoutIds shouldEqual teamDataGraphNodes.nodeValuesWithoutIds
-    graph.relationships("r").asCaps.toCypherMaps.collect.toBag.relValuesWithoutIds shouldEqual teamDataGraphRels.relValuesWithoutIds
+    val graph = CypherGraphSources.neo4j(neo4jConfig).graph(entireGraphName).asMorpheus
+    graph.nodes("n").asMorpheus.toCypherMaps.collect.toBag.nodeValuesWithoutIds shouldEqual teamDataGraphNodes.nodeValuesWithoutIds
+    graph.relationships("r").asMorpheus.toCypherMaps.collect.toBag.relValuesWithoutIds shouldEqual teamDataGraphRels.relValuesWithoutIds
   }
 
   it("should load a graph from Neo4j via catalog") {
     val testNamespace = Namespace("myNeo4j")
 
-    caps.registerSource(testNamespace, CypherGraphSources.neo4j(neo4jConfig))
+    morpheus.registerSource(testNamespace, CypherGraphSources.neo4j(neo4jConfig))
 
-    val nodes: CypherResult = caps.cypher(s"FROM GRAPH $testNamespace.$entireGraphName MATCH (n) RETURN n")
+    val nodes: CypherResult = morpheus.cypher(s"FROM GRAPH $testNamespace.$entireGraphName MATCH (n) RETURN n")
     nodes.records.collect.toBag.nodeValuesWithoutIds shouldEqual teamDataGraphNodes.nodeValuesWithoutIds
 
-    val edges = caps.cypher(s"FROM GRAPH $testNamespace.$entireGraphName MATCH ()-[r]->() RETURN r")
+    val edges = morpheus.cypher(s"FROM GRAPH $testNamespace.$entireGraphName MATCH ()-[r]->() RETURN r")
     edges.records.collect.toBag.relValuesWithoutIds shouldEqual teamDataGraphRels.relValuesWithoutIds
   }
 
@@ -113,12 +113,12 @@ class Neo4jPropertyGraphDataSourceTest
     neo4jConfig.cypherWithNewSession(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: duration('P2.5W'), bar: 42 })""")
 
     val dataSource = CypherGraphSources.neo4j(neo4jConfig, omitIncompatibleProperties = true)
-    val graph = dataSource.graph(GraphName("test")).asCaps
-    val nodes = graph.nodes("n").asCaps.toCypherMaps.collect.toList
+    val graph = dataSource.graph(GraphName("test")).asMorpheus
+    val nodes = graph.nodes("n").asMorpheus.toCypherMaps.collect.toList
     nodes.size shouldBe 1
     nodes.head.value match {
-      case n: CAPSNode => n should equal(CAPSNode(n.id, Set("Unsupported"), CypherMap("bar" -> 42L)))
-      case other => IllegalArgumentException("a CAPSNode", other)
+      case n: MorpheusNode => n should equal(MorpheusNode(n.id, Set("Unsupported"), CypherMap("bar" -> 42L)))
+      case other => IllegalArgumentException("a MorpheusNode", other)
     }
   }
 
@@ -127,8 +127,8 @@ class Neo4jPropertyGraphDataSourceTest
       neo4jConfig.cypherWithNewSession(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: time(), bar: 42 })""")
 
       val dataSource = CypherGraphSources.neo4j(neo4jConfig)
-      val graph = dataSource.graph(GraphName("test")).asCaps
-      graph.nodes("n").asCaps.toCypherMaps.collect.toList
+      val graph = dataSource.graph(GraphName("test")).asMorpheus
+      graph.nodes("n").asMorpheus.toCypherMaps.collect.toList
     }
   }
 
@@ -138,10 +138,10 @@ class Neo4jPropertyGraphDataSourceTest
     val node2DF = sparkSession.createDataFrame(List(Row(1L)).asJava, schema)
 
     val nodeMapping = NodeMappingBuilder.create("id")
-    val node1Table = CAPSElementTable.create(nodeMapping, node1DF)
-    val node2Table = CAPSElementTable.create(nodeMapping, node2DF)
+    val node1Table = MorpheusElementTable.create(nodeMapping, node1DF)
+    val node2Table = MorpheusElementTable.create(nodeMapping, node2DF)
 
-    val graph = caps.readFrom(node1Table, node2Table)
+    val graph = morpheus.readFrom(node1Table, node2Table)
 
     val dataSource = CypherGraphSources.neo4j(neo4jConfig)
 
@@ -149,7 +149,7 @@ class Neo4jPropertyGraphDataSourceTest
       dataSource.store(GraphName("foo"), graph)
     }
     sparkException.getCause.getMessage should equal(
-      "Could not write the graph to Neo4j. The graph you are attempting to write contains at least two nodes with CAPS id '01'"
+      "Could not write the graph to Neo4j. The graph you are attempting to write contains at least two nodes with Morpheus id '01'"
     )
   }
 

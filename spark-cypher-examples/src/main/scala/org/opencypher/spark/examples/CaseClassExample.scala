@@ -27,21 +27,21 @@
 // tag::full-example[]
 package org.opencypher.spark.examples
 
-import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.MorpheusSession
 import org.opencypher.spark.api.io.{Node, Relationship, RelationshipType}
 import org.opencypher.spark.util.App
 
 /**
-  * Demonstrates basic usage of the CAPS API by loading an example network via Scala case classes and running a Cypher
+  * Demonstrates basic usage of the Morpheus API by loading an example network via Scala case classes and running a Cypher
   * query on it.
   */
 object CaseClassExample extends App {
 
-  // 1) Create CAPS session
-  implicit val session: CAPSSession = CAPSSession.local()
+  // 1) Create Morpheus session
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // 2) Load social network data via case class instances
-  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  val socialNetwork = morpheus.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
   // 3) Query graph with Cypher
   val results = socialNetwork.cypher(

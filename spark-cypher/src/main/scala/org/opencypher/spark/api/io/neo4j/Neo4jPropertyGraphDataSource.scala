@@ -43,16 +43,16 @@ import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 import org.opencypher.okapi.neo4j.io.{ElementReader, ElementWriter, Neo4jConfig}
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.api.MorpheusSession
+import org.opencypher.spark.impl.MorpheusConverters._
+import org.opencypher.spark.impl.MorpheusRecords
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.expressions.EncodeLong._
 import org.opencypher.spark.impl.io.neo4j.external.Neo4j
 import org.opencypher.spark.impl.table.SparkTable._
 import org.opencypher.spark.impl.temporal.TemporalConversions._
-import org.opencypher.spark.schema.CAPSSchema
-import org.opencypher.spark.schema.CAPSSchema._
+import org.opencypher.spark.schema.MorpheusSchema
+import org.opencypher.spark.schema.MorpheusSchema._
 
 import scala.collection.mutable
 import scala.concurrent.ExecutionContext.Implicits.global
@@ -63,7 +63,7 @@ case class Neo4jPropertyGraphDataSource(
   override val config: Neo4jConfig,
   maybeSchema: Option[PropertyGraphSchema] = None,
   override val omitIncompatibleProperties: Boolean = false
-)(implicit val caps: CAPSSession) extends AbstractNeo4jDataSource with Logging {
+)(implicit val morpheus: MorpheusSession) extends AbstractNeo4jDataSource with Logging {
 
   graphNameCache += entireGraphName
 
@@ -92,7 +92,7 @@ case class Neo4jPropertyGraphDataSource(
     maybeSchema.getOrElse(super.readSchema(entireGraphName))
   }
 
-  override protected[io] def readSchema(graphName: GraphName): CAPSSchema = {
+  override protected[io] def readSchema(graphName: GraphName): MorpheusSchema = {
     val filteredSchema = graphName.getMetaLabel match {
       case None =>
         entireGraphSchema
@@ -102,7 +102,7 @@ case class Neo4jPropertyGraphDataSource(
         val cleanRelTypePropertyMap = entireGraphSchema.relTypePropertyMap.withoutMetaProperty
         PropertyGraphSchemaImpl(cleanLabelPropertyMap, cleanRelTypePropertyMap)
     }
-    filteredSchema.asCaps
+    filteredSchema.asMorpheus
   }
 
   override protected def readNodeTable(
@@ -113,13 +113,13 @@ case class Neo4jPropertyGraphDataSource(
     val graphSchema = schema(graphName).get
     val flatQuery = ElementReader.flatExactLabelQuery(labels, graphSchema, graphName.getMetaLabel)
 
-    val neo4jConnection = Neo4j(config, caps.sparkSession)
+    val neo4jConnection = Neo4j(config, morpheus.sparkSession)
     val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
 
     // encode Neo4j identifiers to BinaryType
-    caps.sparkSession
+    morpheus.sparkSession
       .createDataFrame(rdd, sparkSchema.convertTypes(BinaryType, LongType))
-      .transformColumns(idPropertyKey)(_.encodeLongAsCAPSId)
+      .transformColumns(idPropertyKey)(_.encodeLongAsMorpheusId)
   }
 
   override protected def readRelationshipTable(
@@ -130,13 +130,13 @@ case class Neo4jPropertyGraphDataSource(
     val graphSchema = schema(graphName).get
     val flatQuery = ElementReader.flatRelTypeQuery(relKey, graphSchema, graphName.getMetaLabel)
 
-    val neo4jConnection = Neo4j(config, caps.sparkSession)
+    val neo4jConnection = Neo4j(config, morpheus.sparkSession)
     val rdd = neo4jConnection.cypher(flatQuery).loadRowRdd
 
     // encode Neo4j identifiers to BinaryType
-    caps.sparkSession
+    morpheus.sparkSession
       .createDataFrame(rdd, sparkSchema.convertTypes(BinaryType, LongType))
-      .transformColumns(idPropertyKey, startIdPropertyKey, endIdPropertyKey)(_.encodeLongAsCAPSId)
+      .transformColumns(idPropertyKey, startIdPropertyKey, endIdPropertyKey)(_.encodeLongAsMorpheusId)
   }
 
   override protected def deleteGraph(graphName: GraphName): Unit = {
@@ -173,7 +173,7 @@ case class Neo4jPropertyGraphDataSource(
     } yield Future {}
     Await.result(writesCompleted, Duration.Inf)
 
-    schemaCache += graphName -> graph.schema.asCaps
+    schemaCache += graphName -> graph.schema.asMorpheus
     graphNameCache += graphName
   }
 
@@ -184,9 +184,9 @@ case class Neo4jPropertyGraphDataSource(
 
 case object Writers {
   def writeNodes(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig)
-    (implicit caps: CAPSSession): Set[Future[Unit]] = {
+    (implicit morpheus: MorpheusSession): Set[Future[Unit]] = {
     val result: Set[Future[Unit]] = graph.schema.labelCombinations.combos.map { combo =>
-      val nodeScan = graph.nodes("n", CTNode(combo), exactLabelMatch = true).asCaps
+      val nodeScan = graph.nodes("n", CTNode(combo), exactLabelMatch = true).asMorpheus
       val mapping = computeMapping(nodeScan)
       nodeScan
         .df
@@ -200,9 +200,9 @@ case object Writers {
   }
 
   def writeRelationships(graph: PropertyGraph, metaLabel: String, config: Neo4jConfig)
-    (implicit caps: CAPSSession): Set[Future[Unit]] = {
+    (implicit morpheus: MorpheusSession): Set[Future[Unit]] = {
     graph.schema.relationshipTypes.map { relType =>
-      val relScan = graph.relationships("r", CTRelationship(relType)).asCaps
+      val relScan = graph.relationships("r", CTRelationship(relType)).asMorpheus
       val mapping = computeMapping(relScan)
 
       val header = relScan.header
@@ -253,7 +253,7 @@ case object Writers {
     Values.value(array: _*)
   }
 
-  private def computeMapping(nodeScan: CAPSRecords): Array[String] = {
+  private def computeMapping(nodeScan: MorpheusRecords): Array[String] = {
     val header = nodeScan.header
     val nodeVar = header.elementVars.head
     val properties: Set[Property] = header.expressionsFor(nodeVar).collect {

@@ -56,7 +56,7 @@ object Relationship {
 }
 
 /**
-  * If a relationship has no type annotation, then the class name in all caps is used as its type.
+  * If a relationship has no type annotation, then the class name in upper case is used as its type.
   * If a `Type` annotation, for example `@RelationshipType("FRIEND_OF")` is present,
   * then the type from that annotation is used instead.
   */

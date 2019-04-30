@@ -29,7 +29,7 @@ package org.opencypher.spark.jmh
 import org.apache.spark.sql.types.StringType
 import org.apache.spark.sql.{DataFrame, SparkSession, functions}
 import org.apache.spark.storage.StorageLevel
-import org.opencypher.spark.impl.CAPSFunctions
+import org.opencypher.spark.impl.MorpheusFunctions
 import org.opencypher.spark.impl.expressions.EncodeLong._
 import org.openjdk.jmh.annotations._
 
@@ -50,7 +50,7 @@ class ConcatColumnBenchmark {
     val indexCol = rangeDf.col("i")
     df = rangeDf
       .withColumn("s", indexCol.cast(StringType))
-      .withColumn("b", indexCol.encodeLongAsCAPSId)
+      .withColumn("b", indexCol.encodeLongAsMorpheusId)
       .partitionAndCache
   }
 
@@ -62,7 +62,7 @@ class ConcatColumnBenchmark {
 
   @Benchmark
   def serialize(): Int = {
-    val result = df.withColumn("c", CAPSFunctions.serialize(df.col("i"), df.col("s"), df.col("b")))
+    val result = df.withColumn("c", MorpheusFunctions.serialize(df.col("i"), df.col("s"), df.col("b")))
     result.select("c").collect().length
   }
 

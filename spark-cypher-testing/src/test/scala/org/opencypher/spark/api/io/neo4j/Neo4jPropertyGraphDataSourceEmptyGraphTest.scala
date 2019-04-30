@@ -30,9 +30,9 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class Neo4jPropertyGraphDataSourceEmptyGraphTest extends CAPSTestSuite with Neo4jServerFixture {
+class Neo4jPropertyGraphDataSourceEmptyGraphTest extends MorpheusTestSuite with Neo4jServerFixture {
 
   override def dataFixture: String = ""
 

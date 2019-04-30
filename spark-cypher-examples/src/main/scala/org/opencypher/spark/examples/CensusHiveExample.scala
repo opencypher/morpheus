@@ -33,7 +33,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Hive
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.util.{App, CensusDB}
 
 object CensusHiveExample extends App {
@@ -41,9 +41,9 @@ object CensusHiveExample extends App {
   implicit val resourceFolder: String = "/census"
 
   // tag::create-session[]
-  // Create a Spark and a CAPS session
-  implicit val session: CAPSSession = CAPSSession.local(hiveExampleSettings: _*)
-  implicit val sparkSession: SparkSession = session.sparkSession
+  // Create a Spark and a Morpheus session
+  implicit val morpheus: MorpheusSession = MorpheusSession.local(hiveExampleSettings: _*)
+  implicit val sparkSession: SparkSession = morpheus.sparkSession
   // end::create-session[]
 
 
@@ -59,12 +59,12 @@ object CensusHiveExample extends App {
   CensusDB.createHiveData(Hive)
   // end::prepare-sql-database[]
 
-  session.registerSource(Namespace("sql"), sqlGraphSource)
+  morpheus.registerSource(Namespace("sql"), sqlGraphSource)
   // end::register-sql-source-in-session[]
 
   // tag::access-registered-graph[]
   // Access the graph via its qualified graph name
-  val census = session.catalog.graph("sql." + graphName)
+  val census = morpheus.catalog.graph("sql." + graphName)
   // end::access-registered-graph[]
 
   // tag::query-graph[]

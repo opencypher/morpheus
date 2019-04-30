@@ -31,15 +31,15 @@ import org.apache.spark.sql.{Row, functions}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.table.SparkTable.{DataFrameTable, _}
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 import org.scalatest.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.collection.JavaConverters._
 import scala.collection.mutable.WrappedArray.ofLong
 
-class SparkTableTest extends CAPSTestSuite with Matchers with ScalaCheckDrivenPropertyChecks {
-  import caps.sparkSession.sqlContext.implicits._
+class SparkTableTest extends MorpheusTestSuite with Matchers with ScalaCheckDrivenPropertyChecks {
+  import morpheus.sparkSession.sqlContext.implicits._
 
   it("it should cast integer columns to long") {
 

@@ -28,15 +28,15 @@ package org.opencypher.spark.impl
 
 import org.apache.spark.sql.Row
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.api.value.CAPSElement._
+import org.opencypher.spark.api.value.MorpheusElement._
 import org.opencypher.spark.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
 
-class UnionGraphTest extends CAPSGraphTest
+class UnionGraphTest extends MorpheusGraphTest
   with GraphConstructionFixture
   with RecordsVerificationFixture
   with TeamDataFixture {
 
-  import CAPSGraphTestData._
+  import MorpheusGraphTestData._
 
   def testGraph1 = initGraph("CREATE (:Person {name: 'Mats'})")
   def testGraph2 = initGraph("CREATE (:Person {name: 'Phil'})")
@@ -54,14 +54,14 @@ class UnionGraphTest extends CAPSGraphTest
   it("supports union in CONSTRUCT:ed graphs") {
     val g1 = initGraph("CREATE ()-[:FOO]->()")
     val g2 = initGraph("CREATE ()")
-    caps.catalog.store("g1", g1)
-    caps.catalog.store("g2", g2)
-    val union = caps.cypher("CONSTRUCT ON g1, g2 RETURN GRAPH").graph
+    morpheus.catalog.store("g1", g1)
+    morpheus.catalog.store("g2", g2)
+    val union = morpheus.cypher("CONSTRUCT ON g1, g2 RETURN GRAPH").graph
 
     union.nodes("n").size shouldBe 3
   }
 
-  test("Node scan from multiple single node CAPSRecords") {
+  test("Node scan from multiple single node MorpheusRecords") {
     val unionGraph = initGraph(`:Person`).unionAll(initGraph(`:Book`))
     val nodes = unionGraph.nodes("n")
     val cols = Seq(
@@ -88,8 +88,8 @@ class UnionGraphTest extends CAPSGraphTest
   }
 
   test("Returns only distinct results") {
-    val scanGraph1 = caps.graphs.create(personTable)
-    val scanGraph2 = caps.graphs.create(personTable)
+    val scanGraph1 = morpheus.graphs.create(personTable)
+    val scanGraph2 = morpheus.graphs.create(personTable)
 
     val unionGraph = scanGraph1.unionAll(scanGraph2)
     val nodes = unionGraph.nodes("n")

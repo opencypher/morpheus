@@ -31,16 +31,16 @@ import org.opencypher.okapi.api.graph.{Namespace, PropertyGraph}
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.impl.graph.ScanGraph
 import org.opencypher.spark.api.io.util.CachedDataSource._
-import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.MorpheusConverters._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 import org.opencypher.spark.testing.fixture.GraphConstructionFixture
 import org.scalatest.BeforeAndAfterEach
 
-class CachedDataSourceTest extends CAPSTestSuite with GraphConstructionFixture with BeforeAndAfterEach {
+class CachedDataSourceTest extends MorpheusTestSuite with GraphConstructionFixture with BeforeAndAfterEach {
 
-  override val testNamespace: Namespace = caps.catalog.sessionNamespace
-  private val testDataSource = caps.catalog.source(testNamespace)
+  override val testNamespace: Namespace = morpheus.catalog.sessionNamespace
+  private val testDataSource = morpheus.catalog.source(testNamespace)
 
   override protected def beforeEach(): Unit = {
     super.beforeEach()
@@ -49,7 +49,7 @@ class CachedDataSourceTest extends CAPSTestSuite with GraphConstructionFixture w
 
   override protected def afterEach(): Unit = {
     if (testDataSource.hasGraph(testGraphName)) {
-      unpersist(testDataSource.graph(testGraphName).asCaps)
+      unpersist(testDataSource.graph(testGraphName).asMorpheus)
       testDataSource.delete(testGraphName)
     }
     super.afterEach()

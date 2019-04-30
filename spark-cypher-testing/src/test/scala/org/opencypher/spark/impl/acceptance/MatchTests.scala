@@ -32,14 +32,14 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.relational.impl.graph.ScanGraph
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class MatchTests extends CAPSTestSuite with ScanGraphInit {
+class MatchTests extends MorpheusTestSuite with ScanGraphInit {
 
   describe("match on empty graphs / table") {
 
     it("return empty result on empty graph") {
-      val result = caps.cypher(
+      val result = morpheus.cypher(
         """
           |MATCH (n)
           |RETURN n
@@ -419,7 +419,7 @@ class MatchTests extends CAPSTestSuite with ScanGraphInit {
 
     it("reports error on mismatched scans on constructed graph") {
       an[IllegalArgumentException] shouldBe thrownBy {
-        caps.cypher(
+        morpheus.cypher(
           """
             |CONSTRUCT
             |  CREATE (:A {p: 1})

@@ -48,17 +48,17 @@ object SqlDataSourceConfig {
   private val defaultMacroRW: ReadWriter[SqlDataSourceConfig] = macroRW
 
   private final val UJSON_TYPE_KEY = "$type"
-  private final val CAPS_TYPE_KEY = "type"
+  private final val MORPHEUS_TYPE_KEY = "type"
 
   implicit val rw: ReadWriter[SqlDataSourceConfig] = readwriter[Value].bimap[SqlDataSourceConfig](
     // Rename discriminator key from ujson default, to a more friendly version
     cfg => writeJs(cfg)(defaultMacroRW).obj.collect {
-      case (UJSON_TYPE_KEY, value) => CAPS_TYPE_KEY -> value
+      case (UJSON_TYPE_KEY, value) => MORPHEUS_TYPE_KEY -> value
       case other => other
     },
     // Revert name change so we can use the ujson reader
     js => read[SqlDataSourceConfig](js.obj.map {
-      case (CAPS_TYPE_KEY, value) => UJSON_TYPE_KEY -> value
+      case (MORPHEUS_TYPE_KEY, value) => UJSON_TYPE_KEY -> value
       case other => other
     })(defaultMacroRW)
   )

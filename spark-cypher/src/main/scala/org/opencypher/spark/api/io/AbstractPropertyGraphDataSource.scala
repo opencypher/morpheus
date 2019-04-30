@@ -35,13 +35,13 @@ import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.{CTIdentity, CypherType}
 import org.opencypher.okapi.impl.exception.GraphNotFoundException
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
-import org.opencypher.spark.api.io.util.CAPSGraphExport._
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
-import org.opencypher.spark.schema.CAPSSchema
-import org.opencypher.spark.schema.CAPSSchema._
+import org.opencypher.spark.api.MorpheusSession
+import org.opencypher.spark.api.io.metadata.MorpheusGraphMetaData
+import org.opencypher.spark.api.io.util.MorpheusGraphExport._
+import org.opencypher.spark.impl.MorpheusConverters._
+import org.opencypher.spark.impl.io.MorpheusPropertyGraphDataSource
+import org.opencypher.spark.schema.MorpheusSchema
+import org.opencypher.spark.schema.MorpheusSchema._
 
 import scala.concurrent.duration.Duration
 import scala.concurrent.{Await, ExecutionContext, ExecutionContextExecutorService, Future}
@@ -70,13 +70,13 @@ object AbstractPropertyGraphDataSource {
   * It automatically creates initializes a ScanGraphs an only requires the implementor to provider simpler methods for
   * reading/writing files and tables.
   */
-abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSource {
+abstract class AbstractPropertyGraphDataSource extends MorpheusPropertyGraphDataSource {
 
-  implicit val caps: CAPSSession
+  implicit val morpheus: MorpheusSession
 
   def tableStorageFormat: StorageFormat
 
-  protected var schemaCache: Map[GraphName, CAPSSchema] = Map.empty
+  protected var schemaCache: Map[GraphName, MorpheusSchema] = Map.empty
 
   protected var graphNameCache: Set[GraphName] = listGraphNames.map(GraphName).toSet
 
@@ -84,13 +84,13 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
 
   protected def deleteGraph(graphName: GraphName): Unit
 
-  protected[io] def readSchema(graphName: GraphName): CAPSSchema
+  protected[io] def readSchema(graphName: GraphName): MorpheusSchema
 
-  protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit
+  protected def writeSchema(graphName: GraphName, schema: MorpheusSchema): Unit
 
-  protected def readCAPSGraphMetaData(graphName: GraphName): CAPSGraphMetaData
+  protected def readMorpheusGraphMetaData(graphName: GraphName): MorpheusGraphMetaData
 
-  protected def writeCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: CAPSGraphMetaData): Unit
+  protected def writeMorpheusGraphMetaData(graphName: GraphName, morpheusGraphMetaData: MorpheusGraphMetaData): Unit
 
   protected def readNodeTable(graphName: GraphName, labelCombination: Set[String], sparkSchema: StructType): DataFrame
 
@@ -114,25 +114,24 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
     if (!hasGraph(name)) {
       throw GraphNotFoundException(s"Graph with name '$name'")
     } else {
-      val capsSchema: CAPSSchema = schema(name).get
-      val capsMetaData: CAPSGraphMetaData = readCAPSGraphMetaData(name)
-      val nodeTables = capsSchema.allCombinations.map { combo =>
-        val df = readNodeTable(name, combo, capsSchema.canonicalNodeStructType(combo))
-        CAPSNodeTable(combo, df)
+      val morpheusSchema: MorpheusSchema = schema(name).get
+      val nodeTables = morpheusSchema.allCombinations.map { combo =>
+        val df = readNodeTable(name, combo, morpheusSchema.canonicalNodeStructType(combo))
+        MorpheusNodeTable(combo, df)
       }
-      val relTables = capsSchema.relationshipTypes.map { relType =>
-        val df = readRelationshipTable(name, relType, capsSchema.canonicalRelStructType(relType))
-        CAPSRelationshipTable(relType, df)
+      val relTables = morpheusSchema.relationshipTypes.map { relType =>
+        val df = readRelationshipTable(name, relType, morpheusSchema.canonicalRelStructType(relType))
+        MorpheusRelationshipTable(relType, df)
       }
       if (nodeTables.isEmpty) {
-        caps.graphs.empty
+        morpheus.graphs.empty
       } else {
-        caps.graphs.create(Some(capsSchema), (nodeTables ++ relTables).toSeq: _*)
+        morpheus.graphs.create(Some(morpheusSchema), (nodeTables ++ relTables).toSeq: _*)
       }
     }
   }
 
-  override def schema(graphName: GraphName): Option[CAPSSchema] = {
+  override def schema(graphName: GraphName): Option[MorpheusSchema] = {
     if (schemaCache.contains(graphName)) {
       schemaCache.get(graphName)
     } else {
@@ -146,18 +145,18 @@ abstract class AbstractPropertyGraphDataSource extends CAPSPropertyGraphDataSour
   override def store(graphName: GraphName, graph: PropertyGraph): Unit = {
     checkStorable(graphName)
 
-    val poolSize = caps.sparkSession.sparkContext.statusTracker.getExecutorInfos.length
+    val poolSize = morpheus.sparkSession.sparkContext.statusTracker.getExecutorInfos.length
 
     implicit val executionContext: ExecutionContextExecutorService =
       ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(poolSize))
 
     try {
-      val relationalGraph = graph.asCaps
+      val relationalGraph = graph.asMorpheus
 
-      val schema = relationalGraph.schema.asCaps
+      val schema = relationalGraph.schema.asMorpheus
       schemaCache += graphName -> schema
       graphNameCache += graphName
-      writeCAPSGraphMetaData(graphName, CAPSGraphMetaData(tableStorageFormat.name))
+      writeMorpheusGraphMetaData(graphName, MorpheusGraphMetaData(tableStorageFormat.name))
       writeSchema(graphName, schema)
 
       val nodeWrites = schema.labelCombinations.combos.map { combo =>

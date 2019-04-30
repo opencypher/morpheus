@@ -34,11 +34,11 @@ import org.apache.hadoop.fs.Path
 import org.apache.hadoop.hdfs.MiniDFSCluster
 import org.apache.http.client.utils.URIBuilder
 import org.opencypher.okapi.testing.BaseTestFixture
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 
 trait MiniDFSClusterFixture extends BaseTestFixture {
 
-  self: SparkSessionFixture with CAPSTestSuite =>
+  self: SparkSessionFixture with MorpheusTestSuite =>
 
   private val HDFS_URI_SCHEME = "hdfs"
 

@@ -38,7 +38,7 @@ trait GraphDirectoryStructure {
 
   def pathToGraphSchema(graphName: GraphName): String
 
-  def pathToCAPSMetaData(graphName: GraphName): String
+  def pathToMorpheusMetaData(graphName: GraphName): String
 
   def pathToNodeTable(graphName: GraphName, labels: Set[String]): String
 
@@ -60,7 +60,7 @@ object DefaultGraphDirectoryStructure {
 
   val schemaFileName: String = "propertyGraphSchema.json"
 
-  val capsMetaDataFileName: String = "capsGraphMetaData.json"
+  val morpheusMetaDataFileName: String = "morpheusGraphMetaData.json"
 
   val nodeTablesDirectoryName = "nodes"
 
@@ -94,8 +94,8 @@ case class DefaultGraphDirectoryStructure(dataSourceRootPath: String) extends Gr
     pathToGraphDirectory(graphName) / schemaFileName
   }
 
-  override def pathToCAPSMetaData(graphName: GraphName): String = {
-    pathToGraphDirectory(graphName) / capsMetaDataFileName
+  override def pathToMorpheusMetaData(graphName: GraphName): String = {
+    pathToGraphDirectory(graphName) / morpheusMetaDataFileName
   }
 
   override def pathToNodeTable(graphName: GraphName, labels: Set[String]): String = {

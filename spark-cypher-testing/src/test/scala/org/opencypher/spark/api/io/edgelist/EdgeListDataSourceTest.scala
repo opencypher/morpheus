@@ -30,11 +30,11 @@ import java.io.{File, PrintWriter}
 
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.impl.exception
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 import org.scalatest.BeforeAndAfterAll
 import org.scalatestplus.mockito.MockitoSugar
 
-class EdgeListDataSourceTest extends CAPSTestSuite with BeforeAndAfterAll with MockitoSugar {
+class EdgeListDataSourceTest extends MorpheusTestSuite with BeforeAndAfterAll with MockitoSugar {
 
   private val edgeList: String =
     s"""
@@ -44,7 +44,7 @@ class EdgeListDataSourceTest extends CAPSTestSuite with BeforeAndAfterAll with M
        |1 3
      """.stripMargin
 
-  private val tempFile = File.createTempFile(s"caps_edgelist_${System.currentTimeMillis()}", "edgelist")
+  private val tempFile = File.createTempFile(s"morpheus_edgelist_${System.currentTimeMillis()}", "edgelist")
 
   private val dataSource = EdgeListDataSource(
     tempFile.getAbsolutePath,

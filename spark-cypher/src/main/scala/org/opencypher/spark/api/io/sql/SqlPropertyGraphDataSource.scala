@@ -37,20 +37,20 @@ import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CTVoid}
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
-import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.MorpheusSession
 import org.opencypher.spark.api.io.GraphElement.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io._
 import org.opencypher.spark.api.io.sql.GraphDdlConversions._
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy._
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.{File, Hive, Jdbc}
-import org.opencypher.spark.impl.CAPSFunctions
+import org.opencypher.spark.impl.MorpheusFunctions
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.expressions.EncodeLong._
-import org.opencypher.spark.impl.io.CAPSPropertyGraphDataSource
+import org.opencypher.spark.impl.io.MorpheusPropertyGraphDataSource
 import org.opencypher.spark.impl.table.SparkTable._
-import org.opencypher.spark.schema.CAPSSchema
-import org.opencypher.spark.schema.CAPSSchema._
+import org.opencypher.spark.schema.MorpheusSchema
+import org.opencypher.spark.schema.MorpheusSchema._
 
 import scala.reflect.io.Path
 
@@ -60,7 +60,7 @@ object SqlPropertyGraphDataSource {
     graphDdl: GraphDdl,
     sqlDataSourceConfigs: Map[String, SqlDataSourceConfig],
     idGenerationStrategy: IdGenerationStrategy = SerializedId
-  )(implicit caps: CAPSSession): SqlPropertyGraphDataSource = {
+  )(implicit morpheus: MorpheusSession): SqlPropertyGraphDataSource = {
 
     val unsupportedDataSources = sqlDataSourceConfigs.filter { case (_, config) => config.format == FileFormat.csv }
     if (unsupportedDataSources.nonEmpty) throw IllegalArgumentException(
@@ -75,7 +75,7 @@ case class SqlPropertyGraphDataSource(
   graphDdl: GraphDdl,
   sqlDataSourceConfigs: Map[String, SqlDataSourceConfig],
   idGenerationStrategy: IdGenerationStrategy
-)(implicit val caps: CAPSSession) extends CAPSPropertyGraphDataSource {
+)(implicit val morpheus: MorpheusSession) extends MorpheusPropertyGraphDataSource {
 
   val relSourceIdKey: String = "rel_" + sourceIdKey
   private val className = getClass.getSimpleName
@@ -91,10 +91,10 @@ case class SqlPropertyGraphDataSource(
 
     val patternTables = extractNodeRelTables(ddlGraph, schema, idGenerationStrategy)
 
-    caps.graphs.create(Some(schema), nodeTables.head, nodeTables.tail ++ relationshipTables ++ patternTables: _*)
+    morpheus.graphs.create(Some(schema), nodeTables.head, nodeTables.tail ++ relationshipTables ++ patternTables: _*)
   }
 
-  override def schema(name: GraphName): Option[CAPSSchema] = graphDdl.graphs.get(name).map(_.graphType.asOkapiSchema.asCaps)
+  override def schema(name: GraphName): Option[MorpheusSchema] = graphDdl.graphs.get(name).map(_.graphType.asOkapiSchema.asMorpheus)
 
   override def store(name: GraphName, graph: PropertyGraph): Unit = unsupported("storing a graph")
 
@@ -111,7 +111,7 @@ case class SqlPropertyGraphDataSource(
   private def extractNodeTables(
     ddlGraph: Graph,
     schema: PropertyGraphSchema
-  ): Seq[CAPSElementTable] = {
+  ): Seq[MorpheusElementTable] = {
     ddlGraph.nodeToViewMappings.mapValues(nvm => readTable(nvm.view)).map {
       case (nodeViewKey, df) =>
         val nodeViewMapping = ddlGraph.nodeToViewMappings(nodeViewKey)
@@ -124,14 +124,14 @@ case class SqlPropertyGraphDataSource(
           .withPropertyKeyMappings(propertyMapping.toSeq: _*)
           .build
 
-        CAPSElementTable.create(mapping, nodeDf)
+        MorpheusElementTable.create(mapping, nodeDf)
     }.toSeq
   }
 
   private def extractRelationshipTables(
     ddlGraph: Graph,
     schema: PropertyGraphSchema
-  ): Seq[CAPSElementTable] = {
+  ): Seq[MorpheusElementTable] = {
     ddlGraph.edgeToViewMappings.map(evm => evm -> readTable(evm.view)).map {
       case (evm, df) =>
         val (propertyMapping, relColumns) = extractRelationship(ddlGraph, schema, evm, df)
@@ -148,7 +148,7 @@ case class SqlPropertyGraphDataSource(
           .withPropertyKeyMappings(propertyMapping.toSeq: _*)
           .build
 
-        CAPSElementTable.create(mapping, relDf)
+        MorpheusElementTable.create(mapping, relDf)
     }
   }
 
@@ -156,7 +156,7 @@ case class SqlPropertyGraphDataSource(
     ddlGraph: Graph,
     schema: PropertyGraphSchema,
     strategy: IdGenerationStrategy
-  ): Seq[CAPSElementTable] = {
+  ): Seq[MorpheusElementTable] = {
     ddlGraph.edgeToViewMappings
       .filter(evm => evm.view == evm.startNode.nodeViewKey.viewId)
       .map(evm => evm -> readTable(evm.view))
@@ -184,7 +184,7 @@ case class SqlPropertyGraphDataSource(
             )
           )
 
-          CAPSElementTable.create(patternMapping, patternDf)
+          MorpheusElementTable.create(patternMapping, patternDf)
       }
   }
 
@@ -251,7 +251,7 @@ case class SqlPropertyGraphDataSource(
   }
 
   private def readSqlTable(viewId: ViewId, sqlDataSourceConfig: SqlDataSourceConfig) = {
-    val spark = caps.sparkSession
+    val spark = morpheus.sparkSession
 
     implicit class DataFrameReaderOps(read: DataFrameReader) {
       def maybeOption(key: String, value: Option[String]): DataFrameReader =
@@ -276,7 +276,7 @@ case class SqlPropertyGraphDataSource(
     }
   }
   private def readFile(viewId: ViewId, dataSourceConfig: File): DataFrame = {
-    val spark = caps.sparkSession
+    val spark = morpheus.sparkSession
 
     val viewPath = viewId.parts.lastOption.getOrElse(
       malformed("File names must be defined with the data source", viewId.parts.mkString(".")))
@@ -357,7 +357,7 @@ case class SqlPropertyGraphDataSource(
         val viewLiteral = functions.lit(elementViewKey.viewId.parts.mkString("."))
         val elementTypeLiterals = elementViewKey.elementType.toSeq.sorted.map(functions.lit)
         val columnsToHash = Seq(viewLiteral) ++ elementTypeLiterals ++ idColumns
-        CAPSFunctions.hash64(columnsToHash: _*).encodeLongAsCAPSId(newIdColumn)
+        MorpheusFunctions.hash64(columnsToHash: _*).encodeLongAsMorpheusId(newIdColumn)
       case SerializedId =>
         val typeToId: Map[List[String], Int] =
           (schema.labelCombinations.combos.map(_.toList.sorted) ++ schema.relationshipTypes.map(List(_)))
@@ -366,7 +366,7 @@ case class SqlPropertyGraphDataSource(
             .zipWithIndex.toMap
         val elementTypeToIntegerId = typeToId(elementViewKey.elementType.toList.sorted)
         val columnsToSerialize = functions.lit(elementTypeToIntegerId) :: idColumns
-        CAPSFunctions.serialize(columnsToSerialize: _*).as(newIdColumn)
+        MorpheusFunctions.serialize(columnsToSerialize: _*).as(newIdColumn)
     }
   }
 

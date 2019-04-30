@@ -28,17 +28,17 @@ package org.opencypher.spark.examples
 
 // tag::full-example[]
 import org.apache.spark.sql.DataFrame
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
+import org.opencypher.spark.api.MorpheusSession
+import org.opencypher.spark.api.io.{MorpheusNodeTable, MorpheusRelationshipTable}
 import org.opencypher.spark.util.App
 
 /**
-  * Demonstrates basic usage of the CAPS API by loading an example graph from [[DataFrame]]s.
+  * Demonstrates basic usage of the Morpheus API by loading an example graph from [[DataFrame]]s.
   */
 object DataFrameInputExample extends App {
-  // 1) Create CAPS session and retrieve Spark session
-  implicit val session: CAPSSession = CAPSSession.local()
-  val spark = session.sparkSession
+  // 1) Create Morpheus session and retrieve Spark session
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
+  val spark = morpheus.sparkSession
 
   import spark.sqlContext.implicits._
 
@@ -55,11 +55,11 @@ object DataFrameInputExample extends App {
 
   // 3) Generate node- and relationship tables that wrap the DataFrames. The mapping between graph elements and columns
   //    is derived using naming conventions for identifier columns.
-  val personTable = CAPSNodeTable(Set("Person"), nodesDF)
-  val friendsTable = CAPSRelationshipTable("KNOWS", relsDF)
+  val personTable = MorpheusNodeTable(Set("Person"), nodesDF)
+  val friendsTable = MorpheusRelationshipTable("KNOWS", relsDF)
 
   // 4) Create property graph from graph scans
-  val graph = session.readFrom(personTable, friendsTable)
+  val graph = morpheus.readFrom(personTable, friendsTable)
 
   // 5) Execute Cypher query and print results
   val result = graph.cypher("MATCH (n:Person) RETURN n.name")

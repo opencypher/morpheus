@@ -34,10 +34,10 @@ import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.api.CypherGraphSources
 import org.opencypher.spark.impl.acceptance.ScanGraphInit
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 
 class Neo4jPropertyGraphDataSourceWriteTest
-  extends CAPSTestSuite
+  extends MorpheusTestSuite
     with Neo4jServerFixture
     with ScanGraphInit{
 

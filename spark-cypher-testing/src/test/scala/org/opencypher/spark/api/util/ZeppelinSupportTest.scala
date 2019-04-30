@@ -30,13 +30,13 @@ import org.opencypher.okapi.api.util.ZeppelinSupport._
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.Format._
 import org.opencypher.spark.impl.acceptance.ScanGraphInit
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
 
-class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture with ScanGraphInit {
+class ZeppelinSupportTest extends MorpheusTestSuite with TeamDataFixture with ScanGraphInit {
   // scalastyle:off line.contains.tab
   it("supports Zeppelin table representation") {
-    val graph = caps.graphs.create(personTable)
+    val graph = morpheus.graphs.create(personTable)
     val result = graph.cypher("MATCH (p:Person) RETURN p.name, p.luckyNumber")
     val asTable = result.records.toZeppelinTable
 
@@ -162,7 +162,7 @@ class ZeppelinSupportTest extends CAPSTestSuite with TeamDataFixture with ScanGr
   }
 
   it("supports Zeppelin network representation") {
-    val graph = caps.graphs.create(personTable, bookTable, readsTable, knowsTable, influencesTable)
+    val graph = morpheus.graphs.create(personTable, bookTable, readsTable, knowsTable, influencesTable)
     val asJson = graph.toZeppelinJson()(CypherValue.Format.defaultValueFormatter)
     val expected = ujson.read(
       s"""

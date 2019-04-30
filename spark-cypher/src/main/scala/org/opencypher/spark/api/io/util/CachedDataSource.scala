@@ -30,7 +30,7 @@ import org.apache.spark.storage.StorageLevel
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.PropertyGraphSchema
-import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.MorpheusConverters._
 
 import scala.collection.mutable
 
@@ -50,14 +50,14 @@ case class CachedDataSource(
 
   override def graph(name: GraphName): PropertyGraph = cache.getOrElse(name, {
     val g = dataSource.graph(name)
-    g.asCaps.tables.foreach(_.persist(storageLevel))
+    g.asMorpheus.tables.foreach(_.persist(storageLevel))
     cache.put(name, g)
     g
   })
 
   override def delete(name: GraphName): Unit = cache.get(name) match {
     case Some(g) =>
-      g.asCaps.tables.foreach(_.unpersist())
+      g.asMorpheus.tables.foreach(_.unpersist())
       cache.remove(name)
       dataSource.delete(name)
 

@@ -30,10 +30,10 @@ import org.apache.log4j.{Level, Logger}
 import org.apache.spark.sql.SparkSession
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
-import org.opencypher.spark.api.io.CAPSElementTable
+import org.opencypher.spark.api.io.MorpheusElementTable
 import org.opencypher.spark.api.io.GraphElement._
 import org.opencypher.spark.api.io.Relationship._
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants._
 import org.opencypher.spark.integration.yelp.YelpHelpers._
 
@@ -45,7 +45,7 @@ object Part1_YelpImport extends App {
   lazy val inputPath = args.headOption.getOrElse(defaultYelpJsonFolder)
   lazy val outputPath = args.lift(1).getOrElse(defaultYelpGraphFolder)
 
-  implicit val morpheus: CAPSSession = CAPSSession.local()
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
   implicit val spark: SparkSession = morpheus.sparkSession
 
   storeGraph(inputPath, outputPath)
@@ -75,7 +75,7 @@ object Part1_YelpImport extends App {
   def createPropertyGraph(yelpTables: YelpTables): PropertyGraph = {
     // Define node tables
     // (:User)
-    val userNodeTable = CAPSElementTable.create(NodeMappingBuilder.on(sourceIdKey)
+    val userNodeTable = MorpheusElementTable.create(NodeMappingBuilder.on(sourceIdKey)
       .withImpliedLabel(userLabel)
       .withPropertyKey("name")
       .withPropertyKey("yelping_since")
@@ -84,7 +84,7 @@ object Part1_YelpImport extends App {
       yelpTables.userDf.prependIdColumn(sourceIdKey, userLabel))
 
     // (:Business)
-    val businessNodeTable = CAPSElementTable.create(NodeMappingBuilder.on(sourceIdKey)
+    val businessNodeTable = MorpheusElementTable.create(NodeMappingBuilder.on(sourceIdKey)
       .withImpliedLabel(businessLabel)
       .withPropertyKey("businessId", "business_id")
       .withPropertyKey("name")
@@ -96,7 +96,7 @@ object Part1_YelpImport extends App {
 
     // Define relationship tables
     // (:User)-[:REVIEWS]->(:Business)
-    val reviewRelTable = CAPSElementTable.create(RelationshipMappingBuilder.on(sourceIdKey)
+    val reviewRelTable = MorpheusElementTable.create(RelationshipMappingBuilder.on(sourceIdKey)
       .withSourceStartNodeKey(sourceStartNodeKey)
       .withSourceEndNodeKey(sourceEndNodeKey)
       .withRelType(reviewRelType)

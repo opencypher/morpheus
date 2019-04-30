@@ -26,12 +26,12 @@
  */
 package org.opencypher.spark.snippets
 
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
 import org.opencypher.spark.util.App
 
 object SqlPGDS extends App {
-  implicit val session: CAPSSession = CAPSSession.local()
+  implicit val session: MorpheusSession = MorpheusSession.local()
 
   // tag::create-sql-pgds[]
   val sqlPgds = GraphSources

@@ -30,15 +30,15 @@ import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.value.CAPSElement._
-import org.opencypher.spark.api.value.CAPSNode
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.api.value.MorpheusElement._
+import org.opencypher.spark.api.value.MorpheusNode
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class FunctionTests extends CAPSTestSuite with ScanGraphInit {
+class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
 
   describe("Acos") {
     it("on int value") {
-      val result = caps.cypher("RETURN acos(1) AS res")
+      val result = morpheus.cypher("RETURN acos(1) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 0.0)
@@ -47,7 +47,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on float value") {
-      val result = caps.cypher("RETURN acos(0.5) AS res")
+      val result = morpheus.cypher("RETURN acos(0.5) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 1.0471975511965979)
@@ -56,7 +56,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on null value") {
-      val result = caps.cypher("RETURN acos(null) AS res")
+      val result = morpheus.cypher("RETURN acos(null) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -67,7 +67,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("Asin") {
     it("on int value") {
-      val result = caps.cypher("RETURN asin(1) AS res")
+      val result = morpheus.cypher("RETURN asin(1) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 1.5707963267948966)
@@ -76,7 +76,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on float value") {
-      val result = caps.cypher("RETURN asin(0.5) AS res")
+      val result = morpheus.cypher("RETURN asin(0.5) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 0.5235987755982989)
@@ -85,7 +85,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on null value") {
-      val result = caps.cypher("RETURN asin(null) AS res")
+      val result = morpheus.cypher("RETURN asin(null) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -96,7 +96,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("Atan") {
     it("on int value") {
-      val result = caps.cypher("RETURN atan(1) AS res")
+      val result = morpheus.cypher("RETURN atan(1) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 0.7853981633974483)
@@ -105,7 +105,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on float value") {
-      val result = caps.cypher("RETURN atan(0.5) AS res")
+      val result = morpheus.cypher("RETURN atan(0.5) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 0.4636476090008061)
@@ -114,7 +114,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on null value") {
-      val result = caps.cypher("RETURN atan(null) AS res")
+      val result = morpheus.cypher("RETURN atan(null) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -125,7 +125,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("Atan2") {
     it("on int values") {
-      val result = caps.cypher("RETURN atan2(1,2) AS res")
+      val result = morpheus.cypher("RETURN atan2(1,2) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 0.4636476090008061)
@@ -134,7 +134,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on float values") {
-      val result = caps.cypher("RETURN atan2(0.5,0.6) AS res")
+      val result = morpheus.cypher("RETURN atan2(0.5,0.6) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 0.6947382761967033)
@@ -143,7 +143,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on two null values") {
-      val result = caps.cypher("RETURN atan2(null,null) AS res")
+      val result = morpheus.cypher("RETURN atan2(null,null) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -152,7 +152,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on first value being null") {
-      val result = caps.cypher("RETURN atan2(null,0.5) AS res")
+      val result = morpheus.cypher("RETURN atan2(null,0.5) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -161,7 +161,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on second value being null") {
-      val result = caps.cypher("RETURN atan2(0.5, null) AS res")
+      val result = morpheus.cypher("RETURN atan2(0.5, null) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -172,7 +172,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("Cos") {
     it("on int value") {
-      val result = caps.cypher("RETURN cos(1) AS res")
+      val result = morpheus.cypher("RETURN cos(1) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 0.5403023058681398)
@@ -181,7 +181,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on float value") {
-      val result = caps.cypher("RETURN cos(0.5) AS res")
+      val result = morpheus.cypher("RETURN cos(0.5) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 0.8775825618903728)
@@ -190,7 +190,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on null value") {
-      val result = caps.cypher("RETURN cos(null) AS res")
+      val result = morpheus.cypher("RETURN cos(null) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -201,7 +201,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("Cot") {
     it("on int value") {
-      val result = caps.cypher("RETURN cot(1) AS res")
+      val result = morpheus.cypher("RETURN cot(1) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 0.6420926159343306)
@@ -210,7 +210,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on float value") {
-      val result = caps.cypher("RETURN cot(0.5) AS res")
+      val result = morpheus.cypher("RETURN cot(0.5) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 1.830487721712452)
@@ -219,7 +219,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on null value") {
-      val result = caps.cypher("RETURN cot(null) AS res")
+      val result = morpheus.cypher("RETURN cot(null) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -230,7 +230,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("Degrees") {
     it("on int value") {
-      val result = caps.cypher("RETURN degrees(1) AS res")
+      val result = morpheus.cypher("RETURN degrees(1) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 57.29577951308232)
@@ -239,7 +239,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on float value") {
-      val result = caps.cypher("RETURN degrees(3.14159) AS res")
+      val result = morpheus.cypher("RETURN degrees(3.14159) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 179.99984796050427)
@@ -248,7 +248,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on null value") {
-      val result = caps.cypher("RETURN degrees(null) AS res")
+      val result = morpheus.cypher("RETURN degrees(null) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -259,7 +259,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("Haversin") {
     it("on int value") {
-      val result = caps.cypher("RETURN haversin(1) AS res")
+      val result = morpheus.cypher("RETURN haversin(1) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 0.22984884706593012)
@@ -268,7 +268,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on float value") {
-      val result = caps.cypher("RETURN haversin(0.5) AS res")
+      val result = morpheus.cypher("RETURN haversin(0.5) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 0.06120871905481362)
@@ -277,7 +277,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on null value") {
-      val result = caps.cypher("RETURN haversin(null) AS res")
+      val result = morpheus.cypher("RETURN haversin(null) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -288,7 +288,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("Radians") {
     it("on int value") {
-      val result = caps.cypher("RETURN radians(180) AS res")
+      val result = morpheus.cypher("RETURN radians(180) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 3.141592653589793)
@@ -297,7 +297,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on float value") {
-      val result = caps.cypher("RETURN radians(180.0) AS res")
+      val result = morpheus.cypher("RETURN radians(180.0) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 3.141592653589793)
@@ -306,7 +306,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on null value") {
-      val result = caps.cypher("RETURN radians(null) AS res")
+      val result = morpheus.cypher("RETURN radians(null) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -317,7 +317,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("Sin") {
     it("on int value") {
-      val result = caps.cypher("RETURN sin(1) AS res")
+      val result = morpheus.cypher("RETURN sin(1) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 0.8414709848078965)
@@ -326,7 +326,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on float value") {
-      val result = caps.cypher("RETURN sin(0.5) AS res")
+      val result = morpheus.cypher("RETURN sin(0.5) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 0.479425538604203)
@@ -335,7 +335,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on null value") {
-      val result = caps.cypher("RETURN sin(null) AS res")
+      val result = morpheus.cypher("RETURN sin(null) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -346,7 +346,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("tan") {
     it("on int value") {
-      val result = caps.cypher("RETURN tan(1) AS res")
+      val result = morpheus.cypher("RETURN tan(1) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 1.5574077246549023)
@@ -355,7 +355,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on float value") {
-      val result = caps.cypher("RETURN tan(0.5) AS res")
+      val result = morpheus.cypher("RETURN tan(0.5) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> 0.5463024898437905)
@@ -364,7 +364,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("on null value") {
-      val result = caps.cypher("RETURN tan(null) AS res")
+      val result = morpheus.cypher("RETURN tan(null) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -375,7 +375,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("left") {
     it("on string value") {
-      val result = caps.cypher("RETURN left('hello', 4) AS res")
+      val result = morpheus.cypher("RETURN left('hello', 4) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> "hell")
@@ -383,7 +383,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       )
     }
     it("on string value where length is greater than string") {
-      val result = caps.cypher("RETURN left('hello', 8) AS res")
+      val result = morpheus.cypher("RETURN left('hello', 8) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> "hello")
@@ -391,7 +391,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       )
     }
     it("on null value") {
-      val result = caps.cypher("RETURN left(null, 4) AS res")
+      val result = morpheus.cypher("RETURN left(null, 4) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -402,7 +402,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("right") {
     it("on string value") {
-      val result = caps.cypher("RETURN right('hello', 2) AS res")
+      val result = morpheus.cypher("RETURN right('hello', 2) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> "lo")
@@ -410,7 +410,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       )
     }
     it("on string value where length is greater than string") {
-      val result = caps.cypher("RETURN left('hello', 8) AS res")
+      val result = morpheus.cypher("RETURN left('hello', 8) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> "hello")
@@ -418,7 +418,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       )
     }
     it("on null value") {
-      val result = caps.cypher("RETURN left(null, 4) AS res")
+      val result = morpheus.cypher("RETURN left(null, 4) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -429,7 +429,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("replace") {
     it("single character") {
-      val result = caps.cypher("RETURN replace('hello', 'l', 'w') AS res")
+      val result = morpheus.cypher("RETURN replace('hello', 'l', 'w') AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> "hewwo")
@@ -437,7 +437,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       )
     }
     it("multiple characters") {
-      val result = caps.cypher("RETURN replace('hello', 'ell', 'ipp') AS res")
+      val result = morpheus.cypher("RETURN replace('hello', 'ell', 'ipp') AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> "hippo")
@@ -445,7 +445,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       )
     }
     it("non-existent character") {
-      val result = caps.cypher("RETURN replace('hello', 'x', 'y') AS res")
+      val result = morpheus.cypher("RETURN replace('hello', 'x', 'y') AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> "hello")
@@ -453,7 +453,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       )
     }
     it("on null") {
-      val result = caps.cypher("RETURN replace(null, 'x', 'y') AS res")
+      val result = morpheus.cypher("RETURN replace(null, 'x', 'y') AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -461,7 +461,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       )
     }
     it("on null to-be-replaced") {
-      val result = caps.cypher("RETURN replace('hello', null, 'y') AS res")
+      val result = morpheus.cypher("RETURN replace('hello', null, 'y') AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -469,7 +469,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       )
     }
     it("on null replacement") {
-      val result = caps.cypher("RETURN replace('hello', 'x', null) AS res")
+      val result = morpheus.cypher("RETURN replace('hello', 'x', null) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -477,7 +477,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       )
     }
     it("on complex string expression") {
-      val result = caps.cypher("RETURN replace('he' + 'llo', 'l' + 'l', 'w' + 'w') AS res")
+      val result = morpheus.cypher("RETURN replace('he' + 'llo', 'l' + 'l', 'w' + 'w') AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> "hewwo")
@@ -485,7 +485,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       )
     }
     it("on complex expression evaluating to null") {
-      val result = caps.cypher("WITH ['ll', 'ww'] AS stringList RETURN replace('hello', stringList[0], stringList[2]) AS res")
+      val result = morpheus.cypher("WITH ['ll', 'ww'] AS stringList RETURN replace('hello', stringList[0], stringList[2]) AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -496,7 +496,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("toUpper") {
     it("toUpper()") {
-      val result = caps.cypher("RETURN toUpper('hello') AS upperCased")
+      val result = morpheus.cypher("RETURN toUpper('hello') AS upperCased")
       result.records.toMaps should equal(
         Bag(
           CypherMap("upperCased" -> "HELLO")
@@ -507,7 +507,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("toLower") {
     it("toLower()") {
-      val result = caps.cypher("RETURN toLower('HELLO') AS lowerCased")
+      val result = morpheus.cypher("RETURN toLower('HELLO') AS lowerCased")
       result.records.toMaps should equal(
         Bag(
           CypherMap("lowerCased" -> "hello")
@@ -519,7 +519,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
   describe("trim") {
 
     it("trim()") {
-      val result = caps.cypher("RETURN trim('   hello  ') AS trimmed")
+      val result = morpheus.cypher("RETURN trim('   hello  ') AS trimmed")
       result.records.toMaps should equal(
         Bag(
           CypherMap("trimmed" -> "hello")
@@ -528,7 +528,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("ltrim()") {
-      val result = caps.cypher("RETURN ltrim('   hello  ') AS trimmed")
+      val result = morpheus.cypher("RETURN ltrim('   hello  ') AS trimmed")
       result.records.toMaps should equal(
         Bag(
           CypherMap("trimmed" -> "hello  ")
@@ -537,7 +537,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("rtrim()") {
-      val result = caps.cypher("RETURN rtrim('   hello  ') AS trimmed")
+      val result = morpheus.cypher("RETURN rtrim('   hello  ') AS trimmed")
       result.records.toMaps should equal(
         Bag(
           CypherMap("trimmed" -> "   hello")
@@ -566,8 +566,8 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
   describe("timestamp") {
 
     it("is monotonically increasing") {
-      val t1 = caps.cypher("RETURN timestamp()")
-      val t2 = caps.cypher("RETURN timestamp()")
+      val t1 = morpheus.cypher("RETURN timestamp()")
+      val t2 = morpheus.cypher("RETURN timestamp()")
 
       t1.records.toMaps.keys.map(_.value.head._2.value.asInstanceOf[Long]) should be <=
         t2.records.toMaps.keys.map(_.value.head._2.value.asInstanceOf[Long])
@@ -652,7 +652,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       val result = given.cypher("MATCH (n) RETURN id(n)")
 
-      result.records.toMaps should equal(Bag(CypherMap("id(n)" -> 0L.encodeAsCAPSId), CypherMap("id(n)" -> 1L.encodeAsCAPSId)))
+      result.records.toMaps should equal(Bag(CypherMap("id(n)" -> 0L.encodeAsMorpheusId), CypherMap("id(n)" -> 1L.encodeAsMorpheusId)))
     }
 
     it("id for rel") {
@@ -660,7 +660,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       val result = given.cypher("MATCH ()-[e]->() RETURN id(e)")
 
-      result.records.toMaps should equal(Bag(CypherMap("id(e)" -> 2L.encodeAsCAPSId), CypherMap("id(e)" -> 4L.encodeAsCAPSId)))
+      result.records.toMaps should equal(Bag(CypherMap("id(e)" -> 2L.encodeAsMorpheusId), CypherMap("id(e)" -> 4L.encodeAsMorpheusId)))
     }
 
   }
@@ -705,7 +705,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("handle null") {
-      val result = caps.cypher("RETURN labels(null) AS res")
+      val result = morpheus.cypher("RETURN labels(null) AS res")
 
       result.records.toMaps should equal(
         Bag(
@@ -778,7 +778,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("size() on nullable list null") {
-      val result = caps.cypher("RETURN size(labels(null)) AS s")
+      val result = morpheus.cypher("RETURN size(labels(null)) AS s")
 
       result.records.toMaps should equal(
         Bag(
@@ -819,7 +819,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("works with literal maps") {
-      val result = caps.cypher(
+      val result = morpheus.cypher(
         """
           |WITH {person: {name: 'Anne', age: 25}} AS p
           |RETURN keys(p) AS k1, keys(p["person"]) AS k2
@@ -832,7 +832,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("works with literal maps2") {
-      val result = caps.cypher(
+      val result = morpheus.cypher(
         """
           |RETURN keys({name: 'Alice', age: 38, address: {city: 'London', residential: true}}) AS k
         """.stripMargin)
@@ -844,7 +844,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("works with predicate maps") {
-      val result = caps.cypher(
+      val result = morpheus.cypher(
         """
           |RETURN keys($map) AS k
         """.stripMargin, CypherMap("map" -> CypherMap("name" -> "Alice", "age" -> 38, "address" -> CypherMap("city" -> "London", "residential" -> true))))
@@ -858,7 +858,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
     it("works with null keys in maps") {
 
-      val result = caps.cypher(
+      val result = morpheus.cypher(
         """
           |UNWIND [
           | 1,
@@ -887,8 +887,8 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       result.records.toMaps should equal(
         Bag(
-          CypherMap("r.val" -> "a", "startNode(r)" -> CAPSNode(0L.encodeAsCAPSId.toSeq, Set.empty[String], CypherMap())),
-          CypherMap("r.val" -> "b", "startNode(r)" -> CAPSNode(3L.encodeAsCAPSId.toSeq, Set.empty[String], CypherMap()))
+          CypherMap("r.val" -> "a", "startNode(r)" -> MorpheusNode(0L.encodeAsMorpheusId.toSeq, Set.empty[String], CypherMap())),
+          CypherMap("r.val" -> "b", "startNode(r)" -> MorpheusNode(3L.encodeAsMorpheusId.toSeq, Set.empty[String], CypherMap()))
         ))
     }
   }
@@ -902,8 +902,8 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       result.records.toMaps should equal(
         Bag(
-          CypherMap("r.val" -> "a", "endNode(r)" -> CAPSNode(1L.encodeAsCAPSId.toSeq, Set.empty[String], CypherMap())),
-          CypherMap("r.val" -> "b", "endNode(r)" -> CAPSNode(4L.encodeAsCAPSId.toSeq, Set.empty[String], CypherMap()))
+          CypherMap("r.val" -> "a", "endNode(r)" -> MorpheusNode(1L.encodeAsMorpheusId.toSeq, Set.empty[String], CypherMap())),
+          CypherMap("r.val" -> "b", "endNode(r)" -> MorpheusNode(4L.encodeAsMorpheusId.toSeq, Set.empty[String], CypherMap()))
         ))
     }
   }
@@ -1156,7 +1156,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     describe("sqrt()") {
       it("on float value") {
 
-        val result = caps.cypher("RETURN sqrt(12.96) AS res")
+        val result = morpheus.cypher("RETURN sqrt(12.96) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1166,7 +1166,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on int value") {
-        val result = caps.cypher("RETURN sqrt(9) AS res")
+        val result = morpheus.cypher("RETURN sqrt(9) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1176,7 +1176,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on null value") {
-        val result = caps.cypher("RETURN sqrt(null) AS res")
+        val result = morpheus.cypher("RETURN sqrt(null) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1189,7 +1189,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     describe("log()") {
       it("on float value") {
 
-        val result = caps.cypher("RETURN log(12.96) AS res")
+        val result = morpheus.cypher("RETURN log(12.96) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1199,7 +1199,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on int value") {
-        val result = caps.cypher("RETURN log(9) AS res")
+        val result = morpheus.cypher("RETURN log(9) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1209,7 +1209,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on null value") {
-        val result = caps.cypher("RETURN log(null) AS res")
+        val result = morpheus.cypher("RETURN log(null) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1223,7 +1223,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     describe("log10()") {
       it("on float value") {
 
-        val result = caps.cypher("RETURN log10(12.96) AS res")
+        val result = morpheus.cypher("RETURN log10(12.96) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1233,7 +1233,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on int value") {
-        val result = caps.cypher("RETURN log10(100) AS res")
+        val result = morpheus.cypher("RETURN log10(100) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1243,7 +1243,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on null value") {
-        val result = caps.cypher("RETURN log10(null) AS res")
+        val result = morpheus.cypher("RETURN log10(null) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1256,7 +1256,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     describe("exp()") {
       it("on float value") {
 
-        val result = caps.cypher("RETURN exp(1.337) AS res")
+        val result = morpheus.cypher("RETURN exp(1.337) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1266,7 +1266,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on int value") {
-        val result = caps.cypher("RETURN exp(2) AS res")
+        val result = morpheus.cypher("RETURN exp(2) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1276,7 +1276,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on null value") {
-        val result = caps.cypher("RETURN exp(null) AS res")
+        val result = morpheus.cypher("RETURN exp(null) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1289,7 +1289,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     describe("e()") {
       it("returns e") {
 
-        val result = caps.cypher("RETURN e() AS res")
+        val result = morpheus.cypher("RETURN e() AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1302,7 +1302,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     describe("pi()") {
       it("returns pi") {
 
-        val result = caps.cypher("RETURN pi() AS res")
+        val result = morpheus.cypher("RETURN pi() AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1319,7 +1319,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       it("on float value") {
 
-        val result = caps.cypher("RETURN abs(-12.96) AS res")
+        val result = morpheus.cypher("RETURN abs(-12.96) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1329,7 +1329,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on int value") {
-        val result = caps.cypher("RETURN abs(-23) AS res")
+        val result = morpheus.cypher("RETURN abs(-23) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1339,7 +1339,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on null value") {
-        val result = caps.cypher("RETURN abs(null) AS res")
+        val result = morpheus.cypher("RETURN abs(null) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1353,7 +1353,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       it("on float value") {
 
-        val result = caps.cypher("RETURN ceil(0.1) AS res")
+        val result = morpheus.cypher("RETURN ceil(0.1) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1363,7 +1363,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on int value") {
-        val result = caps.cypher("RETURN ceil(1) AS res")
+        val result = morpheus.cypher("RETURN ceil(1) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1373,7 +1373,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on null value") {
-        val result = caps.cypher("RETURN ceil(null) AS res")
+        val result = morpheus.cypher("RETURN ceil(null) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1387,7 +1387,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       it("on float value") {
 
-        val result = caps.cypher("RETURN floor(1.9) AS res")
+        val result = morpheus.cypher("RETURN floor(1.9) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1397,7 +1397,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on int value") {
-        val result = caps.cypher("RETURN floor(1) AS res")
+        val result = morpheus.cypher("RETURN floor(1) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1407,7 +1407,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on null value") {
-        val result = caps.cypher("RETURN floor(null) AS res")
+        val result = morpheus.cypher("RETURN floor(null) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1420,7 +1420,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     describe("rand()") {
       it("returns rand") {
 
-        val result = caps.cypher("RETURN rand() AS res")
+        val result = morpheus.cypher("RETURN rand() AS res")
 
         val res = result.records.toMaps.head._1("res").cast[Double]
         res >= 0.0 shouldBe true
@@ -1432,7 +1432,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       it("on float value") {
 
-        val result = caps.cypher("RETURN round(1.9) AS res")
+        val result = morpheus.cypher("RETURN round(1.9) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1442,7 +1442,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on int value") {
-        val result = caps.cypher("RETURN round(1) AS res")
+        val result = morpheus.cypher("RETURN round(1) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1452,7 +1452,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on null value") {
-        val result = caps.cypher("RETURN round(null) AS res")
+        val result = morpheus.cypher("RETURN round(null) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1466,7 +1466,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
       it("on float value") {
 
-        val result = caps.cypher("RETURN sign(-1.1) AS res")
+        val result = morpheus.cypher("RETURN sign(-1.1) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1476,7 +1476,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on int value") {
-        val result = caps.cypher("RETURN sign(1) AS res")
+        val result = morpheus.cypher("RETURN sign(1) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1486,7 +1486,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
       }
 
       it("on null value") {
-        val result = caps.cypher("RETURN sign(null) AS res")
+        val result = morpheus.cypher("RETURN sign(null) AS res")
 
         result.records.toMaps should equal(
           Bag(
@@ -1500,7 +1500,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("range") {
     it("can compute a range from literals") {
-      caps.cypher(
+      morpheus.cypher(
         """UNWIND range(1, 3) AS x
           |RETURN x""".stripMargin).records.toMaps should equal(Bag(
         CypherMap("x" -> 1),
@@ -1510,7 +1510,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("can compute a range from literals with custom steps") {
-      caps.cypher(
+      morpheus.cypher(
         """UNWIND range(1, 7, 3) AS x
           |RETURN x""".stripMargin).records.toMaps should equal(Bag(
         CypherMap("x" -> 1),
@@ -1631,7 +1631,7 @@ class FunctionTests extends CAPSTestSuite with ScanGraphInit {
     it("should give a good error message on unimplemented functions") {
       val unimplementedFunction = "tail"
       the[NotImplementedException] thrownBy {
-        caps.cypher(s"RETURN $unimplementedFunction([1, 2])")
+        morpheus.cypher(s"RETURN $unimplementedFunction([1, 2])")
       } should have message s"Support for converting function '$unimplementedFunction' is not yet implemented"
     }
   }

@@ -113,7 +113,7 @@ trait ElementTable[T <: Table[T]] extends RelationalCypherRecords[T] {
     if (table.physicalColumns.toSet != mapping.allSourceKeys.toSet) throw IllegalArgumentException(
       s"Columns: ${mapping.allSourceKeys.mkString(", ")}",
       s"Columns: ${table.physicalColumns.mkString(", ")}",
-      s"Use CAPS[Node|Relationship]Table#fromMapping to create a valid ElementTable")
+      s"Use Morpheus[Node|Relationship]Table#fromMapping to create a valid ElementTable")
   }
 }
 

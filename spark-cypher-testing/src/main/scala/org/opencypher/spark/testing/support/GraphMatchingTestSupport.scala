@@ -30,14 +30,14 @@ import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
-import org.opencypher.spark.testing.fixture.{CAPSSessionFixture, SparkSessionFixture}
+import org.opencypher.spark.testing.fixture.{MorpheusSessionFixture, SparkSessionFixture}
 import org.scalatest.Assertion
 
 import scala.collection.immutable.Map
 
 trait GraphMatchingTestSupport {
 
-  self: BaseTestSuite with SparkSessionFixture with CAPSSessionFixture =>
+  self: BaseTestSuite with SparkSessionFixture with MorpheusSessionFixture =>
 
   private def getElementIds(records: RelationalCypherRecords[DataFrameTable]): Set[List[Byte]] = {
     val elementVar = records.header.vars.toSeq match {

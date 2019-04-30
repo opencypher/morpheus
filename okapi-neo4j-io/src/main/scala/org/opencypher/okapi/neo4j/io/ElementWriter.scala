@@ -208,7 +208,7 @@ object ElementWriter extends Logging {
               case _ => "UNKNOWN"
             }
 
-            val message = s"Could not write the graph to Neo4j. The graph you are attempting to write contains at least two $elementType with CAPS id $duplicateId"
+            val message = s"Could not write the graph to Neo4j. The graph you are attempting to write contains at least two $elementType with Morpheus id $duplicateId"
             throw IllegalStateException(message, Some(exception))
 
           case Failure(e) => throw e

@@ -35,12 +35,12 @@ import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.impl.operators.{Cache, Join, RelationalOperator, SwitchContext}
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 import org.opencypher.okapi.relational.impl.planning.{CrossJoin, RelationalOptimizer}
-import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.MorpheusConverters._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 import org.opencypher.spark.testing.fixture.GraphConstructionFixture
 
-class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixture {
+class RelationalOptimizerTest extends MorpheusTestSuite with GraphConstructionFixture {
 
   implicit class OpContainsCache[T <: Table[T]](op: RelationalOperator[T]) {
     def containsCache: Boolean = op.exists {
@@ -50,7 +50,7 @@ class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixtur
   }
 
   test("Test insert Cache operators") {
-    implicit val context: RelationalRuntimeContext[DataFrameTable] = caps.basicRuntimeContext()
+    implicit val context: RelationalRuntimeContext[DataFrameTable] = morpheus.basicRuntimeContext()
 
     val g = initGraph(
       """
@@ -59,7 +59,7 @@ class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixtur
 
     val qgn = QualifiedGraphName("session.test")
     val logicalGraph = LogicalCatalogGraph(qgn, g.schema)
-    caps.catalog.store(qgn, g)
+    morpheus.catalog.store(qgn, g)
 
     val aVar = Var("A")(CTNode)
     val bVar = Var("B")(CTNode)
@@ -113,7 +113,7 @@ class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixtur
         |RETURN p1.name, p2.name, p3.name
       """.stripMargin)
 
-    val optimizedRelationalPlan = result.asCaps.plans.relationalPlan.get
+    val optimizedRelationalPlan = result.asMorpheus.plans.relationalPlan.get
 
     val cachedScans = optimizedRelationalPlan.transform[Int] {
       case (s: SwitchContext[DataFrameTable], _) => if (s.containsCache) 1 else 0
@@ -157,7 +157,7 @@ class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixtur
     )
 
     // Then
-    val cacheOps = result.asCaps.plans.relationalPlan.get.collect { case c: Cache[DataFrameTable] => c }
+    val cacheOps = result.asMorpheus.plans.relationalPlan.get.collect { case c: Cache[DataFrameTable] => c }
     cacheOps.size shouldBe 115
   }
 
@@ -184,7 +184,7 @@ class RelationalOptimizerTest extends CAPSTestSuite with GraphConstructionFixtur
       """.stripMargin)
 
     // Then
-    val cacheOps = result.asCaps.plans.relationalPlan.get.collect { case c: Cache[DataFrameTable] => c }
+    val cacheOps = result.asMorpheus.plans.relationalPlan.get.collect { case c: Cache[DataFrameTable] => c }
     cacheOps.size shouldBe 7
   }
 }

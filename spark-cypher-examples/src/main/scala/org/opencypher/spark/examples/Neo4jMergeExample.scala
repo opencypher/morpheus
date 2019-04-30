@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
 import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.util.App
 
 /**
@@ -40,8 +40,8 @@ import org.opencypher.spark.util.App
   * This merge requires node and relationship keys to identify same elements in the merge graph and the Neo4j database.
   */
 object Neo4jMergeExample extends App {
-  // Create CAPS session
-  implicit val session: CAPSSession = CAPSSession.local()
+  // Create Morpheus session
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // Connect to a Neo4j instance and populates it with social network data
   // To run a test instance you may use
@@ -62,7 +62,7 @@ object Neo4jMergeExample extends App {
   val relKeys = Map("FRIEND_OF" -> Set("id"), "MARRIED_TO" -> Set("id"))
 
   // Create a merge graph with updated data
-  val mergeGraph = session.cypher(
+  val mergeGraph = morpheus.cypher(
     """
       |CONSTRUCT
       | CREATE (a:Person { name: 'Alice', age: 11 })
@@ -82,10 +82,10 @@ object Neo4jMergeExample extends App {
   Neo4jGraphMerge.merge(entireGraphName, mergeGraph, neo4j.config, Some(nodeKeys), Some(relKeys))
 
   // Register Property Graph Data Source (PGDS) to read the updated graph from Neo4j
-  session.registerSource(Namespace("updatedSocialNetwork"), GraphSources.cypher.neo4j(neo4j.config))
+  morpheus.registerSource(Namespace("updatedSocialNetwork"), GraphSources.cypher.neo4j(neo4j.config))
 
   // Access the graphs via their qualified graph names
-  val updatedSocialNetwork = session.catalog.graph("updatedSocialNetwork.graph")
+  val updatedSocialNetwork = morpheus.catalog.graph("updatedSocialNetwork.graph")
 
   updatedSocialNetwork.cypher(
     """

@@ -32,7 +32,7 @@ import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
 import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge
 import org.opencypher.spark.api.io.sql.IdGenerationStrategy
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Hive
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.util.{App, LoadInteractionsInHive}
 
 /**
@@ -56,8 +56,8 @@ import org.opencypher.spark.util.{App, LoadInteractionsInHive}
   */
 object Customer360Example extends App {
 
-  // Create CAPS session
-  implicit val session: CAPSSession = CAPSSession.local()
+  // Create Morpheus session
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // Load a CSV file of interactions into Hive tables (views)
   LoadInteractionsInHive.load()
@@ -72,7 +72,7 @@ object Customer360Example extends App {
 
   // Register the SQL PGDS in the session's catalog
   // The namespace is used for referencing graphs from this PGDS
-  session.registerSource(Namespace("c360"), sqlPgds)
+  morpheus.registerSource(Namespace("c360"), sqlPgds)
 
   // Connect to a Neo4j instance
   // To run a test instance you may use
@@ -82,21 +82,21 @@ object Customer360Example extends App {
 
   // Register a Neo4j PGDS in the session's catalog
   // This enables reading graphs from a Neo4j database into Morpheus
-  session.registerSource(Namespace("transactional"), GraphSources.cypher.neo4j(neo4j.config))
+  morpheus.registerSource(Namespace("transactional"), GraphSources.cypher.neo4j(neo4j.config))
 
   // Register a file system PGDS in the session's catalog
   // This allows storing snapshots of graphs persistently for processing in later Morpheus sessions
   // There are multiple file formats to use; here we use the binary Parquet format
   // We also integrate this with Hive so that the dataframes stored on disk are also visible in Hive views
   // To make this work we ensure that there the Hive database exists
-  session.sql("CREATE DATABASE IF NOT EXISTS snapshots")
-  session.registerSource(Namespace("snapshots"),
+  morpheus.sql("CREATE DATABASE IF NOT EXISTS snapshots")
+  morpheus.registerSource(Namespace("snapshots"),
     GraphSources.fs("snapshots-root", Some("snapshots")).parquet
   )
 
   println("PGDSs registered")
 
-  val c360Seed = session.cypher(
+  val c360Seed = morpheus.cypher(
     """
       |FROM c360.interactions_seed
       |RETURN GRAPH
@@ -127,7 +127,7 @@ object Customer360Example extends App {
   /*
    * We can also execute the same query based on the graph we merged into the Neo4j instance, seeing the same results.
    */
-  session.cypher(
+  morpheus.cypher(
     s"""
        |FROM transactional.$entireGraphName
        |MATCH (c:Customer)--(i:Interaction)--(rep:CustomerRep)
@@ -142,7 +142,7 @@ object Customer360Example extends App {
    * Find customer reps who have received the most problematic reports (complaints or cancellations)
    * List the top 9 customer reps and their interaction statistics
    */
-  session.cypher(
+  morpheus.cypher(
     """
       |FROM c360.interactions_seed
       |MATCH (c:Customer)--(i:Interaction)--(rep:CustomerRep)
@@ -156,7 +156,7 @@ object Customer360Example extends App {
   /*
    * We can also execute the same query based on the graph we merged into the Neo4j instance, seeing the same results.
    */
-  session.cypher(
+  morpheus.cypher(
     s"""
        |FROM transactional.$entireGraphName
        |MATCH (c:Customer)--(i:Interaction)--(rep:CustomerRep)
@@ -172,7 +172,7 @@ object Customer360Example extends App {
   // Here we read the graph directly from the catalog
   Neo4jGraphMerge.merge(
     entireGraphName,
-    session.catalog.graph("c360.interactions_delta"),
+    morpheus.catalog.graph("c360.interactions_delta"),
     neo4j.config
   )
 
@@ -180,7 +180,7 @@ object Customer360Example extends App {
 
   // Find the updated statistics on customer rep interactions
   // Here we execute the query from Spark by importing the necessary data from Neo4j on the fly
-  session.cypher(
+  morpheus.cypher(
     s"""
        |FROM transactional.$entireGraphName
        |MATCH (c:Customer)--(i:Interaction)--(rep:CustomerRep)
@@ -193,7 +193,7 @@ object Customer360Example extends App {
 
   // Reset Neo4j test instance and close the session and driver
   neo4j.close()
-  session.sparkSession.close()
+  morpheus.sparkSession.close()
 
   private def file(path: String): String = {
     getClass.getResource(path).toURI.getPath

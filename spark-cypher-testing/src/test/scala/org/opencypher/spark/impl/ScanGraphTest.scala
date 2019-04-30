@@ -37,20 +37,20 @@ import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
-import org.opencypher.spark.api.io.CAPSElementTable
-import org.opencypher.spark.api.value.CAPSElement._
-import org.opencypher.spark.api.value.CAPSRelationship
-import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.api.io.MorpheusElementTable
+import org.opencypher.spark.api.value.MorpheusElement._
+import org.opencypher.spark.api.value.MorpheusRelationship
+import org.opencypher.spark.impl.MorpheusConverters._
 import org.opencypher.spark.testing.support.ElementTableCreationSupport
-import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
+import org.opencypher.spark.testing.support.creation.graphs.{ScanGraphFactory, TestGraphFactory}
 
-class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
+class ScanGraphTest extends MorpheusGraphTest with ElementTableCreationSupport {
 
-  override def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
+  override def graphFactory: TestGraphFactory = ScanGraphFactory
 
   it("executes union") {
-    val graph1 = caps.graphs.create(personTable, knowsTable)
-    val graph2 = caps.graphs.create(programmerTable, bookTable, readsTable)
+    val graph1 = morpheus.graphs.create(personTable, knowsTable)
+    val graph2 = morpheus.graphs.create(programmerTable, bookTable, readsTable)
 
     val result = graph1 unionAll graph2
 
@@ -76,31 +76,31 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
     )
 
     val nodeData = Bag(
-      Row(1L.encodeAsCAPSId.withPrefix(0).toList, false, true, false,  null, 23L, "Mats", null, null),
-      Row(2L.encodeAsCAPSId.withPrefix(0).toList, false, true, false,  null, 42L, "Martin", null, null),
-      Row(3L.encodeAsCAPSId.withPrefix(0).toList, false, true, false,  null, 1337L, "Max", null, null),
-      Row(4L.encodeAsCAPSId.withPrefix(0).toList, false, true, false,  null, 9L, "Stefan", null, null),
-      Row(10L.encodeAsCAPSId.withPrefix(1).toList, true, false, false, null, null, null, "1984", 1949L),
-      Row(20L.encodeAsCAPSId.withPrefix(1).toList, true, false, false, null, null, null, "Cryptonomicon", 1999L),
-      Row(30L.encodeAsCAPSId.withPrefix(1).toList, true, false, false, null, null, null, "The Eye of the World", 1990L),
-      Row(40L.encodeAsCAPSId.withPrefix(1).toList, true, false, false, null, null, null, "The Circle", 2013L),
-      Row(100L.encodeAsCAPSId.withPrefix(1).toList, false, true, true, "C", 42L, "Alice", null, null),
-      Row(200L.encodeAsCAPSId.withPrefix(1).toList, false, true, true, "D", 23L, "Bob", null, null),
-      Row(300L.encodeAsCAPSId.withPrefix(1).toList, false, true, true, "F", 84L, "Eve", null, null),
-      Row(400L.encodeAsCAPSId.withPrefix(1).toList, false, true, true, "R", 49L, "Carl", null, null)
+      Row(1L.encodeAsMorpheusId.withPrefix(0).toList, false, true, false,  null, 23L, "Mats", null, null),
+      Row(2L.encodeAsMorpheusId.withPrefix(0).toList, false, true, false,  null, 42L, "Martin", null, null),
+      Row(3L.encodeAsMorpheusId.withPrefix(0).toList, false, true, false,  null, 1337L, "Max", null, null),
+      Row(4L.encodeAsMorpheusId.withPrefix(0).toList, false, true, false,  null, 9L, "Stefan", null, null),
+      Row(10L.encodeAsMorpheusId.withPrefix(1).toList, true, false, false, null, null, null, "1984", 1949L),
+      Row(20L.encodeAsMorpheusId.withPrefix(1).toList, true, false, false, null, null, null, "Cryptonomicon", 1999L),
+      Row(30L.encodeAsMorpheusId.withPrefix(1).toList, true, false, false, null, null, null, "The Eye of the World", 1990L),
+      Row(40L.encodeAsMorpheusId.withPrefix(1).toList, true, false, false, null, null, null, "The Circle", 2013L),
+      Row(100L.encodeAsMorpheusId.withPrefix(1).toList, false, true, true, "C", 42L, "Alice", null, null),
+      Row(200L.encodeAsMorpheusId.withPrefix(1).toList, false, true, true, "D", 23L, "Bob", null, null),
+      Row(300L.encodeAsMorpheusId.withPrefix(1).toList, false, true, true, "F", 84L, "Eve", null, null),
+      Row(400L.encodeAsMorpheusId.withPrefix(1).toList, false, true, true, "R", 49L, "Carl", null, null)
     )
 
     val relData = Bag(
-      Row(1L.encodeAsCAPSId.withPrefix(0).toList, 1L.encodeAsCAPSId.withPrefix(0).toList, true, false, 2L.encodeAsCAPSId.withPrefix(0).toList, null, 2017L),
-      Row(1L.encodeAsCAPSId.withPrefix(0).toList, 2L.encodeAsCAPSId.withPrefix(0).toList, true, false, 3L.encodeAsCAPSId.withPrefix(0).toList, null, 2016L),
-      Row(1L.encodeAsCAPSId.withPrefix(0).toList, 3L.encodeAsCAPSId.withPrefix(0).toList, true, false, 4L.encodeAsCAPSId.withPrefix(0).toList, null, 2015L),
-      Row(2L.encodeAsCAPSId.withPrefix(0).toList, 4L.encodeAsCAPSId.withPrefix(0).toList, true, false, 3L.encodeAsCAPSId.withPrefix(0).toList, null, 2016L),
-      Row(2L.encodeAsCAPSId.withPrefix(0).toList, 5L.encodeAsCAPSId.withPrefix(0).toList, true, false, 4L.encodeAsCAPSId.withPrefix(0).toList, null, 2013L),
-      Row(3L.encodeAsCAPSId.withPrefix(0).toList, 6L.encodeAsCAPSId.withPrefix(0).toList, true, false, 4L.encodeAsCAPSId.withPrefix(0).toList, null, 2016L),
-      Row(100L.encodeAsCAPSId.withPrefix(1).toList, 100L.encodeAsCAPSId.withPrefix(1).toList, false, true, 10L.encodeAsCAPSId.withPrefix(1).toList, true, null),
-      Row(200L.encodeAsCAPSId.withPrefix(1).toList, 200L.encodeAsCAPSId.withPrefix(1).toList, false, true, 40L.encodeAsCAPSId.withPrefix(1).toList, true, null),
-      Row(300L.encodeAsCAPSId.withPrefix(1).toList, 300L.encodeAsCAPSId.withPrefix(1).toList, false, true, 30L.encodeAsCAPSId.withPrefix(1).toList, true, null),
-      Row(400L.encodeAsCAPSId.withPrefix(1).toList, 400L.encodeAsCAPSId.withPrefix(1).toList, false, true, 20L.encodeAsCAPSId.withPrefix(1).toList, false, null)
+      Row(1L.encodeAsMorpheusId.withPrefix(0).toList, 1L.encodeAsMorpheusId.withPrefix(0).toList, true, false, 2L.encodeAsMorpheusId.withPrefix(0).toList, null, 2017L),
+      Row(1L.encodeAsMorpheusId.withPrefix(0).toList, 2L.encodeAsMorpheusId.withPrefix(0).toList, true, false, 3L.encodeAsMorpheusId.withPrefix(0).toList, null, 2016L),
+      Row(1L.encodeAsMorpheusId.withPrefix(0).toList, 3L.encodeAsMorpheusId.withPrefix(0).toList, true, false, 4L.encodeAsMorpheusId.withPrefix(0).toList, null, 2015L),
+      Row(2L.encodeAsMorpheusId.withPrefix(0).toList, 4L.encodeAsMorpheusId.withPrefix(0).toList, true, false, 3L.encodeAsMorpheusId.withPrefix(0).toList, null, 2016L),
+      Row(2L.encodeAsMorpheusId.withPrefix(0).toList, 5L.encodeAsMorpheusId.withPrefix(0).toList, true, false, 4L.encodeAsMorpheusId.withPrefix(0).toList, null, 2013L),
+      Row(3L.encodeAsMorpheusId.withPrefix(0).toList, 6L.encodeAsMorpheusId.withPrefix(0).toList, true, false, 4L.encodeAsMorpheusId.withPrefix(0).toList, null, 2016L),
+      Row(100L.encodeAsMorpheusId.withPrefix(1).toList, 100L.encodeAsMorpheusId.withPrefix(1).toList, false, true, 10L.encodeAsMorpheusId.withPrefix(1).toList, true, null),
+      Row(200L.encodeAsMorpheusId.withPrefix(1).toList, 200L.encodeAsMorpheusId.withPrefix(1).toList, false, true, 40L.encodeAsMorpheusId.withPrefix(1).toList, true, null),
+      Row(300L.encodeAsMorpheusId.withPrefix(1).toList, 300L.encodeAsMorpheusId.withPrefix(1).toList, false, true, 30L.encodeAsMorpheusId.withPrefix(1).toList, true, null),
+      Row(400L.encodeAsMorpheusId.withPrefix(1).toList, 400L.encodeAsMorpheusId.withPrefix(1).toList, false, true, 20L.encodeAsMorpheusId.withPrefix(1).toList, false, null)
     )
 
     verify(result.nodes("n"), nodeCols, nodeData)
@@ -108,8 +108,8 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
   }
 
   it("dont lose schema information when mapping") {
-    val nodes = CAPSElementTable.create(NodeMappingBuilder.on("id").build,
-      caps.sparkSession.createDataFrame(
+    val nodes = MorpheusElementTable.create(NodeMappingBuilder.on("id").build,
+      morpheus.sparkSession.createDataFrame(
         Seq(
           Tuple1(10L),
           Tuple1(11L),
@@ -123,8 +123,8 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
         )
       ).toDF("id"))
 
-    val rs = CAPSElementTable.create(RelationshipMappingBuilder.on("ID").from("SRC").to("DST").relType("FOO").build,
-      caps.sparkSession.createDataFrame(
+    val rs = MorpheusElementTable.create(RelationshipMappingBuilder.on("ID").from("SRC").to("DST").relType("FOO").build,
+      morpheus.sparkSession.createDataFrame(
         Seq(
           (10L, 1000L, 20L),
           (50L, 500L, 25L)
@@ -132,19 +132,19 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
       ).toDF("SRC", "ID", "DST"))
 
 
-    val graph = caps.graphs.create(nodes, rs)
+    val graph = morpheus.graphs.create(nodes, rs)
 
-    val results = graph.relationships("r").asCaps.toCypherMaps
+    val results = graph.relationships("r").asMorpheus.toCypherMaps
 
     results.collect().toSet should equal(
       Set(
-        CypherMap("r" -> CAPSRelationship(1000L, 10L, 20L, "FOO")),
-        CypherMap("r" -> CAPSRelationship(500L, 50L, 25L, "FOO"))
+        CypherMap("r" -> MorpheusRelationship(1000L, 10L, 20L, "FOO")),
+        CypherMap("r" -> MorpheusRelationship(500L, 50L, 25L, "FOO"))
       ))
   }
 
   it("Construct graph from single node scan") {
-    val graph = caps.graphs.create(personTable)
+    val graph = morpheus.graphs.create(personTable)
     val nodes = graph.nodes("n")
     val cols = Seq(
       n,
@@ -153,16 +153,16 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
       nHasPropertyName
     )
     val data = Bag(
-      Row(1L.encodeAsCAPSId.toList, true, 23L, "Mats"),
-      Row(2L.encodeAsCAPSId.toList, true, 42L, "Martin"),
-      Row(3L.encodeAsCAPSId.toList, true, 1337L, "Max"),
-      Row(4L.encodeAsCAPSId.toList, true, 9L, "Stefan")
+      Row(1L.encodeAsMorpheusId.toList, true, 23L, "Mats"),
+      Row(2L.encodeAsMorpheusId.toList, true, 42L, "Martin"),
+      Row(3L.encodeAsMorpheusId.toList, true, 1337L, "Max"),
+      Row(4L.encodeAsMorpheusId.toList, true, 9L, "Stefan")
     )
     verify(nodes, cols, data)
   }
 
   it("Construct graph from multiple node scans") {
-    val graph = caps.graphs.create(personTable, bookTable)
+    val graph = morpheus.graphs.create(personTable, bookTable)
     val nodes = graph.nodes("n")
     val cols = Seq(
       n,
@@ -174,14 +174,14 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
       nHasPropertyYear
     )
     val data = Bag(
-      Row(1L.encodeAsCAPSId.toList, false, true,  23L, "Mats", null, null),
-      Row(2L.encodeAsCAPSId.toList, false, true,  42L, "Martin", null, null),
-      Row(3L.encodeAsCAPSId.toList, false, true,  1337L, "Max", null, null),
-      Row(4L.encodeAsCAPSId.toList, false, true,  9L, "Stefan", null, null),
-      Row(10L.encodeAsCAPSId.toList, true, false, null, null, "1984", 1949L),
-      Row(20L.encodeAsCAPSId.toList, true, false, null, null, "Cryptonomicon", 1999L),
-      Row(30L.encodeAsCAPSId.toList, true, false, null, null, "The Eye of the World", 1990L),
-      Row(40L.encodeAsCAPSId.toList, true, false, null, null, "The Circle", 2013L)
+      Row(1L.encodeAsMorpheusId.toList, false, true,  23L, "Mats", null, null),
+      Row(2L.encodeAsMorpheusId.toList, false, true,  42L, "Martin", null, null),
+      Row(3L.encodeAsMorpheusId.toList, false, true,  1337L, "Max", null, null),
+      Row(4L.encodeAsMorpheusId.toList, false, true,  9L, "Stefan", null, null),
+      Row(10L.encodeAsMorpheusId.toList, true, false, null, null, "1984", 1949L),
+      Row(20L.encodeAsMorpheusId.toList, true, false, null, null, "Cryptonomicon", 1999L),
+      Row(30L.encodeAsMorpheusId.toList, true, false, null, null, "The Eye of the World", 1990L),
+      Row(40L.encodeAsMorpheusId.toList, true, false, null, null, "The Circle", 2013L)
     )
     verify(nodes, cols, data)
   }
@@ -198,37 +198,37 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
         |CREATE (combo)-[:S { since: 2006 }]->(combo)
       """.stripMargin
 
-    val graph = CAPSScanGraphFactory(CreateGraphFactory(fixture))
+    val graph = ScanGraphFactory(CreateGraphFactory(fixture))
 
     graph.cypher("MATCH (n) RETURN n").records.size should equal(3)
   }
 
   it("Align node scans when individual tables have the same node id and properties") {
-    val aDf = caps.sparkSession.createDataFrame(Seq(
+    val aDf = morpheus.sparkSession.createDataFrame(Seq(
       (0L, "A")
     )).toDF("_node_id", "name").withColumn("size", functions.lit(null))
     val aMapping: ElementMapping = NodeMappingBuilder.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("A").build
-    val aTable = CAPSElementTable.create(aMapping, aDf)
+    val aTable = MorpheusElementTable.create(aMapping, aDf)
 
-    val bDf = caps.sparkSession.createDataFrame(Seq(
+    val bDf = morpheus.sparkSession.createDataFrame(Seq(
       (1L, "B")
     )).toDF("_node_id", "name").withColumn("size", functions.lit(null))
     val bMapping = NodeMappingBuilder.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabel("B").build
-    val bTable = CAPSElementTable.create(bMapping, bDf)
+    val bTable = MorpheusElementTable.create(bMapping, bDf)
 
-    val comboDf = caps.sparkSession.createDataFrame(Seq(
+    val comboDf = morpheus.sparkSession.createDataFrame(Seq(
       (2L, "COMBO", 2)
     )).toDF("_node_id", "name", "size")
     val comboMapping = NodeMappingBuilder.on("_node_id").withPropertyKey("name").withPropertyKey("size").withImpliedLabels("A", "B").build
-    val comboTable = CAPSElementTable.create(comboMapping, comboDf)
+    val comboTable = MorpheusElementTable.create(comboMapping, comboDf)
 
-    val graph = caps.graphs.create(aTable, bTable, comboTable)
+    val graph = morpheus.graphs.create(aTable, bTable, comboTable)
 
     graph.cypher("MATCH (n) RETURN n").records.size should equal(3)
   }
 
   it("Construct graph from single node and single relationship scan") {
-    val graph = caps.graphs.create(personTable, knowsTable)
+    val graph = morpheus.graphs.create(personTable, knowsTable)
     val rels = graph.relationships("r")
 
     val cols = Seq(
@@ -239,19 +239,19 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
       rHasPropertySince
     )
     val data = Bag(
-      Row(1L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, true, 2L.encodeAsCAPSId.toList, 2017L),
-      Row(1L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, true, 3L.encodeAsCAPSId.toList, 2016L),
-      Row(1L.encodeAsCAPSId.toList, 3L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2015L),
-      Row(2L.encodeAsCAPSId.toList, 4L.encodeAsCAPSId.toList, true, 3L.encodeAsCAPSId.toList, 2016L),
-      Row(2L.encodeAsCAPSId.toList, 5L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2013L),
-      Row(3L.encodeAsCAPSId.toList, 6L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2016L)
+      Row(1L.encodeAsMorpheusId.toList, 1L.encodeAsMorpheusId.toList, true, 2L.encodeAsMorpheusId.toList, 2017L),
+      Row(1L.encodeAsMorpheusId.toList, 2L.encodeAsMorpheusId.toList, true, 3L.encodeAsMorpheusId.toList, 2016L),
+      Row(1L.encodeAsMorpheusId.toList, 3L.encodeAsMorpheusId.toList, true, 4L.encodeAsMorpheusId.toList, 2015L),
+      Row(2L.encodeAsMorpheusId.toList, 4L.encodeAsMorpheusId.toList, true, 3L.encodeAsMorpheusId.toList, 2016L),
+      Row(2L.encodeAsMorpheusId.toList, 5L.encodeAsMorpheusId.toList, true, 4L.encodeAsMorpheusId.toList, 2013L),
+      Row(3L.encodeAsMorpheusId.toList, 6L.encodeAsMorpheusId.toList, true, 4L.encodeAsMorpheusId.toList, 2016L)
     )
 
     verify(rels, cols, data)
   }
 
   it("Extract all node scans") {
-    val graph = caps.graphs.create(personTable, bookTable)
+    val graph = morpheus.graphs.create(personTable, bookTable)
     val nodes = graph.nodes("n", CTNode())
     val cols = Seq(
       n,
@@ -263,21 +263,21 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
       nHasPropertyYear
     )
     val data = Bag(
-      Row(1L.encodeAsCAPSId.toList, false, true,  23L, "Mats", null, null),
-      Row(2L.encodeAsCAPSId.toList, false, true,  42L, "Martin", null, null),
-      Row(3L.encodeAsCAPSId.toList, false, true,  1337L, "Max", null, null),
-      Row(4L.encodeAsCAPSId.toList, false, true,  9L, "Stefan", null, null),
-      Row(10L.encodeAsCAPSId.toList, true, false, null, null, "1984", 1949L),
-      Row(20L.encodeAsCAPSId.toList, true, false, null, null, "Cryptonomicon", 1999L),
-      Row(30L.encodeAsCAPSId.toList, true, false, null, null, "The Eye of the World", 1990L),
-      Row(40L.encodeAsCAPSId.toList, true, false, null, null, "The Circle", 2013L)
+      Row(1L.encodeAsMorpheusId.toList, false, true,  23L, "Mats", null, null),
+      Row(2L.encodeAsMorpheusId.toList, false, true,  42L, "Martin", null, null),
+      Row(3L.encodeAsMorpheusId.toList, false, true,  1337L, "Max", null, null),
+      Row(4L.encodeAsMorpheusId.toList, false, true,  9L, "Stefan", null, null),
+      Row(10L.encodeAsMorpheusId.toList, true, false, null, null, "1984", 1949L),
+      Row(20L.encodeAsMorpheusId.toList, true, false, null, null, "Cryptonomicon", 1999L),
+      Row(30L.encodeAsMorpheusId.toList, true, false, null, null, "The Eye of the World", 1990L),
+      Row(40L.encodeAsMorpheusId.toList, true, false, null, null, "The Circle", 2013L)
     )
 
     verify(nodes, cols, data)
   }
 
   it("Extract node scan subset") {
-    val graph = caps.graphs.create(personTable, bookTable)
+    val graph = morpheus.graphs.create(personTable, bookTable)
     val nodes = graph.nodes("n", CTNode("Person"))
     val cols = Seq(
       n,
@@ -286,16 +286,16 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
       nHasPropertyName
     )
     val data = Bag(
-      Row(1L.encodeAsCAPSId.toList, true, 23L, "Mats"),
-      Row(2L.encodeAsCAPSId.toList, true, 42L, "Martin"),
-      Row(3L.encodeAsCAPSId.toList, true, 1337L, "Max"),
-      Row(4L.encodeAsCAPSId.toList, true, 9L, "Stefan")
+      Row(1L.encodeAsMorpheusId.toList, true, 23L, "Mats"),
+      Row(2L.encodeAsMorpheusId.toList, true, 42L, "Martin"),
+      Row(3L.encodeAsMorpheusId.toList, true, 1337L, "Max"),
+      Row(4L.encodeAsMorpheusId.toList, true, 9L, "Stefan")
     )
     verify(nodes, cols, data)
   }
 
   it("Extract all relationship scans") {
-    val graph = caps.graphs.create(personTable, bookTable, knowsTable, readsTable)
+    val graph = morpheus.graphs.create(personTable, bookTable, knowsTable, readsTable)
     val rels = graph.relationships("r")
     val cols = Seq(
       rStart,
@@ -307,23 +307,23 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
       rHasPropertySince
     )
     val data = Bag(
-      Row(1L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, true, false, 2L.encodeAsCAPSId.toList, null, 2017L),
-      Row(1L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, true, false, 3L.encodeAsCAPSId.toList, null, 2016L),
-      Row(1L.encodeAsCAPSId.toList, 3L.encodeAsCAPSId.toList, true, false, 4L.encodeAsCAPSId.toList, null, 2015L),
-      Row(2L.encodeAsCAPSId.toList, 4L.encodeAsCAPSId.toList, true, false, 3L.encodeAsCAPSId.toList, null, 2016L),
-      Row(2L.encodeAsCAPSId.toList, 5L.encodeAsCAPSId.toList, true, false, 4L.encodeAsCAPSId.toList, null, 2013L),
-      Row(3L.encodeAsCAPSId.toList, 6L.encodeAsCAPSId.toList, true, false, 4L.encodeAsCAPSId.toList, null, 2016L),
-      Row(100L.encodeAsCAPSId.toList, 100L.encodeAsCAPSId.toList, false, true, 10L.encodeAsCAPSId.toList, true, null),
-      Row(200L.encodeAsCAPSId.toList, 200L.encodeAsCAPSId.toList, false, true, 40L.encodeAsCAPSId.toList, true, null),
-      Row(300L.encodeAsCAPSId.toList, 300L.encodeAsCAPSId.toList, false, true, 30L.encodeAsCAPSId.toList, true, null),
-      Row(400L.encodeAsCAPSId.toList, 400L.encodeAsCAPSId.toList, false, true, 20L.encodeAsCAPSId.toList, false, null)
+      Row(1L.encodeAsMorpheusId.toList, 1L.encodeAsMorpheusId.toList, true, false, 2L.encodeAsMorpheusId.toList, null, 2017L),
+      Row(1L.encodeAsMorpheusId.toList, 2L.encodeAsMorpheusId.toList, true, false, 3L.encodeAsMorpheusId.toList, null, 2016L),
+      Row(1L.encodeAsMorpheusId.toList, 3L.encodeAsMorpheusId.toList, true, false, 4L.encodeAsMorpheusId.toList, null, 2015L),
+      Row(2L.encodeAsMorpheusId.toList, 4L.encodeAsMorpheusId.toList, true, false, 3L.encodeAsMorpheusId.toList, null, 2016L),
+      Row(2L.encodeAsMorpheusId.toList, 5L.encodeAsMorpheusId.toList, true, false, 4L.encodeAsMorpheusId.toList, null, 2013L),
+      Row(3L.encodeAsMorpheusId.toList, 6L.encodeAsMorpheusId.toList, true, false, 4L.encodeAsMorpheusId.toList, null, 2016L),
+      Row(100L.encodeAsMorpheusId.toList, 100L.encodeAsMorpheusId.toList, false, true, 10L.encodeAsMorpheusId.toList, true, null),
+      Row(200L.encodeAsMorpheusId.toList, 200L.encodeAsMorpheusId.toList, false, true, 40L.encodeAsMorpheusId.toList, true, null),
+      Row(300L.encodeAsMorpheusId.toList, 300L.encodeAsMorpheusId.toList, false, true, 30L.encodeAsMorpheusId.toList, true, null),
+      Row(400L.encodeAsMorpheusId.toList, 400L.encodeAsMorpheusId.toList, false, true, 20L.encodeAsMorpheusId.toList, false, null)
     )
 
     verify(rels, cols, data)
   }
 
   it("Extract relationship scan subset") {
-    val graph = caps.graphs.create(personTable, bookTable, knowsTable, readsTable)
+    val graph = morpheus.graphs.create(personTable, bookTable, knowsTable, readsTable)
     val rels = graph.relationships("r", CTRelationship("KNOWS"))
     val cols = Seq(
       rStart,
@@ -333,19 +333,19 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
       rHasPropertySince
     )
     val data = Bag(
-      Row(1L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, true, 2L.encodeAsCAPSId.toList, 2017L),
-      Row(1L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, true, 3L.encodeAsCAPSId.toList, 2016L),
-      Row(1L.encodeAsCAPSId.toList, 3L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2015L),
-      Row(2L.encodeAsCAPSId.toList, 4L.encodeAsCAPSId.toList, true, 3L.encodeAsCAPSId.toList, 2016L),
-      Row(2L.encodeAsCAPSId.toList, 5L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2013L),
-      Row(3L.encodeAsCAPSId.toList, 6L.encodeAsCAPSId.toList, true, 4L.encodeAsCAPSId.toList, 2016L)
+      Row(1L.encodeAsMorpheusId.toList, 1L.encodeAsMorpheusId.toList, true, 2L.encodeAsMorpheusId.toList, 2017L),
+      Row(1L.encodeAsMorpheusId.toList, 2L.encodeAsMorpheusId.toList, true, 3L.encodeAsMorpheusId.toList, 2016L),
+      Row(1L.encodeAsMorpheusId.toList, 3L.encodeAsMorpheusId.toList, true, 4L.encodeAsMorpheusId.toList, 2015L),
+      Row(2L.encodeAsMorpheusId.toList, 4L.encodeAsMorpheusId.toList, true, 3L.encodeAsMorpheusId.toList, 2016L),
+      Row(2L.encodeAsMorpheusId.toList, 5L.encodeAsMorpheusId.toList, true, 4L.encodeAsMorpheusId.toList, 2013L),
+      Row(3L.encodeAsMorpheusId.toList, 6L.encodeAsMorpheusId.toList, true, 4L.encodeAsMorpheusId.toList, 2016L)
     )
 
     verify(rels, cols, data)
   }
 
   it("Extract relationship scan strict subset") {
-    val graph = caps.graphs.create(personTable, bookTable, knowsTable, readsTable, influencesTable)
+    val graph = morpheus.graphs.create(personTable, bookTable, knowsTable, readsTable, influencesTable)
     val rels = graph.relationships("r", CTRelationship("KNOWS", "INFLUENCES"))
     val cols = Seq(
       rStart,
@@ -357,21 +357,21 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
     )
     val data = Bag(
       // :KNOWS
-      Row(1L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, false, true, 2L.encodeAsCAPSId.toList, 2017L),
-      Row(1L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, false, true, 3L.encodeAsCAPSId.toList, 2016L),
-      Row(1L.encodeAsCAPSId.toList, 3L.encodeAsCAPSId.toList, false, true, 4L.encodeAsCAPSId.toList, 2015L),
-      Row(2L.encodeAsCAPSId.toList, 4L.encodeAsCAPSId.toList, false, true, 3L.encodeAsCAPSId.toList, 2016L),
-      Row(2L.encodeAsCAPSId.toList, 5L.encodeAsCAPSId.toList, false, true, 4L.encodeAsCAPSId.toList, 2013L),
-      Row(3L.encodeAsCAPSId.toList, 6L.encodeAsCAPSId.toList, false, true, 4L.encodeAsCAPSId.toList, 2016L),
+      Row(1L.encodeAsMorpheusId.toList, 1L.encodeAsMorpheusId.toList, false, true, 2L.encodeAsMorpheusId.toList, 2017L),
+      Row(1L.encodeAsMorpheusId.toList, 2L.encodeAsMorpheusId.toList, false, true, 3L.encodeAsMorpheusId.toList, 2016L),
+      Row(1L.encodeAsMorpheusId.toList, 3L.encodeAsMorpheusId.toList, false, true, 4L.encodeAsMorpheusId.toList, 2015L),
+      Row(2L.encodeAsMorpheusId.toList, 4L.encodeAsMorpheusId.toList, false, true, 3L.encodeAsMorpheusId.toList, 2016L),
+      Row(2L.encodeAsMorpheusId.toList, 5L.encodeAsMorpheusId.toList, false, true, 4L.encodeAsMorpheusId.toList, 2013L),
+      Row(3L.encodeAsMorpheusId.toList, 6L.encodeAsMorpheusId.toList, false, true, 4L.encodeAsMorpheusId.toList, 2016L),
       // :INFLUENCES
-      Row(10L.encodeAsCAPSId.toList, 1000L.encodeAsCAPSId.toList, true, false, 20L.encodeAsCAPSId.toList, null)
+      Row(10L.encodeAsMorpheusId.toList, 1000L.encodeAsMorpheusId.toList, true, false, 20L.encodeAsMorpheusId.toList, null)
     )
 
     verify(rels, cols, data)
   }
 
   it("Extract from scans with overlapping labels") {
-    val graph = caps.graphs.create(personTable, programmerTable)
+    val graph = morpheus.graphs.create(personTable, programmerTable)
     val nodes = graph.nodes("n", CTNode("Person"))
     val cols = Seq(
       n,
@@ -382,21 +382,21 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
       nHasPropertyName
     )
     val data = Bag(
-      Row(1L.encodeAsCAPSId.toList, true, false,  null, 23L, "Mats"),
-      Row(2L.encodeAsCAPSId.toList, true, false,  null, 42L, "Martin"),
-      Row(3L.encodeAsCAPSId.toList, true, false,  null, 1337L, "Max"),
-      Row(4L.encodeAsCAPSId.toList, true, false,  null, 9L, "Stefan"),
-      Row(100L.encodeAsCAPSId.toList, true, true, "C", 42L, "Alice"),
-      Row(200L.encodeAsCAPSId.toList, true, true, "D", 23L, "Bob"),
-      Row(300L.encodeAsCAPSId.toList, true, true, "F", 84L, "Eve"),
-      Row(400L.encodeAsCAPSId.toList, true, true, "R", 49L, "Carl")
+      Row(1L.encodeAsMorpheusId.toList, true, false,  null, 23L, "Mats"),
+      Row(2L.encodeAsMorpheusId.toList, true, false,  null, 42L, "Martin"),
+      Row(3L.encodeAsMorpheusId.toList, true, false,  null, 1337L, "Max"),
+      Row(4L.encodeAsMorpheusId.toList, true, false,  null, 9L, "Stefan"),
+      Row(100L.encodeAsMorpheusId.toList, true, true, "C", 42L, "Alice"),
+      Row(200L.encodeAsMorpheusId.toList, true, true, "D", 23L, "Bob"),
+      Row(300L.encodeAsMorpheusId.toList, true, true, "F", 84L, "Eve"),
+      Row(400L.encodeAsMorpheusId.toList, true, true, "R", 49L, "Carl")
     )
 
     verify(nodes, cols, data)
   }
 
   it("Extract from scans with implied label but missing keys") {
-    val graph = caps.graphs.create(personTable, brogrammerTable)
+    val graph = morpheus.graphs.create(personTable, brogrammerTable)
     val nodes = graph.nodes("n", CTNode("Person"))
     val cols = Seq(
       n,
@@ -407,14 +407,14 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
       nHasPropertyName
     )
     val data = Bag(
-      Row(1L.encodeAsCAPSId.toList, false, true,  null, 23L, "Mats"),
-      Row(2L.encodeAsCAPSId.toList, false, true,  null, 42L, "Martin"),
-      Row(3L.encodeAsCAPSId.toList, false, true,  null, 1337L, "Max"),
-      Row(4L.encodeAsCAPSId.toList, false, true,  null, 9L, "Stefan"),
-      Row(100L.encodeAsCAPSId.toList, true, true, "Node", null, null),
-      Row(200L.encodeAsCAPSId.toList, true, true, "Coffeescript", null, null),
-      Row(300L.encodeAsCAPSId.toList, true, true, "Javascript", null, null),
-      Row(400L.encodeAsCAPSId.toList, true, true, "Typescript", null, null)
+      Row(1L.encodeAsMorpheusId.toList, false, true,  null, 23L, "Mats"),
+      Row(2L.encodeAsMorpheusId.toList, false, true,  null, 42L, "Martin"),
+      Row(3L.encodeAsMorpheusId.toList, false, true,  null, 1337L, "Max"),
+      Row(4L.encodeAsMorpheusId.toList, false, true,  null, 9L, "Stefan"),
+      Row(100L.encodeAsMorpheusId.toList, true, true, "Node", null, null),
+      Row(200L.encodeAsMorpheusId.toList, true, true, "Coffeescript", null, null),
+      Row(300L.encodeAsMorpheusId.toList, true, true, "Javascript", null, null),
+      Row(400L.encodeAsMorpheusId.toList, true, true, "Typescript", null, null)
     )
 
     verify(nodes, cols, data)
@@ -438,7 +438,7 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
           pattern.relElement.toVar -> r
         )
       )
-      val result = caps.records.from(renamedScan.header, renamedScan.table)
+      val result = morpheus.records.from(renamedScan.header, renamedScan.table)
 
       val cols = Seq(
         n,
@@ -452,7 +452,7 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
       )
 
       val data = Bag(
-        Row(0L.encodeAsCAPSId.toList, true, "Alice", 0L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, true, 1L.encodeAsCAPSId.toList, 2017L)
+        Row(0L.encodeAsMorpheusId.toList, true, "Alice", 0L.encodeAsMorpheusId.toList, 2L.encodeAsMorpheusId.toList, true, 1L.encodeAsMorpheusId.toList, 2017L)
       )
 
       verify(result, cols, data)
@@ -469,7 +469,7 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
         """.stripMargin, Seq(pattern))
       val scan = graph.scanOperator(pattern)
 
-      val result = caps.records.from(scan.header, scan.table)
+      val result = morpheus.records.from(scan.header, scan.table)
 
       val sourceVar = pattern.sourceElement.toVar
       val targetVar = pattern.targetElement.toVar
@@ -489,7 +489,7 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
       )
 
       val data = Bag(
-        Row(0L.encodeAsCAPSId.toList, true, "Alice", 2L.encodeAsCAPSId.toList, true, 0L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, 2017L, 1L.encodeAsCAPSId.toList, true, "Bob")
+        Row(0L.encodeAsMorpheusId.toList, true, "Alice", 2L.encodeAsMorpheusId.toList, true, 0L.encodeAsMorpheusId.toList, 1L.encodeAsMorpheusId.toList, 2017L, 1L.encodeAsMorpheusId.toList, true, "Bob")
       )
 
       verify(result, cols, data)
@@ -512,7 +512,7 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
 
       val scan = graph.scanOperator(scanPattern)
 
-      val result = caps.records.from(scan.header, scan.table)
+      val result = morpheus.records.from(scan.header, scan.table)
 
       val sourceVar = scanPattern.sourceElement.toVar
       val targetVar = scanPattern.targetElement.toVar
@@ -533,8 +533,8 @@ class ScanGraphTest extends CAPSGraphTest with ElementTableCreationSupport {
       )
 
       val data = Bag(
-        Row(0L.encodeAsCAPSId.toList, true, "Alice", 3L.encodeAsCAPSId.toList, true, 0L.encodeAsCAPSId.toList, 1L.encodeAsCAPSId.toList, 2017L, 1L.encodeAsCAPSId.toList, true, false, "Bob"),
-        Row(0L.encodeAsCAPSId.toList, true, "Alice", 4L.encodeAsCAPSId.toList, true, 0L.encodeAsCAPSId.toList, 2L.encodeAsCAPSId.toList, 2017L, 2L.encodeAsCAPSId.toList, false, true, "Garfield")
+        Row(0L.encodeAsMorpheusId.toList, true, "Alice", 3L.encodeAsMorpheusId.toList, true, 0L.encodeAsMorpheusId.toList, 1L.encodeAsMorpheusId.toList, 2017L, 1L.encodeAsMorpheusId.toList, true, false, "Bob"),
+        Row(0L.encodeAsMorpheusId.toList, true, "Alice", 4L.encodeAsMorpheusId.toList, true, 0L.encodeAsMorpheusId.toList, 2L.encodeAsMorpheusId.toList, 2017L, 2L.encodeAsMorpheusId.toList, false, true, "Garfield")
       )
 
       verify(result, cols, data)

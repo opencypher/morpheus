@@ -30,16 +30,16 @@ package org.opencypher.spark.examples
 import org.apache.spark.sql.SparkSession
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.util.{CensusDB, App}
 
 object CensusJdbcExample extends App {
 
   implicit val resourceFolder: String = "/census"
 
-  // Create CAPS session
-  implicit val session: CAPSSession = CAPSSession.local()
-  implicit val sparkSession: SparkSession = session.sparkSession
+  // Create Morpheus session
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
+  implicit val sparkSession: SparkSession = morpheus.sparkSession
 
   // Register a SQL source (for JDBC) in the Cypher session
   val graphName = "Census_1901"
@@ -54,10 +54,10 @@ object CensusJdbcExample extends App {
   // Create the data in H2 in-memory database
   CensusDB.createJdbcData(dataSourceConfig)
 
-  session.registerSource(Namespace("sql"), sqlGraphSource)
+  morpheus.registerSource(Namespace("sql"), sqlGraphSource)
 
   // Access the graph via its qualified graph name
-  val census = session.catalog.graph("sql." + graphName)
+  val census = morpheus.catalog.graph("sql." + graphName)
 
   // Run a simple Cypher query
   census.cypher(

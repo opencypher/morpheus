@@ -31,11 +31,11 @@ import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 
 trait RecordsVerificationFixture {
 
-  self: CAPSTestSuite  =>
+  self: MorpheusTestSuite  =>
 
   protected def verify(records: RelationalCypherRecords[DataFrameTable], expectedExprs: Seq[Expr], expectedData: Bag[Row]): Unit = {
     val df = records.table.df

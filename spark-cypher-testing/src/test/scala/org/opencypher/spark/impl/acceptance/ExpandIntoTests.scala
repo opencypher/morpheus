@@ -28,9 +28,9 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class ExpandIntoTests extends CAPSTestSuite with ScanGraphInit {
+class ExpandIntoTests extends MorpheusTestSuite with ScanGraphInit {
 
   it("test expand into for dangling edge") {
     // Given

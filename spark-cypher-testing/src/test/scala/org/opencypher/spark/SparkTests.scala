@@ -28,9 +28,9 @@ package org.opencypher.spark
 
 import org.apache.spark.sql.execution.SparkPlan
 import org.opencypher.okapi.impl.util.Measurement
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class SparkTests extends CAPSTestSuite {
+class SparkTests extends MorpheusTestSuite {
 
   // Reproduces https://issues.apache.org/jira/browse/SPARK-23855, which was relevant to Spark 2.2
   it("should correctly perform a join after a cross") {

@@ -32,32 +32,32 @@ import org.opencypher.okapi.api.types.CTString
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, Start}
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.api.MorpheusSession
+import org.opencypher.spark.impl.MorpheusRecords
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
-import org.opencypher.spark.schema.CAPSSchema
-import org.opencypher.spark.schema.CAPSSchema._
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.schema.MorpheusSchema
+import org.opencypher.spark.schema.MorpheusSchema._
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class RecordHeaderMismatch extends CAPSTestSuite {
+class RecordHeaderMismatch extends MorpheusTestSuite {
 
   it("throws a schema exception when the physical record header does not match the one computed based on the schema") {
     val buggyGraph: RelationalCypherGraph[DataFrameTable] {
-      type Session = CAPSSession
+      type Session = MorpheusSession
 
-      type Records = CAPSRecords
+      type Records = MorpheusRecords
     } = new RelationalCypherGraph[DataFrameTable] {
 
-      override type Session = CAPSSession
+      override type Session = MorpheusSession
 
-      override type Records = CAPSRecords
+      override type Records = MorpheusRecords
 
-      override def schema: CAPSSchema = PropertyGraphSchema.empty
+      override def schema: MorpheusSchema = PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("name" -> CTString)
         .withRelationshipPropertyKeys("R")("name" -> CTString)
-        .asCaps
+        .asMorpheus
 
-      override implicit def session: CAPSSession = caps
+      override implicit def session: MorpheusSession = morpheus
 
       override def cache(): RelationalCypherGraph[DataFrameTable] = this
 
@@ -65,7 +65,7 @@ class RecordHeaderMismatch extends CAPSTestSuite {
 
       // Always return empty records, which does not match what the schema promises
       def scanOperator(searchPattern: Pattern, exactLabelMatch: Boolean): RelationalOperator[DataFrameTable] = {
-        Start.fromEmptyGraph(caps.records.empty())
+        Start.fromEmptyGraph(morpheus.records.empty())
       }
     }
 

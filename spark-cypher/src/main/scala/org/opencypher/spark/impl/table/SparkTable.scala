@@ -40,8 +40,8 @@ import org.opencypher.okapi.ir.api.expr.{Expr, _}
 import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.impl.planning._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.impl.CAPSFunctions
-import org.opencypher.spark.impl.CAPSFunctions.{partitioned_id_assignment, serialize}
+import org.opencypher.spark.impl.MorpheusFunctions
+import org.opencypher.spark.impl.MorpheusFunctions.{partitioned_id_assignment, serialize}
 import org.opencypher.spark.impl.SparkSQLExprMapper._
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.expressions.EncodeLong._
@@ -403,8 +403,8 @@ object SparkTable {
     def encodeIdColumns(idColumns: String*): Seq[Column] = {
       idColumns.map { key =>
         df.structFieldForColumn(key).dataType match {
-          case LongType => df.col(key).encodeLongAsCAPSId(key)
-          case IntegerType => df.col(key).cast(LongType).encodeLongAsCAPSId(key)
+          case LongType => df.col(key).encodeLongAsMorpheusId(key)
+          case IntegerType => df.col(key).cast(LongType).encodeLongAsMorpheusId(key)
           case StringType => df.col(key).cast(BinaryType)
           case BinaryType => df.col(key)
           case unsupportedType => throw IllegalArgumentException(
@@ -454,7 +454,7 @@ object SparkTable {
       */
     def withHashColumn(columns: Seq[Column], hashColumn: String): DataFrame = {
       require(columns.nonEmpty, "Hash function requires a non-empty sequence of columns as input.")
-      df.safeAddColumn(hashColumn, CAPSFunctions.hash64(columns: _*).encodeLongAsCAPSId)
+      df.safeAddColumn(hashColumn, MorpheusFunctions.hash64(columns: _*).encodeLongAsMorpheusId)
     }
 
     /**

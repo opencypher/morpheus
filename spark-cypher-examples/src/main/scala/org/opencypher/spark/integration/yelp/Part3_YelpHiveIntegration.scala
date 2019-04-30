@@ -34,7 +34,7 @@ import org.opencypher.graphddl.GraphDdl
 import org.opencypher.okapi.api.graph.{GraphName, Namespace}
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Jdbc
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants._
 
 object Part3_YelpHiveIntegration extends App {
@@ -44,7 +44,7 @@ object Part3_YelpHiveIntegration extends App {
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpSubsetFolder)
 
-  implicit val morpheus: CAPSSession = CAPSSession.local()
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
   implicit val spark: SparkSession = morpheus.sparkSession
   import morpheus._
 

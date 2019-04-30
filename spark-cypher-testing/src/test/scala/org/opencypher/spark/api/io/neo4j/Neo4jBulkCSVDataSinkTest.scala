@@ -32,13 +32,13 @@ import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.spark.api.io.neo4j.Neo4jBulkCSVDataSink._
 import org.opencypher.spark.impl.acceptance.ScanGraphInit
 import org.opencypher.spark.impl.table.SparkTable
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 import org.opencypher.spark.testing.fixture.TeamDataFixture
 import org.scalatest.BeforeAndAfterAll
 
 import scala.io.Source
 
-class Neo4jBulkCSVDataSinkTest extends CAPSTestSuite with TeamDataFixture with ScanGraphInit with BeforeAndAfterAll {
+class Neo4jBulkCSVDataSinkTest extends MorpheusTestSuite with TeamDataFixture with ScanGraphInit with BeforeAndAfterAll {
   protected val tempDir = new TemporaryFolder()
 
   private val graphName = GraphName("teamdata")
@@ -50,7 +50,7 @@ class Neo4jBulkCSVDataSinkTest extends CAPSTestSuite with TeamDataFixture with S
     val graph: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph(dataFixture)
     val dataSource = new Neo4jBulkCSVDataSink(tempDir.getRoot.getAbsolutePath)
     dataSource.store(graphName, graph)
-    caps.catalog.register(namespace, dataSource)
+    morpheus.catalog.register(namespace, dataSource)
   }
 
   protected override def afterAll(): Unit = {
@@ -58,7 +58,7 @@ class Neo4jBulkCSVDataSinkTest extends CAPSTestSuite with TeamDataFixture with S
     super.afterAll()
   }
 
-  private def ds: Neo4jBulkCSVDataSink = caps.catalog.source(namespace).asInstanceOf[Neo4jBulkCSVDataSink]
+  private def ds: Neo4jBulkCSVDataSink = morpheus.catalog.source(namespace).asInstanceOf[Neo4jBulkCSVDataSink]
 
   it("writes the correct script file") {
     val root = ds.rootPath
@@ -87,15 +87,15 @@ class Neo4jBulkCSVDataSinkTest extends CAPSTestSuite with TeamDataFixture with S
 
   it("writes the correct schema files") {
     Source.fromFile(ds.schemaFileForNodes(graphName, Set("Person", "German"))).mkString should equal(
-      "___capsID:ID,languages:string[],luckyNumber:int,name:string"
+      "___morpheusID:ID,languages:string[],luckyNumber:int,name:string"
     )
 
     Source.fromFile(ds.schemaFileForNodes(graphName, Set("Person"))).mkString should equal(
-      "___capsID:ID,languages:string[],luckyNumber:int,name:string"
+      "___morpheusID:ID,languages:string[],luckyNumber:int,name:string"
     )
 
     Source.fromFile(ds.schemaFileForNodes(graphName, Set("Person", "Swede"))).mkString should equal(
-      "___capsID:ID,luckyNumber:int,name:string"
+      "___morpheusID:ID,luckyNumber:int,name:string"
     )
 
     Source.fromFile(ds.schemaFileForRelationships(graphName, "KNOWS")).mkString should equal(

@@ -31,7 +31,7 @@ import java.io.File
 import org.opencypher.okapi.tck.test.Tags.{BlackList, WhiteList}
 import org.opencypher.okapi.tck.test.{ScenariosFor, TCKGraph}
 import org.opencypher.spark.api.io.util.FileSystemUtils._
-import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
+import org.opencypher.spark.testing.support.creation.graphs.{ScanGraphFactory, TestGraphFactory}
 import org.opencypher.tools.tck.api.CypherTCK
 import org.scalatest.Tag
 import org.scalatest.prop.TableDrivenPropertyChecks._
@@ -39,17 +39,17 @@ import org.scalatest.prop.TableDrivenPropertyChecks._
 import scala.io.Source
 import scala.util.{Failure, Success, Try}
 
-class TckSparkCypherTest extends CAPSTestSuite {
+class TckSparkCypherTest extends MorpheusTestSuite {
 
-  val tckCapsTag: Tag = Tag("TckSparkCypher")
+  val tckMorpheusTag: Tag = Tag("TckMorpheus")
 
   // Defines the graphs to run on
   private val factories = Table(
     ("factory","additional_blacklist"),
-    (CAPSScanGraphFactory, Set.empty[String])
+    (ScanGraphFactory, Set.empty[String])
   )
 
-  private val defaultFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
+  private val defaultFactory: TestGraphFactory = ScanGraphFactory
 
   private val failingBlacklist = getClass.getResource("/failing_blacklist").getFile
   private val temporalBlacklist = getClass.getResource("/temporal_blacklist").getFile
@@ -61,8 +61,8 @@ class TckSparkCypherTest extends CAPSTestSuite {
   forAll(factories) { (factory, additional_blacklist) =>
     forAll(scenarios.whiteList) { scenario =>
       if (!additional_blacklist.contains(scenario.toString)) {
-        test(s"[${factory.name}, ${WhiteList.name}] $scenario", WhiteList, tckCapsTag, Tag(factory.name)) {
-          scenario(TCKGraph(factory, caps.graphs.empty)).execute()
+        test(s"[${factory.name}, ${WhiteList.name}] $scenario", WhiteList, tckMorpheusTag, Tag(factory.name)) {
+          scenario(TCKGraph(factory, morpheus.graphs.empty)).execute()
         }
       }
     }
@@ -70,8 +70,8 @@ class TckSparkCypherTest extends CAPSTestSuite {
 
   // black list tests are run on default factory
   forAll(scenarios.blackList) { scenario =>
-    test(s"[${defaultFactory.name}, ${BlackList.name}] $scenario", BlackList, tckCapsTag) {
-      val tckGraph = TCKGraph(defaultFactory, caps.graphs.empty)
+    test(s"[${defaultFactory.name}, ${BlackList.name}] $scenario", BlackList, tckMorpheusTag) {
+      val tckGraph = TCKGraph(defaultFactory, morpheus.graphs.empty)
 
       Try(scenario(tckGraph).execute()) match {
         case Success(_) =>
@@ -133,6 +133,6 @@ class TckSparkCypherTest extends CAPSTestSuite {
 
   ignore("run single scenario") {
     scenarios.get("Should add or subtract duration to or from date")
-      .foreach(scenario => scenario(TCKGraph(defaultFactory, caps.graphs.empty)).execute())
+      .foreach(scenario => scenario(TCKGraph(defaultFactory, morpheus.graphs.empty)).execute())
   }
 }

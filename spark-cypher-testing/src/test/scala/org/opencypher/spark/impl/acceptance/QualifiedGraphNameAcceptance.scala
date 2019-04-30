@@ -33,9 +33,9 @@ import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.table.SparkTable
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class QualifiedGraphNameAcceptance extends CAPSTestSuite with ScanGraphInit {
+class QualifiedGraphNameAcceptance extends MorpheusTestSuite with ScanGraphInit {
 
   val defaultGraph: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph("CREATE (:A)-[:REL]->(:B)")
 
@@ -47,13 +47,13 @@ class QualifiedGraphNameAcceptance extends CAPSTestSuite with ScanGraphInit {
     ds
   }
 
-  caps.registerSource(Namespace("foo"), defaultDS)
-  caps.registerSource(Namespace("foo.bar"), defaultDS)
-  caps.registerSource(Namespace("my best data source"), defaultDS)
+  morpheus.registerSource(Namespace("foo"), defaultDS)
+  morpheus.registerSource(Namespace("foo.bar"), defaultDS)
+  morpheus.registerSource(Namespace("my best data source"), defaultDS)
 
   describe("FROM GRAPH") {
     def assertFromGraph(namespace: String, graphName: String) = {
-      caps.cypher(
+      morpheus.cypher(
         s"""
            |FROM GRAPH $namespace.$graphName
            |MATCH (n)
@@ -80,10 +80,10 @@ class QualifiedGraphNameAcceptance extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("can load from escaped graph name with default namespace") {
-      val sessionDS = caps.catalog.source(caps.catalog.sessionNamespace)
+      val sessionDS = morpheus.catalog.source(morpheus.catalog.sessionNamespace)
       sessionDS.store(GraphName("my best graph"), defaultGraph)
 
-      caps.cypher(
+      morpheus.cypher(
         s"""
            |FROM GRAPH `my best graph`
            |MATCH (n)
@@ -97,7 +97,7 @@ class QualifiedGraphNameAcceptance extends CAPSTestSuite with ScanGraphInit {
 
   describe("CONSTRUCT ON") {
     def assertConstructOn(namespace: String, graphName: String) = {
-      caps.cypher(
+      morpheus.cypher(
         s"""
            |CONSTRUCT ON $namespace.$graphName
            |MATCH (n)
@@ -124,10 +124,10 @@ class QualifiedGraphNameAcceptance extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("can construct on expaced graph name and default namespace") {
-      val sessionDS = caps.catalog.source(caps.catalog.sessionNamespace)
+      val sessionDS = morpheus.catalog.source(morpheus.catalog.sessionNamespace)
       sessionDS.store(GraphName("my best graph"), defaultGraph)
 
-      caps.cypher(
+      morpheus.cypher(
         s"""
            |CONSTRUCT ON `my best graph`
            |MATCH (n)
@@ -141,7 +141,7 @@ class QualifiedGraphNameAcceptance extends CAPSTestSuite with ScanGraphInit {
 
   describe("CATALOG CREATE GRAPH") {
     def assertCreateGraph(namespace: String, graphName: String) = {
-      caps.cypher(
+      morpheus.cypher(
         s"""
            |CATALOG CREATE GRAPH $namespace.$graphName {
            | CONSTRUCT ON foo.foo
@@ -150,7 +150,7 @@ class QualifiedGraphNameAcceptance extends CAPSTestSuite with ScanGraphInit {
           """.stripMargin
       )
 
-      caps.catalog
+      morpheus.catalog
         .source(Namespace(namespace.replaceAll("`", "")))
         .hasGraph(GraphName(graphName.replaceAll("`", ""))) should be(true)
     }
@@ -171,7 +171,7 @@ class QualifiedGraphNameAcceptance extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("can create a graph with escaped graph name in default source ") {
-      caps.cypher(
+      morpheus.cypher(
         s"""
            |CATALOG CREATE GRAPH `my best constructed graph` {
            | CONSTRUCT ON foo.foo
@@ -180,8 +180,8 @@ class QualifiedGraphNameAcceptance extends CAPSTestSuite with ScanGraphInit {
           """.stripMargin
       )
 
-      caps
-        .catalog.source(caps.catalog.sessionNamespace)
+      morpheus
+        .catalog.source(morpheus.catalog.sessionNamespace)
         .hasGraph(GraphName("my best constructed graph")) should be(true)
     }
   }

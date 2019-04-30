@@ -32,10 +32,10 @@ import org.apache.spark.sql.Row
 import org.apache.spark.sql.types.{IntegerType, StringType, StructField, StructType}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.impl.CAPSRecords
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.impl.MorpheusRecords
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class DrivingTableTests extends CAPSTestSuite with ScanGraphInit {
+class DrivingTableTests extends MorpheusTestSuite with ScanGraphInit {
 
   val data: util.List[Row] = List(
     Row(10, "Alice"),
@@ -48,11 +48,11 @@ class DrivingTableTests extends CAPSTestSuite with ScanGraphInit {
     StructField("name", StringType)
   ))
 
-  val drivingTable: CAPSRecords = caps.records.wrap(caps.sparkSession.createDataFrame(data, schema))
+  val drivingTable: MorpheusRecords = morpheus.records.wrap(morpheus.sparkSession.createDataFrame(data, schema))
 
   describe("simple usages") {
     it("return data from the driving table") {
-      caps.cypher(
+      morpheus.cypher(
         """
           |RETURN age, name
         """.stripMargin, drivingTable = Some(drivingTable)).records.toMaps should equal(Bag(
@@ -63,7 +63,7 @@ class DrivingTableTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("can combine driving table with unwind") {
-      caps.cypher(
+      morpheus.cypher(
         """
           |UNWIND [1,2] AS i
           |RETURN i, age, name

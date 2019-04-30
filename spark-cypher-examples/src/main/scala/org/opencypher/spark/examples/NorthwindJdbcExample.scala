@@ -29,15 +29,15 @@ package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.util.{App, NorthwindDB}
 
 object NorthwindJdbcExample extends App {
 
   implicit val resourceFolder: String = "/northwind"
 
-  // Initialise local CAPS session
-  implicit val session: CAPSSession = CAPSSession.local()
+  // Initialise local Morpheus session
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // define the root configuration directory for the SQL graph source
   // this holds the data source mappings files and the SQL DDL file
@@ -55,10 +55,10 @@ object NorthwindJdbcExample extends App {
   NorthwindDB.init(dataSourceConfig)
 
   // register the SQL graph source with the session
-  session.registerSource(Namespace("sql"), sqlGraphSource)
+  morpheus.registerSource(Namespace("sql"), sqlGraphSource)
 
   // print the number of nodes in the graph
-  session.cypher(
+  morpheus.cypher(
     """
       |FROM GRAPH sql.Northwind
       |MATCH (n)
@@ -66,10 +66,10 @@ object NorthwindJdbcExample extends App {
     """.stripMargin).records.show
 
   // print the schema of the graph
-  println(session.catalog.graph("sql.Northwind").schema.pretty)
+  println(morpheus.catalog.graph("sql.Northwind").schema.pretty)
 
   // run a simple query
-  session.cypher(
+  morpheus.cypher(
     """
       |FROM GRAPH sql.Northwind
       |MATCH (e:Employee)-[:REPORTS_TO]->(:Employee)<-[:HAS_EMPLOYEE]-(o:Order)

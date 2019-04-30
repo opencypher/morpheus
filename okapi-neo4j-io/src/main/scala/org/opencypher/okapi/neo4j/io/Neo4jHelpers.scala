@@ -58,13 +58,13 @@ object Neo4jHelpers {
   object Neo4jDefaults {
     val metaPrefix: String = "___"
 
-    val metaPropertyKey: String = s"${metaPrefix}capsID"
+    val metaPropertyKey: String = s"${metaPrefix}morpheusID"
 
-    val idPropertyKey: String = s"${metaPrefix}capsID"
+    val idPropertyKey: String = s"${metaPrefix}morpheusID"
 
-    val startIdPropertyKey: String = s"${metaPrefix}capsSTART_ID"
+    val startIdPropertyKey: String = s"${metaPrefix}morpheusSTART_ID"
 
-    val endIdPropertyKey: String = s"${metaPrefix}capsEND_ID"
+    val endIdPropertyKey: String = s"${metaPrefix}morpheusEND_ID"
 
     val elementVarName = "e"
   }

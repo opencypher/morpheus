@@ -28,7 +28,7 @@ package org.opencypher.spark.api.io.sql.util
 
 import org.opencypher.graphddl._
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
-import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.MorpheusSession
 import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure.{concatDirectoryNames, nodeTableDirectoryName, relKeyTableDirectoryName}
 import org.opencypher.spark.api.io.{GraphElement, Relationship}
 
@@ -41,7 +41,7 @@ object DdlUtils {
       maybeDataSourceName: Option[String] = None,
       maybeDatabaseName: Option[String] = None,
       maybeSchemaDefinition: Option[SetSchemaDefinition] = None
-    )(implicit caps: CAPSSession): GraphDdl = {
+    )(implicit morpheus: MorpheusSession): GraphDdl = {
       val schema = graphType
       val pathPrefixParts: List[String] = List(maybeDataSourceName, maybeDatabaseName).flatten
       val joinFromStartNode: List[Join] = List(Join(GraphElement.sourceIdKey, Relationship.sourceStartNodeKey))

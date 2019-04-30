@@ -31,7 +31,7 @@ import org.apache.hadoop.fs.FileSystem
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport
 import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.util.App
 
 /**
@@ -40,8 +40,8 @@ import org.opencypher.spark.util.App
   * Also shows how to get the schema out of the Neo4j PGDS and store it in a filesystem.
   */
 object Neo4jCustomSchemaExample extends App {
-  // Create CAPS session
-  implicit val session: CAPSSession = CAPSSession.local()
+  // Create Morpheus session
+  implicit val session: MorpheusSession = MorpheusSession.local()
 
   // Connect to a Neo4j instance and populate it with social network data
   // To run a test instance you may use

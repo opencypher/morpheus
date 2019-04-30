@@ -36,17 +36,17 @@ import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.impl.MorpheusConverters._
+import org.opencypher.spark.impl.MorpheusRecords
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 import org.scalatest.Assertion
 
 import scala.collection.JavaConverters._
 
 trait RecordMatchingTestSupport {
 
-  self: CAPSTestSuite =>
+  self: MorpheusTestSuite =>
 
   implicit class RichRow(r: Row) {
 
@@ -65,13 +65,13 @@ trait RecordMatchingTestSupport {
     }
   }
 
-  implicit class RecordMatcher(records: CAPSRecords) {
+  implicit class RecordMatcher(records: MorpheusRecords) {
 
     def shouldMatch(expected: CypherMap*): Assertion = {
       records.collect.toBag should equal(Bag(expected: _*))
     }
 
-    def shouldMatch(expectedRecords: CAPSRecords): Assertion = {
+    def shouldMatch(expectedRecords: MorpheusRecords): Assertion = {
       records.header should equal(expectedRecords.header)
 
       val actualData = records.toLocalIterator.asScala.toSet
@@ -82,9 +82,9 @@ trait RecordMatchingTestSupport {
   }
 
   implicit class RichRecords(records: CypherRecords) {
-    val capsRecords: CAPSRecords = records.asCaps
+    val morpheusRecords: MorpheusRecords = records.asMorpheus
 
-    def toMaps: Bag[CypherMap] = Bag(capsRecords.toCypherMaps.collect(): _*)
+    def toMaps: Bag[CypherMap] = Bag(morpheusRecords.toCypherMaps.collect(): _*)
   }
 
 }

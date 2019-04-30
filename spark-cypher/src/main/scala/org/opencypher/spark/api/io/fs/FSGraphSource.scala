@@ -32,7 +32,7 @@ import org.apache.hadoop.fs.FileSystem
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{BinaryType, NullType, StringType, StructType}
 import org.opencypher.okapi.api.graph.{GraphName, Node, Relationship}
-import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.MorpheusSession
 import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure._
 import org.opencypher.spark.api.io.fs.HadoopFSHelpers._
 import org.opencypher.spark.api.io.json.JsonSerialization
@@ -57,7 +57,7 @@ class FSGraphSource(
   val tableStorageFormat: StorageFormat,
   val hiveDatabaseName: Option[String] = None,
   val filesPerTable: Option[Int] = None
-)(override implicit val caps: CAPSSession)
+)(override implicit val morpheus: MorpheusSession)
   extends AbstractPropertyGraphDataSource with JsonSerialization {
 
   protected val directoryStructure = DefaultGraphDirectoryStructure(rootPath)
@@ -65,7 +65,7 @@ class FSGraphSource(
   import directoryStructure._
 
   protected lazy val fileSystem: FileSystem = {
-    FileSystem.get(new URI(rootPath), caps.sparkSession.sparkContext.hadoopConfiguration)
+    FileSystem.get(new URI(rootPath), morpheus.sparkSession.sparkContext.hadoopConfiguration)
   }
 
   protected def listDirectories(path: String): List[String] = fileSystem.listDirectories(path)
@@ -77,7 +77,7 @@ class FSGraphSource(
   protected def writeFile(path: String, content: String): Unit = fileSystem.writeFile(path, content)
 
   protected def readTable(path: String, schema: StructType): DataFrame = {
-    caps.sparkSession.read.format(tableStorageFormat.name).schema(schema).load(path)
+    morpheus.sparkSession.read.format(tableStorageFormat.name).schema(schema).load(path)
   }
 
   protected def writeTable(path: String, table: DataFrame): Unit = {
@@ -149,8 +149,8 @@ class FSGraphSource(
   }
 
   private def writeHiveTable(pathToTable: String, hiveTableName: String, schema: StructType): Unit = {
-    caps.sparkSession.catalog.createTable(hiveTableName, tableStorageFormat.name, schema, Map("path" -> pathToTable))
-    caps.sparkSession.catalog.refreshTable(hiveTableName)
+    morpheus.sparkSession.catalog.createTable(hiveTableName, tableStorageFormat.name, schema, Map("path" -> pathToTable))
+    morpheus.sparkSession.catalog.refreshTable(hiveTableName)
   }
 
   private def deleteHiveDatabase(graphName: GraphName): Unit = {
@@ -160,12 +160,12 @@ class FSGraphSource(
 
     labelCombinations.foreach { combo =>
       val tableName = HiveTableName(hiveDatabaseName.get, graphName, Node, combo)
-      caps.sparkSession.sql(s"DROP TABLE IF EXISTS $tableName")
+      morpheus.sparkSession.sql(s"DROP TABLE IF EXISTS $tableName")
     }
 
     relTypes.foreach { relType =>
       val tableName = HiveTableName(hiveDatabaseName.get, graphName, Relationship, Set(relType))
-      caps.sparkSession.sql(s"DROP TABLE IF EXISTS $tableName")
+      morpheus.sparkSession.sql(s"DROP TABLE IF EXISTS $tableName")
     }
   }
 
@@ -177,12 +177,12 @@ class FSGraphSource(
     writeFile(pathToGraphSchema(graphName), schema)
   }
 
-  override protected def readJsonCAPSGraphMetaData(graphName: GraphName): String = {
-    readFile(pathToCAPSMetaData(graphName))
+  override protected def readJsonMorpheusGraphMetaData(graphName: GraphName): String = {
+    readFile(pathToMorpheusMetaData(graphName))
   }
 
-  override protected def writeJsonCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: String): Unit = {
-    writeFile(pathToCAPSMetaData(graphName), capsGraphMetaData)
+  override protected def writeJsonMorpheusGraphMetaData(graphName: GraphName, morpheusGraphMetaData: String): Unit = {
+    writeFile(pathToMorpheusMetaData(graphName), morpheusGraphMetaData)
   }
 
 }
@@ -190,9 +190,9 @@ class FSGraphSource(
 /**
   * Spark CSV does not support storing BinaryType columns by default. This data source implementation encodes BinaryType
   * columns to Hex-encoded strings and decodes such columns back to BinaryType. This feature is required because ids
-  * within CAPS are stored as BinaryType.
+  * within Morpheus are stored as BinaryType.
   */
-class CsvGraphSource(rootPath: String, filesPerTable: Option[Int] = None)(override implicit val caps: CAPSSession)
+class CsvGraphSource(rootPath: String, filesPerTable: Option[Int] = None)(override implicit val morpheus: MorpheusSession)
   extends FSGraphSource(rootPath, FileFormat.csv, None, filesPerTable) {
 
   override protected def writeTable(path: String, table: DataFrame): Unit =

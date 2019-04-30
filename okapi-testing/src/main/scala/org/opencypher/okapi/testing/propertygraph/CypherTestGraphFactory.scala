@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.types.CypherType._
 
 trait CypherTestGraphFactory[C <: CypherSession] {
 
-  def apply(propertyGraph: InMemoryTestGraph, additionalPattern: Seq[Pattern] = Seq.empty)(implicit caps: C): PropertyGraph
+  def apply(propertyGraph: InMemoryTestGraph, additionalPattern: Seq[Pattern] = Seq.empty)(implicit session: C): PropertyGraph
 
   def name: String
 

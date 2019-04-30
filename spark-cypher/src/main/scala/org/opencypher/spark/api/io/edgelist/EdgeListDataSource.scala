@@ -32,12 +32,12 @@ import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.{PropertyKeys, PropertyGraphSchema}
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
-import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.MorpheusSession
 import org.opencypher.spark.api.io.GraphElement.sourceIdKey
 import org.opencypher.spark.api.io.Relationship.{sourceEndNodeKey, sourceStartNodeKey}
 import org.opencypher.spark.api.io.edgelist.EdgeListDataSource._
-import org.opencypher.spark.api.io.{CAPSNodeTable, CAPSRelationshipTable}
-import org.opencypher.spark.schema.CAPSSchema
+import org.opencypher.spark.api.io.{MorpheusNodeTable, MorpheusRelationshipTable}
+import org.opencypher.spark.schema.MorpheusSchema
 
 object EdgeListDataSource {
 
@@ -47,7 +47,7 @@ object EdgeListDataSource {
 
   val GRAPH_NAME = GraphName("graph")
 
-  val SCHEMA: PropertyGraphSchema = CAPSSchema.empty
+  val SCHEMA: PropertyGraphSchema = MorpheusSchema.empty
     .withNodePropertyKeys(Set(NODE_LABEL), PropertyKeys.empty)
     .withRelationshipPropertyKeys(REL_TYPE, PropertyKeys.empty)
 }
@@ -63,17 +63,17 @@ object EdgeListDataSource {
   *
   * The data source can be parameterized with options used by the underlying Spark Csv reader.
   *
-  * @param path    path to the edge list file
-  * @param options Spark Csv reader options
-  * @param caps    CAPS session
+  * @param path     path to the edge list file
+  * @param options  Spark Csv reader options
+  * @param morpheus Morpheus session
   */
-case class EdgeListDataSource(path: String, options: Map[String, String] = Map.empty)(implicit caps: CAPSSession)
+case class EdgeListDataSource(path: String, options: Map[String, String] = Map.empty)(implicit morpheus: MorpheusSession)
   extends PropertyGraphDataSource {
 
   override def hasGraph(name: GraphName): Boolean = name == GRAPH_NAME
 
   override def graph(name: GraphName): PropertyGraph = {
-    val reader = options.foldLeft(caps.sparkSession.read) {
+    val reader = options.foldLeft(morpheus.sparkSession.read) {
       case (current, (key, value)) => current.option(key, value)
     }
 
@@ -90,7 +90,7 @@ case class EdgeListDataSource(path: String, options: Map[String, String] = Map.e
       .union(rawRels.select(rawRels.col(sourceEndNodeKey).as(sourceIdKey)))
       .distinct()
 
-    caps.graphs.create(CAPSNodeTable(Set(NODE_LABEL), rawNodes), CAPSRelationshipTable(REL_TYPE, rawRels))
+    morpheus.graphs.create(MorpheusNodeTable(Set(NODE_LABEL), rawNodes), MorpheusRelationshipTable(REL_TYPE, rawRels))
   }
 
   override def schema(name: GraphName): Option[PropertyGraphSchema] = Some(SCHEMA)

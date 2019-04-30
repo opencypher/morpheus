@@ -53,7 +53,7 @@ class MetaTest extends BaseTestSuite {
   private val dataFrameInputExamplePath =
     Paths.get(absolutePackagePath("main"), exampleClassName).toString
 
-  it("should exist a test for each CAPS example") {
+  it("should exist a test for each Morpheus example") {
     val exampleClassPrefixes = new File(absolutePackagePath("main")).listFiles()
       .map(_.getName)
       .filter(_.contains("Example"))

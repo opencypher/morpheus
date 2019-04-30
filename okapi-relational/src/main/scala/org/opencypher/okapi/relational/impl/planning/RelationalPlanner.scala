@@ -55,7 +55,7 @@ object RelationalPlanner {
   def process[T <: Table[T] : TypeTag](input: LogicalOperator)
     (implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
 
-    implicit val caps: CypherSession = context.session
+    implicit val session: CypherSession = context.session
 
     input match {
       case logical.CartesianProduct(lhs, rhs, _) =>

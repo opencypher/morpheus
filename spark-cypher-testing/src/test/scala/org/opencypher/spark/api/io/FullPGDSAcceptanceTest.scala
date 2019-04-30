@@ -46,16 +46,16 @@ import org.opencypher.spark.api.io.sql.IdGenerationStrategy._
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Hive
 import org.opencypher.spark.api.io.sql.util.DdlUtils._
 import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlPropertyGraphDataSource}
-import org.opencypher.spark.api.io.util.CAPSGraphExport._
+import org.opencypher.spark.api.io.util.MorpheusGraphExport._
 import org.opencypher.spark.impl.table.SparkTable._
-import org.opencypher.spark.testing.CAPSTestSuite
-import org.opencypher.spark.testing.api.io.CAPSPGDSAcceptanceTest
+import org.opencypher.spark.testing.MorpheusTestSuite
+import org.opencypher.spark.testing.api.io.MorpheusPGDSAcceptanceTest
 import org.opencypher.spark.testing.fixture.{H2Fixture, HiveFixture, MiniDFSClusterFixture}
 import org.opencypher.spark.testing.utils.H2Utils._
 import org.opencypher.spark.impl.convert.SparkConversions._
 
-class FullPGDSAcceptanceTest extends CAPSTestSuite
-  with CAPSPGDSAcceptanceTest with MiniDFSClusterFixture with H2Fixture with HiveFixture {
+class FullPGDSAcceptanceTest extends MorpheusTestSuite
+  with MorpheusPGDSAcceptanceTest with MiniDFSClusterFixture with H2Fixture with HiveFixture {
 
   // === Run scenarios with all factories
 
@@ -103,7 +103,7 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
 
   // === Define context factories
 
-  case object SessionContextFactory extends CAPSTestContextFactory {
+  case object SessionContextFactory extends MorpheusTestContextFactory {
 
     override def toString: String = s"SESSION-PGDS"
 
@@ -192,7 +192,7 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
     }
   }
 
-  trait SQLContextFactory extends CAPSTestContextFactory {
+  trait SQLContextFactory extends MorpheusTestContextFactory {
 
     private val graphTypes = Map(
       g1 -> GraphType.empty
@@ -329,7 +329,7 @@ class FullPGDSAcceptanceTest extends CAPSTestSuite
     }
   }
 
-  trait FileSystemContextFactory extends CAPSTestContextFactory {
+  trait FileSystemContextFactory extends MorpheusTestContextFactory {
 
     def fileFormat: FileFormat
 

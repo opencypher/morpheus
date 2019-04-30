@@ -46,13 +46,13 @@ object GraphSources {
     rootPath: String,
     hiveDatabaseName: Option[String] = None,
     filesPerTable: Option[Int] = Some(1)
-  )(implicit session: CAPSSession) = FSGraphSources(rootPath, hiveDatabaseName, filesPerTable)
+  )(implicit session: MorpheusSession) = FSGraphSources(rootPath, hiveDatabaseName, filesPerTable)
 
   def cypher: CypherGraphSources.type = CypherGraphSources
 
-  def sql(graphDdlPath: String)(implicit session: CAPSSession) = SqlGraphSources(graphDdlPath)
+  def sql(graphDdlPath: String)(implicit session: MorpheusSession) = SqlGraphSources(graphDdlPath)
 
-  def sql(graphDdl: GraphDdl)(implicit session: CAPSSession) = SqlGraphSources(graphDdl)
+  def sql(graphDdl: GraphDdl)(implicit session: MorpheusSession) = SqlGraphSources(graphDdl)
 }
 
 object FSGraphSources {
@@ -60,13 +60,13 @@ object FSGraphSources {
     rootPath: String,
     hiveDatabaseName: Option[String] = None,
     filesPerTable: Option[Int] = Some(1)
-  )(implicit session: CAPSSession): FSGraphSourceFactory = FSGraphSourceFactory(rootPath, hiveDatabaseName, filesPerTable)
+  )(implicit session: MorpheusSession): FSGraphSourceFactory = FSGraphSourceFactory(rootPath, hiveDatabaseName, filesPerTable)
 
   case class FSGraphSourceFactory(
     rootPath: String,
     hiveDatabaseName: Option[String] = None,
     filesPerTable: Option[Int] = Some(1)
-  )(implicit session: CAPSSession) {
+  )(implicit session: MorpheusSession) {
 
     def csv: FSGraphSource = new CsvGraphSource(rootPath, filesPerTable)
 
@@ -82,10 +82,10 @@ object FSGraphSources {
     *
     * @param rootPath       Directory where the graph is being stored in
     * @param arrayDelimiter Delimiter for array properties
-    * @param session        CAPS session
+    * @param morpheus       Morpheus session
     * @return Neo4j Bulk CSV data sink
     */
-  def neo4jBulk(rootPath: String, arrayDelimiter: String = "|")(implicit session: CAPSSession): Neo4jBulkCSVDataSink = {
+  def neo4jBulk(rootPath: String, arrayDelimiter: String = "|")(implicit morpheus: MorpheusSession): Neo4jBulkCSVDataSink = {
     new Neo4jBulkCSVDataSink(rootPath, arrayDelimiter)
   }
 }
@@ -98,16 +98,16 @@ object CypherGraphSources {
     * @param maybeSchema                Optional Neo4j schema to avoid computation on Neo4j server
     * @param omitIncompatibleProperties If set to true, import failures do not throw runtime exceptions but omit the unsupported
     *                                   properties instead and log warnings
-    * @param session                    CAPS session
+    * @param morpheus                   Morpheus session
     * @return Neo4j Property Graph Data Source
     */
   def neo4j(config: Neo4jConfig, maybeSchema: Option[PropertyGraphSchema] = None, omitIncompatibleProperties: Boolean = false)
-    (implicit session: CAPSSession): Neo4jPropertyGraphDataSource =
+    (implicit morpheus: MorpheusSession): Neo4jPropertyGraphDataSource =
     Neo4jPropertyGraphDataSource(config, maybeSchema = maybeSchema, omitIncompatibleProperties = omitIncompatibleProperties)
 
   // TODO: document
   def neo4j(config: Neo4jConfig, schemaFile: String, omitIncompatibleProperties: Boolean)
-    (implicit session: CAPSSession): Neo4jPropertyGraphDataSource = {
+    (implicit morpheus: MorpheusSession): Neo4jPropertyGraphDataSource = {
     val schemaString = using(Source.fromFile(Paths.get(schemaFile).toUri))(_.getLines().mkString(Properties.lineSeparator))
     Neo4jPropertyGraphDataSource(config, maybeSchema = Some(PropertyGraphSchema.fromJson(schemaString)), omitIncompatibleProperties = omitIncompatibleProperties)
   }
@@ -118,7 +118,7 @@ import org.opencypher.spark.api.io.sql.IdGenerationStrategy._
 object SqlGraphSources {
 
   case class SqlGraphSourceFactory(graphDdl: GraphDdl, idGenerationStrategy: IdGenerationStrategy)
-    (implicit session: CAPSSession) {
+    (implicit morpheus: MorpheusSession) {
 
     def withIdGenerationStrategy(idGenerationStrategy: IdGenerationStrategy): SqlGraphSourceFactory =
       copy(idGenerationStrategy = idGenerationStrategy)
@@ -136,9 +136,9 @@ object SqlGraphSources {
       SqlPropertyGraphDataSource(graphDdl, sqlDataSourceConfigs, idGenerationStrategy)
   }
 
-  def apply(graphDdlPath: String)(implicit session: CAPSSession): SqlGraphSourceFactory =
+  def apply(graphDdlPath: String)(implicit morpheus: MorpheusSession): SqlGraphSourceFactory =
     SqlGraphSources(GraphDdl(using(Source.fromFile(graphDdlPath, "UTF-8"))(_.mkString)))
 
-  def apply(graphDdl: GraphDdl)(implicit session: CAPSSession): SqlGraphSourceFactory =
+  def apply(graphDdl: GraphDdl)(implicit morpheus: MorpheusSession): SqlGraphSourceFactory =
     SqlGraphSourceFactory(graphDdl = graphDdl, idGenerationStrategy = SerializedId)
 }

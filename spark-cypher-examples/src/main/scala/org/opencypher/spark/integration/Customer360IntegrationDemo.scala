@@ -35,7 +35,7 @@ import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.util.App
 
 /**
@@ -60,7 +60,7 @@ object Customer360IntegrationDemo extends App {
     .enableHiveSupport()
     .getOrCreate()
 
-  implicit val session: CAPSSession = CAPSSession.local(CATALOG_IMPLEMENTATION.key -> "hive")
+  implicit val session: MorpheusSession = MorpheusSession.local(CATALOG_IMPLEMENTATION.key -> "hive")
 
   val inputSchema: StructType = StructType(Seq(
     StructField("interactionId", LongType, nullable = false),

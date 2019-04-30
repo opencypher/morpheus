@@ -30,9 +30,9 @@ import org.opencypher.okapi.api.graph.{NodeRelPattern, TripletPattern}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class PatternScanTests extends CAPSTestSuite with ScanGraphInit {
+class PatternScanTests extends MorpheusTestSuite with ScanGraphInit {
 
   it("resolves simple expands") {
     val pattern = NodeRelPattern(CTNode("Person"), CTRelationship("KNOWS"))

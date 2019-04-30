@@ -36,14 +36,14 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.io.FileFormat
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.{File, Hive, Jdbc}
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.impl.MorpheusConverters._
+import org.opencypher.spark.testing.MorpheusTestSuite
 import org.opencypher.spark.testing.fixture.{H2Fixture, HiveFixture}
 
 import scala.math.BigDecimal.RoundingMode
 
 
-class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with H2Fixture {
+class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture with H2Fixture {
 
   private val dataSourceName = "fooDataSource"
   private val databaseName = "fooDatabase"
@@ -126,7 +126,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
         Bag(
           CypherMap("labels" -> List("Foo"), "num" -> targetValue)
         ))
-      records.asCaps.table.df.schema.fields(1) should equal(
+      records.asMorpheus.table.df.schema.fields(1) should equal(
         StructField("num", targetType)
       )
     }
@@ -551,7 +551,7 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
     ).asJava
     val df = sparkSession.createDataFrame(data, StructType(Seq(StructField("int", IntegerType), StructField("long", LongType))))
 
-    caps.sql("CREATE DATABASE IF NOT EXISTS db")
+    morpheus.sql("CREATE DATABASE IF NOT EXISTS db")
     df.write.saveAsTable("db.int_long")
 
     val ddlString =
@@ -757,8 +757,8 @@ class SqlPropertyGraphDataSourceTest extends CAPSTestSuite with HiveFixture with
 
       graph.patterns should contain(pattern)
 
-      import org.opencypher.spark.impl.CAPSConverters._
-      graph.asCaps.scanOperator(pattern, true).table.df.count() should be(1)
+      import org.opencypher.spark.impl.MorpheusConverters._
+      graph.asMorpheus.scanOperator(pattern, true).table.df.count() should be(1)
 
       val result = graph.cypher(
         """

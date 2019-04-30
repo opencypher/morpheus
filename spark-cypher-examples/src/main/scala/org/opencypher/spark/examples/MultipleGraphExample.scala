@@ -28,7 +28,7 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.Namespace
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.util.App
 
 /**
@@ -37,20 +37,20 @@ import org.opencypher.spark.util.App
   * query is then used to compute products that friends have bought.
   */
 object MultipleGraphExample extends App {
-  // 1) Create CAPS session
-  implicit val session: CAPSSession = CAPSSession.local()
+  // 1) Create Morpheus session
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // 2) Load social network data via case class instances
-  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
-  session.catalog.store("socialNetwork", socialNetwork)
+  val socialNetwork = morpheus.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  morpheus.catalog.store("socialNetwork", socialNetwork)
 
   // 3) Register a file system graph source to the catalog
   // Note: if files were stored in HDFS, the file path would indicate so by starting with hdfs://
   val csvFolder = getClass.getResource("/fs-graphsource/csv").getFile
-  session.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = csvFolder).csv)
+  morpheus.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = csvFolder).csv)
 
   // 5) Create new edges between users and customers with the same name
-  val recommendationGraph = session.cypher(
+  val recommendationGraph = morpheus.cypher(
     """|FROM GRAPH socialNetwork
        |MATCH (p:Person)
        |FROM GRAPH purchases.products

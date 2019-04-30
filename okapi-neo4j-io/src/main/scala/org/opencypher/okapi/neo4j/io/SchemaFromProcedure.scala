@@ -39,7 +39,7 @@ import scala.util.{Failure, Success, Try}
 object SchemaFromProcedure extends Logging {
 
   /**
-    * Returns the schema for a Neo4j graph. When the schema contains a property that is incompatible with CAPS,
+    * Returns the schema for a Neo4j graph. When the schema contains a property that is incompatible with Morpheus,
     * an exception is thrown. Please set `omitImportFailures` in order to omit such properties from the schema
     * instead.
     *
@@ -141,7 +141,7 @@ object SchemaFromProcedure extends Logging {
     /**
       * Returns the Cypher type from a Neo4j schema row.
       *
-      * CAPS can have at most one property type for a given property on a given label combination.
+      * Morpheus can have at most one property type for a given property on a given label combination.
       * If different property types are present on the same property with multiple nodes that have the same
       * label combination, then by default a schema exception is thrown. If `omitImportFailures` is set, then the
       * problematic property is instead excluded from the schema and a warning is logged.
@@ -186,15 +186,15 @@ object SchemaFromProcedure extends Logging {
   }
 
   /**
-    * String replacement to convert Neo4j type string representations to ones that are compatible with CAPS.
+    * String replacement to convert Neo4j type string representations to ones that are compatible with Morpheus.
     */
   implicit class Neo4jTypeString(val s: String) extends AnyVal {
 
-    private def toCapsTypeString: String = neo4jTypeMapping.foldLeft(s) { case (currentTypeString, (neo4jType, capsType)) =>
-      currentTypeString.replaceAll(neo4jType, capsType)
+    private def toMorpheusTypeString: String = neo4jTypeMapping.foldLeft(s) { case (currentTypeString, (neo4jType, morpheusType)) =>
+      currentTypeString.replaceAll(neo4jType, morpheusType)
     }
 
-    def toCypherType: Option[CypherType] = CypherType.fromName(toCapsTypeString)
+    def toCypherType: Option[CypherType] = CypherType.fromName(toMorpheusTypeString)
 
   }
 

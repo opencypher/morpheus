@@ -27,9 +27,9 @@
 package org.opencypher.spark.integration.yelp
 
 import org.apache.log4j.{Level, Logger}
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.integration.yelp.YelpConstants.{defaultYelpGraphFolder, yelpGraphName, _}
-import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.MorpheusConverters._
 
 object Part2_YelpGraphLibrary extends App {
   Logger.getRootLogger.setLevel(Level.ERROR)
@@ -38,7 +38,7 @@ object Part2_YelpGraphLibrary extends App {
 
   lazy val inputPath = args.headOption.getOrElse(defaultYelpGraphFolder)
 
-  implicit val morpheus: CAPSSession = CAPSSession.local()
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
   import morpheus._
 
   registerSource(fsNamespace, GraphSources.fs(inputPath).parquet)
@@ -58,7 +58,7 @@ object Part2_YelpGraphLibrary extends App {
       """.stripMargin)
 
   // Cache graph before performing multiple projections
-  catalog.source(catalog.sessionNamespace).graph(cityGraphName).asCaps.cache()
+  catalog.source(catalog.sessionNamespace).graph(cityGraphName).asMorpheus.cache()
 
   // Create multiple projections of the City graph and store them in yearly buckets
   log(s"Create graph projections for '$city'", 1)

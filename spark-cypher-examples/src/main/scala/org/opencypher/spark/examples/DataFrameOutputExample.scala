@@ -29,8 +29,8 @@ package org.opencypher.spark.examples
 
 import org.apache.spark.sql.{DataFrame, functions}
 import org.opencypher.okapi.api.graph.CypherResult
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.CAPSSession._
+import org.opencypher.spark.api.MorpheusSession
+import org.opencypher.spark.api.MorpheusSession._
 import org.opencypher.spark.util.App
 
 /**
@@ -38,11 +38,11 @@ import org.opencypher.spark.util.App
   */
 object DataFrameOutputExample extends App {
 
-  // 1) Create CAPS session and retrieve Spark session
-  implicit val session: CAPSSession = CAPSSession.local()
+  // 1) Create Morpheus session and retrieve Spark session
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // 2) Load social network data via case class instances
-  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  val socialNetwork = morpheus.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
   // 3) Query graph with Cypher
   val results: CypherResult = socialNetwork.cypher(
@@ -62,11 +62,11 @@ object DataFrameOutputExample extends App {
   * Alternative to accessing a Cypher query result as a [[DataFrame]].
   */
 object DataFrameOutputUsingAliasExample extends App {
-  // 1) Create CAPS session and retrieve Spark session
-  implicit val session: CAPSSession = CAPSSession.local()
+  // 1) Create Morpheus session and retrieve Spark session
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // 2) Load social network data via case class instances
-  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  val socialNetwork = morpheus.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
   // 3) Query graph with Cypher
   val results = socialNetwork.cypher(

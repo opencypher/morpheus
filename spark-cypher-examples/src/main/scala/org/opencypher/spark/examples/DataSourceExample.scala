@@ -27,12 +27,12 @@
 // tag::full-example[]
 package org.opencypher.spark.examples
 
-import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.MorpheusSession
 import org.opencypher.spark.util.App
 
 object DataSourceExample extends App {
 
-  implicit val session: CAPSSession = CAPSSession.local()
+  implicit val session: MorpheusSession = MorpheusSession.local()
 
   // 2) Load social network data via case class instances
   val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)

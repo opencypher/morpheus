@@ -28,14 +28,14 @@ package org.opencypher.spark.util
 
 import org.apache.spark.sql.DataFrame
 import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
-import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.MorpheusSession
 
 object LoadInteractionsInHive {
 
   val databaseName = "customers"
   val baseTableName = s"$databaseName.csv_input"
 
-  def load(show: Boolean = false)(implicit session: CAPSSession): DataFrame = {
+  def load(show: Boolean = false)(implicit session: MorpheusSession): DataFrame = {
 
     val datafile = getClass.getResource("/customer-interactions/csv/customer-interactions.csv").toURI.getPath
     val structType = StructType(Seq(
@@ -82,7 +82,7 @@ object LoadInteractionsInHive {
   }
 
   def createView(fromTable: String, viewName: String, distinct: Boolean, columns: String*)
-    (implicit session: CAPSSession): Unit = {
+    (implicit session: MorpheusSession): Unit = {
     val distinctString = if (distinct) "DISTINCT" else ""
 
     session.sql(

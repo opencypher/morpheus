@@ -30,9 +30,9 @@ import org.junit.rules.TemporaryFolder
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.spark.api.FSGraphSources
 import org.opencypher.spark.api.io.fs.DefaultGraphDirectoryStructure.pathSeparator
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class DefaultFileSystemTest extends CAPSTestSuite {
+class DefaultFileSystemTest extends MorpheusTestSuite {
 
   protected var tempDir = new TemporaryFolder()
 
@@ -48,7 +48,7 @@ class DefaultFileSystemTest extends CAPSTestSuite {
   }
 
   it("creates a data source root folder when it does not exist yet") {
-    val graph = caps.cypher(
+    val graph = morpheus.cypher(
       """
         |CONSTRUCT
         |  CREATE ()

@@ -39,7 +39,7 @@ import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table
   * @param maybeInputRecords optional driving table for the query
   * @param parameters        query parameters (e.g. constants) needed for expression evaluation
   * @param queryLocalCatalog mapping between graph names and graphs created during query execution
-  * @param session           CAPS session
+  * @param session           Cypher session
   * @tparam T Table type
   */
 case class RelationalRuntimeContext[T <: Table[T]](

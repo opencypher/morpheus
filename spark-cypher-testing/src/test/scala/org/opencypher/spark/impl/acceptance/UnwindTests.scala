@@ -28,15 +28,15 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, _}
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.api.value.CAPSNode
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.api.value.MorpheusNode
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class UnwindTests extends CAPSTestSuite with ScanGraphInit {
+class UnwindTests extends MorpheusTestSuite with ScanGraphInit {
 
   it("standalone unwind from parameter") {
     val query = "UNWIND $param AS item RETURN item"
 
-    val result = caps.cypher(query, Map("param" -> CypherList(1, 2, 3)))
+    val result = morpheus.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
     result.records.toMaps should equal(
       Bag(
@@ -49,7 +49,7 @@ class UnwindTests extends CAPSTestSuite with ScanGraphInit {
   it("standalone unwind from literal") {
     val query = "UNWIND [1, 2, 3] AS item RETURN item"
 
-    val result = caps.cypher(query)
+    val result = morpheus.cypher(query)
 
     result.records.toMaps should be(
       Bag(
@@ -68,12 +68,12 @@ class UnwindTests extends CAPSTestSuite with ScanGraphInit {
 
     result.records.toMaps.map(_.toString) should equal(
       Bag(
-        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 1),
-        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
-        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
-        CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 1),
-        CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 2),
-        CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3)
+        CypherMap("a" -> MorpheusNode(0L, Set("A"), CypherMap.empty), "item" -> 1),
+        CypherMap("a" -> MorpheusNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
+        CypherMap("a" -> MorpheusNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
+        CypherMap("a" -> MorpheusNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 1),
+        CypherMap("a" -> MorpheusNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 2),
+        CypherMap("a" -> MorpheusNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3)
       ).map(_.toString))
   }
 
@@ -168,10 +168,10 @@ class UnwindTests extends CAPSTestSuite with ScanGraphInit {
 
     result.records.toMaps should equal(
       Bag(
-        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
-        CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3),
-        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
-        CypherMap("a" -> CAPSNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 2)
+        CypherMap("a" -> MorpheusNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
+        CypherMap("a" -> MorpheusNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3),
+        CypherMap("a" -> MorpheusNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
+        CypherMap("a" -> MorpheusNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 2)
       )
     )
   }

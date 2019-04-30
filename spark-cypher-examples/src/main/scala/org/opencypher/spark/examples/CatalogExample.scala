@@ -29,12 +29,12 @@ package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
 import org.opencypher.spark.api.io.fs.FSGraphSource
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.util.App
 
 object CatalogExample extends App {
 
-  implicit val session: CAPSSession = CAPSSession.local()
+  implicit val session: MorpheusSession = MorpheusSession.local()
 
   val graphDir = getClass.getResource("/fs-graphsource/csv").getFile
 

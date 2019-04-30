@@ -33,7 +33,7 @@ import org.opencypher.okapi.api.value._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.ir.api.expr.{Expr, ListSegment, Var}
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
+import org.opencypher.spark.api.value.{MorpheusNode, MorpheusRelationship}
 import org.opencypher.spark.impl.convert.SparkConversions._
 
 // TODO: argument cannot be a Map due to Scala issue https://issues.scala-lang.org/browse/SI-7005
@@ -78,8 +78,8 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
           .collect { case (key, value) if !value.isNull => key -> value }
           .toMap
 
-        CAPSNode(id.asInstanceOf[Array[Byte]], labels, properties)
-      case invalidID => throw UnsupportedOperationException(s"CAPSNode ID has to be a CAPSId instead of ${invalidID.getClass}")
+        MorpheusNode(id.asInstanceOf[Array[Byte]], labels, properties)
+      case invalidID => throw UnsupportedOperationException(s"MorpheusNode ID has to be an Array[Byte] instead of ${invalidID.getClass}")
     }
   }
 
@@ -103,13 +103,13 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
           .collect { case (key, value) if !value.isNull => key -> value }
           .toMap
 
-        CAPSRelationship(
+        MorpheusRelationship(
           id.asInstanceOf[Array[Byte]],
           source.asInstanceOf[Array[Byte]],
           target.asInstanceOf[Array[Byte]],
           relType,
           properties)
-      case invalidID => throw UnsupportedOperationException(s"CAPSRelationship ID has to be a Long instead of ${invalidID.getClass}")
+      case invalidID => throw UnsupportedOperationException(s"MorpheusRelationship ID has to be an Array[Byte] instead of ${invalidID.getClass}")
     }
   }
 

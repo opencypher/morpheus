@@ -28,10 +28,10 @@ package org.opencypher.spark.api.io.neo4j
 
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.neo4j.io.{Neo4jConfig, SchemaFromProcedure}
-import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
+import org.opencypher.spark.api.io.metadata.MorpheusGraphMetaData
 import org.opencypher.spark.api.io.{AbstractPropertyGraphDataSource, Neo4jFormat, StorageFormat}
-import org.opencypher.spark.schema.CAPSSchema
-import org.opencypher.spark.schema.CAPSSchema._
+import org.opencypher.spark.schema.MorpheusSchema
+import org.opencypher.spark.schema.MorpheusSchema._
 
 abstract class AbstractNeo4jDataSource extends AbstractPropertyGraphDataSource {
 
@@ -41,11 +41,11 @@ abstract class AbstractNeo4jDataSource extends AbstractPropertyGraphDataSource {
 
   override def tableStorageFormat: StorageFormat = Neo4jFormat
 
-  override protected[io] def readSchema(graphName: GraphName): CAPSSchema = {
-    SchemaFromProcedure(config, omitIncompatibleProperties).asCaps
+  override protected[io] def readSchema(graphName: GraphName): MorpheusSchema = {
+    SchemaFromProcedure(config, omitIncompatibleProperties).asMorpheus
   }
 
-  override protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit = ()
-  override protected def readCAPSGraphMetaData(graphName: GraphName): CAPSGraphMetaData = CAPSGraphMetaData(tableStorageFormat.name)
-  override protected def writeCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: CAPSGraphMetaData): Unit = ()
+  override protected def writeSchema(graphName: GraphName, schema: MorpheusSchema): Unit = ()
+  override protected def readMorpheusGraphMetaData(graphName: GraphName): MorpheusGraphMetaData = MorpheusGraphMetaData(tableStorageFormat.name)
+  override protected def writeMorpheusGraphMetaData(graphName: GraphName, morpheusGraphMetaData: MorpheusGraphMetaData): Unit = ()
 }

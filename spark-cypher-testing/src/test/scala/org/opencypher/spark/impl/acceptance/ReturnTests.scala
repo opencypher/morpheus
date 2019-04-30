@@ -31,12 +31,12 @@ import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.value.CAPSElement._
-import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.api.value.MorpheusElement._
+import org.opencypher.spark.api.value.{MorpheusNode, MorpheusRelationship}
+import org.opencypher.spark.impl.MorpheusConverters._
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class ReturnTests extends CAPSTestSuite with ScanGraphInit {
+class ReturnTests extends MorpheusTestSuite with ScanGraphInit {
 
   describe("RETURN") {
     it("returns only the returned fields") {
@@ -45,8 +45,8 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
       val result = g.cypher("MATCH (a:A) WITH a, a.name AS foo RETURN a")
 
       result.records.collect.toBag should equal(Bag(
-        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap("name" -> "me"))),
-        CypherMap("a" -> CAPSNode(1L, Set("A"), CypherMap.empty))
+        CypherMap("a" -> MorpheusNode(0L, Set("A"), CypherMap("name" -> "me"))),
+        CypherMap("a" -> MorpheusNode(1L, Set("A"), CypherMap.empty))
       ))
     }
 
@@ -56,8 +56,8 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
       val result = g.cypher("MATCH (a:A) WITH a, a AS foo RETURN a")
 
       result.records.collect.toBag should equal(Bag(
-        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap("name" -> "me"))),
-        CypherMap("a" -> CAPSNode(1L, Set("A"), CypherMap.empty))
+        CypherMap("a" -> MorpheusNode(0L, Set("A"), CypherMap("name" -> "me"))),
+        CypherMap("a" -> MorpheusNode(1L, Set("A"), CypherMap.empty))
       ))
     }
 
@@ -69,8 +69,8 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
       val result = g.cypher("MATCH (a:A) WITH a, a AS foo RETURN foo AS b")
 
       result.records.collect.toBag should equal(Bag(
-        CypherMap("b" -> CAPSNode(0L, Set("A"), CypherMap("name" -> "me"))),
-        CypherMap("b" -> CAPSNode(1L, Set("A"), CypherMap.empty))
+        CypherMap("b" -> MorpheusNode(0L, Set("A"), CypherMap("name" -> "me"))),
+        CypherMap("b" -> MorpheusNode(1L, Set("A"), CypherMap.empty))
       ))
     }
 
@@ -80,7 +80,7 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
       val result = g.cypher("MATCH (a:A), (b) RETURN a")
 
       result.records.collect.toBag should equal(Bag(
-        CypherMap("a" -> CAPSNode(0L, Set("A"), CypherMap.empty))
+        CypherMap("a" -> MorpheusNode(0L, Set("A"), CypherMap.empty))
       ))
     }
 
@@ -89,7 +89,7 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
 
       val result = given.cypher("RETURN 1")
 
-      result.records.asCaps shouldMatch CypherMap("1" -> 1)
+      result.records.asMorpheus shouldMatch CypherMap("1" -> 1)
     }
 
     it("can run single return query with several columns") {
@@ -97,7 +97,7 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
 
       val result = given.cypher("RETURN 1 AS foo, '' AS str")
 
-      result.records.asCaps shouldMatch CypherMap("foo" -> 1, "str" -> "")
+      result.records.asMorpheus shouldMatch CypherMap("foo" -> 1, "str" -> "")
     }
 
     it("returns full node") {
@@ -106,8 +106,8 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
       val result = given.cypher("MATCH (n) RETURN n")
 
       result.records.toMaps should equal(Bag(
-        CypherMap("n" -> CAPSNode(0L.encodeAsCAPSId.toSeq, Set.empty[String], CypherMap("foo" -> "bar"))),
-        CypherMap("n" -> CAPSNode(1L.encodeAsCAPSId.toSeq, Set.empty[String], CypherMap()))
+        CypherMap("n" -> MorpheusNode(0L.encodeAsMorpheusId.toSeq, Set.empty[String], CypherMap("foo" -> "bar"))),
+        CypherMap("n" -> MorpheusNode(1L.encodeAsMorpheusId.toSeq, Set.empty[String], CypherMap()))
       ))
     }
 
@@ -117,8 +117,8 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
       val result = given.cypher("MATCH ()-[r]->() RETURN r")
 
       result.records.collect.toBag should equal(Bag(
-        CypherMap("r" -> CAPSRelationship(2, 0, 1, "Rel", CypherMap("foo" -> "bar"))),
-        CypherMap("r" -> CAPSRelationship(4, 1, 3, "Rel"))
+        CypherMap("r" -> MorpheusRelationship(2, 0, 1, "Rel", CypherMap("foo" -> "bar"))),
+        CypherMap("r" -> MorpheusRelationship(4, 1, 3, "Rel"))
       ))
     }
 
@@ -238,7 +238,7 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
       val result = given.cypher("MATCH (a) RETURN a.val as val SKIP 2")
 
       // Then
-      result.records.asCaps.table.df.count() should equal(1)
+      result.records.asMorpheus.table.df.count() should equal(1)
     }
 
     it("can order with skip") {
@@ -272,7 +272,7 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
       val result = given.cypher("MATCH (a) RETURN a.val as val LIMIT 1")
 
       // Then
-      result.records.asCaps.df.count() should equal(1)
+      result.records.asMorpheus.df.count() should equal(1)
     }
 
     it("can evaluate limit with parameter value") {
@@ -326,23 +326,23 @@ class ReturnTests extends CAPSTestSuite with ScanGraphInit {
 
   describe("MAPS") {
     it("returns maps") {
-      val res = caps.cypher("RETURN { foo : 123, bar : '456'} AS m")
+      val res = morpheus.cypher("RETURN { foo : 123, bar : '456'} AS m")
       res.records.collect.toBag should equal(Bag(CypherMap("m" -> CypherMap("foo" -> 123, "bar" -> "456"))))
     }
 
     it("returns maps and support df struct access") {
-      val res = caps.cypher("RETURN { foo : 123, bar : '456'} AS m")
-      val df = res.records.asCaps.df
+      val res = morpheus.cypher("RETURN { foo : 123, bar : '456'} AS m")
+      val df = res.records.asMorpheus.df
       df.select("m.foo", "m.bar").collect() should equal(Array(Row(123, "456")))
     }
 
     it("returns map elements") {
-      val res = caps.cypher("WITH { foo : 123, bar : '456'} AS m RETURN m.foo AS foo, m.bar AS bar")
+      val res = morpheus.cypher("WITH { foo : 123, bar : '456'} AS m RETURN m.foo AS foo, m.bar AS bar")
       res.records.collect.toBag should equal(Bag(CypherMap("foo" -> 123, "bar" -> "456")))
     }
 
     it("returns lists of maps") {
-      val res = caps.cypher(
+      val res = morpheus.cypher(
         """
           |RETURN [
           | {foo: "bar"},

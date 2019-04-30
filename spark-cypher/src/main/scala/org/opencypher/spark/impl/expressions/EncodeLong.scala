@@ -30,7 +30,7 @@ import org.apache.spark.sql.Column
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
 import org.apache.spark.sql.catalyst.expressions.{ExpectsInputTypes, Expression, NullIntolerant, UnaryExpression}
 import org.apache.spark.sql.types.{BinaryType, DataType, LongType}
-import org.opencypher.spark.api.value.CAPSElement._
+import org.opencypher.spark.api.value.MorpheusElement._
 
 /**
   * Spark expression that encodes a long into a byte array using variable-length encoding.
@@ -99,9 +99,9 @@ object EncodeLong {
 
   implicit class ColumnLongOps(val c: Column) extends AnyVal {
 
-    def encodeLongAsCAPSId(name: String): Column = encodeLongAsCAPSId.as(name)
+    def encodeLongAsMorpheusId(name: String): Column = encodeLongAsMorpheusId.as(name)
 
-    def encodeLongAsCAPSId: Column = new Column(EncodeLong(c.expr))
+    def encodeLongAsMorpheusId: Column = new Column(EncodeLong(c.expr))
 
   }
 

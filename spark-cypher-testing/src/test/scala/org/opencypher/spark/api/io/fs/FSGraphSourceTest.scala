@@ -34,25 +34,25 @@ import org.opencypher.okapi.testing.Bag
 import org.opencypher.spark.api.GraphSources
 import org.opencypher.spark.api.io.FileFormat
 import org.opencypher.spark.api.io.util.HiveTableName
-import org.opencypher.spark.api.value.CAPSElement._
-import org.opencypher.spark.api.value.CAPSNode
+import org.opencypher.spark.api.value.MorpheusElement._
+import org.opencypher.spark.api.value.MorpheusNode
 import org.opencypher.spark.impl.acceptance.ScanGraphInit
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class FSGraphSourceTest extends CAPSTestSuite with ScanGraphInit {
+class FSGraphSourceTest extends MorpheusTestSuite with ScanGraphInit {
 
   private var tempDir = new TemporaryFolder()
 
   private val testDatabaseName = "test"
 
   override protected def beforeEach(): Unit = {
-    caps.sparkSession.sql(s"CREATE DATABASE IF NOT EXISTS $testDatabaseName")
+    morpheus.sparkSession.sql(s"CREATE DATABASE IF NOT EXISTS $testDatabaseName")
     tempDir.create()
     super.beforeEach()
   }
 
   override protected def afterEach(): Unit = {
-    caps.sparkSession.sql(s"DROP DATABASE IF EXISTS $testDatabaseName CASCADE")
+    morpheus.sparkSession.sql(s"DROP DATABASE IF EXISTS $testDatabaseName CASCADE")
     tempDir.delete()
     tempDir = new TemporaryFolder()
     super.afterEach()
@@ -72,18 +72,18 @@ class FSGraphSourceTest extends CAPSTestSuite with ScanGraphInit {
         FileFormat.parquet, Some(testDatabaseName), None)
       fs.store(graphName, given)
 
-      val nodeResult = caps.sparkSession.sql(s"SELECT * FROM $nodeTableName")
+      val nodeResult = morpheus.sparkSession.sql(s"SELECT * FROM $nodeTableName")
       nodeResult.collect().toSet should equal(
         Set(
-          Row(1.encodeAsCAPSId, "c"),
-          Row(0.encodeAsCAPSId, "a")
+          Row(1.encodeAsMorpheusId, "c"),
+          Row(0.encodeAsMorpheusId, "a")
         )
       )
 
-      val relResult = caps.sparkSession.sql(s"SELECT * FROM $relTableName")
+      val relResult = morpheus.sparkSession.sql(s"SELECT * FROM $relTableName")
       relResult.collect().toSet should equal(
         Set(
-          Row(2.encodeAsCAPSId, 0.encodeAsCAPSId, 1.encodeAsCAPSId, "b")
+          Row(2.encodeAsMorpheusId, 0.encodeAsMorpheusId, 1.encodeAsMorpheusId, "b")
         )
       )
     }
@@ -95,15 +95,15 @@ class FSGraphSourceTest extends CAPSTestSuite with ScanGraphInit {
         FileFormat.parquet, Some(testDatabaseName), None)
       fs.store(graphName, given)
 
-      caps.sparkSession.sql(s"SELECT * FROM $nodeTableName").collect().toSet should not be empty
-      caps.sparkSession.sql(s"SELECT * FROM $relTableName").collect().toSet should not be empty
+      morpheus.sparkSession.sql(s"SELECT * FROM $nodeTableName").collect().toSet should not be empty
+      morpheus.sparkSession.sql(s"SELECT * FROM $relTableName").collect().toSet should not be empty
 
       fs.delete(graphName)
       an [AnalysisException] shouldBe thrownBy {
-        caps.sparkSession.sql(s"SELECT * FROM $nodeTableName")
+        morpheus.sparkSession.sql(s"SELECT * FROM $nodeTableName")
       }
       an [AnalysisException] shouldBe thrownBy {
-        caps.sparkSession.sql(s"SELECT * FROM $relTableName")
+        morpheus.sparkSession.sql(s"SELECT * FROM $relTableName")
       }
     }
 
@@ -124,7 +124,7 @@ class FSGraphSourceTest extends CAPSTestSuite with ScanGraphInit {
       val graph = fs.graph(graphName)
 
       graph.nodes("n").toMaps should equal(Bag(
-        CypherMap("n" -> CAPSNode(0, Set("A"), CypherMap("foo@bar" -> 42)))
+        CypherMap("n" -> MorpheusNode(0, Set("A"), CypherMap("foo@bar" -> 42)))
       ))
     }
   }

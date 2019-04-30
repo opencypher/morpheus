@@ -32,7 +32,7 @@ import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.tck.test.CreateStringGenerator._
 import org.opencypher.tools.tck.api._
 
-//SideEffects not relevant in CAPS
+//SideEffects not relevant in Morpheus
 case class AcceptanceTestGenerator(
   specificImports: List[String],
   graphFactoryName: String,
@@ -272,7 +272,7 @@ case class AcceptanceTestGenerator(
           case Some(stepNr) => stepNr
           case None => throw new IllegalStateException(s"no query found to check for thrown error $detail")
         }
-        //todo: check for errorType and detail (when corresponding errors exist in CAPS like SyntaxError, TypeError, ParameterMissing, ...)
+        //todo: check for errorType and detail (when corresponding errors exist in Morpheus like SyntaxError, TypeError, ParameterMissing, ...)
         //todo: maybe check if they get imported? (or modify specificNamings case class with optional parameter
         val stepString =
         s"""

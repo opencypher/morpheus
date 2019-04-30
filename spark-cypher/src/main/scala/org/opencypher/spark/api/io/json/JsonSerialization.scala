@@ -29,36 +29,36 @@ package org.opencypher.spark.api.io.json
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.spark.api.io.AbstractPropertyGraphDataSource
-import org.opencypher.spark.api.io.metadata.CAPSGraphMetaData
-import org.opencypher.spark.schema.CAPSSchema
+import org.opencypher.spark.api.io.metadata.MorpheusGraphMetaData
+import org.opencypher.spark.schema.MorpheusSchema
 
 trait JsonSerialization {
   self: AbstractPropertyGraphDataSource =>
 
-  import CAPSSchema._
+  import MorpheusSchema._
 
   protected def readJsonSchema(graphName: GraphName): String
 
   protected def writeJsonSchema(graphName: GraphName, schema: String): Unit
 
-  protected def readJsonCAPSGraphMetaData(graphName: GraphName): String
+  protected def readJsonMorpheusGraphMetaData(graphName: GraphName): String
 
-  protected def writeJsonCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: String): Unit
+  protected def writeJsonMorpheusGraphMetaData(graphName: GraphName, morpheusGraphMetaData: String): Unit
 
-  override protected[io] def readSchema(graphName: GraphName): CAPSSchema = {
-    PropertyGraphSchema.fromJson(readJsonSchema(graphName)).asCaps
+  override protected[io] def readSchema(graphName: GraphName): MorpheusSchema = {
+    PropertyGraphSchema.fromJson(readJsonSchema(graphName)).asMorpheus
   }
 
-  override protected def writeSchema(graphName: GraphName, schema: CAPSSchema): Unit = {
+  override protected def writeSchema(graphName: GraphName, schema: MorpheusSchema): Unit = {
     writeJsonSchema(graphName, schema.schema.toJson)
   }
 
-  override protected def readCAPSGraphMetaData(graphName: GraphName): CAPSGraphMetaData = {
-    CAPSGraphMetaData.fromJson(readJsonCAPSGraphMetaData(graphName))
+  override protected def readMorpheusGraphMetaData(graphName: GraphName): MorpheusGraphMetaData = {
+    MorpheusGraphMetaData.fromJson(readJsonMorpheusGraphMetaData(graphName))
   }
 
-  override protected def writeCAPSGraphMetaData(graphName: GraphName, capsGraphMetaData: CAPSGraphMetaData): Unit = {
-    writeJsonCAPSGraphMetaData(graphName, capsGraphMetaData.toJson)
+  override protected def writeMorpheusGraphMetaData(graphName: GraphName, morpheusGraphMetaData: MorpheusGraphMetaData): Unit = {
+    writeJsonMorpheusGraphMetaData(graphName, morpheusGraphMetaData.toJson)
   }
 
 }

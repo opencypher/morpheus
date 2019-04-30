@@ -153,7 +153,7 @@ object GraphDdlConversions {
         throw IllegalArgumentException(
           expected = "Relationship type with single label",
           actual = relType,
-          explanation = "CAPS does not support relationships with multiple labels."
+          explanation = "Morpheus does not support relationships with multiple labels."
         )
       }
       relType.labels.head

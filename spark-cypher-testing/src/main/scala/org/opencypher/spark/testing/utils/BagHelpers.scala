@@ -28,7 +28,7 @@ package org.opencypher.spark.testing.utils
 
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag.Bag
-import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
+import org.opencypher.spark.api.value.{MorpheusNode, MorpheusRelationship}
 
 object BagHelpers {
 
@@ -36,13 +36,13 @@ object BagHelpers {
     def nodeValuesWithoutIds: Bag[(Set[String], CypherMap)] = for {
       (map, count) <- bag
       value <- map.value.values
-      node = value.cast[CAPSNode]
+      node = value.cast[MorpheusNode]
     } yield (node.labels, node.properties) -> count
 
     def relValuesWithoutIds: Bag[(String, CypherMap)] = for {
       (map, count) <- bag
       value <- map.value.values
-      rel = value.cast[CAPSRelationship]
+      rel = value.cast[MorpheusRelationship]
     } yield (rel.relType, rel.properties) -> count
   }
 }

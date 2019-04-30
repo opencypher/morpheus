@@ -31,12 +31,12 @@ import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
 import org.opencypher.spark.api.io.fs.FSGraphSource
 import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.util.App
 
 object Neo4jReadWriteExample extends App {
-  // Create CAPS session
-  implicit val session: CAPSSession = CAPSSession.local()
+  // Create Morpheus session
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // Connect to a Neo4j instance and populate it with social network data
   // To run a test instance you may use
@@ -48,11 +48,11 @@ object Neo4jReadWriteExample extends App {
   private val neo4jPgds: Neo4jPropertyGraphDataSource = GraphSources.cypher.neo4j(neo4j.config)
   private val filePgds: FSGraphSource = GraphSources.fs(rootPath = getClass.getResource("/fs-graphsource/csv").getFile).csv
 
-  session.registerSource(Namespace("Neo4j"), neo4jPgds)
-  session.registerSource(Namespace("CSV"), filePgds)
+  morpheus.registerSource(Namespace("Neo4j"), neo4jPgds)
+  morpheus.registerSource(Namespace("CSV"), filePgds)
 
   // Copy products graph from File-based PGDS to Neo4j PGDS
-  session.cypher(
+  morpheus.cypher(
     s"""
        |CATALOG CREATE GRAPH Neo4j.products {
        |  FROM GRAPH CSV.products RETURN GRAPH
@@ -60,7 +60,7 @@ object Neo4jReadWriteExample extends App {
      """.stripMargin)
 
   // Read graph from Neo4j and run a Cypher query
-  session.cypher(
+  morpheus.cypher(
     s"""
        |FROM Neo4j.products
        |MATCH (n:Customer)-[r:BOUGHT]->(m:Product)

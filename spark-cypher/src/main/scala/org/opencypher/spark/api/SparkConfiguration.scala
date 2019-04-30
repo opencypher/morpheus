@@ -30,6 +30,6 @@ import org.opencypher.okapi.impl.configuration.ConfigOption
 
 object SparkConfiguration {
 
-  object MasterAddress extends ConfigOption("caps.master", "local[*]")(Some(_))
+  object MasterAddress extends ConfigOption("morpheus.master", "local[*]")(Some(_))
 
 }

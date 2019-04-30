@@ -47,7 +47,7 @@ object SparkConversions {
     def toStructField(column: String): StructField = {
       ct.toSparkType match {
         case Some(st) => StructField(column, st, ct.isNullable)
-        case None => throw IllegalArgumentException("CypherType supported by CAPS", ct)
+        case None => throw IllegalArgumentException("CypherType supported by Morpheus", ct)
       }
     }
 

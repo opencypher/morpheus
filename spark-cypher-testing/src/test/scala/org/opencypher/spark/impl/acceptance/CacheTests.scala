@@ -28,10 +28,10 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.graph.CypherResult
 import org.opencypher.okapi.relational.impl.operators.Cache
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.impl.MorpheusConverters._
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class CacheTests extends CAPSTestSuite with ScanGraphInit {
+class CacheTests extends MorpheusTestSuite with ScanGraphInit {
 
   describe("scan caching") {
 
@@ -45,7 +45,7 @@ class CacheTests extends CAPSTestSuite with ScanGraphInit {
           |RETURN n.name
         """.stripMargin)
 
-      result.asCaps.plans.relationalPlan.get.collect { case c: Cache[_] => c } should have size 2
+      result.asMorpheus.plans.relationalPlan.get.collect { case c: Cache[_] => c } should have size 2
     }
 
     it("caches all-node/relationship scans") {
@@ -66,7 +66,7 @@ class CacheTests extends CAPSTestSuite with ScanGraphInit {
           |RETURN a, b
         """.stripMargin)
 
-      result.asCaps.plans.relationalPlan.get.collect { case c: Cache[_] => c } should have size 5
+      result.asMorpheus.plans.relationalPlan.get.collect { case c: Cache[_] => c } should have size 5
     }
 
     it("caches all-node/relationship scans across MATCH statements") {
@@ -88,7 +88,7 @@ class CacheTests extends CAPSTestSuite with ScanGraphInit {
           |RETURN a, b
         """.stripMargin)
 
-      result.asCaps.plans.relationalPlan.get.collect { case c: Cache[_] => c } should have size 5
+      result.asMorpheus.plans.relationalPlan.get.collect { case c: Cache[_] => c } should have size 5
     }
   }
 }

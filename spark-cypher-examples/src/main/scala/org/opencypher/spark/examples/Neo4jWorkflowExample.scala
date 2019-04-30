@@ -31,7 +31,7 @@ import org.opencypher.okapi.api.graph.{Namespace, QualifiedGraphName}
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
 import org.opencypher.spark.api.io.neo4j.sync.Neo4jGraphMerge
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.util.App
 
 /**
@@ -40,8 +40,8 @@ import org.opencypher.spark.util.App
   * Writes updates back to the Neo4j database with Cypher queries.
   */
 object Neo4jWorkflowExample extends App {
-  // Create CAPS session
-  implicit val session: CAPSSession = CAPSSession.local()
+  // Create Morpheus session
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // Connect to a Neo4j instance and populate it with social network data
   // To run a test instance you may use
@@ -50,16 +50,16 @@ object Neo4jWorkflowExample extends App {
   val neo4j = connectNeo4j(personNetwork)
 
   // Register Property Graph Data Sources (PGDS)
-  session.registerSource(Namespace("socialNetwork"), GraphSources.cypher.neo4j(neo4j.config))
-  session.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = getClass.getResource("/fs-graphsource/csv").getFile).csv)
+  morpheus.registerSource(Namespace("socialNetwork"), GraphSources.cypher.neo4j(neo4j.config))
+  morpheus.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = getClass.getResource("/fs-graphsource/csv").getFile).csv)
 
   // Access the graphs via their qualified graph names
-  val socialNetwork = session.catalog.graph("socialNetwork.graph")
-  val purchaseNetwork = session.catalog.graph("purchases.products")
+  val socialNetwork = morpheus.catalog.graph("socialNetwork.graph")
+  val purchaseNetwork = morpheus.catalog.graph("purchases.products")
 
   // Build new integrated graph that connects the social and product graphs and
   // create new edges between users and customers with the same name
-  val integratedGraph = session.cypher(
+  val integratedGraph = morpheus.cypher(
     """|FROM GRAPH socialNetwork.graph
        |MATCH (p:Person)
        |FROM GRAPH purchases.products
@@ -92,8 +92,8 @@ object Neo4jWorkflowExample extends App {
 
   // Proof that the write-back to Neo4j worked, retrieve and print updated Neo4j results
   val updatedNeo4jSource = GraphSources.cypher.neo4j(neo4j.config)
-  session.registerSource(Namespace("updated-neo4j"), updatedNeo4jSource)
-  val socialNetworkWithRanks = session.catalog.graph(QualifiedGraphName(Namespace("updated-neo4j"), entireGraphName))
+  morpheus.registerSource(Namespace("updated-neo4j"), updatedNeo4jSource)
+  val socialNetworkWithRanks = morpheus.catalog.graph(QualifiedGraphName(Namespace("updated-neo4j"), entireGraphName))
   socialNetworkWithRanks.cypher(
     """MATCH (person:Person)-[:SHOULD_BUY]->(product:Product)
       |RETURN person.name AS person, product.title AS should_buy

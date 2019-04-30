@@ -30,7 +30,7 @@ package org.opencypher.spark.examples
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.util.App
 
 /**
@@ -40,8 +40,8 @@ import org.opencypher.spark.util.App
   */
 object RecommendationExample extends App {
 
-  // Create CAPS session
-  implicit val caps: CAPSSession = CAPSSession.local()
+  // Create Morpheus session
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // Connect to two Neo4j instances and populate them with social network data
   // To run two test instances you may use
@@ -54,11 +54,11 @@ object RecommendationExample extends App {
 
   // The graph within Neo4j is partitioned into regions using a property key. Within the data source, we map each
   // partition to a separate graph name (i.e. US and EU)
-  caps.registerSource(Namespace("usSocialNetwork"), GraphSources.cypher.neo4j(neo4jServerUS.config))
-  caps.registerSource(Namespace("euSocialNetwork"), GraphSources.cypher.neo4j(neo4jServerEU.config))
+  morpheus.registerSource(Namespace("usSocialNetwork"), GraphSources.cypher.neo4j(neo4jServerUS.config))
+  morpheus.registerSource(Namespace("euSocialNetwork"), GraphSources.cypher.neo4j(neo4jServerEU.config))
 
   // File-based CSV GDS
-  caps.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = s"${getClass.getResource("/fs-graphsource/csv").getFile}").csv)
+  morpheus.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = s"${getClass.getResource("/fs-graphsource/csv").getFile}").csv)
 
   // Start analytical workload
 
@@ -78,15 +78,15 @@ object RecommendationExample extends App {
       """.stripMargin
 
   // Find persons that are close to each other in the US social network
-  val usFriends = caps.cypher(cityFriendsQuery(s"usSocialNetwork.$entireGraphName")).graph
+  val usFriends = morpheus.cypher(cityFriendsQuery(s"usSocialNetwork.$entireGraphName")).graph
   // Find persons that are close to each other in the EU social network
-  val euFriends = caps.cypher(cityFriendsQuery(s"euSocialNetwork.$entireGraphName")).graph
+  val euFriends = morpheus.cypher(cityFriendsQuery(s"euSocialNetwork.$entireGraphName")).graph
 
   // Union the US and EU graphs into a single graph 'allFriends' and store it in the session
-  caps.catalog.store("allFriends", usFriends.unionAll(euFriends))
+  morpheus.catalog.store("allFriends", usFriends.unionAll(euFriends))
 
   // Connect the social network with the products network using equal person and customer emails
-  val connectedCustomers = caps.cypher(
+  val connectedCustomers = morpheus.cypher(
     s"""FROM GRAPH allFriends
        |MATCH (p:Person)
        |FROM GRAPH purchases.products

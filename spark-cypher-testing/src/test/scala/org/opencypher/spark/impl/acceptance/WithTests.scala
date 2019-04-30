@@ -29,10 +29,10 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.impl.MorpheusConverters._
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class WithTests extends CAPSTestSuite with ScanGraphInit {
+class WithTests extends MorpheusTestSuite with ScanGraphInit {
 
   test("rebinding of dropped variables") {
     // Given
@@ -235,7 +235,7 @@ class WithTests extends CAPSTestSuite with ScanGraphInit {
     val result = given.cypher("MATCH (a) WITH a.val as val SKIP 2 RETURN val")
 
     // Then
-    result.records.asCaps.df.count() should equal(1)
+    result.records.asMorpheus.df.count() should equal(1)
   }
 
   test("order by with skip") {
@@ -269,7 +269,7 @@ class WithTests extends CAPSTestSuite with ScanGraphInit {
     val result = given.cypher("MATCH (a) WITH a.val as val LIMIT 1 RETURN val")
 
     // Then
-    result.records.asCaps.df.count() should equal(1)
+    result.records.asMorpheus.df.count() should equal(1)
   }
 
   test("order by with limit") {

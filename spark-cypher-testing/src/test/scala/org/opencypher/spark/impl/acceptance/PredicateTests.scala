@@ -29,9 +29,9 @@ package org.opencypher.spark.impl.acceptance
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class PredicateTests extends CAPSTestSuite with ScanGraphInit {
+class PredicateTests extends MorpheusTestSuite with ScanGraphInit {
 
   it("can evaluate predicates on non-existing properties") {
     val given = initGraph("CREATE ()")

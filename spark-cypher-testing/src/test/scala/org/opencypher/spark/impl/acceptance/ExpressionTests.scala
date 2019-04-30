@@ -37,30 +37,30 @@ import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.opencypher.spark.impl.SparkSQLMappingException
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 import org.scalacheck.Prop
 import org.scalatestplus.scalacheck.Checkers
 
-class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
+class ExpressionTests extends MorpheusTestSuite with ScanGraphInit with Checkers {
 
   describe("list slice") {
 
     it("slice") {
-      val result = caps.cypher("RETURN ['a', 'b', 'c', 'd'][0..3] as r")
+      val result = morpheus.cypher("RETURN ['a', 'b', 'c', 'd'][0..3] as r")
       result.records.toMaps should equal(Bag(
         CypherMap("r" -> CypherList("a", "b", "c"))
       ))
     }
 
     it("slice without from") {
-      val result = caps.cypher("RETURN ['a', 'b', 'c', 'd'][..3] as r")
+      val result = morpheus.cypher("RETURN ['a', 'b', 'c', 'd'][..3] as r")
       result.records.toMaps should equal(Bag(
         CypherMap("r" -> CypherList("a", "b", "c"))
       ))
     }
 
     it("slice without to") {
-      val result = caps.cypher("RETURN ['a', 'b', 'c', 'd'][0..] as r")
+      val result = morpheus.cypher("RETURN ['a', 'b', 'c', 'd'][0..] as r")
       result.records.toMaps should equal(Bag(
         CypherMap("r" -> CypherList("a", "b", "c", "d"))
       ))
@@ -411,10 +411,10 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       val query = s"RETURN ${i1.toCypherString} + ${i2.toCypherString} AS result"
       if (BigInt(i1.unwrap) + BigInt(i2.unwrap) != BigInt(i1.unwrap + i2.unwrap)) {
         // Long over-/underflow
-        val e = the[ParsingException] thrownBy caps.cypher(query).records.toMaps
+        val e = the[ParsingException] thrownBy morpheus.cypher(query).records.toMaps
         Claim(e.getMessage.contains("SemanticError") && e.getMessage.contains("cannot be represented as an integer"))
       } else {
-        val result = caps.cypher(query).records.toMaps
+        val result = morpheus.cypher(query).records.toMaps
         val expected = Bag(CypherMap("result" -> (i1.unwrap + i2.unwrap)))
         Claim(result == expected)
       }
@@ -424,7 +424,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
   it("supports float addition") {
     check(Prop.forAll(float, float) { (f1: CypherFloat, f2: CypherFloat) =>
       val query = s"RETURN ${f1.toCypherString} + ${f2.toCypherString} AS result"
-      val result = caps.cypher(query).records.toMaps
+      val result = morpheus.cypher(query).records.toMaps
       val expected = Bag(CypherMap("result" -> (f1.unwrap + f2.unwrap)))
       Claim(result == expected)
     }, minSuccessful(100))
@@ -797,7 +797,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
     }
 
     it("can build lists that include nulls") {
-      val result = caps.cypher(
+      val result = morpheus.cypher(
         """
           |RETURN [
           | 1,
@@ -892,7 +892,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
   describe("string concatenation") {
     it("can concat two strings from literals") {
-      caps.cypher(
+      morpheus.cypher(
         """
           |RETURN "Hello" + "World" as hello
         """.stripMargin).records.toMaps should equal(Bag(
@@ -952,63 +952,63 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
   describe("list concatenation") {
 
     it("can concat empty lists") {
-      caps.cypher("RETURN [] + [] AS res")
+      morpheus.cypher("RETURN [] + [] AS res")
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList())
       ))
     }
 
     it("can concat empty list with nonempty list") {
-      caps.cypher("RETURN [] + ['foo'] AS res")
+      morpheus.cypher("RETURN [] + ['foo'] AS res")
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList("foo"))
       ))
     }
 
     it("can concat list of null with nonnull scalar value") {
-      caps.cypher("RETURN [null] + 'foo' AS res")
+      morpheus.cypher("RETURN [null] + 'foo' AS res")
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(null, "foo"))
       ))
     }
 
     it("can concat empty list with scalar value") {
-      caps.cypher("RETURN [] + '' AS res")
+      morpheus.cypher("RETURN [] + '' AS res")
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(""))
       ))
     }
 
     it("can concat empty list with null scalar value") {
-      caps.cypher("RETURN [] + null AS res")
+      morpheus.cypher("RETURN [] + null AS res")
         .records.toMaps should equal(Bag(
         CypherMap("res" -> null)
       ))
     }
 
     it("can concat two literal lists of Cypher integers") {
-      caps.cypher("RETURN [1] + [2] AS res")
+      morpheus.cypher("RETURN [1] + [2] AS res")
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(1, 2))
       ))
     }
 
     it("can concat two literal lists of strings") {
-      caps.cypher("RETURN ['foo'] + ['bar'] AS res")
+      morpheus.cypher("RETURN ['foo'] + ['bar'] AS res")
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList("foo", "bar"))
       ))
     }
 
     it("can concat two literal lists of boolean type") {
-      caps.cypher("RETURN [true] + [false] AS res")
+      morpheus.cypher("RETURN [true] + [false] AS res")
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(true, false))
       ))
     }
 
     it("can concat two literal lists of float type") {
-      caps.cypher("RETURN [0.5] + [1.5] AS res")
+      morpheus.cypher("RETURN [0.5] + [1.5] AS res")
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(0.5, 1.5))
       ))
@@ -1016,7 +1016,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
     it("can concat two literal lists of date type") {
       val date = "2016-02-17"
-      caps.cypher("RETURN [date($date)] + [date($date)] AS res", CypherMap("date" -> date))
+      morpheus.cypher("RETURN [date($date)] + [date($date)] AS res", CypherMap("date" -> date))
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(java.sql.Date.valueOf(date), java.sql.Date.valueOf(date)))
       ))
@@ -1024,7 +1024,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
     it("can concat two literal lists of localdatetime type") {
       val date = "2016-02-17T06:11:00"
-      caps.cypher("RETURN [localdatetime($date)] + [localdatetime($date)] AS res", CypherMap("date" -> date))
+      morpheus.cypher("RETURN [localdatetime($date)] + [localdatetime($date)] AS res", CypherMap("date" -> date))
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(java.time.LocalDateTime.parse(date), java.time.LocalDateTime.parse(date)))
       ))
@@ -1032,49 +1032,49 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
     it("can concat two literal lists of duration type") {
       val duration = "P1WT2H"
-      caps.cypher("RETURN [duration($duration)] + [duration($duration)] AS res", CypherMap("duration" -> duration))
+      morpheus.cypher("RETURN [duration($duration)] + [duration($duration)] AS res", CypherMap("duration" -> duration))
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(Duration.parse(duration), Duration.parse(duration)))
       ))
     }
 
     it("can concat two literal lists of null type") {
-      caps.cypher("RETURN [null] + [null] AS res")
+      morpheus.cypher("RETURN [null] + [null] AS res")
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(null, null))
       ))
     }
 
     it("can concat two lists of nulls from expressions type") {
-      caps.cypher("RETURN [acos(null)] + [acos(null)] AS res")
+      morpheus.cypher("RETURN [acos(null)] + [acos(null)] AS res")
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(null, null))
       ))
     }
 
     it("can add integer literal to list of integer literals") {
-      caps.cypher("RETURN [1] + 1 AS res")
+      morpheus.cypher("RETURN [1] + 1 AS res")
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(1, 1))
       ))
     }
 
     it("can add string literal to list of string literals") {
-      caps.cypher("RETURN ['hello'] + 'world' AS res")
+      morpheus.cypher("RETURN ['hello'] + 'world' AS res")
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList("hello", "world"))
       ))
     }
 
     it("can add boolean literal to list of boolean literals") {
-      caps.cypher("RETURN [true] + false AS res")
+      morpheus.cypher("RETURN [true] + false AS res")
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(true, false))
       ))
     }
 
     it("can add float literal to list of float literals") {
-      caps.cypher("RETURN [0.5] + 0.5 AS res")
+      morpheus.cypher("RETURN [0.5] + 0.5 AS res")
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(0.5, 0.5))
       ))
@@ -1082,7 +1082,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
     it("can add date to list of dates") {
       val date = "2016-02-17"
-      caps.cypher("RETURN [date($date)] + date($date) AS res", CypherMap("date" -> date))
+      morpheus.cypher("RETURN [date($date)] + date($date) AS res", CypherMap("date" -> date))
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(java.sql.Date.valueOf(date), java.sql.Date.valueOf(date)))
       ))
@@ -1090,21 +1090,21 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
     it("can add localdatetime to list of localdatetime") {
       val date = "2016-02-17T06:11:00"
-      caps.cypher("RETURN [localdatetime($date)] + localdatetime($date) AS res", CypherMap("date" -> date))
+      morpheus.cypher("RETURN [localdatetime($date)] + localdatetime($date) AS res", CypherMap("date" -> date))
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(java.time.LocalDateTime.parse(date), java.time.LocalDateTime.parse(date)))
       ))
     }
 
     it("can add null literal to list of null literals") {
-      caps.cypher("RETURN [null] + null AS res")
+      morpheus.cypher("RETURN [null] + null AS res")
         .records.toMaps should equal(Bag(
         CypherMap("res" -> null)
       ))
     }
 
     it("can add empty list to string") {
-      caps.cypher("RETURN 'hello' + [] AS res")
+      morpheus.cypher("RETURN 'hello' + [] AS res")
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList("hello"))
       ))
@@ -1115,7 +1115,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
   describe("parameters") {
 
     it("can do list parameters") {
-      caps.cypher("RETURN $listParam AS res", CypherMap("listParam" -> CypherList(1, 2)))
+      morpheus.cypher("RETURN $listParam AS res", CypherMap("listParam" -> CypherList(1, 2)))
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList(1, 2))
       ))
@@ -1123,13 +1123,13 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
     it("throws exception on mixed types in list parameter") {
       val e = the[SparkSQLMappingException] thrownBy
-        caps.cypher("RETURN $listParam AS res", CypherMap("listParam" -> CypherList(1, "string")))
+        morpheus.cypher("RETURN $listParam AS res", CypherMap("listParam" -> CypherList(1, "string")))
           .records.toMaps
       e.getMessage should (include("LIST(UNION(INTEGER, STRING))") and include("unsupported"))
     }
 
     it("can support empty list parameter") {
-      caps.cypher("RETURN $listParam AS res", CypherMap("listParam" -> CypherList()))
+      morpheus.cypher("RETURN $listParam AS res", CypherMap("listParam" -> CypherList()))
         .records.toMaps should equal(Bag(
         CypherMap("res" -> CypherList())
       ))
@@ -1139,7 +1139,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
   describe("STARTS WITH") {
     it("returns true for matching strings") {
-      caps.cypher(
+      morpheus.cypher(
         """
           |RETURN "foobar" STARTS WITH "foo" as x
         """.stripMargin
@@ -1149,7 +1149,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
     }
 
     it("returns false for not matching strings") {
-      caps.cypher(
+      morpheus.cypher(
         """
           |RETURN "foobar" STARTS WITH "bar" as x
         """.stripMargin
@@ -1179,7 +1179,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
   describe("ENDS WITH") {
     it("returns true for matching strings") {
-      caps.cypher(
+      morpheus.cypher(
         """
           |RETURN "foobar" ENDS WITH "bar" as x
         """.stripMargin
@@ -1189,7 +1189,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
     }
 
     it("returns false for not matching strings") {
-      caps.cypher(
+      morpheus.cypher(
         """
           |RETURN "foobar" ENDS WITH "foo" as x
         """.stripMargin
@@ -1219,7 +1219,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
   describe("CONTAINS") {
     it("returns true for matching strings") {
-      caps.cypher(
+      morpheus.cypher(
         """
           |RETURN "foobarbaz" CONTAINS "baz" as x
         """.stripMargin
@@ -1229,7 +1229,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
     }
 
     it("returns false for not matching strings") {
-      caps.cypher(
+      morpheus.cypher(
         """
           |RETURN "foobarbaz" CONTAINS "abc" as x
         """.stripMargin
@@ -1328,7 +1328,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
   describe("map support") {
     describe("map construction") {
       it("can construct static maps") {
-        val result = caps.cypher(
+        val result = morpheus.cypher(
           """
             |RETURN {
             | foo: "bar",
@@ -1342,7 +1342,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       }
 
       it("can construct Maps with expression values") {
-        val result = caps.cypher(
+        val result = morpheus.cypher(
           """
             |UNWIND [21, 42] as value
             |RETURN {foo: value} as myMap
@@ -1375,7 +1375,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       }
 
       it("can return empty maps") {
-        val result = caps.cypher(
+        val result = morpheus.cypher(
           """
             |RETURN {} as myMap
           """.stripMargin)
@@ -1389,7 +1389,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
     describe("index access") {
       it("returns the element with literal key") {
-        val result = caps.cypher(
+        val result = morpheus.cypher(
           """
             |WITH {
             | foo: "bar",
@@ -1404,7 +1404,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       }
 
       it("returns null if the literal key does not exist") {
-        val result = caps.cypher(
+        val result = morpheus.cypher(
           """
             |WITH {
             | foo: "bar",
@@ -1419,7 +1419,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
       }
 
       it("returns the element with parameter key") {
-        val result = caps.cypher(
+        val result = morpheus.cypher(
           """
             |WITH {
             | foo: "bar",
@@ -1435,7 +1435,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
       // TODO: This throws a spark analysis error as it cannot find the column
       ignore("returns null if the parameter key does not exist") {
-        val result = caps.cypher(
+        val result = morpheus.cypher(
           """
             |WITH {
             | foo: "bar",
@@ -1451,7 +1451,7 @@ class ExpressionTests extends CAPSTestSuite with ScanGraphInit with Checkers {
 
       // TODO: needs planning outside of SparkSQLExpressionMapper
       ignore("supports expression keys if all values have compatible types") {
-        val result = caps.cypher(
+        val result = morpheus.cypher(
           """
             |WITH {
             | foo: 1,

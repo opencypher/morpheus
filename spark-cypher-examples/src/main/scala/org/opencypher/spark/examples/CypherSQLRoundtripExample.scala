@@ -28,8 +28,8 @@
 package org.opencypher.spark.examples
 
 import org.opencypher.okapi.api.graph.Namespace
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
-import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
+import org.opencypher.spark.impl.MorpheusConverters._
 import org.opencypher.spark.util.App
 
 /**
@@ -39,16 +39,16 @@ import org.opencypher.spark.util.App
   * for a Cypher query.
   */
 object CypherSQLRoundtripExample extends App {
-  // 1) Create CAPS session
-  implicit val session: CAPSSession = CAPSSession.local()
+  // 1) Create Morpheus session
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // 2) Register a file based data source at the session
   //    It contains a purchase network graph called 'products'
   val graphDir = getClass.getResource("/fs-graphsource/csv").getFile
-  session.registerSource(Namespace("myDataSource"), GraphSources.fs(rootPath = graphDir).csv)
+  morpheus.registerSource(Namespace("myDataSource"), GraphSources.fs(rootPath = graphDir).csv)
 
   // 3) Load social network data via case class instances
-  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  val socialNetwork = morpheus.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
   // 4) Query for a view of the people in the social network
   val result = socialNetwork.cypher(
@@ -58,13 +58,13 @@ object CypherSQLRoundtripExample extends App {
   )
 
   // 5) Register the result as a table called people
-  result.records.asCaps.df.toDF("age", "name").createOrReplaceTempView("people")
+  result.records.asMorpheus.df.toDF("age", "name").createOrReplaceTempView("people")
 
   // 6) Query the registered table using SQL
-  val sqlResults = session.sql("SELECT age, name FROM people")
+  val sqlResults = morpheus.sql("SELECT age, name FROM people")
 
   // 7) Use the results from the SQL query as driving table for a Cypher query on a graph contained in the data source
-  val result2 = session.catalog.graph("myDataSource.products").cypher(
+  val result2 = morpheus.catalog.graph("myDataSource.products").cypher(
     s"""
        |MATCH (c:Customer {name: name})-->(p:Product)
        |RETURN c.name, age, p.title

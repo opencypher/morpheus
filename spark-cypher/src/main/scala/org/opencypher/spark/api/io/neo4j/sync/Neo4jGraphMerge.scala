@@ -39,9 +39,9 @@ import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers.Neo4jDefaults._
 import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 import org.opencypher.okapi.neo4j.io.{ElementWriter, Neo4jConfig}
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.impl.CAPSConverters._
-import org.opencypher.spark.impl.CAPSRecords
+import org.opencypher.spark.api.MorpheusSession
+import org.opencypher.spark.impl.MorpheusConverters._
+import org.opencypher.spark.impl.MorpheusRecords
 
 import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
@@ -127,7 +127,7 @@ object Neo4jGraphMerge extends Logging {
     * @param config           access config for the Neo4j database into which the graph is merged
     * @param nodeKeys         additional node keys that override node keys defined by the schema
     * @param relationshipKeys additional relationship keys that override relationship keys defined by the schema
-    * @param caps             CAPS session
+    * @param morpheus         Morpheus session
     */
   def merge(
     graphName: GraphName,
@@ -135,7 +135,7 @@ object Neo4jGraphMerge extends Logging {
     config: Neo4jConfig,
     nodeKeys: Option[NodeKeys] = None,
     relationshipKeys: Option[RelationshipKeys] = None
-  )(implicit caps: CAPSSession): Unit = {
+  )(implicit morpheus: MorpheusSession): Unit = {
     val updatedSchema = combineElementKeys(graph.schema, nodeKeys, relationshipKeys)
 
     val maybeMetaLabel = graphName.getMetaLabel
@@ -178,7 +178,7 @@ case object MergeWriters {
   ): Set[Future[Unit]] = {
     val result: Set[Future[Unit]] = graph.schema.labelCombinations.combos.map { combo =>
       val comboWithMetaLabel = combo ++ maybeMetaLabel
-      val nodeScan = graph.nodes("n", CTNode(combo), exactLabelMatch = true).asCaps
+      val nodeScan = graph.nodes("n", CTNode(combo), exactLabelMatch = true).asMorpheus
       val mapping = computeMapping(nodeScan, includeId = true)
       val keys = combo.find(nodeKeys.contains).map(nodeKeys).getOrElse(
         throw SchemaException(s"Could not find a node key for label combination $combo")
@@ -201,7 +201,7 @@ case object MergeWriters {
     relKeys: Map[String, Set[String]]
   ): Set[Future[Unit]] = {
     graph.schema.relationshipTypes.map { relType =>
-      val relScan = graph.relationships("r", CTRelationship(relType)).asCaps
+      val relScan = graph.relationships("r", CTRelationship(relType)).asMorpheus
       val mapping = computeMapping(relScan, includeId = false)
 
       val header = relScan.header
@@ -243,7 +243,7 @@ case object MergeWriters {
     new ListValue(array: _*)
   }
 
-  private def computeMapping(elementScan: CAPSRecords, includeId: Boolean): Array[String] = {
+  private def computeMapping(elementScan: MorpheusRecords, includeId: Boolean): Array[String] = {
     val header = elementScan.header
     val nodeVar = header.elementVars.head
     val properties: Set[Property] = header.expressionsFor(nodeVar).collect {

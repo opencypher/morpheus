@@ -43,8 +43,8 @@ package org.opencypher.spark.testing.fixture
 
 import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
-import org.opencypher.spark.schema.CAPSSchema
-import org.opencypher.spark.schema.CAPSSchema._
+import org.opencypher.spark.schema.MorpheusSchema
+import org.opencypher.spark.schema.MorpheusSchema._
 
 trait OpenCypherDataFixture extends TestDataFixture {
 
@@ -118,7 +118,7 @@ trait OpenCypherDataFixture extends TestDataFixture {
 
   val nbrRels = 28
 
-  val schema: CAPSSchema = PropertyGraphSchema.empty
+  val schema: MorpheusSchema = PropertyGraphSchema.empty
     .withNodePropertyKeys("Person")("name" -> CTString, "birthyear" -> CTInteger)
     .withNodePropertyKeys("Person", "Actor")("name" -> CTString, "birthyear" -> CTInteger)
     .withNodePropertyKeys("City")("name" -> CTString)
@@ -130,6 +130,6 @@ trait OpenCypherDataFixture extends TestDataFixture {
     .withRelationshipPropertyKeys("DIRECTED")()
     .withRelationshipPropertyKeys("WROTE_MUSIC_FOR")()
     .withRelationshipPropertyKeys("ACTED_IN")("charactername" -> CTString)
-    .asCaps
+    .asMorpheus
 }
 

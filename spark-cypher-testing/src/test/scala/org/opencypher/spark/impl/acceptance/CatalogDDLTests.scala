@@ -31,16 +31,16 @@ import org.opencypher.okapi.api.types.CTNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, ViewAlreadyExistsException}
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 import org.opencypher.v9_0.util.SyntaxException
 import org.scalatest.BeforeAndAfterAll
 
-class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAfterAll {
+class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAndAfterAll {
 
   override def afterEach(): Unit = {
     super.afterEach()
-    caps.catalog.graphNames.filterNot(_ == caps.emptyGraphQgn).foreach(caps.catalog.dropGraph)
-    caps.catalog.viewNames.foreach(caps.catalog.dropView)
+    morpheus.catalog.graphNames.filterNot(_ == morpheus.emptyGraphQgn).foreach(morpheus.catalog.dropGraph)
+    morpheus.catalog.viewNames.foreach(morpheus.catalog.dropView)
   }
 
   describe("CATALOG CREATE GRAPH") {
@@ -50,9 +50,9 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |CREATE (:A)
         """.stripMargin)
 
-      caps.catalog.store("foo", inputGraph)
+      morpheus.catalog.store("foo", inputGraph)
 
-      val result = caps.cypher(
+      val result = morpheus.cypher(
         """
           |CATALOG CREATE GRAPH bar {
           | FROM GRAPH foo
@@ -60,7 +60,7 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |}
         """.stripMargin)
 
-      val sessionSource = caps.catalog.source(caps.catalog.sessionNamespace)
+      val sessionSource = morpheus.catalog.source(morpheus.catalog.sessionNamespace)
       sessionSource.hasGraph(GraphName("bar")) shouldBe true
       sessionSource.graph(GraphName("bar")) shouldEqual inputGraph
       result.getGraph shouldBe None
@@ -71,7 +71,7 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
   describe("CATALOG CREATE VIEW") {
 
     it("supports storing a VIEW") {
-      caps.cypher(
+      morpheus.cypher(
         """
           |CATALOG CREATE VIEW bar {
           | FROM GRAPH foo
@@ -80,12 +80,12 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
         """.stripMargin)
 
       val bar = QualifiedGraphName("bar")
-      caps.catalog.catalogNames should contain(bar)
-      caps.catalog.viewNames should contain(bar)
+      morpheus.catalog.catalogNames should contain(bar)
+      morpheus.catalog.viewNames should contain(bar)
     }
 
     it("throws an error when a view QGN collides with an existing view QGN") {
-      caps.cypher(
+      morpheus.cypher(
         """
           |CATALOG CREATE VIEW foo {
           | FROM GRAPH whatever
@@ -94,7 +94,7 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
         """.stripMargin)
 
       a[ViewAlreadyExistsException] should be thrownBy {
-        caps.cypher(
+        morpheus.cypher(
           """
             |CATALOG CREATE VIEW foo {
             | FROM GRAPH whatever
@@ -107,7 +107,7 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
 
     it("can still resolve a graph when a view with the same name exists") {
 
-      caps.cypher(
+      morpheus.cypher(
         """
           |CATALOG CREATE GRAPH foo {
           | CONSTRUCT
@@ -116,7 +116,7 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |}
         """.stripMargin)
 
-      caps.cypher(
+      morpheus.cypher(
         """
           |CATALOG CREATE VIEW foo {
           | FROM GRAPH whatever
@@ -124,13 +124,13 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |}
         """.stripMargin)
 
-      caps.cypher("FROM GRAPH foo MATCH (n) RETURN n").records.size shouldBe 1
+      morpheus.cypher("FROM GRAPH foo MATCH (n) RETURN n").records.size shouldBe 1
 
     }
 
     it("can still resolve a view when a graph with the same name exists") {
 
-      caps.cypher(
+      morpheus.cypher(
         """
           |CATALOG CREATE GRAPH bar {
           | CONSTRUCT
@@ -140,7 +140,7 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |}
         """.stripMargin)
 
-      caps.cypher(
+      morpheus.cypher(
         """
           |CATALOG CREATE GRAPH foo {
           | CONSTRUCT
@@ -149,7 +149,7 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |}
         """.stripMargin)
 
-      caps.cypher(
+      morpheus.cypher(
         """
           |CATALOG CREATE VIEW foo {
           | FROM bar
@@ -157,13 +157,13 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |}
         """.stripMargin)
 
-      caps.cypher("FROM foo() MATCH (n) RETURN n").records.size shouldBe 2
+      morpheus.cypher("FROM foo() MATCH (n) RETURN n").records.size shouldBe 2
 
     }
 
     it("throws an illegal argument exception, when no view with the given name is stored") {
       an[IllegalArgumentException] should be thrownBy {
-        caps.cypher(
+        morpheus.cypher(
           """
             |FROM GRAPH someView()
             |MATCH (n)
@@ -178,9 +178,9 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |CREATE (:A {val: 0})
         """.stripMargin)
 
-      caps.catalog.store("a", inputGraphA)
+      morpheus.catalog.store("a", inputGraphA)
 
-      caps.cypher(
+      morpheus.cypher(
         """
           |CATALOG CREATE VIEW inc($g1) {
           | FROM GRAPH $g1
@@ -192,10 +192,10 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
         """.stripMargin)
 
       val inc = QualifiedGraphName("inc")
-      caps.catalog.catalogNames should contain(inc)
-      caps.catalog.viewNames should contain(inc)
+      morpheus.catalog.catalogNames should contain(inc)
+      morpheus.catalog.viewNames should contain(inc)
 
-      val result = caps.cypher(
+      val result = morpheus.cypher(
         """
           |FROM GRAPH inc(inc(inc(inc(a))))
           |MATCH (n)
@@ -213,9 +213,9 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |CREATE (:A {val: 0})
         """.stripMargin)
 
-      caps.catalog.store("a", inputGraphA)
+      morpheus.catalog.store("a", inputGraphA)
 
-      caps.cypher(
+      morpheus.cypher(
         """
           |CATALOG CREATE VIEW inc($g1) {
           | FROM GRAPH $g1
@@ -227,11 +227,11 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
         """.stripMargin)
 
       val inc = QualifiedGraphName("inc")
-      caps.catalog.catalogNames should contain(inc)
-      caps.catalog.viewNames should contain(inc)
+      morpheus.catalog.catalogNames should contain(inc)
+      morpheus.catalog.viewNames should contain(inc)
 
       a[SyntaxException] should be thrownBy {
-        caps.cypher(
+        morpheus.cypher(
           """
             |FROM GRAPH inc($param)
             |MATCH (n)
@@ -251,10 +251,10 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |CREATE (:B)
         """.stripMargin)
 
-      caps.catalog.store("a", inputGraphA)
-      caps.catalog.store("b", inputGraphB)
+      morpheus.catalog.store("a", inputGraphA)
+      morpheus.catalog.store("b", inputGraphB)
 
-      caps.cypher(
+      morpheus.cypher(
         """
           |CATALOG CREATE VIEW bar($g1, $g2) {
           | FROM GRAPH $g1
@@ -269,10 +269,10 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
         """.stripMargin)
 
       val bar = QualifiedGraphName("bar")
-      caps.catalog.catalogNames should contain(bar)
-      caps.catalog.viewNames should contain(bar)
+      morpheus.catalog.catalogNames should contain(bar)
+      morpheus.catalog.viewNames should contain(bar)
 
-      val resultGraph = caps.cypher(
+      val resultGraph = morpheus.cypher(
         """
           |FROM GRAPH bar(a, b)
           |RETURN GRAPH
@@ -293,10 +293,10 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |CREATE ({val: 1000})
         """.stripMargin)
 
-      caps.catalog.store("a1", inputGraphA1)
-      caps.catalog.store("a2", inputGraphA2)
+      morpheus.catalog.store("a1", inputGraphA1)
+      morpheus.catalog.store("a2", inputGraphA2)
 
-      caps.cypher(
+      morpheus.cypher(
         """
           |CATALOG CREATE VIEW bar($g1, $g2) {
           | FROM GRAPH $g1
@@ -309,7 +309,7 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |}
         """.stripMargin)
 
-      val resultGraph = caps.cypher(
+      val resultGraph = morpheus.cypher(
         """
           |FROM GRAPH bar(bar(a2, a1), bar(a1, a2))
           |RETURN GRAPH
@@ -333,10 +333,10 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |CREATE ({name: 'B2'})
         """.stripMargin)
 
-      caps.catalog.store("a", inputGraphA)
-      caps.catalog.store("b", inputGraphB)
+      morpheus.catalog.store("a", inputGraphA)
+      morpheus.catalog.store("b", inputGraphB)
 
-      caps.cypher(
+      morpheus.cypher(
         """
           |CATALOG CREATE VIEW bar($g1, $g2) {
           | FROM GRAPH $g1
@@ -350,7 +350,7 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |}
         """.stripMargin)
 
-      val resultGraph = caps.cypher(
+      val resultGraph = morpheus.cypher(
         """
           |FROM GRAPH bar(bar(b, a), bar(a, b))
           |RETURN GRAPH
@@ -371,10 +371,10 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |CREATE ({name: 'B2'})
         """.stripMargin)
 
-      caps.catalog.store("a", inputGraphA)
-      caps.catalog.store("b", inputGraphB)
+      morpheus.catalog.store("a", inputGraphA)
+      morpheus.catalog.store("b", inputGraphB)
 
-      caps.cypher(
+      morpheus.cypher(
         """
           |CATALOG CREATE VIEW bar($g1, $g2) {
           | FROM GRAPH $g1
@@ -388,7 +388,7 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |}
         """.stripMargin)
 
-      val resultGraph = caps.cypher(
+      val resultGraph = morpheus.cypher(
         """
           |FROM GRAPH bar(bar(b, a), bar(a, b))
           |RETURN GRAPH
@@ -409,10 +409,10 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |CREATE ({name: 'B2'})
         """.stripMargin)
 
-      caps.catalog.store("a", inputGraphA)
-      caps.catalog.store("b", inputGraphB)
+      morpheus.catalog.store("a", inputGraphA)
+      morpheus.catalog.store("b", inputGraphB)
 
-      caps.cypher(
+      morpheus.cypher(
         """
           |CATALOG CREATE VIEW bar($g1, $g2) {
           | FROM GRAPH $g1
@@ -426,7 +426,7 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
           |}
         """.stripMargin)
 
-      val resultGraph = caps.cypher(
+      val resultGraph = morpheus.cypher(
         """
           |FROM GRAPH bar(bar(b, a), bar(a, b))
           |RETURN GRAPH
@@ -440,7 +440,7 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
   describe("DROP GRAPH/VIEW") {
 
     it("can drop a view") {
-      caps.cypher(
+      morpheus.cypher(
         """
           |CATALOG CREATE VIEW bar {
           | FROM GRAPH foo
@@ -449,35 +449,35 @@ class CatalogDDLTests extends CAPSTestSuite with ScanGraphInit with BeforeAndAft
         """.stripMargin)
 
       val bar = QualifiedGraphName("bar")
-      caps.catalog.catalogNames should contain(bar)
-      caps.catalog.viewNames should contain(bar)
+      morpheus.catalog.catalogNames should contain(bar)
+      morpheus.catalog.viewNames should contain(bar)
 
-      caps.cypher(
+      morpheus.cypher(
         """
           |CATALOG DROP VIEW bar
         """.stripMargin
       )
 
-      caps.catalog.catalogNames should not contain bar
-      caps.catalog.viewNames should not contain bar
+      morpheus.catalog.catalogNames should not contain bar
+      morpheus.catalog.viewNames should not contain bar
     }
 
     it("dropping a view is idempotent") {
-      caps.catalog.dropView("foo")
-      caps.cypher("CATALOG DROP VIEW foo")
+      morpheus.catalog.dropView("foo")
+      morpheus.cypher("CATALOG DROP VIEW foo")
     }
 
     it("can drop a session graph") {
 
-      caps.catalog.store("foo", initGraph("CREATE (:A)"))
+      morpheus.catalog.store("foo", initGraph("CREATE (:A)"))
 
-      val result = caps.cypher(
+      val result = morpheus.cypher(
         """
           |CATALOG DROP GRAPH session.foo
         """.stripMargin
       )
 
-      caps.catalog.source(caps.catalog.sessionNamespace).hasGraph(GraphName("foo")) shouldBe false
+      morpheus.catalog.source(morpheus.catalog.sessionNamespace).hasGraph(GraphName("foo")) shouldBe false
       result.getGraph shouldBe None
       result.getRecords shouldBe None
     }

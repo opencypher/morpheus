@@ -30,37 +30,37 @@ import org.apache.spark.sql.catalyst.expressions.codegen.GenerateMutableProjecti
 import org.apache.spark.sql.catalyst.expressions.{Alias, GenericInternalRow}
 import org.apache.spark.sql.functions
 import org.apache.spark.sql.functions.typedLit
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 import org.scalacheck.Prop.propBoolean
-import org.opencypher.spark.api.value.CAPSElement._
+import org.opencypher.spark.api.value.MorpheusElement._
 import org.opencypher.spark.impl.expressions.EncodeLong
 import org.opencypher.spark.impl.expressions.EncodeLong._
 import org.scalatestplus.scalacheck.Checkers
 
-class EncodeLongTest extends CAPSTestSuite with Checkers {
+class EncodeLongTest extends MorpheusTestSuite with Checkers {
 
   it("encodes longs correctly") {
     check((l: Long) => {
-      val scala = l.encodeAsCAPSId.toList
-      val spark = typedLit[Long](l).encodeLongAsCAPSId.expr.eval().asInstanceOf[Array[Byte]].toList
+      val scala = l.encodeAsMorpheusId.toList
+      val spark = typedLit[Long](l).encodeLongAsMorpheusId.expr.eval().asInstanceOf[Array[Byte]].toList
       scala === spark
     }, minSuccessful(1000))
   }
 
   it("encoding/decoding is symmetric") {
     check((l: Long) => {
-      val encoded = l.encodeAsCAPSId
+      val encoded = l.encodeAsMorpheusId
       val decoded = decodeLong(encoded)
       decoded === l
     }, minSuccessful(1000))
   }
 
   it("scala version encodes longs correctly") {
-    0L.encodeAsCAPSId.toList should equal(List(0.toByte))
+    0L.encodeAsMorpheusId.toList should equal(List(0.toByte))
   }
 
   it("spark version encodes longs correctly") {
-    typedLit[Long](0L).encodeLongAsCAPSId.expr.eval().asInstanceOf[Array[Byte]].array.toList should equal(List(0.toByte))
+    typedLit[Long](0L).encodeLongAsMorpheusId.expr.eval().asInstanceOf[Array[Byte]].array.toList should equal(List(0.toByte))
   }
 
   describe("Spark expression") {

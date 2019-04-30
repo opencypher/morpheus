@@ -31,24 +31,24 @@ import java.sql.Date
 
 import org.apache.spark.sql.{DataFrame, SparkSession}
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.CAPSElementTable
+import org.opencypher.spark.api.MorpheusSession
+import org.opencypher.spark.api.io.MorpheusElementTable
 import org.opencypher.spark.util.App
 
 /**
-  * Demonstrates basic usage of the CAPS API by loading an example network from existing [[DataFrame]]s including
+  * Demonstrates basic usage of the Morpheus API by loading an example network from existing [[DataFrame]]s including
   * custom element mappings and running a Cypher query on it.
   */
 object CustomDataFrameInputExample extends App {
 
-  // 1) Create CAPS session and retrieve Spark session
+  // 1) Create Morpheus session and retrieve Spark session
   // tag::create-session[]
   val spark: SparkSession = SparkSession
     .builder()
     .master("local[*]")
     .getOrCreate()
 
-  implicit val session: CAPSSession = CAPSSession.create(spark)
+  implicit val morpheus: MorpheusSession = MorpheusSession.create(spark)
   // end::create-session[]
 
   // 2) Generate some DataFrames that we'd like to interpret as a property graph.
@@ -87,13 +87,13 @@ object CustomDataFrameInputExample extends App {
     .withPropertyKey("since", "CONNECTED_SINCE")
     .build
 
-  val personTable = CAPSElementTable.create(personNodeMapping, nodesDF)
-  val friendsTable = CAPSElementTable.create(friendOfMapping, relsDF)
+  val personTable = MorpheusElementTable.create(personNodeMapping, nodesDF)
+  val friendsTable = MorpheusElementTable.create(friendOfMapping, relsDF)
   // end::create-node-relationship-tables[]
 
   // 4) Create property graph from graph scans
   // tag::create-graph[]
-  val graph = session.readFrom(personTable, friendsTable)
+  val graph = morpheus.readFrom(personTable, friendsTable)
   // end::create-graph[]
 
   // 5) Execute Cypher query and print results

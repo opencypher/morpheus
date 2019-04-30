@@ -29,7 +29,7 @@ package org.opencypher.spark.testing.support
 import org.apache.spark.sql.DataFrame
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.conversion.ElementMapping
-import org.opencypher.spark.api.io.CAPSElementTable
+import org.opencypher.spark.api.io.MorpheusElementTable
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 
 trait ElementTableCreationSupport {
@@ -43,7 +43,7 @@ trait ElementTableCreationSupport {
     *
     * Implicit types are retrieved from the pattern elements cypher types
     */
-  def constructElementTable(pattern: Pattern, df: DataFrame): CAPSElementTable = {
+  def constructElementTable(pattern: Pattern, df: DataFrame): MorpheusElementTable = {
     val mapping = pattern.elements.foldLeft(ElementMapping.empty(pattern)) {
       case (acc, patternElement) =>
 
@@ -69,6 +69,6 @@ trait ElementTableCreationSupport {
         )
     }
 
-    CAPSElementTable.create(mapping, df)
+    MorpheusElementTable.create(mapping, df)
   }
 }

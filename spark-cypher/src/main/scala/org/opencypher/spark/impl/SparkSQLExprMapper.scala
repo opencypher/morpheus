@@ -35,7 +35,7 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
-import org.opencypher.spark.impl.CAPSFunctions._
+import org.opencypher.spark.impl.MorpheusFunctions._
 import org.opencypher.spark.impl.convert.SparkConversions._
 import org.opencypher.spark.impl.expressions.AddPrefix._
 import org.opencypher.spark.impl.expressions.EncodeLong._
@@ -79,9 +79,9 @@ object SparkSQLExprMapper {
     }
 
     /**
-      * Attempts to create a Spark SQL expression from the CAPS expression.
+      * Attempts to create a Spark SQL expression from the Morpheus expression.
       *
-      * @param header     the header of the CAPSRecords in which the expression should be evaluated.
+      * @param header     the header of the [[MorpheusRecords]] in which the expression should be evaluated.
       * @param df         the dataframe containing the data over which the expression should be evaluated.
       * @param parameters query parameters
       * @return Some Spark SQL expression if the input was mappable, otherwise None.
@@ -192,7 +192,7 @@ object SparkSQLExprMapper {
         case PrefixId(_, prefix) => child0.addPrefix(lit(prefix))
         case ToId(e) =>
           e.cypherType.material match {
-            case CTInteger => child0.encodeLongAsCAPSId
+            case CTInteger => child0.encodeLongAsMorpheusId
             case ct if ct.toSparkType.contains(BinaryType) => child0
             case other => throw IllegalArgumentException("a type that may be converted to an ID", other)
           }

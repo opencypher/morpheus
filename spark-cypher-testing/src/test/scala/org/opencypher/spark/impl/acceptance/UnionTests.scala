@@ -33,14 +33,14 @@ import org.opencypher.okapi.ir.api.configuration.IrConfiguration.PrintIr
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.PrintRelationalPlan
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.api.value.{MorpheusNode, MorpheusRelationship}
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class UnionTests extends CAPSTestSuite with ScanGraphInit {
+class UnionTests extends MorpheusTestSuite with ScanGraphInit {
 
   describe("tabular union all") {
     it("unions simple queries") {
-      val result = caps.cypher(
+      val result = morpheus.cypher(
         """
           |RETURN 1 AS one
           |UNION ALL
@@ -54,7 +54,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("supports stacked union all") {
-      val result = caps.cypher(
+      val result = morpheus.cypher(
         """
           |RETURN 1 AS one
           |UNION ALL
@@ -74,7 +74,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("supports union all with UNWIND") {
-      val result = caps.cypher(
+      val result = morpheus.cypher(
         """
           |UNWIND [1, 2] AS i
           |RETURN i
@@ -109,8 +109,8 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
         """.stripMargin).records
 
       result.toMaps should equal(Bag(
-        CypherMap("node" -> CAPSNode(0, Set("A"), CypherMap("val" -> "foo"))),
-        CypherMap("node" -> CAPSNode(1, Set("B"), CypherMap("bar" -> "baz")))
+        CypherMap("node" -> MorpheusNode(0, Set("A"), CypherMap("val" -> "foo"))),
+        CypherMap("node" -> MorpheusNode(1, Set("B"), CypherMap("bar" -> "baz")))
       ))
     }
 
@@ -133,15 +133,15 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
         """.stripMargin).records
 
       result.toMaps should equal(Bag(
-        CypherMap("node" -> CAPSNode(0, Set("A"), CypherMap("val" -> "foo")), "rel" -> CAPSRelationship(2, 0, 1, "REL1", CypherMap("foo" -> 42))),
-        CypherMap("node" -> CAPSNode(1, Set("B"), CypherMap("bar" -> "baz")), "rel" -> CAPSRelationship(3, 1, 0, "REL2", CypherMap("bar" -> true)))
+        CypherMap("node" -> MorpheusNode(0, Set("A"), CypherMap("val" -> "foo")), "rel" -> MorpheusRelationship(2, 0, 1, "REL1", CypherMap("foo" -> 42))),
+        CypherMap("node" -> MorpheusNode(1, Set("B"), CypherMap("bar" -> "baz")), "rel" -> MorpheusRelationship(3, 1, 0, "REL2", CypherMap("bar" -> true)))
       ))
     }
   }
 
   describe("tabular union") {
     it("unions simple queries") {
-      val result = caps.cypher(
+      val result = morpheus.cypher(
         """
           |RETURN 1 AS one
           |UNION
@@ -155,7 +155,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("unions simple queries with duplicates") {
-      val result = caps.cypher(
+      val result = morpheus.cypher(
         """
           |RETURN 1 AS one
           |UNION
@@ -168,7 +168,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("supports stacked union") {
-      val result = caps.cypher(
+      val result = morpheus.cypher(
         """
           |RETURN 1 AS one
           |UNION
@@ -187,7 +187,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("supports union with UNWIND") {
-      val result = caps.cypher(
+      val result = morpheus.cypher(
         """
           |UNWIND [1, 2] AS i
           |RETURN i
@@ -220,8 +220,8 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
         """.stripMargin).records
 
       result.toMaps should equal(Bag(
-        CypherMap("node1" -> CAPSNode(0, Set("A"), CypherMap("val" -> "foo")), "node2" -> CAPSNode(1, Set("B"), CypherMap("bar" -> "baz"))),
-        CypherMap("node1" -> CAPSNode(1, Set("B"), CypherMap("bar" -> "baz")), "node2" -> CAPSNode(0, Set("A"), CypherMap("val" -> "foo")))
+        CypherMap("node1" -> MorpheusNode(0, Set("A"), CypherMap("val" -> "foo")), "node2" -> MorpheusNode(1, Set("B"), CypherMap("bar" -> "baz"))),
+        CypherMap("node1" -> MorpheusNode(1, Set("B"), CypherMap("bar" -> "baz")), "node2" -> MorpheusNode(0, Set("A"), CypherMap("val" -> "foo")))
       ))
     }
 
@@ -241,7 +241,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
         """.stripMargin).records
 
       result.toMaps should equal(Bag(
-        CypherMap("node" -> CAPSNode(0, Set("A"), CypherMap("val" -> "foo")))
+        CypherMap("node" -> MorpheusNode(0, Set("A"), CypherMap("val" -> "foo")))
       ))
     }
 
@@ -262,7 +262,7 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
         """.stripMargin).records
 
       result.toMaps should equal(Bag(
-        CypherMap("rel" -> CAPSRelationship(1, 0, 0, "REL", CypherMap("val" -> 42)))
+        CypherMap("rel" -> MorpheusRelationship(1, 0, 0, "REL", CypherMap("val" -> 42)))
       ))
     }
   }
@@ -270,9 +270,9 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
   describe("Graph union all") {
     it("union all on graphs") {
       val a = initGraph("CREATE ()")
-      caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("a"), a)
-      caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("b"), a)
-      val result = caps.cypher(
+      morpheus.catalog.source(morpheus.catalog.sessionNamespace).store(GraphName("a"), a)
+      morpheus.catalog.source(morpheus.catalog.sessionNamespace).store(GraphName("b"), a)
+      val result = morpheus.cypher(
         """
           |FROM a
           |RETURN GRAPH
@@ -287,10 +287,10 @@ class UnionTests extends CAPSTestSuite with ScanGraphInit {
     it("union all fails on graphs with common properties") {
       val a = initGraph("CREATE (:one{test:1})")
       val b = initGraph("CREATE (:one{test:'hello'})")
-      caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("a"), a)
-      caps.catalog.source(caps.catalog.sessionNamespace).store(GraphName("b"), b)
+      morpheus.catalog.source(morpheus.catalog.sessionNamespace).store(GraphName("a"), a)
+      morpheus.catalog.source(morpheus.catalog.sessionNamespace).store(GraphName("b"), b)
       val e: SchemaException = the[SchemaException] thrownBy {
-        caps.cypher(
+        morpheus.cypher(
           """
             |FROM a
             |RETURN GRAPH

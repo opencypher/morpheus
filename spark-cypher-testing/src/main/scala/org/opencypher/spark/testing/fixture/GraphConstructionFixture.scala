@@ -30,15 +30,15 @@ import org.opencypher.okapi.api.graph.Pattern
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
-import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.impl.MorpheusConverters._
 import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
-import org.opencypher.spark.testing.support.creation.caps.{CAPSScanGraphFactory, CAPSTestGraphFactory}
+import org.opencypher.spark.testing.support.creation.graphs.{ScanGraphFactory, TestGraphFactory}
 
 trait GraphConstructionFixture {
-  self: CAPSSessionFixture with BaseTestSuite =>
+  self: MorpheusSessionFixture with BaseTestSuite =>
 
-  def capsGraphFactory: CAPSTestGraphFactory = CAPSScanGraphFactory
+  def graphFactory: TestGraphFactory = ScanGraphFactory
 
   def initGraph(query: String, additionalPatterns: Seq[Pattern] = Seq.empty): RelationalCypherGraph[DataFrameTable] =
-    CAPSScanGraphFactory(CreateGraphFactory(query), additionalPatterns).asCaps
+    ScanGraphFactory(CreateGraphFactory(query), additionalPatterns).asMorpheus
 }

@@ -28,9 +28,9 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.{Bag, TestNameFixture}
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class NullTests extends CAPSTestSuite with ScanGraphInit with TestNameFixture {
+class NullTests extends MorpheusTestSuite with ScanGraphInit with TestNameFixture {
 
   override protected def separator: String = "calling:"
 
@@ -38,7 +38,7 @@ class NullTests extends CAPSTestSuite with ScanGraphInit with TestNameFixture {
     returnsValue(null, call)
 
   private def returnsValue(exp: Any, call: String = testName) =
-    caps
+    morpheus
       .cypher(s"RETURN $call AS res")
       .records.toMaps
       .shouldEqual(Bag(CypherMap("res" -> exp)))

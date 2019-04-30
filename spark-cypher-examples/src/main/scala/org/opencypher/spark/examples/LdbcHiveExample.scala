@@ -33,7 +33,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.spark.api.io.sql.SqlDataSourceConfig.Hive
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.testing.utils.FileSystemUtils._
 import org.opencypher.spark.util.LdbcUtil._
 import org.opencypher.spark.util.{App, LdbcUtil}
@@ -54,7 +54,7 @@ object LdbcHiveExample extends App {
   val datasourceName = "warehouse"
   val database = "LDBC"
 
-  implicit val session: CAPSSession = CAPSSession.local(CATALOG_IMPLEMENTATION.key -> "hive")
+  implicit val session: MorpheusSession = MorpheusSession.local(CATALOG_IMPLEMENTATION.key -> "hive")
   implicit val spark: SparkSession = session.sparkSession
 
   val csvFiles = new File(resource("csv/").getFile).list()

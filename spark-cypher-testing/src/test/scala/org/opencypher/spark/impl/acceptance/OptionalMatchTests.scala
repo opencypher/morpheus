@@ -31,15 +31,15 @@ import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.relational.impl.graph.ScanGraph
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.value.CAPSNode
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.api.value.MorpheusNode
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class OptionalMatchTests extends CAPSTestSuite with ScanGraphInit {
+class OptionalMatchTests extends MorpheusTestSuite with ScanGraphInit {
 
   describe("match on empty graph / table") {
 
     it("return null row") {
-      val result = caps.cypher(
+      val result = morpheus.cypher(
         """
           |OPTIONAL MATCH (n)
           |RETURN n
@@ -91,7 +91,7 @@ class OptionalMatchTests extends CAPSTestSuite with ScanGraphInit {
     }
 
     it("throws if spark.sql.crossJoin.enabled=false") {
-      caps.sparkSession.conf.set("spark.sql.crossJoin.enabled", "false")
+      morpheus.sparkSession.conf.set("spark.sql.crossJoin.enabled", "false")
       val e = the[org.opencypher.okapi.impl.exception.UnsupportedOperationException] thrownBy {
         try {
           val g = initGraph(
@@ -112,7 +112,7 @@ class OptionalMatchTests extends CAPSTestSuite with ScanGraphInit {
             CypherMap("a" -> List.empty, "b" -> List(42, 43, 44))
           ))
         } finally {
-          caps.sparkSession.conf.set("spark.sql.crossJoin.enabled", "true")
+          morpheus.sparkSession.conf.set("spark.sql.crossJoin.enabled", "true")
         }
       }
       e.getMessage should (include("OPTIONAL MATCH") and include("spark.sql.crossJoin.enabled"))
@@ -438,8 +438,8 @@ class OptionalMatchTests extends CAPSTestSuite with ScanGraphInit {
 
     // Then
     result.records.collect.toBag should equal(Bag(
-      CypherMap("a" -> CypherNull, "b" -> CAPSNode(0L, Set("Person"), CypherMap("name" -> "Alice"))),
-      CypherMap("a" -> CypherNull, "b" -> CAPSNode(1L, Set("Person"), CypherMap("name" -> "Bob")))
+      CypherMap("a" -> CypherNull, "b" -> MorpheusNode(0L, Set("Person"), CypherMap("name" -> "Alice"))),
+      CypherMap("a" -> CypherNull, "b" -> MorpheusNode(1L, Set("Person"), CypherMap("name" -> "Bob")))
     ))
   }
 

@@ -43,12 +43,12 @@ import org.opencypher.spark.api.io.neo4j.Neo4jPropertyGraphDataSource
 import org.opencypher.spark.api.io.sql.{SqlDataSourceConfig, SqlPropertyGraphDataSource}
 import org.opencypher.spark.impl.acceptance.ScanGraphInit
 import org.opencypher.spark.impl.table.SparkTable
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 
 import scala.collection.JavaConverters._
 import scala.util.{Failure, Success, Try}
 
-class Neo4JGraphMergeTest extends CAPSTestSuite with Neo4jServerFixture with ScanGraphInit {
+class Neo4JGraphMergeTest extends MorpheusTestSuite with Neo4jServerFixture with ScanGraphInit {
 
   override def dataFixture: String = ""
 
@@ -179,7 +179,7 @@ class Neo4JGraphMergeTest extends CAPSTestSuite with Neo4jServerFixture with Sca
       ).asJava
 
       val df = sparkSession.createDataFrame(data, StructType(Seq(StructField("id", LongType), StructField("name", StringType))))
-      caps.sql("CREATE DATABASE IF NOT EXISTS db")
+      morpheus.sql("CREATE DATABASE IF NOT EXISTS db")
       df.write.saveAsTable("db.persons")
 
       val ddlString =

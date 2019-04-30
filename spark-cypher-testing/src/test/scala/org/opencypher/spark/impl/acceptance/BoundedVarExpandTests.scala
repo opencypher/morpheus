@@ -28,10 +28,10 @@ package org.opencypher.spark.impl.acceptance
 
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.testing.Bag
-import org.opencypher.spark.api.value.CAPSRelationship
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.api.value.MorpheusRelationship
+import org.opencypher.spark.testing.MorpheusTestSuite
 
-class BoundedVarExpandTests extends CAPSTestSuite with ScanGraphInit {
+class BoundedVarExpandTests extends MorpheusTestSuite with ScanGraphInit {
 
   it("explicitly bound to zero length") {
 
@@ -114,9 +114,9 @@ class BoundedVarExpandTests extends CAPSTestSuite with ScanGraphInit {
     // When
     val result = given.cypher("MATCH (a:Node)-[r*..6]->(b:Node) RETURN r")
 
-    val rel1 = CAPSRelationship(2, 0, 1, "REL")
-    val rel2 = CAPSRelationship(4, 1, 3, "REL")
-    val rel3 = CAPSRelationship(5, 3, 0, "REL")
+    val rel1 = MorpheusRelationship(2, 0, 1, "REL")
+    val rel2 = MorpheusRelationship(4, 1, 3, "REL")
+    val rel3 = MorpheusRelationship(5, 3, 0, "REL")
 
     val elements = result.records.toMaps
     elements should equal(Bag(

@@ -27,18 +27,18 @@
 // tag::full-example[]
 package org.opencypher.spark.examples
 
-import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.MorpheusSession
 import org.opencypher.spark.util.App
 
 /**
   * Demonstrates how to use views to filter graphs.
   */
 object ViewsExample extends App {
-  // 1) Create CAPS session and retrieve Spark session
-  implicit val session: CAPSSession = CAPSSession.local()
+  // 1) Create Morpheus session and retrieve Spark session
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // 2) Create a graph
-  session.cypher(
+  morpheus.cypher(
     """|CATALOG CREATE GRAPH sn {
        |  CONSTRUCT
        |    CREATE (a: Person {age: 18})
@@ -60,7 +60,7 @@ object ViewsExample extends App {
     """.stripMargin)
 
   // 3) Define a view that filters young friends
-  session.cypher(
+  morpheus.cypher(
     """
       |CATALOG CREATE VIEW youngFriends($people) {
       | FROM $people
@@ -73,7 +73,7 @@ object ViewsExample extends App {
     """.stripMargin)
 
   // 3) Apply `youngFriends` view to graph `sn`
-  val results = session.cypher(
+  val results = morpheus.cypher(
     """|FROM youngFriends(sn)
        |MATCH (p: Person)-[r]->(e)
        |RETURN p, r, e

@@ -34,16 +34,16 @@ import org.opencypher.okapi.relational.impl.graph.UnionGraph
 import org.opencypher.okapi.relational.impl.operators.SwitchContext
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.opencypher.spark.api.value.CAPSElement._
-import org.opencypher.spark.api.value.{CAPSNode, CAPSRelationship}
-import org.opencypher.spark.impl.CAPSConverters._
+import org.opencypher.spark.api.value.MorpheusElement._
+import org.opencypher.spark.api.value.{MorpheusNode, MorpheusRelationship}
+import org.opencypher.spark.impl.MorpheusConverters._
 import org.opencypher.spark.impl.table.SparkTable
-import org.opencypher.spark.schema.CAPSSchema._
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.schema.MorpheusSchema._
+import org.opencypher.spark.testing.MorpheusTestSuite
 
 import scala.language.existentials
 
-class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
+class MultipleGraphTests extends MorpheusTestSuite with ScanGraphInit {
 
   def testGraph1: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph("CREATE (:Person {name: 'Mats'})")
 
@@ -58,7 +58,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
     """.stripMargin)
 
   it("creates multiple copies of the same node") {
-    val g = caps.cypher(
+    val g = morpheus.cypher(
       """
         |CONSTRUCT
         |  CREATE ()
@@ -77,7 +77,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("can match on constructed graph") {
-    val results = caps.cypher(
+    val results = morpheus.cypher(
       """
         |CONSTRUCT
         |  CREATE ()
@@ -111,23 +111,23 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
     val result = testGraph1.cypher(query)
     result.getRecords should be(None)
 
-    result.graph.asCaps shouldMatch testGraph1
+    result.graph.asMorpheus shouldMatch testGraph1
   }
 
   it("should switch to another graph and then return it") {
-    caps.catalog.store("graph2", testGraph2)
+    morpheus.catalog.store("graph2", testGraph2)
     val query =
       """FROM GRAPH graph2
         |RETURN GRAPH""".stripMargin
 
     val result = testGraph1.cypher(query)
     result.getRecords shouldBe None
-    result.graph.asCaps shouldMatch testGraph2
+    result.graph.asMorpheus shouldMatch testGraph2
   }
 
   it("can select a source graph to match data from") {
-    caps.catalog.store("graph1", testGraph1)
-    caps.catalog.store("graph2", testGraph2)
+    morpheus.catalog.store("graph1", testGraph1)
+    morpheus.catalog.store("graph2", testGraph2)
 
     val query =
       """FROM GRAPH graph2
@@ -143,9 +143,9 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("matches from different graphs") {
-    caps.catalog.store("graph1", testGraph1)
-    caps.catalog.store("graph2", testGraph2)
-    caps.catalog.store("graph3", testGraph3)
+    morpheus.catalog.store("graph1", testGraph1)
+    morpheus.catalog.store("graph2", testGraph2)
+    morpheus.catalog.store("graph3", testGraph3)
 
     val query =
       """FROM GRAPH graph2
@@ -170,8 +170,8 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
     val g2 = initGraph(
       """|CREATE (:A {v: 2})
          |CREATE (:B {v: 200})""".stripMargin)
-    caps.catalog.store("g1", g1)
-    caps.catalog.store("g2", g2)
+    morpheus.catalog.store("g1", g1)
+    morpheus.catalog.store("g2", g2)
 
     val query =
       """|FROM GRAPH g1
@@ -275,7 +275,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
          |  CREATE ({name: 'Donald'})
          |RETURN GRAPH""".stripMargin
 
-    val result = caps.cypher(query)
+    val result = morpheus.cypher(query)
 
     result.getRecords shouldBe None
     result.graph.schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys()("name" -> CTString))
@@ -601,7 +601,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("CONSTRUCTS ON a single graph") {
-    caps.catalog.store("one", testGraph1)
+    morpheus.catalog.store("one", testGraph1)
     val query =
       """
         |CONSTRUCT ON one
@@ -609,13 +609,13 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph2.cypher(query).graph
 
-    result.schema.asCaps should equal(testGraph1.schema)
+    result.schema.asMorpheus should equal(testGraph1.schema)
     result.nodes("n").toMaps should equal(testGraph1.nodes("n").toMaps)
     result.relationships("r").toMaps should equal(testGraph1.relationships("r").toMaps)
   }
 
   it("CONSTRUCT ON a single graph without GraphUnionAll") {
-    caps.catalog.store("one", testGraph1)
+    morpheus.catalog.store("one", testGraph1)
     val query =
       """
         |CONSTRUCT ON one
@@ -623,7 +623,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
 
     val result = testGraph2.cypher(query)
 
-    result.asCaps.maybeRelational match {
+    result.asMorpheus.maybeRelational match {
       case Some(relPlan) =>
         val switchOp = relPlan.collectFirst { case op: SwitchContext[_] => op }.get
         val containsUnionGraph = switchOp.context.queryLocalCatalog.head._2 match {
@@ -639,8 +639,8 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("CONSTRUCTS ON two graphs") {
-    caps.catalog.store("one", testGraph1)
-    caps.catalog.store("two", testGraph2)
+    morpheus.catalog.store("one", testGraph1)
+    morpheus.catalog.store("two", testGraph2)
     val query =
       """
         |CONSTRUCT ON one, two
@@ -654,8 +654,8 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("CONSTRUCTS ON two graphs and adds a relationship") {
-    caps.catalog.store("one", testGraph1)
-    caps.catalog.store("two", testGraph2)
+    morpheus.catalog.store("one", testGraph1)
+    morpheus.catalog.store("two", testGraph2)
     val query =
       """|FROM GRAPH one
          |MATCH (m: Person)
@@ -665,11 +665,11 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
          |  CREATE (m)-[:KNOWS]->(p)
          |RETURN GRAPH""".stripMargin
 
-    val result = caps.cypher(query).graph
+    val result = morpheus.cypher(query).graph
 
     result.schema should equal((testGraph1.schema ++ testGraph2.schema).withRelationshipPropertyKeys("KNOWS")())
     result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
-    val resultRelationship = result.relationships("r").toMaps.head._1("r").asInstanceOf[CAPSRelationship]
+    val resultRelationship = result.relationships("r").toMaps.head._1("r").asInstanceOf[MorpheusRelationship]
     resultRelationship.startId should equal(0L.withPrefix(0).toList)
     resultRelationship.endId should equal(0L.withPrefix(1).toList)
     resultRelationship.id should equal(0L.withPrefix(-1).toList)
@@ -677,8 +677,8 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("implictly clones when CONSTRUCTing ON two graphs and adding a relationship") {
-    caps.catalog.store("one", testGraph1)
-    caps.catalog.store("two", testGraph2)
+    morpheus.catalog.store("one", testGraph1)
+    morpheus.catalog.store("two", testGraph2)
     val query =
       """|FROM GRAPH one
          |MATCH (m: Person)
@@ -688,11 +688,11 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
          |  CREATE (m)-[:KNOWS]->(p)
          |RETURN GRAPH""".stripMargin
 
-    val result = caps.cypher(query).graph
+    val result = morpheus.cypher(query).graph
 
     result.schema should equal((testGraph1.schema ++ testGraph2.schema).withRelationshipPropertyKeys("KNOWS")())
     result.nodes("n").toMaps should equal(testGraph1.unionAll(testGraph2).nodes("n").toMaps)
-    val resultRelationship = result.relationships("r").toMaps.head._1("r").asInstanceOf[CAPSRelationship]
+    val resultRelationship = result.relationships("r").toMaps.head._1("r").asInstanceOf[MorpheusRelationship]
     resultRelationship.startId should equal(0L.withPrefix(0).toList)
     resultRelationship.endId should equal(0L.withPrefix(1).toList)
     resultRelationship.id should equal(0L.withPrefix(-1).toList)
@@ -707,16 +707,16 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
         |RETURN GRAPH
       """.stripMargin
 
-    val graph = caps.cypher(query).graph
+    val graph = morpheus.cypher(query).graph
 
     graph.schema should equal(PropertyGraphSchema.empty.withNodePropertyKeys(Set.empty[String]))
     graph.nodes("n").collect.toBag should equal(Bag(
-      CypherMap("n" -> CAPSNode(0, Set.empty[String]))
+      CypherMap("n" -> MorpheusNode(0, Set.empty[String]))
     ))
   }
 
   it("construct match construct") {
-    caps.catalog.store("g1", testGraphRels)
+    morpheus.catalog.store("g1", testGraphRels)
     val query =
       """
         |FROM GRAPH g1
@@ -730,20 +730,20 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
         |RETURN GRAPH
       """.stripMargin
 
-    val graph = caps.cypher(query).graph
+    val graph = morpheus.cypher(query).graph
 
-    graph.schema.asCaps should equal(testGraphRels.schema)
+    graph.schema.asMorpheus should equal(testGraphRels.schema)
     graph.nodes("n").collect.toBag should equal(Bag(
-      CypherMap("n" -> CAPSNode(0.withPrefix(1), Set("Person"), CypherMap("name" -> "Mats"))),
-      CypherMap("n" -> CAPSNode(1.withPrefix(1), Set("Person"), CypherMap("name" -> "Max"))),
-      CypherMap("n" -> CAPSNode(0L.withPrefix(0), Set("Person"), CypherMap("name" -> "Mats"))),
-      CypherMap("n" -> CAPSNode(1L.withPrefix(0), Set("Person"), CypherMap("name" -> "Max")))
+      CypherMap("n" -> MorpheusNode(0.withPrefix(1), Set("Person"), CypherMap("name" -> "Mats"))),
+      CypherMap("n" -> MorpheusNode(1.withPrefix(1), Set("Person"), CypherMap("name" -> "Max"))),
+      CypherMap("n" -> MorpheusNode(0L.withPrefix(0), Set("Person"), CypherMap("name" -> "Mats"))),
+      CypherMap("n" -> MorpheusNode(1L.withPrefix(0), Set("Person"), CypherMap("name" -> "Max")))
     ))
   }
 
   it("does not clone twice when a variable is both constructed on and matched") {
-    caps.catalog.store("g1", testGraph1)
-    caps.catalog.store("g2", testGraph2)
+    morpheus.catalog.store("g1", testGraph1)
+    morpheus.catalog.store("g2", testGraph2)
     val query =
       """
         |FROM GRAPH g1
@@ -756,18 +756,18 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
         |RETURN GRAPH
       """.stripMargin
 
-    val graph = caps.cypher(query).graph
+    val graph = morpheus.cypher(query).graph
 
-    graph.schema.asCaps should equal(testGraph1.schema)
+    graph.schema.asMorpheus should equal(testGraph1.schema)
     graph.nodes("n").collect.toBag should equal(Bag(
-      CypherMap("n" -> CAPSNode(0L.withPrefix(1), Set("Person"), CypherMap("name" -> "Mats"))),
-      CypherMap("n" -> CAPSNode(0L.withPrefix(0), Set("Person"), CypherMap("name" -> "Phil")))
+      CypherMap("n" -> MorpheusNode(0L.withPrefix(1), Set("Person"), CypherMap("name" -> "Mats"))),
+      CypherMap("n" -> MorpheusNode(0L.withPrefix(0), Set("Person"), CypherMap("name" -> "Phil")))
     ))
   }
 
   it("allows CONSTRUCT ON with relationships") {
-    caps.catalog.store("testGraphRels1", testGraphRels)
-    caps.catalog.store("testGraphRels2", testGraphRels)
+    morpheus.catalog.store("testGraphRels1", testGraphRels)
+    morpheus.catalog.store("testGraphRels2", testGraphRels)
     val query =
       """|FROM GRAPH testGraphRels1
          |MATCH (p1 :Person)-[r1]->(p2 :Person)
@@ -776,20 +776,20 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
          |  CREATE (p1)-[r1]->( p2)
          |RETURN GRAPH""".stripMargin
 
-    val result = caps.cypher(query).graph
+    val result = morpheus.cypher(query).graph
 
     result.schema should equal((testGraph1.schema ++ testGraph2.schema).withRelationshipPropertyKeys("HAS_SIMILAR_NAME")())
 
     result.nodes("n").toMaps should equal(Bag(
-      CypherMap("n" -> CAPSNode(0L.withPrefix(0), Set("Person"), CypherMap("name" -> "Mats"))),
-      CypherMap("n" -> CAPSNode(1L.withPrefix(0), Set("Person"), CypherMap("name" -> "Max"))),
-      CypherMap("n" -> CAPSNode(0L.withPrefix(1), Set("Person"), CypherMap("name" -> "Mats"))),
-      CypherMap("n" -> CAPSNode(1L.withPrefix(1), Set("Person"), CypherMap("name" -> "Max")))
+      CypherMap("n" -> MorpheusNode(0L.withPrefix(0), Set("Person"), CypherMap("name" -> "Mats"))),
+      CypherMap("n" -> MorpheusNode(1L.withPrefix(0), Set("Person"), CypherMap("name" -> "Max"))),
+      CypherMap("n" -> MorpheusNode(0L.withPrefix(1), Set("Person"), CypherMap("name" -> "Mats"))),
+      CypherMap("n" -> MorpheusNode(1L.withPrefix(1), Set("Person"), CypherMap("name" -> "Max")))
     ))
 
     result.relationships("r").toMaps should equal(Bag(
-      CypherMap("r" -> CAPSRelationship(2L.withPrefix(0), 1L.withPrefix(0), 0L.withPrefix(0), "HAS_SIMILAR_NAME")),
-      CypherMap("r" -> CAPSRelationship(2L.withPrefix(1), 1L.withPrefix(1), 0L.withPrefix(1), "HAS_SIMILAR_NAME"))
+      CypherMap("r" -> MorpheusRelationship(2L.withPrefix(0), 1L.withPrefix(0), 0L.withPrefix(0), "HAS_SIMILAR_NAME")),
+      CypherMap("r" -> MorpheusRelationship(2L.withPrefix(1), 1L.withPrefix(1), 0L.withPrefix(1), "HAS_SIMILAR_NAME"))
     ))
 
   }
@@ -801,8 +801,8 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
          |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
       """.stripMargin)
 
-    caps.catalog.store("testGraphRels1", testGraphRels)
-    caps.catalog.store("testGraphRels2", testGraphRels)
+    morpheus.catalog.store("testGraphRels1", testGraphRels)
+    morpheus.catalog.store("testGraphRels2", testGraphRels)
 
     val query =
       """|FROM GRAPH testGraphRels1
@@ -815,19 +815,19 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
          |  CREATE (p3)-[r2]->(p4)
          |RETURN GRAPH""".stripMargin
 
-    val result = caps.cypher(query).graph
-    result.schema.asCaps shouldEqual testGraphRels.schema
+    val result = morpheus.cypher(query).graph
+    result.schema.asMorpheus shouldEqual testGraphRels.schema
 
     result.nodes("n").toMaps should equal(Bag(
-      CypherMap("n" -> CAPSNode(0L.withPrefix(0), Set("Person"), CypherMap("name" -> "Mats"))),
-      CypherMap("n" -> CAPSNode(1L.withPrefix(0), Set("Person"), CypherMap("name" -> "Max"))),
-      CypherMap("n" -> CAPSNode(0L.withPrefix(1), Set("Person"), CypherMap("name" -> "Mats"))),
-      CypherMap("n" -> CAPSNode(1L.withPrefix(1), Set("Person"), CypherMap("name" -> "Max")))
+      CypherMap("n" -> MorpheusNode(0L.withPrefix(0), Set("Person"), CypherMap("name" -> "Mats"))),
+      CypherMap("n" -> MorpheusNode(1L.withPrefix(0), Set("Person"), CypherMap("name" -> "Max"))),
+      CypherMap("n" -> MorpheusNode(0L.withPrefix(1), Set("Person"), CypherMap("name" -> "Mats"))),
+      CypherMap("n" -> MorpheusNode(1L.withPrefix(1), Set("Person"), CypherMap("name" -> "Max")))
     ))
 
     result.relationships("r").toMaps should equal(Bag(
-      CypherMap("r" -> CAPSRelationship(2L.withPrefix(0), 1L.withPrefix(0), 0L.withPrefix(0), "HAS_SIMILAR_NAME")),
-      CypherMap("r" -> CAPSRelationship(2L.withPrefix(1), 1L.withPrefix(1), 0L.withPrefix(1), "HAS_SIMILAR_NAME"))
+      CypherMap("r" -> MorpheusRelationship(2L.withPrefix(0), 1L.withPrefix(0), 0L.withPrefix(0), "HAS_SIMILAR_NAME")),
+      CypherMap("r" -> MorpheusRelationship(2L.withPrefix(1), 1L.withPrefix(1), 0L.withPrefix(1), "HAS_SIMILAR_NAME"))
     ))
   }
 
@@ -880,9 +880,9 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("can construct a copy of a node with matched label") {
-    caps.cypher("CATALOG CREATE GRAPH foo { CONSTRUCT CREATE (:A) RETURN GRAPH }")
+    morpheus.cypher("CATALOG CREATE GRAPH foo { CONSTRUCT CREATE (:A) RETURN GRAPH }")
 
-    val graph = caps.cypher("FROM GRAPH foo RETURN GRAPH").graph
+    val graph = morpheus.cypher("FROM GRAPH foo RETURN GRAPH").graph
 
     graph.cypher(
       """MATCH (a:A)
@@ -896,9 +896,9 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
   }
 
   it("can construct with an input table expanded by unwind") {
-    caps.cypher("CATALOG CREATE GRAPH foo { CONSTRUCT CREATE (:A) RETURN GRAPH }")
+    morpheus.cypher("CATALOG CREATE GRAPH foo { CONSTRUCT CREATE (:A) RETURN GRAPH }")
 
-    val data = caps.cypher("FROM GRAPH foo RETURN GRAPH").graph.cypher(
+    val data = morpheus.cypher("FROM GRAPH foo RETURN GRAPH").graph.cypher(
       """MATCH (a:A)
         |UNWIND [1, 2, 3] AS i
         |CONSTRUCT
@@ -969,7 +969,7 @@ class MultipleGraphTests extends CAPSTestSuite with ScanGraphInit {
     val result = testGraph1.cypher(query)
 
     result.records.toMaps shouldBe Bag(
-      CypherMap("n" -> CAPSNode(0, Set("FOO")))
+      CypherMap("n" -> MorpheusNode(0, Set("FOO")))
     )
   }
 }

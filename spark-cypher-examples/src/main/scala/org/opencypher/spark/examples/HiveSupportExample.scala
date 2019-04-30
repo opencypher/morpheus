@@ -32,7 +32,7 @@ import java.util.UUID
 import org.apache.spark.sql.SparkSession
 import org.opencypher.okapi.api.graph.{GraphName, Node}
 import org.opencypher.spark.api.io.util.HiveTableName
-import org.opencypher.spark.api.{CAPSSession, GraphSources}
+import org.opencypher.spark.api.{MorpheusSession, GraphSources}
 import org.opencypher.spark.util.App
 
 object HiveSupportExample extends App {
@@ -41,10 +41,10 @@ object HiveSupportExample extends App {
     .builder()
     .master("local[*]")
     .enableHiveSupport()
-    .appName(s"caps-local-${UUID.randomUUID()}")
+    .appName(s"morpheus-local-${UUID.randomUUID()}")
     .getOrCreate()
     sparkSession.sparkContext.setLogLevel("error")
-  implicit val session = CAPSSession.create(sparkSession)
+  implicit val session = MorpheusSession.create(sparkSession)
 
   val hiveDatabaseName = "socialNetwork"
   session.sparkSession.sql(s"DROP DATABASE IF EXISTS $hiveDatabaseName CASCADE")

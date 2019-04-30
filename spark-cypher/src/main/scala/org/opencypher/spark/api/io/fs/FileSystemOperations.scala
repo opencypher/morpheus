@@ -26,11 +26,11 @@
  */
 package org.opencypher.spark.api.io.fs
 
-import org.opencypher.spark.api.CAPSSession
+import org.opencypher.spark.api.MorpheusSession
 
 trait FileSystemOperations[Path] {
 
-  implicit val session: CAPSSession
+  implicit val session: MorpheusSession
 
   protected def listDirectories(path: Path): List[String]
 

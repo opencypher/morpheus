@@ -29,25 +29,25 @@ package org.opencypher.spark.examples
 
 import org.apache.spark.graphx._
 import org.opencypher.okapi.api.io.conversion.NodeMappingBuilder
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.CAPSSession._
-import org.opencypher.spark.api.io.CAPSElementTable
+import org.opencypher.spark.api.MorpheusSession
+import org.opencypher.spark.api.MorpheusSession._
+import org.opencypher.spark.api.io.MorpheusElementTable
 import org.opencypher.spark.impl.expressions.EncodeLong.decodeLong
 import org.opencypher.spark.util.App
 
 /**
-  * Round trip CAPS -> GraphX -> CAPS
+  * Round trip Morpheus -> GraphX -> Morpheus
   *
-  * This example demonstrates how CAPS results can be used to construct a GraphX graph and invoke a GraphX algorithm
-  * on it. The computed ranks are imported back into CAPS and used in a Cypher query.
+  * This example demonstrates how Morpheus results can be used to construct a GraphX graph and invoke a GraphX algorithm
+  * on it. The computed ranks are imported back into Morpheus and used in a Cypher query.
   */
 object GraphXPageRankExample extends App {
 
-  // 1) Create CAPS session
-  implicit val session: CAPSSession = CAPSSession.local()
+  // 1) Create Morpheus session
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // 2) Load social network data via case class instances
-  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  val socialNetwork = morpheus.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
   // 3) Query graph with Cypher
   val nodes = socialNetwork.cypher(
@@ -69,20 +69,20 @@ object GraphXPageRankExample extends App {
   val ranks = graph.pageRank(0.0001).vertices
 
   // 6) Convert RDD to DataFrame
-  val rankTable = session.sparkSession.createDataFrame(ranks)
+  val rankTable = morpheus.sparkSession.createDataFrame(ranks)
     .withColumnRenamed("_1", "id")
     .withColumnRenamed("_2", "rank")
 
   // 7) Create property graph from rank data
   val ranksNodeMapping = NodeMappingBuilder.on("id").withPropertyKey("rank").build
-  val rankNodes = session.readFrom(CAPSElementTable.create(ranksNodeMapping, rankTable))
+  val rankNodes = morpheus.readFrom(MorpheusElementTable.create(ranksNodeMapping, rankTable))
 
   // 8) Mount both graphs in the session
-  session.catalog.store("ranks", rankNodes)
-  session.catalog.store("sn", socialNetwork)
+  morpheus.catalog.store("ranks", rankNodes)
+  morpheus.catalog.store("sn", socialNetwork)
 
   // 9) Query across both graphs to print names with corresponding ranks, sorted by rank
-  val result = session.cypher(
+  val result = morpheus.cypher(
     """|FROM GRAPH ranks
        |MATCH (r)
        |WITH id(r) as id, r.rank as rank

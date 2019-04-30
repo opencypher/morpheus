@@ -28,10 +28,10 @@
 package org.opencypher.spark.examples
 
 import org.apache.spark.sql.Dataset
-import org.opencypher.spark.api.value.CAPSNode
+import org.opencypher.spark.api.value.MorpheusNode
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.CAPSSession._
+import org.opencypher.spark.api.MorpheusSession
+import org.opencypher.spark.api.MorpheusSession._
 import org.opencypher.spark.impl.encoders._
 import org.opencypher.spark.util.App
 
@@ -41,8 +41,8 @@ import scala.collection.JavaConverters._
   * Demonstrates how to retrieve Property Graph elements as a Dataset and update them.
   */
 object UpdateExample extends App {
-  // 1) Create CAPS session and retrieve Spark session
-  implicit val session: CAPSSession = CAPSSession.local()
+  // 1) Create Morpheus session and retrieve Spark session
+  implicit val session: MorpheusSession = MorpheusSession.local()
 
   // 2) Load social network data via case class instances
   val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
@@ -57,8 +57,8 @@ object UpdateExample extends App {
   val ds = results.records.asDataset
 
   // 5) Add a new label and property to the nodes
-  val adults: Dataset[CAPSNode] = ds.map { record: CypherMap =>
-    record("p").cast[CAPSNode].withLabel("Adult").withProperty("canVote", true)
+  val adults: Dataset[MorpheusNode] = ds.map { record: CypherMap =>
+    record("p").cast[MorpheusNode].withLabel("Adult").withProperty("canVote", true)
   }
 
   // 6) Print updated nodes

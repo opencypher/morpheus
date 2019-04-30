@@ -40,17 +40,17 @@ import org.opencypher.okapi.ir.api.PropertyKey
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.spark.api.io._
-import org.opencypher.spark.api.value.CAPSElement._
-import org.opencypher.spark.api.value.CAPSNode
+import org.opencypher.spark.api.value.MorpheusElement._
+import org.opencypher.spark.api.value.MorpheusNode
 import org.opencypher.spark.impl.convert.SparkConversions
-import org.opencypher.spark.testing.CAPSTestSuite
+import org.opencypher.spark.testing.MorpheusTestSuite
 
 case class Person(id: Long, name: String, age: Int) extends Node
 
 @RelationshipType("FRIEND_OF")
 case class Friend(id: Long, source: Long, target: Long, since: String) extends Relationship
 
-class PatternElementTableTest extends CAPSTestSuite {
+class PatternElementTableTest extends MorpheusTestSuite {
 
   private val nodeMapping: ElementMapping = NodeMappingBuilder
     .withSourceIdKey("ID")
@@ -70,7 +70,7 @@ class PatternElementTableTest extends CAPSTestSuite {
     .build
 
   it("mapping from scala classes") {
-    val personTableScala = CAPSNodeTable(List(Person(0, "Alice", 15)))
+    val personTableScala = MorpheusNodeTable(List(Person(0, "Alice", 15)))
     personTableScala.mapping should equal(NodeMappingBuilder
       .withSourceIdKey("id")
       .withImpliedLabel("Person")
@@ -80,7 +80,7 @@ class PatternElementTableTest extends CAPSTestSuite {
 
 
     val friends = List(Friend(0, 0, 1, "23/01/1987"), Friend(1, 1, 2, "12/12/2009"))
-    val friendTableScala = CAPSRelationshipTable(friends)
+    val friendTableScala = MorpheusRelationshipTable(friends)
 
     friendTableScala.mapping should equal(RelationshipMappingBuilder
       .withSourceIdKey("id")
@@ -102,14 +102,14 @@ class PatternElementTableTest extends CAPSTestSuite {
       .build
 
     an[IllegalArgumentException] should be thrownBy {
-      CAPSElementTable.create(relMapping, df)
+      MorpheusElementTable.create(relMapping, df)
     }
   }
 
   it("NodeTable should create correct schema from given mapping") {
     val df = sparkSession.createDataFrame(Seq((1L, "Mats", 23L))).toDF("ID", "FOO", "BAR")
 
-    val nodeTable = CAPSElementTable.create(nodeMapping, df)
+    val nodeTable = MorpheusElementTable.create(nodeMapping, df)
 
     nodeTable.schema should equal(
       PropertyGraphSchema.empty
@@ -119,7 +119,7 @@ class PatternElementTableTest extends CAPSTestSuite {
   it("NodeTable should create correct header from given mapping") {
     val df = sparkSession.createDataFrame(Seq((1L, "Mats", 23L))).toDF("ID", "FOO", "BAR")
 
-    val nodeTable = CAPSElementTable.create(nodeMapping, df)
+    val nodeTable = MorpheusElementTable.create(nodeMapping, df)
 
     val v = Var(Pattern.DEFAULT_NODE_NAME)(CTNode("A", "B"))
 
@@ -136,7 +136,7 @@ class PatternElementTableTest extends CAPSTestSuite {
       .createDataFrame(Seq((1L, 2L, 3L, true, "Mats", 23L)))
       .toDF("ID", "FROM", "TO", "IS_A", "FOO", "BAR")
 
-    val relationshipTable = CAPSElementTable.create(relMapping, df)
+    val relationshipTable = MorpheusElementTable.create(relMapping, df)
 
     relationshipTable.schema should equal(
       PropertyGraphSchema.empty
@@ -148,7 +148,7 @@ class PatternElementTableTest extends CAPSTestSuite {
       .createDataFrame(Seq((1L, 2L, 3L, "Mats", 23L)))
       .toDF("ID", "FROM", "TO", "FOO", "BAR")
 
-    val relationshipTable = CAPSElementTable.create(relMapping, df)
+    val relationshipTable = MorpheusElementTable.create(relMapping, df)
 
     val v = Var(Pattern.DEFAULT_REL_NAME)(CTRelationship("A"))
 
@@ -173,24 +173,24 @@ class PatternElementTableTest extends CAPSTestSuite {
     val dfs = Seq(dfBinary, dfString, dfLong, dfInt)
 
     dfs.foreach { df =>
-      val nodeTable = CAPSElementTable.create(nodeMapping, df)
+      val nodeTable = MorpheusElementTable.create(nodeMapping, df)
 
       nodeTable.schema should equal(
         PropertyGraphSchema.empty
           .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "bar" -> CTFloat))
 
-      nodeTable.records.df.collect().toSet should equal(Set(Row(49L.encodeAsCAPSId, 23.1f.toDouble, 10)))
+      nodeTable.records.df.collect().toSet should equal(Set(Row(49L.encodeAsMorpheusId, 23.1f.toDouble, 10)))
     }
   }
 
   it("NodeTable can handle shuffled columns due to cast") {
     val df = sparkSession.createDataFrame(Seq((1L, 10.toShort, 23.1f))).toDF("ID", "FOO", "BAR")
 
-    val nodeTable = CAPSElementTable.create(nodeMapping, df)
+    val nodeTable = MorpheusElementTable.create(nodeMapping, df)
 
-    val graph = caps.graphs.create(nodeTable)
+    val graph = morpheus.graphs.create(nodeTable)
     graph.nodes("n").collect.toSet should equal(Set(
-      CypherMap("n" -> CAPSNode(1, Set("A", "B"), CypherMap("bar" -> 23.1f, "foo" -> 10)))
+      CypherMap("n" -> MorpheusNode(1, Set("A", "B"), CypherMap("bar" -> 23.1f, "foo" -> 10)))
     ))
   }
 
@@ -198,7 +198,7 @@ class PatternElementTableTest extends CAPSTestSuite {
     val e = the[IllegalArgumentException] thrownBy {
       val df = sparkSession.createDataFrame(Seq(Tuple1(Date.valueOf("1987-01-23")))).toDF("ID")
       val nodeMapping = NodeMappingBuilder.on("ID").withImpliedLabel("A").build
-      CAPSElementTable.create(nodeMapping, df)
+      MorpheusElementTable.create(nodeMapping, df)
     }
     e.getMessage should (include("Column `ID` should have a valid identifier data type") and include("Unsupported column type `DateType`"))
   }
@@ -207,15 +207,15 @@ class PatternElementTableTest extends CAPSTestSuite {
     val relMapping = RelationshipMappingBuilder.on("ID").from("SOURCE").to("TARGET").relType("A").build
     an[IllegalArgumentException] should be thrownBy {
       val df = sparkSession.createDataFrame(Seq((1.toByte, 1, 1))).toDF("ID", "SOURCE", "TARGET")
-      CAPSElementTable.create(relMapping, df)
+      MorpheusElementTable.create(relMapping, df)
     }
     an[IllegalArgumentException] should be thrownBy {
       val df = sparkSession.createDataFrame(Seq((1, 1.toByte, 1))).toDF("ID", "SOURCE", "TARGET")
-      CAPSElementTable.create(relMapping, df)
+      MorpheusElementTable.create(relMapping, df)
     }
     an[IllegalArgumentException] should be thrownBy {
       val df = sparkSession.createDataFrame(Seq((1, 1, 1.toByte))).toDF("ID", "SOURCE", "TARGET")
-      CAPSElementTable.create(relMapping, df)
+      MorpheusElementTable.create(relMapping, df)
     }
   }
 
@@ -223,7 +223,7 @@ class PatternElementTableTest extends CAPSTestSuite {
     val df = sparkSession.createDataFrame(Seq((1L, "Alice", 1984, true, 13.37)))
       .toDF("id", "name", "birthYear", "isGood", "luckyNumber")
 
-    val nodeTable = CAPSNodeTable(Set("Person"), df)
+    val nodeTable = MorpheusNodeTable(Set("Person"), df)
 
     nodeTable.schema should equal(PropertyGraphSchema.empty
       .withNodePropertyKeys("Person")(
@@ -237,7 +237,7 @@ class PatternElementTableTest extends CAPSTestSuite {
     val df = sparkSession.createDataFrame(Seq((1L, 1L, 1L, "Alice", 1984, true, 13.37)))
       .toDF("id", "source", "target", "name", "birthYear", "isGood", "luckyNumber")
 
-    val relationshipTable = CAPSRelationshipTable("KNOWS", df)
+    val relationshipTable = MorpheusRelationshipTable("KNOWS", df)
 
     relationshipTable.schema should equal(PropertyGraphSchema.empty
       .withRelationshipPropertyKeys("KNOWS")(
