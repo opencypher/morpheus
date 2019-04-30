@@ -26,62 +26,39 @@
  */
 package org.opencypher.okapi.ir.impl.parse.functions
 
-import org.opencypher.v9_0.expressions.{functions, _}
-import org.opencypher.v9_0.expressions.functions.{AggregatingFunction, Function}
+import org.opencypher.v9_0.expressions.functions.Function
 import org.opencypher.v9_0.util.symbols._
 
 case object FunctionExtensions {
 
-  private val mappings: Map[String, Function with TypeSignatures] = Map(
+  private val mappings: Map[String, Function] = Map(
     Timestamp.name -> Timestamp,
     LocalDateTime.name -> LocalDateTime,
     Date.name -> Date,
     Duration.name -> Duration,
   ).map(p => p._1.toLowerCase -> p._2)
 
-  def get(name: String): Option[Function with TypeSignatures] =
+  def get(name: String): Option[Function] =
     mappings.get(name.toLowerCase())
 
   def getOrElse(name: String, f: Function): Function =
     mappings.getOrElse(name.toLowerCase(), f)
 }
 
-case object Timestamp extends Function with TypeSignatures {
+case object Timestamp extends Function {
   override val name = "timestamp"
-
-  override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(), outputType = CTInteger)
-  )
 }
 
-case object LocalDateTime extends Function with TypeSignatures {
+case object LocalDateTime extends Function {
   override val name = "localdatetime"
-
-  override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTString), outputType = CTLocalDateTime),
-    TypeSignature(argumentTypes = Vector(CTMap), outputType = CTLocalDateTime),
-    TypeSignature(argumentTypes = Vector(), outputType = CTLocalDateTime)
-  )
 }
 
-case object Date extends Function with TypeSignatures {
+case object Date extends Function {
   override val name = "date"
-
-  override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTString), outputType = CTDate),
-    TypeSignature(argumentTypes = Vector(CTMap), outputType = CTDate),
-    TypeSignature(argumentTypes = Vector(), outputType = CTDate)
-
-  )
 }
 
-case object Duration extends Function with TypeSignatures {
+case object Duration extends Function {
   override val name = "duration"
-  //todo: are these used?
-  override val signatures = Vector(
-    TypeSignature(argumentTypes = Vector(CTString), outputType = CTDuration),
-    TypeSignature(argumentTypes = Vector(CTMap), outputType = CTDuration)
-  )
 }
 
 object CTIdentity extends CypherType {
