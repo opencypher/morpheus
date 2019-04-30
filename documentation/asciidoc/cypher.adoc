@@ -13,7 +13,7 @@ For the Cypher 9 specification and other openCypher language resources, see the 
 [[cypher-sparksql]]
 == Cypher on Spark SQL
 
-The https://github.com/opencypher/cypher-for-apache-spark[Morpheus] layer essentially translates Cypher queries into Spark SQL operators.
+The https://github.com/opencypher/morpheus[Morpheus] layer essentially translates Cypher queries into Spark SQL operators.
 As a result, certain aspects of Cypher like `USING INDEX` would not make sense to support in the Spark world.
 Additionally, other functions like `lower()` and `upper()` can easily be duplicated before the data is a graph by using Spark SQL functions and primitives.
 

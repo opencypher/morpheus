@@ -1,6 +1,6 @@
 [[examples]]
 = Examples
-:morpheus-examples-repo-uri: https://github.com/opencypher/cypher-for-apache-spark/tree/master/morpheus-examples/src/main/scala/org/opencypher/morpheus/examples
+:morpheus-examples-repo-uri: https://github.com/opencypher/morpheus/tree/master/morpheus-examples/src/main/scala/org/opencypher/morpheus/examples
 
 [abstract]
 --

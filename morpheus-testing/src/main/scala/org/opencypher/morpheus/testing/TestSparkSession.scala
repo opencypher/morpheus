@@ -77,7 +77,7 @@ object TestSparkSession {
       .builder()
       .config(conf)
       .master("local[*]")
-      .appName(s"cypher-for-apache-spark-tests-${UUID.randomUUID()}")
+      .appName(s"morpheus-tests-${UUID.randomUUID()}")
       .enableHiveSupport()
       .getOrCreate()
 

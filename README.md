@@ -12,7 +12,7 @@ Morpheus allows you to develop complex processing pipelines orchestrated by a po
 In addition to **developers** and **big data integration specialists**, Morpheus is also of practical use to **data scientists**, offering tools allowing for disparate data sources to be integrated into a single graph. From this graph, queries can extract subgraphs of interest into new result graphs, which can be conveniently exported for further processing.
 
 Morpheus builds on the Spark SQL DataFrame API, offering integration with standard Spark SQL processing and also allows
-integration with GraphX. To learn more about this, please see our [examples](https://github.com/opencypher/cypher-for-apache-spark/tree/master/morpheus-examples).
+integration with GraphX. To learn more about this, please see our [examples](https://github.com/opencypher/morpheus/tree/master/morpheus-examples).
  
 <!-- TODO: WIKI How does it relate to GraphFrames -->
 <!--- **Data Analysts**: -->
@@ -35,7 +35,7 @@ A preview of the documentation for Morpheus, which is a commercially supported v
 Morpheus is built on top of the Spark DataFrame API and uses features such as the Catalyst optimizer.
 The Spark representations are accessible and can be converted to representations that integrate with other Spark libraries.
 
-Morpheus supports [a subset of Cypher](https://github.com/opencypher/cypher-for-apache-spark/blob/master/documentation/asciidoc/cypher-cypher9-features.adoc) and is the first implementation of [multiple graphs](https://github.com/boggle/openCypher/blob/CIP2017-06-18-multiple-graphs/cip/1.accepted/CIP2017-06-18-multiple-graphs.adoc) and graph query compositionality.
+Morpheus supports [a subset of Cypher](https://github.com/opencypher/morpheus/blob/master/documentation/asciidoc/cypher-cypher9-features.adoc) and is the first implementation of [multiple graphs](https://github.com/boggle/openCypher/blob/CIP2017-06-18-multiple-graphs/cip/1.accepted/CIP2017-06-18-multiple-graphs.adoc) and graph query compositionality.
 
 Morpheus currently supports importing graphs from Hive, Neo4j, relational database systems via JDBC and from files stored either locally, in HDFS or S3.
 Morpheus has a data source API that allows you to plug in custom data importers for external graphs.
@@ -181,15 +181,15 @@ CSV and the schema mappings that describe the graph structure for the underlying
 
 #### Next steps
 
-- How to use Morpheus in [Apache Zeppelin](https://github.com/opencypher/cypher-for-apache-spark/wiki/Use-CAPS-in-a-Zeppelin-notebook)
-- Look at and contribute to the [Wiki](https://github.com/opencypher/cypher-for-apache-spark/wiki)
+- How to use Morpheus in [Apache Zeppelin](https://github.com/opencypher/morpheus/wiki/Use-CAPS-in-a-Zeppelin-notebook)
+- Look at and contribute to the [Wiki](https://github.com/opencypher/morpheus/wiki)
 <!-- TODO: Steps needed to run the demo with toy data -->
 <!-- TODO: WIKI article that demonstrates a more realistic use case with HDFS data source -->
 <!-- TODO: WIKI link to page that explains how to import data -->
 
 ## How to contribute
 
-We would love to find out about any [issues](https://github.com/opencypher/cypher-for-apache-spark/issues) you encounter and are happy to accept contributions following a Contributors License Agreement (CLA) signature as per the process outlined in our [contribution guidelines](CONTRIBUTING.adoc).
+We would love to find out about any [issues](https://github.com/opencypher/morpheus/issues) you encounter and are happy to accept contributions following a Contributors License Agreement (CLA) signature as per the process outlined in our [contribution guidelines](CONTRIBUTING.adoc).
 
 ## License
 

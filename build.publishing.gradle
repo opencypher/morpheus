@@ -41,7 +41,7 @@ subprojects {
                         }
                     }
                     scm {
-                        url = 'https://github.com/opencypher/cypher-for-apache-spark'
+                        url = 'https://github.com/opencypher/morpheus'
                     }
             }
 

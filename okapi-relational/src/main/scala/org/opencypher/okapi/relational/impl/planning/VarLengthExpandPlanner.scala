@@ -192,7 +192,7 @@ abstract class VarLengthExpandPlanner[T <: Table[T] : TypeTag] {
     targetHeader: RecordHeader,
     physicalOp: RelationalOperator[T]
   ): RelationalOperator[T] = {
-    // TODO: remove when https://github.com/opencypher/cypher-for-apache-spark/issues/513 is resolved
+    // TODO: remove when https://github.com/opencypher/morpheus/issues/513 is resolved
     val correctTarget = targetHeader.elementVars.find(_ == to).get
 
     val sourceChildren = targetHeader.expressionsFor(from)
