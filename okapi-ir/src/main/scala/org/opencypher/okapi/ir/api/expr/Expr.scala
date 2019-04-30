@@ -614,8 +614,13 @@ sealed trait FunctionExpr extends Expr {
   def exprs: List[Expr]
 
   protected def cypherType(typePropagationFunction: Option[PropagationTyp] = None): CypherType = {
-    val materialTypeVector = exprs.foldLeft(Vector.empty[CypherType]){case (acc , e: Expr) => acc :+ e.cypherType.material}
-    val joinedCypherType = exprs.map(_.cypherType).reduce(_ join _)
+    val materialTypeVector = exprs.foldLeft(Vector.empty[CypherType]) {
+      case (acc , e: Expr) => acc :+ e.cypherType.material
+    }
+    val joinedCypherType = exprs match {
+      case Nil => CTVoid
+      case _ => exprs.map(_.cypherType).reduce(_ join _)
+    }
     val maybeType = signature(materialTypeVector)
 
     maybeType match {
@@ -656,7 +661,7 @@ final case class Id(expr: Expr) extends UnaryFunctionExpr {
   override val cypherType: CypherType = cypherType(Some(ChildNullPropagation()))
 
   def signature(cypherType: CypherType): Option[CypherType] = cypherType match {
-    case CTNode | CTRelationship => Some(CTIdentity)
+    case CTNode(_, _) | CTRelationship(_, _) => Some(CTIdentity)
     case _ => None
   }
 }
@@ -684,7 +689,7 @@ final case class Labels(expr: Expr) extends UnaryFunctionExpr {
   override val cypherType: CypherType = cypherType(Some(ChildNullPropagation()))
 
   def signature(cypherType: CypherType): Option[CypherType] = cypherType match {
-    case CTNode => Some(CTList(CTString))
+    case CTNode(_, _) => Some(CTList(CTString))
     case _ => None
   }
 }
@@ -693,7 +698,7 @@ final case class Type(expr: Expr) extends UnaryFunctionExpr {
   override val cypherType: CypherType = cypherType(Some(ChildNullPropagation()))
 
   def signature(cypherType: CypherType): Option[CypherType] = cypherType match {
-    case CTRelationship => Some(CTString)
+    case CTRelationship(_, _) => Some(CTString)
     case _ => None
   }
 }
@@ -717,7 +722,7 @@ final case class Keys(expr: Expr) extends UnaryFunctionExpr {
   override def cypherType: CypherType = cypherType(Some(ChildNullPropagation()))
 
   def signature(cypherType: CypherType): Option[CypherType] = cypherType match {
-    case CTNode | CTRelationship | CTMap => Some(CTList(CTString))
+    case CTNode(_, _) | CTRelationship(_, _) | CTMap => Some(CTList(CTString))
     case _ => None
   }
 }
@@ -726,7 +731,7 @@ final case class StartNodeFunction(expr: Expr) extends UnaryFunctionExpr {
   override def cypherType: CypherType = cypherType(Some(ChildNullPropagation()))
 
   def signature(cypherType: CypherType): Option[CypherType] = cypherType match {
-    case CTRelationship => Some(CTNode)
+    case CTRelationship(_, _) => Some(CTNode)
     case _ => None
   }
 }
@@ -735,7 +740,7 @@ final case class EndNodeFunction(expr: Expr) extends UnaryFunctionExpr {
   override def cypherType: CypherType = cypherType(Some(ChildNullPropagation()))
 
   def signature(cypherType: CypherType): Option[CypherType] = cypherType match {
-    case CTRelationship => Some(CTNode)
+    case CTRelationship(_, _) => Some(CTNode)
     case _ => None
   }
 }
@@ -841,7 +846,7 @@ final case class ToLower(expr: Expr) extends UnaryStringFunctionExpr
 final case class Properties(expr: Expr)(val cypherType: CypherType) extends UnaryFunctionExpr {
 
   override def signature(cypherType: CypherType): Option[CypherType] = cypherType match {
-    case CTNode | CTRelationship | CTMap => Some(CTMap)
+    case CTNode(_, _) | CTRelationship(_, _) | CTMap => Some(CTMap)
     case _ => None
   } //todo: actually not needed here as type already checked at ExpressionConverter
 }

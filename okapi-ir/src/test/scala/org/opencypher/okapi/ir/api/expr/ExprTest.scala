@@ -151,7 +151,7 @@ class ExprTest extends BaseTestSuite {
     }
 
     it("types Trim correctly") {
-      Trim(e).cypherType shouldBe CTInteger.nullable
+      Trim(e).cypherType shouldBe CTString.nullable
       an[UnsupportedOperationException] shouldBe thrownBy {Trim(datetime).cypherType}
     }
 
