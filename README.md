@@ -26,10 +26,11 @@ We invite you to try out the project, and we welcome feedback and contributions.
 If you are interested in contributing to the project we would love to hear from you; email us at `opencypher@neo4j.org` or just raise a PR. 
 Please note that this is an openCypher project and contributions can only be accepted if you’ve agreed to the  [openCypher Contributors Agreement (oCCA)](CONTRIBUTING.adoc).
 
+<!--
 ## Documentation
 
 A preview of the documentation for Morpheus is [available from Neo4j](https://neo4j.com/docs/morpheus-user-guide/1.0-preview/).
-
+-->
 ## Morpheus Features
 
 Morpheus is built on top of the Spark DataFrame API and uses features such as the Catalyst optimizer.
