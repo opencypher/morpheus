@@ -156,10 +156,10 @@ subprojects {
 ['okapi-tck',
  'okapi-testing',
  'okapi-neo4j-io-testing',
- 'spark-cypher-examples',
- 'spark-cypher-tck',
- 'spark-cypher-testing',
- 'spark-cypher-jmh',
+ 'morpheus-examples',
+ 'morpheus-tck',
+ 'morpheus-testing',
+ 'morpheus-jmh',
  'documentation',
 ].each {
     project(it).tasks.validateLicenses.enabled = false

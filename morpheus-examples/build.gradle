@@ -1,8 +1,8 @@
 description = 'Collection of examples for Cypher for Apache Spark'
 
 dependencies {
-    compile project(':spark-cypher')
-    compile project(':spark-cypher-testing')
+    compile project(':morpheus-spark-cypher')
+    compile project(':morpheus-testing')
 
     compile group: 'org.apache.logging.log4j', name: 'log4j-core',           version: ver.log4j.main
     compile group: 'org.apache.spark',         name: "spark-graphx".scala(), version: ver.spark

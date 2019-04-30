@@ -1,4 +1,4 @@
-[![Maven Central](https://img.shields.io/badge/Maven_Central-0.3.2-blue.svg?label=Maven%20Central)](https://search.maven.org/#artifactdetails%7Corg.opencypher%7Cspark-cypher%7C0.3.2%7Cjar)
+[![Maven Central](https://img.shields.io/badge/Maven_Central-0.3.2-blue.svg?label=Maven%20Central)](https://search.maven.org/#artifactdetails%7Corg.opencypher%7Cmorpheus-spark-cypher%7C0.3.2%7Cjar)
 # CAPS: Cypher for Apache Spark
 
 CAPS extends [Apache Spark™](https://spark.apache.org) with [Cypher](https://neo4j.com/docs/developer-manual/current/cypher/), the industry's most widely used [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) query language defined and maintained by the [openCypher](http://www.opencypher.org) project.
@@ -12,7 +12,7 @@ CAPS allows you to develop complex processing pipelines orchestrated by a powerf
 In addition to **developers** and **big data integration specialists**, CAPS is also of practical use to **data scientists**, offering tools allowing for disparate data sources to be integrated into a single graph. From this graph, queries can extract subgraphs of interest into new result graphs, which can be conveniently exported for further processing.
 
 CAPS builds on the Spark SQL DataFrame API, offering integration with standard Spark SQL processing and also allows
-integration with GraphX. To learn more about this, please see our [examples](https://github.com/opencypher/cypher-for-apache-spark/tree/master/spark-cypher-examples).
+integration with GraphX. To learn more about this, please see our [examples](https://github.com/opencypher/cypher-for-apache-spark/tree/master/morpheus-examples).
  
 <!-- TODO: WIKI How does it relate to GraphFrames -->
 <!--- **Data Analysts**: -->
@@ -87,14 +87,14 @@ Maven:
 ```
 <dependency>
   <groupId>org.opencypher</groupId>
-  <artifactId>spark-cypher</artifactId>
+  <artifactId>morpheus-spark-cypher</artifactId>
   <version>0.3.2</version>
 </dependency>
 ```
 
 sbt:
 ```
-libraryDependencies += "org.opencypher" % "spark-cypher" % "0.3.2"
+libraryDependencies += "org.opencypher" % "morpheus-spark-cypher" % "0.3.2"
 ```
 
 Remember to add `fork in run := true` in your `build.sbt` for scala projects; this is not CAPS
@@ -108,7 +108,7 @@ Both nodes and relationships are uniquely identified by an ID (in CAPS this is o
 
 The following example shows how to convert a social network represented as Scala case classes to a `PropertyGraph` representation. 
 The `PropertyGraph` representation is internally transformed into Spark data frames. 
-If you have existing data frames which you would like to treat as a graph, have a look at our [DataFrameInputExample](spark-cypher-examples/src/main/scala/org/opencypher/morpheus/examples/DataFrameInputExample.scala).   
+If you have existing data frames which you would like to treat as a graph, have a look at our [DataFrameInputExample](morpheus-examples/src/main/scala/org/opencypher/morpheus/examples/DataFrameInputExample.scala).   
 
 Once the property graph is constructed, it supports Cypher queries via its `cypher` method.
 
@@ -163,15 +163,15 @@ The above program prints:
 Set(Alice, Bob, Eve)
 ```
 
-More examples, including [multiple graph features](spark-cypher-examples/src/main/scala/org/opencypher/morpheus/examples/MultipleGraphExample.scala), can be found [in the examples module](spark-cypher-examples).
+More examples, including [multiple graph features](morpheus-examples/src/main/scala/org/opencypher/morpheus/examples/MultipleGraphExample.scala), can be found [in the examples module](morpheus-examples).
 
 ### Run example Scala apps via command line
 
 You can use Gradle to run a specific Scala application from command line. For example, to run the `CaseClassExample` 
-within the `spark-cypher-examples` module, we just call:
+within the `morpheus-examples` module, we just call:
 
 ```
-./gradlew spark-cypher-examples:runApp -PmainClass=org.opencypher.morpheus.examples.CaseClassExample
+./gradlew morpheus-examples:runApp -PmainClass=org.opencypher.morpheus.examples.CaseClassExample
 ```
 
 ### Loading CSV Data

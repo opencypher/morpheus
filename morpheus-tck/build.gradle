@@ -7,9 +7,9 @@ sourceSets{
 
 dependencies {
     testCompile project(':okapi-tck')
-    testCompile project(':spark-cypher-testing')
+    testCompile project(':morpheus-testing')
     generatorCompile project(':okapi-tck')
-    generatorCompile project(':spark-cypher-testing')
+    generatorCompile project(':morpheus-testing')
 }
 
 // split scenario name / key-words with | --> debugTCKScenarios -Pscenarios = 'sc1|sc2|..'

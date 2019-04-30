@@ -44,8 +44,8 @@ object MorpheusTestGenerator extends App {
     checkSideEffects = false)
 
   if (args.isEmpty) {
-    val defaultOutDir = new File("spark-cypher-tck/src/test/scala/org/opencypher/morpheus/testing/")
-    val defaultResFiles = new File("spark-cypher-tck/src/test/resources/").listFiles()
+    val defaultOutDir = new File("morpheus-tck/src/test/scala/org/opencypher/morpheus/testing/")
+    val defaultResFiles = new File("morpheus-tck/src/test/resources/").listFiles()
     generator.generateAllScenarios(defaultOutDir, defaultResFiles)
   }
   else {

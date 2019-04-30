@@ -3,7 +3,7 @@ apply plugin: 'ch.kk7.spawn'
 description = 'Cypher for Apache Spark - Test Utilities'
 
 dependencies {
-    compile project(':spark-cypher')
+    compile project(':morpheus-spark-cypher')
     compile project(':okapi-testing')
     compile project(':okapi-neo4j-io-testing')
 
