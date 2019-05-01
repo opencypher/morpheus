@@ -1,27 +1,27 @@
-[[caps-session]]
-= The CAPSSession
+[[morpheus-session]]
+= The MorpheusSession
 
 [abstract]
 --
-This section describes the CAPS Session and how to use it manage graph sources and run queries.
+This section describes the Morpheus Session and how to use it manage graph sources and run queries.
 --
 
 Spark programs revolve around a centralised concept called the `SparkSession`.
 This is a singleton instance through which `DataFrame` objects are created and managed, and which manages the SQL catalog of tables registered in a given Spark program.
 
-CAPS mirrors this model by declaring a similar singleton called the `CAPSSession`.
+Morpheus mirrors this model by declaring a similar singleton called the `MorpheusSession`.
 It wraps a `SparkSession` to integrate with the underlying Spark APIs.
 In addition to these APIs it provides a `.cypher` method for executing Cypher queries.
 It also manages the catalog of graphs through registered Property Graph Data Sources.
 
 
-[[caps-session-configuration]]
+[[morpheus-session-configuration]]
 == Configuration
 
-To construct a `CAPSSession`, use the factory method `.create()` declared on the `CAPSSession` companion object.
-There is also a convenience `CAPSSession.local()` for test purposes that instantiates a new, local `CAPSSession` with default configuration.
+To construct a `MorpheusSession`, use the factory method `.create()` declared on the `MorpheusSession` companion object.
+There is also a convenience `MorpheusSession.local()` for test purposes that instantiates a new, local `MorpheusSession` with default configuration.
 
-.Instantiation of a `CAPSSession`:
+.Instantiation of a `MorpheusSession`:
 ====
 [source, scala]
 ----
@@ -31,18 +31,18 @@ implicit val spark = SparkSession               <1>
     .master("yarn")
     .appName("my-example-app")
     .getOrCreate()
-val caps = CAPSSession.create()                 <2>
+val morpheus = MorpheusSession.create()                 <2>
 ----
 <1> construct a custom SparkSession
-<2> attach the SparkSession to a CAPSSession (implicit parameter)
+<2> attach the SparkSession to a MorpheusSession (implicit parameter)
 
 ====
 
-.Instantiation of a local `CAPSSession`:
+.Instantiation of a local `MorpheusSession`:
 ====
 [source, scala]
 ----
-val caps = CAPSSession.local("spark.hadoop.fs.defaultFS" -> "hdfs:///")     <1>
+val morpheus = MorpheusSession.local("spark.hadoop.fs.defaultFS" -> "hdfs:///")     <1>
 ----
 <1> The `.local` session comes with sensible defaults, but additional configuration may be provided through the factory
 

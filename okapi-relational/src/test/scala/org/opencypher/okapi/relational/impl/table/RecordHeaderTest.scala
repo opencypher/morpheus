@@ -51,8 +51,8 @@ class RecordHeaderTest extends BaseTestSuite {
 
   val nLabelA: HasLabel = HasLabel(n, Label("A"))
   val nLabelB: HasLabel = HasLabel(n, Label("B"))
-  val nPropFoo: Property = EntityProperty(n, PropertyKey("foo"))(CTString)
-  val mPropFoo: Property = EntityProperty(m, PropertyKey("foo"))(CTString)
+  val nPropFoo: Property = ElementProperty(n, PropertyKey("foo"))(CTString)
+  val mPropFoo: Property = ElementProperty(m, PropertyKey("foo"))(CTString)
   val nExprs: Set[Expr] = Set(n, nLabelA, nLabelB, nPropFoo)
   val mExprs: Set[Expr] = nExprs.map(_.withOwner(m))
   val oExprs: Set[Expr] = nExprs.map(_.withOwner(o))
@@ -61,7 +61,7 @@ class RecordHeaderTest extends BaseTestSuite {
   val rStart: StartNode = StartNode(r)(CTNode)
   val rEnd: EndNode = EndNode(r)(CTNode)
   val rRelType: HasType = HasType(r, RelType("R"))
-  val rPropFoo: Property = EntityProperty(r, PropertyKey("foo"))(CTString)
+  val rPropFoo: Property = ElementProperty(r, PropertyKey("foo"))(CTString)
   val rExprs: Set[Expr] = Set(r, rStart, rEnd, rRelType, rPropFoo)
   val relListExprs: Set[Expr] = Set(relListSegment) ++ Set(rStart, rEnd, rRelType, rPropFoo).map(_.withOwner(relListSegment))
 
@@ -111,11 +111,11 @@ class RecordHeaderTest extends BaseTestSuite {
     RecordHeader.empty.isEmpty should equal(true)
   }
 
-  it("can add an entity expression") {
+  it("can add an element expression") {
     nHeader.ownedBy(n) should equal(nExprs)
   }
 
-  it("can add entity expressions without column collisions") {
+  it("can add element expressions without column collisions") {
     val underlineHeader = RecordHeader.empty.withExpr(Var("_")()).withExpr(Var(".")(CTAny))
     underlineHeader.columns.size should be(2)
   }
@@ -138,25 +138,25 @@ class RecordHeaderTest extends BaseTestSuite {
     header.contains(n as m) shouldBe true
   }
 
-  it("can add an alias for an entity") {
+  it("can add an alias for an element") {
     val withAlias = nHeader.withAlias(n as m)
 
     withAlias.ownedBy(n) should equalWithTracing(nExprs)
     withAlias.ownedBy(m) should equalWithTracing(mExprs)
   }
 
-  it("can add an alias for an entity that already exists but with different CypherType") {
+  it("can add an alias for an element that already exists but with different CypherType") {
     val withAlias = nHeader.withAlias(n as Var(n.name)(CTNode))
 
-    withAlias.entityVars.size should be(1)
-    val entity = withAlias.entityVars.head
+    withAlias.elementVars.size should be(1)
+    val element = withAlias.elementVars.head
 
-    entity should equal(n)
-    entity.cypherType should equal(CTNode)
+    element should equal(n)
+    element.cypherType should equal(CTNode)
 
   }
 
-  it("can add an alias for a non-entity expression") {
+  it("can add an alias for a non-element expression") {
     val s = Var("nPropFoo_Alias")(nPropFoo.cypherType)
     val t = Var("nPropFoo_Alias")(nPropFoo.cypherType)
     val withAlias1 = nHeader.withAlias(nPropFoo as s)
@@ -220,7 +220,7 @@ class RecordHeaderTest extends BaseTestSuite {
   }
 
   it("can modify alias and original expression") {
-    val prop2 = EntityProperty(n, PropertyKey("bar"))(CTString)
+    val prop2 = ElementProperty(n, PropertyKey("bar"))(CTString)
     val aliasHeader = nHeader.withAlias(n as m)
     val withNewProp = aliasHeader.withExpr(prop2)
 
@@ -244,7 +244,7 @@ class RecordHeaderTest extends BaseTestSuite {
   }
 
   it("adds a new child expr for all aliases of owner") {
-    val prop2 = EntityProperty(n, PropertyKey("bar"))(CTString)
+    val prop2 = ElementProperty(n, PropertyKey("bar"))(CTString)
     val aliasHeader = nHeader
       .withAlias(n as m)
       .withExpr(prop2)
@@ -303,7 +303,7 @@ class RecordHeaderTest extends BaseTestSuite {
     )
   }
 
-  it("finds entity properties") {
+  it("finds element properties") {
     nHeader.propertiesFor(n) should equalWithTracing(Set(nPropFoo))
     rHeader.propertiesFor(r) should equalWithTracing(Set(rPropFoo))
   }
@@ -313,12 +313,12 @@ class RecordHeaderTest extends BaseTestSuite {
     rHeader.endNodeFor(r) should equalWithTracing(rEnd)
   }
 
-  it("returns members for an entity") {
+  it("returns members for an element") {
     nHeader.ownedBy(n) should equalWithTracing(nExprs)
     rHeader.ownedBy(r) should equalWithTracing(rExprs)
   }
 
-  it("can return transitive members for an entity") {
+  it("can return transitive members for an element") {
     val withSegment = nHeader.withAlias(n as nodeListSegment).select(nodeListSegment)
 
     withSegment.ownedBy(nodeList) should equalWithTracing(withSegment.expressions)
@@ -334,9 +334,9 @@ class RecordHeaderTest extends BaseTestSuite {
     nHeader.typesFor(r) should equalWithTracing(Set.empty)
   }
 
-  it("returns all entity vars") {
-    nHeader.entityVars should equalWithTracing(Set(n))
-    (nHeader ++ rHeader).entityVars should equalWithTracing(Set(n, r))
+  it("returns all element vars") {
+    nHeader.elementVars should equalWithTracing(Set(n))
+    (nHeader ++ rHeader).elementVars should equalWithTracing(Set(n, r))
   }
 
   it("returns all node vars") {
@@ -350,11 +350,11 @@ class RecordHeaderTest extends BaseTestSuite {
     relListHeader.relationshipVars should equalWithTracing(Set.empty)
   }
 
-  it("returns all rel entities") {
-    rHeader.relationshipEntities should equalWithTracing(Set(r))
-    nHeader.relationshipEntities should equalWithTracing(Set.empty)
-    (nHeader ++ relListHeader).relationshipEntities should equalWithTracing(Set(relListSegment))
-    (rHeader ++ relListHeader).relationshipEntities should equalWithTracing(Set(r, relListSegment))
+  it("returns all rel elements") {
+    rHeader.relationshipElements should equalWithTracing(Set(r))
+    nHeader.relationshipElements should equalWithTracing(Set.empty)
+    (nHeader ++ relListHeader).relationshipElements should equalWithTracing(Set(relListSegment))
+    (rHeader ++ relListHeader).relationshipElements should equalWithTracing(Set(r, relListSegment))
   }
 
   it("returns all node vars for a given node type") {
@@ -376,7 +376,7 @@ class RecordHeaderTest extends BaseTestSuite {
     rHeader.relationshipsForType(CTRelationship) should equalWithTracing(Set(r))
   }
 
-  it("returns selected entity vars and their corresponding columns") {
+  it("returns selected element vars and their corresponding columns") {
     nHeader.select(Set(n)) should equal(nHeader)
     nHeader.select(Set(m)) should equal(RecordHeader.empty)
     (nHeader ++ mHeader).select(Set(n)) should equal(nHeader)
@@ -387,7 +387,7 @@ class RecordHeaderTest extends BaseTestSuite {
     nHeader.select(Set(n as m)) should equal(nHeader.withAlias(n as m) -- nHeader.expressions)
   }
 
-  it("returns selected entity and alias vars and their corresponding columns") {
+  it("returns selected element and alias vars and their corresponding columns") {
     val s = Var("nPropFoo_Alias")(nPropFoo.cypherType)
     val aliasHeader = nHeader
       .withAlias(n as m)

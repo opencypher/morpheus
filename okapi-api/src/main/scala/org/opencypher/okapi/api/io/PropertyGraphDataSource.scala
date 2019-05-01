@@ -27,7 +27,7 @@
 package org.opencypher.okapi.api.io
 
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 
 /**
   * Property Graph Data Source (PGDS) is used to read and write property graphs, for example from database or
@@ -60,7 +60,7 @@ trait PropertyGraphDataSource {
   def graph(name: GraphName): PropertyGraph
 
   /**
-    * Returns the [[org.opencypher.okapi.api.schema.Schema]] of the graph that is stored under the given name.
+    * Returns the [[org.opencypher.okapi.api.schema.PropertyGraphSchema]] of the graph that is stored under the given name.
     *
     * This method gives implementers the ability to efficiently retrieve a graph schema from the data source directly.
     * For reasons of performance, it is highly recommended to make a schema available through this call. If an efficient
@@ -72,7 +72,7 @@ trait PropertyGraphDataSource {
     * @param name name of the graph within the data source
     * @return graph schema when available
     */
-  def schema(name: GraphName): Option[Schema]
+  def schema(name: GraphName): Option[PropertyGraphSchema]
 
   /**
     * Stores the given [[org.opencypher.okapi.api.graph.PropertyGraph]] under the given [[org.opencypher.okapi.api.graph.GraphName]] within the data source.

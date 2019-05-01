@@ -301,7 +301,7 @@ case class CTUnion(alternatives: Set[CypherType]) extends CypherType {
   override def name: String = {
     if (this == CTAny) "ANY?"
     else if (this == CTBoolean) "BOOLEAN"
-    else if (this == CTEntity) "ENTITY"
+    else if (this == CTElement) "ELEMENT"
     else if (isNullable) s"${material.name}?"
     else if (subTypeOf(CTNumber)) "NUMBER"
     else s"UNION(${alternatives.mkString(", ")})"

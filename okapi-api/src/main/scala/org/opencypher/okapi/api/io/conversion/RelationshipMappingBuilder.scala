@@ -68,7 +68,7 @@ object RelationshipMappingBuilder {
     sourceEndNodeKey: String,
     relType: String,
     properties: Set[String] = Set.empty
-  ): EntityMapping = {
+  ): ElementMapping = {
     val intermediateMapping = RelationshipMappingBuilder
       .withSourceIdKey(sourceIdKey)
       .withSourceStartNodeKey(sourceStartNodeKey)
@@ -141,7 +141,7 @@ object RelationshipMappingBuilder {
 }
 
 /**
-  * Builder to build EntityMapping with a [[NodePattern]].
+  * Builder to build ElementMapping with a [[NodePattern]].
   *
   * Represents a mapping from a source with key-based access to relationship components (e.g. a table definition) to a
   * Cypher relationship. The purpose of this class is to define a mapping from an external data source to a property
@@ -161,28 +161,28 @@ final case class RelationshipMappingBuilder(
   relationshipEndNodeKey: String,
   relType: String,
   propertyMapping: Map[String, String] = Map.empty
-) extends SingleEntityMappingBuilder {
+) extends SingleElementMappingBuilder {
 
   override type BuilderType = RelationshipMappingBuilder
 
   override protected def updatePropertyMapping(updatedPropertyMapping: Map[String, String]): RelationshipMappingBuilder =
     copy(propertyMapping = updatedPropertyMapping)
 
-  override def build: EntityMapping = {
+  override def build: ElementMapping = {
     validate()
 
     val pattern: RelationshipPattern = RelationshipPattern(CTRelationship(relType))
 
-    val properties: Map[Entity, Map[String, String]] = Map(pattern.relEntity -> propertyMapping)
-    val idKeys: Map[Entity, Map[IdKey, String]] = Map(
-      pattern.relEntity -> Map(
+    val properties: Map[PatternElement, Map[String, String]] = Map(pattern.relElement -> propertyMapping)
+    val idKeys: Map[PatternElement, Map[IdKey, String]] = Map(
+      pattern.relElement -> Map(
         SourceIdKey -> relationshipIdKey,
         SourceStartNodeKey -> relationshipStartNodeKey,
         SourceEndNodeKey -> relationshipEndNodeKey
       )
     )
 
-    EntityMapping(pattern, properties, idKeys)
+    ElementMapping(pattern, properties, idKeys)
   }
 
   override protected def validate(): Unit = {

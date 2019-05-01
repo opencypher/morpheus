@@ -30,6 +30,6 @@ import org.opencypher.okapi.impl.configuration.ConfigFlag
 
 object LogicalConfiguration {
 
-  object PrintLogicalPlan extends ConfigFlag("caps.explain")
+  object PrintLogicalPlan extends ConfigFlag("morpheus.explain")
 
 }

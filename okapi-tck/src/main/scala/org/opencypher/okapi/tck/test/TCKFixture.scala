@@ -188,12 +188,12 @@ object CypherToTCKConverter {
             .sortBy(_._1)
             .map { case (k, v) => s"$k: ${v.toTCKString}" }
             .mkString("{", ", ", "}")
-        case CypherRelationship(_, _, _, relType, props) =>
+        case Relationship(_, _, _, relType, props) =>
           s"[:$relType${
             if (props.isEmpty) ""
             else s" ${props.toTCKString}"
           }]"
-        case CypherNode(_, labels, props) =>
+        case Node(_, labels, props) =>
           val labelString =
             if (labels.isEmpty) ""
             else labels.toSeq.sorted.mkString(":", ":", "")

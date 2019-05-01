@@ -2,29 +2,29 @@
 = Neo4j Property Graph Data Source
 
 The Neo4j PGDS uses Neo4j as a container for graphs.
-This enables the CAPS user to store several distinct graphs in the same Neo4j database and to retrieve these for processing in CAPS independently.
+This enables the Morpheus user to store several distinct graphs in the same Neo4j database and to retrieve these for processing in Morpheus independently.
 Graphs are kept distinct through the use of _meta-labels_; these are standard labels which uses a specific naming scheme to be distinguishable from data labels.
-These meta-labels are invisible for the CAPS user, but will be present if the Neo4j database is inspected directly.
+These meta-labels are invisible for the Morpheus user, but will be present if the Neo4j database is inspected directly.
 
 It is generally possible to write to the Neo4j database directly in this setup.
-Write access to the Neo4j database should be considered as it is possible to invalidate the CAPS-managed graphs.
-For example, losing a meta-label on a node will mean that the CAPS graph encoded by that meta-label will lose the node and all of its relationships.
+Write access to the Neo4j database should be considered as it is possible to invalidate the Morpheus-managed graphs.
+For example, losing a meta-label on a node will mean that the Morpheus graph encoded by that meta-label will lose the node and all of its relationships.
 
 // TODO: this file is a merge between two content pieces; needs cleaning up.
 
-CAPS comes with a Neo4j PGDS for tight integration with Neo4j.
-This PGDS allows storing multiple graphs in Neo4j, and to retrieve these for processing in CAPS.
+Morpheus comes with a Neo4j PGDS for tight integration with Neo4j.
+This PGDS allows storing multiple graphs in Neo4j, and to retrieve these for processing in Morpheus.
 
 [NOTE]
 ====
-For interoperation, Neo4j needs to be able to supply a graph schema to CAPS.
+For interoperation, Neo4j needs to be able to supply a graph schema to Morpheus.
 Support for providing a graph schema was added starting with Neo4j versions 3.3.9, 3.4.10, and 3.5.0.
 ====
 
 .Register the Neo4j PGDS and use it from within a Cypher query:
 [source, scala]
 ----
-val session = CAPSSession.create(...)
+val session = MorpheusSession.create(...)
 
 session.registerSource(Namespace("namespace"), GraphSources.cypher.neo4j(neo4j.dataSourceConfig))
 
@@ -41,7 +41,7 @@ session.cypher(
 [[neo4j-pgds-multiplegraphs]]
 == Multiple graphs stored in Neo4j
 
-CAPS applies labels to nodes in a given graph, with a leading triple-underscore.
+Morpheus applies labels to nodes in a given graph, with a leading triple-underscore.
 That is, if you save a graph `hello` to Neo4j, it will apply a _meta-label_ `:___hello` to all nodes in the graph.
 In this way, Neo4j can be used to store any number of different graphs.
 Only nodes with that label will be loaded when the graph is restored.

@@ -89,7 +89,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
           val pattern = TripletPattern(sourceType, relType, targetType)
 
           val withPatternScan = replaceScans(exp.rhs, exp.target, pattern) { parent =>
-            val map = Map(exp.source -> pattern.sourceEntity, exp.rel -> pattern.relEntity, exp.target -> pattern.targetEntity)
+            val map = Map(exp.source -> pattern.sourceElement, exp.rel -> pattern.relElement, exp.target -> pattern.targetElement)
             PatternScan(pattern, map, parent, parent.solved.withFields(map.keySet.map(_.toField.get).toList:_ *))
           }
           replaceScans(exp.lhs, exp.source, pattern){_ => withPatternScan}
@@ -100,7 +100,7 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
 
           val pattern = NodeRelPattern(nodeType, relType)
           val withPatternScan = replaceScans(exp.lhs, exp.source, pattern) { parent =>
-            val map = Map(exp.source -> pattern.nodeEntity, exp.rel -> pattern.relEntity)
+            val map = Map(exp.source -> pattern.nodeElement, exp.rel -> pattern.relElement)
             PatternScan(pattern, map, parent, parent.solved.withFields(map.keySet.map(_.toField.get).toList:_ *))
           }
 

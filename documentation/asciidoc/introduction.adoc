@@ -1,23 +1,23 @@
-[[caps-introduction]]
+[[morpheus-introduction]]
 = Introduction
 
 [abstract]
 --
-This chapter introduces CAPS concepts and APIs, and gives examples for getting started with CAPS.
+This chapter introduces Morpheus concepts and APIs, and gives examples for getting started with Morpheus.
 --
 
 // TODO: Expand this to be a small but complete working example.
 // TODO: Move code to somewhere testable.
 
 When you start off with Cypher for Apache Spark, this is probably the very first thing you will do, unless you are importing a graph from Neo4j.
-This section describes how to take CSV files, relations, or other tabular data and turn them into graphs which can be queried in CAPS.
+This section describes how to take CSV files, relations, or other tabular data and turn them into graphs which can be queried in Morpheus.
 
-To create a CAPS graph, follow these steps:
+To create a Morpheus graph, follow these steps:
 
 * Prepare your data in "tables for labels" format (described below).
 * Map table columns to nodes/relationships. This interprets each row in that table as a node or as a relationship.
-* Combine the tables with their node/relationship mappings into CAPS node/relationship tables.
-* The nodes/relationships in these tables are interpreted as a graph by CAPS.
+* Combine the tables with their node/relationship mappings into Morpheus node/relationship tables.
+* The nodes/relationships in these tables are interpreted as a graph by Morpheus.
 
 To understand this, we start with the "tables for labels" model.
 
@@ -71,14 +71,14 @@ CREATE (:Person {name: 'Philip'})-[:LIKES]->(:Food {name: 'Oranges'});
 ----
 
 Note that the `id` fields do not automatically become properties.
-They are used to uniquely identify entities and to connect nodes with relationships.
+They are used to uniquely identify elements and to connect nodes with relationships.
 
 With the SQL Property Graph DataSource, this mapping can be described using the Graph DDL language.
-This means that CAPS can generate identifiers for nodes and relationships on the fly.
+This means that Morpheus can generate identifiers for nodes and relationships on the fly.
 
 
 [[graphs-from-tables-constraints]]
-=== Important CAPS constraints on "tables for labels"
+=== Important Morpheus constraints on "tables for labels"
 
 * Every table must have a column with a unique ID.
 * The unique ID must be a 64-bit integer (string IDs are presently not supported).
@@ -147,7 +147,7 @@ For the next step, we assume that you have DataFrames that are in the "tables fo
 ==== Express graph mappings
 
 To manually define the graph mapping for tables we can use the Scala API.
-Graph mappings allow CAPS to map rows in DataFrames to nodes or relationships.
+Graph mappings allow Morpheus to map rows in DataFrames to nodes or relationships.
 These are the mappings for the person/food tables in the example above:
 
 [source, scala]
@@ -173,17 +173,17 @@ Here we create one mapping for each label and relationship type.
 These mappings allow to interpret tables as a graph.
 
 
-[[graphs-from-tables-entity-tables]]
-==== Create CAPS tables, and then the graph
+[[graphs-from-tables-element-tables]]
+==== Create Morpheus tables, and then the graph
 
 We combine the mappings with the tables in order to create node and relationship tables:
 
 [source, scala]
 ----
-val personNodes = CAPSNodeTable.fromMapping(personMapping, personDataFrame)
-val foodNodes = CAPSNodeTable.fromMapping(foodMapping, foodDataFrame)
-val likesRels = CAPSRelationshipTable.fromMapping(likesMapping, likesDataMapping)
-val graph = capsSession.readFrom(personNodes, foodNodes, likesRels)
+val personNodes = MorpheusNodeTable.fromMapping(personMapping, personDataFrame)
+val foodNodes = MorpheusNodeTable.fromMapping(foodMapping, foodDataFrame)
+val likesRels = MorpheusRelationshipTable.fromMapping(likesMapping, likesDataMapping)
+val graph = morpheusSession.readFrom(personNodes, foodNodes, likesRels)
 ----
 
 Now we have everything we need to run Cypher queries on our newly defined graph.
@@ -191,11 +191,11 @@ Now we have everything we need to run Cypher queries on our newly defined graph.
 [[graphs-from-tables-id-types]]
 === Supported identifier types
 
-CAPS uses Sparks' `BinaryType` to represent identifiers internally.
+Morpheus uses Sparks' `BinaryType` to represent identifiers internally.
 Identifiers uniquely identify nodes and relationships, as well as start and end nodes for relationships.
-During the creation of a `CAPSNodeTable` or a `CAPSRelationshipTable`, we automatically convert the specified identifier columns to `BinaryType`.
+During the creation of a `MorpheusNodeTable` or a `MorpheusRelationshipTable`, we automatically convert the specified identifier columns to `BinaryType`.
 At the moment, the conversion is supported for `LongType`, `IntegerType` and `StringType`.
-If your identifier has a different data type, you need to convert it to one of the supported types before creating a CAPS table.
+If your identifier has a different data type, you need to convert it to one of the supported types before creating a Morpheus table.
 
 Using this mechanism, you can re-use identifiers that you might already have, e.g. in a CSV file or a relational table.
 Note, that node identifiers must be unique within the set of all nodes and relationship identifiers must be unique within the set of all relationships.
@@ -209,7 +209,7 @@ However, this also requires updating start and end node identifiers for relation
 The Graph DDL is a language to describe a mapping from a set of relational tables and views to a graph.
 
 The tables are automatically imported from a relational database.
-Currently CAPS supports JDBC and Hive tables.
+Currently Morpheus supports JDBC and Hive tables.
 Note that any Spark DataFrames can be registered as Hive table.
 This means that the Graph DDL is always an alternative to the Scala API when mapping tables to a graph.
 
@@ -245,7 +245,7 @@ For more details on Graph DDL, see the <<backend-graphddl, Graph DDL documentati
 [[graphs-from-tables-cypher-example]]
 == Running Cypher
 
-Once you have defined a CAPS graph, executing a Cypher query on it is straightforward:
+Once you have defined a Morpheus graph, executing a Cypher query on it is straightforward:
 
 [source, scala]
 ----

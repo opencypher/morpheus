@@ -27,18 +27,18 @@
 package org.opencypher.okapi.testing.propertygraph
 
 import org.opencypher.okapi.api.graph.{CypherSession, Pattern, PropertyGraph}
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types.CypherType._
 
 trait CypherTestGraphFactory[C <: CypherSession] {
 
-  def apply(propertyGraph: InMemoryTestGraph, additionalPattern: Seq[Pattern] = Seq.empty)(implicit caps: C): PropertyGraph
+  def apply(propertyGraph: InMemoryTestGraph, additionalPattern: Seq[Pattern] = Seq.empty)(implicit session: C): PropertyGraph
 
   def name: String
 
   override def toString: String = name
 
-  def computeSchema(propertyGraph: InMemoryTestGraph): Schema = {
+  def computeSchema(propertyGraph: InMemoryTestGraph): PropertyGraphSchema = {
     def extractFromNode(n: InMemoryTestNode) =
       n.labels -> n.properties.value.map {
         case (name, prop) => name -> prop.cypherType
@@ -52,7 +52,7 @@ trait CypherTestGraphFactory[C <: CypherSession] {
     val labelsAndProps = propertyGraph.nodes.map(extractFromNode)
     val typesAndProps = propertyGraph.relationships.map(extractFromRel)
 
-    val schemaWithLabels = labelsAndProps.foldLeft(Schema.empty) {
+    val schemaWithLabels = labelsAndProps.foldLeft(PropertyGraphSchema.empty) {
       case (acc, (labels, props)) => acc.withNodePropertyKeys(labels, props)
     }
 

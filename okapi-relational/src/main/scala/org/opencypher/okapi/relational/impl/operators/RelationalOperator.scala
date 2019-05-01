@@ -108,7 +108,7 @@ abstract class RelationalOperator[T <: Table[T] : TypeTag] extends AbstractTreeN
         val headerType = expr.cypherType
         // if the type in the data doesn't correspond to the type in the header we fail
         // except: we encode nodes, rels and integers with the same data type, so we can't fail
-        // on conflicts when we expect entities (alternative: change reverse-mapping function somehow)
+        // on conflicts when we expect elements (alternative: change reverse-mapping function somehow)
 
         headerType match {
           case n if n.subTypeOf(CTNode.nullable) && tableType == CTInteger =>
@@ -495,8 +495,8 @@ final case class ConstructGraph[T <: Table[T] : TypeTag](
   override def graphName: QualifiedGraphName = construct.qualifiedGraphName
 
   override def toString: String = {
-    val entities = construct.clones.keySet ++ construct.newEntities.map(_.v)
-    s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], entities=[${entities.mkString(", ")}])"
+    val elements = construct.clones.keySet ++ construct.newElements.map(_.v)
+    s"ConstructGraph(on=[${construct.onGraphs.mkString(", ")}], elements=[${elements.mkString(", ")}])"
   }
 }
 

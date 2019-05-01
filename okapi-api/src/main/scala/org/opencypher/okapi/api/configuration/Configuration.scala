@@ -33,6 +33,6 @@ object Configuration {
   /**
     * If enabled, the time required for executing query processing phases will be printed.
     */
-  object PrintTimings extends ConfigFlag("caps.printTimings")
+  object PrintTimings extends ConfigFlag("morpheus.printTimings")
 
 }

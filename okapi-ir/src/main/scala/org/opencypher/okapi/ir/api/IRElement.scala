@@ -27,7 +27,7 @@
 package org.opencypher.okapi.ir.api
 
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph, QualifiedGraphName}
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.okapi.ir.api.expr.Expr
@@ -50,21 +50,21 @@ final case class IRField(name: String)(val cypherType: CypherType = CTAny) {
 }
 
 sealed trait IRGraph {
-  def schema: Schema
+  def schema: PropertyGraphSchema
 
   def qualifiedGraphName: QualifiedGraphName
 }
 
 object IRCatalogGraph {
-  def apply(name: String, schema: Schema): IRCatalogGraph =
+  def apply(name: String, schema: PropertyGraphSchema): IRCatalogGraph =
     IRCatalogGraph(QualifiedGraphName(SessionGraphDataSource.Namespace, GraphName(name)), schema)
 }
 
-final case class IRCatalogGraph(qualifiedGraphName: QualifiedGraphName, schema: Schema) extends IRGraph
+final case class IRCatalogGraph(qualifiedGraphName: QualifiedGraphName, schema: PropertyGraphSchema) extends IRGraph
 
 final case class IRPatternGraph(
   qualifiedGraphName: QualifiedGraphName,
-  schema: Schema,
+  schema: PropertyGraphSchema,
   clones: Map[IRField, Expr],
   creates: Pattern,
   sets: List[SetItem],

@@ -27,7 +27,7 @@
 package org.opencypher.okapi.logical.impl.logical
 
 import org.opencypher.okapi.api.graph._
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, _}
 import org.opencypher.okapi.ir.api.expr._
@@ -47,19 +47,9 @@ import scala.language.implicitConversions
 class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVerificationSupport {
 
   val emptySqm: SolvedQueryModel = SolvedQueryModel.empty
-  val logicalGraph = LogicalCatalogGraph(testQualifiedGraphName, Schema.empty)
-  val emptySchema: Schema = Schema.empty
+  val logicalGraph = LogicalCatalogGraph(testQualifiedGraphName, PropertyGraphSchema.empty)
+  val emptySchema: PropertyGraphSchema = PropertyGraphSchema.empty
   val emptyGraph = TestGraph(emptySchema)
-
-  //  //Helper to create nicer expected results with `asCode`
-  //  import org.opencypher.caps.impl.common.AsCode._
-  //  implicit val specialMappings = Map[Any, String](
-  //    schema -> "schema",
-  //    emptySqm -> "emptySqm",
-  //    logicalGraph -> "logicalGraph",
-  //    emptySqm -> "emptySqm",
-  //    (CTNode: CTNode) -> "CTNode"
-  //  )
 
   it("rewrites missing label scan to empty records") {
     val query =
@@ -85,7 +75,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
     val query =
       """|MATCH (a:Animal:Astronaut)
          |RETURN a""".stripMargin
-    val schema = Schema.empty.withNodePropertyKeys("Animal")().withNodePropertyKeys("Astronaut")()
+    val schema = PropertyGraphSchema.empty.withNodePropertyKeys("Animal")().withNodePropertyKeys("Astronaut")()
     val logicalGraph = LogicalCatalogGraph(testQualifiedGraphName, schema)
 
     val plan = logicalPlan(query, TestGraph(schema))
@@ -120,9 +110,9 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       val startA = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
       val startB = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
       val varA = Var("a")(CTNode)
-      val propA = expr.EntityProperty(varA, PropertyKey("name"))(CTString)
+      val propA = expr.ElementProperty(varA, PropertyKey("name"))(CTString)
       val varB = Var("b")(CTNode)
-      val propB = expr.EntityProperty(varB, PropertyKey("name"))(CTString)
+      val propB = expr.ElementProperty(varB, PropertyKey("name"))(CTString)
       val equals = Equals(propA, propB)
       val irFieldA = IRField(varA.name)(varA.cypherType)
       val irFieldB = IRField(varB.name)(varB.cypherType)
@@ -146,9 +136,9 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       val startA = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
       val startB = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
       val varA = Var("a")(CTNode)
-      val propA = expr.EntityProperty(varA, PropertyKey("name"))(CTString)
+      val propA = expr.ElementProperty(varA, PropertyKey("name"))(CTString)
       val varB = Var("b")(CTNode)
-      val propB = expr.EntityProperty(varB, PropertyKey("name"))(CTString)
+      val propB = expr.ElementProperty(varB, PropertyKey("name"))(CTString)
       val equals = Equals(propB, propA)
       val irFieldA = IRField(varA.name)(varA.cypherType)
       val irFieldB = IRField(varB.name)(varB.cypherType)
@@ -175,7 +165,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
 
       val startB = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
       val varB = Var("b")(CTNode)
-      val propB = expr.EntityProperty(varB, PropertyKey("name"))(CTString)
+      val propB = expr.ElementProperty(varB, PropertyKey("name"))(CTString)
 
       val equals = Equals(nameField, propB)
       val irFieldB = IRField(varB.name)(varB.cypherType)
@@ -197,7 +187,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
   }
 
   describe("insert pattern scans") {
-    val schema = Schema.empty
+    val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys("A")()
       .withNodePropertyKeys("C")()
       .withRelationshipPropertyKeys("B")()
@@ -224,7 +214,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-          map == Map(Var("a")(CTNode) -> pattern.nodeEntity, Var("b")(CTRelationship) -> pattern.relEntity)
+          map == Map(Var("a")(CTNode) -> pattern.nodeElement, Var("b")(CTRelationship) -> pattern.relElement)
         case _ => false
       } should be(true)
     }
@@ -250,14 +240,14 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-            map == Map(Var("a")(CTNode) -> pattern.nodeEntity, Var("b1")(CTRelationship) -> pattern.relEntity)
+            map == Map(Var("a")(CTNode) -> pattern.nodeElement, Var("b1")(CTRelationship) -> pattern.relElement)
         case _ => false
       } should be(true)
 
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-            map == Map(Var("a")(CTNode) -> pattern.nodeEntity, Var("b2")(CTRelationship) -> pattern.relEntity)
+            map == Map(Var("a")(CTNode) -> pattern.nodeElement, Var("b2")(CTRelationship) -> pattern.relElement)
         case _ => false
       } should be(true)
     }
@@ -289,7 +279,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-            map == Map(Var("a")(CTNode) -> pattern.sourceEntity, Var("b")(CTRelationship) -> pattern.relEntity, Var("c")(CTNode) -> pattern.targetEntity)
+            map == Map(Var("a")(CTNode) -> pattern.sourceElement, Var("b")(CTRelationship) -> pattern.relElement, Var("c")(CTNode) -> pattern.targetElement)
         case _ => false
       } should be(true)
     }
@@ -319,21 +309,21 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-            map == Map(Var("a")(CTNode) -> pattern.sourceEntity, Var("b1")(CTRelationship) -> pattern.relEntity, Var("c1")(CTNode) -> pattern.targetEntity)
+            map == Map(Var("a")(CTNode) -> pattern.sourceElement, Var("b1")(CTRelationship) -> pattern.relElement, Var("c1")(CTNode) -> pattern.targetElement)
         case _ => false
       } should be(true)
 
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-            map == Map(Var("a")(CTNode) -> pattern.sourceEntity, Var("b2")(CTRelationship) -> pattern.relEntity, Var("c2")(CTNode) -> pattern.targetEntity)
+            map == Map(Var("a")(CTNode) -> pattern.sourceElement, Var("b2")(CTRelationship) -> pattern.relElement, Var("c2")(CTNode) -> pattern.targetElement)
         case _ => false
       } should be(true)
     }
 
     it("does not insert node rel patterns if not all node label combos are covered") {
       val pattern = NodeRelPattern(CTNode("Person"), CTRelationship("KNOWS"))
-      val schema = Schema.empty
+      val schema = PropertyGraphSchema.empty
         .withNodePropertyKeys("Person")()
         .withNodePropertyKeys("Person", "Employee")()
         .withRelationshipPropertyKeys("KNOWS")()
@@ -356,7 +346,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
 
     it("does not insert node rel patterns if not all rel types are covered") {
       val pattern = NodeRelPattern(CTNode("Person"), CTRelationship("KNOWS"))
-      val schema = Schema.empty
+      val schema = PropertyGraphSchema.empty
         .withNodePropertyKeys("Person")()
         .withRelationshipPropertyKeys("KNOWS")()
         .withRelationshipPropertyKeys("LOVES")()
@@ -375,7 +365,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
 
     it("does not insert triplet patterns if not all node label combos are covered") {
       val pattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Person"))
-      val schema = Schema.empty
+      val schema = PropertyGraphSchema.empty
         .withNodePropertyKeys("Person")()
         .withNodePropertyKeys("Person", "Employee")()
         .withRelationshipPropertyKeys("KNOWS")()
@@ -398,7 +388,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
 
     it("does not insert triplet patterns if not all rel types are covered") {
       val pattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Person"))
-      val schema = Schema.empty
+      val schema = PropertyGraphSchema.empty
         .withNodePropertyKeys("Person")()
         .withRelationshipPropertyKeys("KNOWS")()
         .withRelationshipPropertyKeys("LOVES")()
@@ -446,7 +436,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
   }
 
   case class TestGraph(
-    override val schema: Schema,
+    override val schema: PropertyGraphSchema,
     override val patterns: Set[Pattern] = Set.empty
   ) extends PropertyGraph {
 

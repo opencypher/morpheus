@@ -56,7 +56,7 @@ sealed abstract class Expr extends AbstractTreeNode[Expr] {
   def withoutType: String
 
   override def toString = s"$withoutType :: $cypherType"
-  def isEntityExpression: Boolean = owner.isDefined
+  def isElementExpression: Boolean = owner.isDefined
   /**
     * Returns the node/relationship that this expression is owned by, if it is owned.
     * A node/relationship owns its label/key/property mappings
@@ -449,9 +449,9 @@ sealed trait Property extends Expr {
 
 }
 
-final case class EntityProperty(propertyOwner: Expr, key: PropertyKey)(val cypherType: CypherType) extends Property {
+final case class ElementProperty(propertyOwner: Expr, key: PropertyKey)(val cypherType: CypherType) extends Property {
 
-  override def withOwner(v: Var): EntityProperty = EntityProperty(v, key)(cypherType)
+  override def withOwner(v: Var): ElementProperty = ElementProperty(v, key)(cypherType)
 
 }
 

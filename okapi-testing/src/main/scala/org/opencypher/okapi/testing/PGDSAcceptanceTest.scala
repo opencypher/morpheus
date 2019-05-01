@@ -28,7 +28,7 @@ package org.opencypher.okapi.testing
 
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.GraphAlreadyExistsException
@@ -219,7 +219,7 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
 
       Scenario("API: Correct schema for graph #1", g1) { implicit ctx: TestContext =>
         registerPgds(ns)
-        val expectedSchema = Schema.empty
+        val expectedSchema = PropertyGraphSchema.empty
           .withNodePropertyKeys("A")("name" -> CTString, "date" -> CTDate)
           .withNodePropertyKeys("B")("type" -> CTString, "size" -> CTInteger.nullable, "datetime" -> CTLocalDateTime.nullable)
           .withNodePropertyKeys("A", "B")("name" -> CTString, "type" -> CTString, "size" -> CTInteger.nullable)

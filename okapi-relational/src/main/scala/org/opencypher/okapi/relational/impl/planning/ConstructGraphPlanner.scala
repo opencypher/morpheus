@@ -27,7 +27,7 @@
 package org.opencypher.okapi.relational.impl.planning
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.util.ScalaUtils._
@@ -37,9 +37,9 @@ import org.opencypher.okapi.ir.api.set.{SetLabelItem, SetPropertyItem}
 import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType, expr}
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
-import org.opencypher.okapi.relational.api.io.EntityTable
+import org.opencypher.okapi.relational.api.io.ElementTable
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
-import org.opencypher.okapi.relational.api.schema.RelationalSchema._
+import org.opencypher.okapi.relational.api.schema.RelationalPropertyGraphSchema._
 import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.impl.operators.{ConstructGraph, RelationalOperator}
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner.RelationalOperatorOps
@@ -64,7 +64,7 @@ object ConstructGraphPlanner {
     val constructTable = initConstructTable(inputTablePlan, prefixes, construct)
 
     val allGraphs = onGraphs ++ {
-      if (construct.clones.nonEmpty || construct.newEntities.nonEmpty) {
+      if (construct.clones.nonEmpty || construct.newElements.nonEmpty) {
         Some(extractScanGraph(construct, constructTable))
       } else {
         None
@@ -87,7 +87,7 @@ object ConstructGraphPlanner {
   private def computePrefixes(construct: LogicalPatternGraph): Map[QualifiedGraphName, GraphIdPrefix] = {
     val onGraphQgns = construct.onGraphs
     val cloneGraphQgns = construct.clones.values.flatMap(_.cypherType.graph).toList
-    val createGraphQgns = if (construct.newEntities.nonEmpty) List(construct.qualifiedGraphName) else Nil
+    val createGraphQgns = if (construct.newElements.nonEmpty) List(construct.qualifiedGraphName) else Nil
     val graphQgns = (onGraphQgns ++ cloneGraphQgns ++ createGraphQgns).distinct
     if (graphQgns.size <= 1) {
       Map.empty // No prefixes needed when there is at most one graph QGN
@@ -104,7 +104,7 @@ object ConstructGraphPlanner {
     unionPrefixStrategy: Map[QualifiedGraphName, GraphIdPrefix],
     construct: LogicalPatternGraph
   ): RelationalOperator[T] = {
-    val LogicalPatternGraph(_, clonedVarsToInputVars, createdEntities, sets, _, _) = construct
+    val LogicalPatternGraph(_, clonedVarsToInputVars, createdElements, sets, _, _) = construct
 
     // Apply aliases in CLONE to input table in order to create the base table, on which CONSTRUCT happens
     val aliasClones = clonedVarsToInputVars
@@ -125,17 +125,17 @@ object ConstructGraphPlanner {
         }
     }
 
-    // Construct CREATEd entities
-    val constructedEntitiesOp = {
-      if (createdEntities.isEmpty) {
+    // Construct CREATEd elements
+    val constructedElementsOp = {
+      if (createdElements.isEmpty) {
         prefixedBaseTableOp
       } else {
-        val maybeCreatedEntityPrefix = unionPrefixStrategy.get(construct.qualifiedGraphName)
-        val entitiesOp = planConstructEntities(prefixedBaseTableOp, createdEntities, maybeCreatedEntityPrefix)
+        val maybeCreatedElementPrefix = unionPrefixStrategy.get(construct.qualifiedGraphName)
+        val elementsOp = planConstructElements(prefixedBaseTableOp, createdElements, maybeCreatedElementPrefix)
 
         val setValueForExprTuples = sets.flatMap {
           case SetPropertyItem(propertyKey, v, valueExpr) =>
-            List(valueExpr -> EntityProperty(v, PropertyKey(propertyKey))(valueExpr.cypherType))
+            List(valueExpr -> ElementProperty(v, PropertyKey(propertyKey))(valueExpr.cypherType))
           case SetLabelItem(v, labels) =>
             labels.toList.map { label =>
               v.cypherType.material match {
@@ -144,7 +144,7 @@ object ConstructGraphPlanner {
               }
             }
         }
-        entitiesOp.addInto(setValueForExprTuples: _*)
+        elementsOp.addInto(setValueForExprTuples: _*)
       }
     }
 
@@ -153,13 +153,13 @@ object ConstructGraphPlanner {
     val originalVarsToKeep = clonedVarsToInputVars.keySet -- aliasClones.keySet
     val varsToRemoveFromTable = allInputVars -- originalVarsToKeep
 
-    constructedEntitiesOp.dropExprSet(varsToRemoveFromTable)
+    constructedElementsOp.dropExprSet(varsToRemoveFromTable)
   }
 
-  def planConstructEntities[T <: Table[T] : TypeTag](
+  def planConstructElements[T <: Table[T] : TypeTag](
     inOp: RelationalOperator[T],
-    toCreate: Set[ConstructedEntity],
-    maybeCreatedEntityIdPrefix: Option[GraphIdPrefix]
+    toCreate: Set[ConstructedElement],
+    maybeCreatedElementIdPrefix: Option[GraphIdPrefix]
   ): RelationalOperator[T] = {
 
     // Construct nodes before relationships, as relationships might depend on nodes
@@ -172,7 +172,7 @@ object ConstructGraphPlanner {
 
     val (_, nodesToCreate) = nodes.foldLeft(0 -> Seq.empty[(Expr, Expr)]) {
       case ((nextColumnPartitionId, nodeProjections), nextNodeToConstruct) =>
-        (nextColumnPartitionId + 1) -> (nodeProjections ++ computeNodeProjections(inOp, maybeCreatedEntityIdPrefix, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
+        (nextColumnPartitionId + 1) -> (nodeProjections ++ computeNodeProjections(inOp, maybeCreatedElementIdPrefix, nextColumnPartitionId, nodes.size, nextNodeToConstruct))
     }
 
     val createdNodesOp = inOp.addInto(nodesToCreate.map(_.swap): _*)
@@ -180,7 +180,7 @@ object ConstructGraphPlanner {
     val (_, relsToCreate) = rels.foldLeft(0 -> Seq.empty[(Expr, Expr)]) {
       case ((nextColumnPartitionId, relProjections), nextRelToConstruct) =>
         (nextColumnPartitionId + 1) ->
-          (relProjections ++ computeRelationshipProjections(createdNodesOp, maybeCreatedEntityIdPrefix, nextColumnPartitionId, rels.size, nextRelToConstruct))
+          (relProjections ++ computeRelationshipProjections(createdNodesOp, maybeCreatedElementIdPrefix, nextColumnPartitionId, rels.size, nextRelToConstruct))
     }
 
     createdNodesOp.addInto(relsToCreate.map { case (into, value) => value -> into }: _*)
@@ -188,16 +188,16 @@ object ConstructGraphPlanner {
 
   def computeNodeProjections[T <: Table[T]](
     inOp: RelationalOperator[T],
-    maybeCreatedEntityIdPrefix: Option[GraphIdPrefix],
+    maybeCreatedElementIdPrefix: Option[GraphIdPrefix],
     columnIdPartition: Int,
     numberOfColumnPartitions: Int,
     node: ConstructedNode
   ): Map[Expr, Expr] = {
 
     val idTuple = node.v ->
-      prefixId(generateId(columnIdPartition, numberOfColumnPartitions), maybeCreatedEntityIdPrefix)
+      prefixId(generateId(columnIdPartition, numberOfColumnPartitions), maybeCreatedElementIdPrefix)
 
-    val copiedLabelTuples = node.baseEntity match {
+    val copiedLabelTuples = node.baseElement match {
       case Some(origNode) => copyExpressions(inOp, node.v)(_.labelsFor(origNode))
       case None => Map.empty
     }
@@ -206,7 +206,7 @@ object ConstructGraphPlanner {
       label => HasLabel(node.v, label) -> TrueLit
     }.toMap
 
-    val propertyTuples = node.baseEntity match {
+    val propertyTuples = node.baseElement match {
       case Some(origNode) => copyExpressions(inOp, node.v)(_.propertiesFor(origNode))
       case None => Map.empty
     }
@@ -219,7 +219,7 @@ object ConstructGraphPlanner {
 
   def computeRelationshipProjections[T <: Table[T]](
     inOp: RelationalOperator[T],
-    maybeCreatedEntityIdPrefix: Option[GraphIdPrefix],
+    maybeCreatedElementIdPrefix: Option[GraphIdPrefix],
     columnIdPartition: Int,
     numberOfColumnPartitions: Int,
     toConstruct: ConstructedRelationship
@@ -228,7 +228,7 @@ object ConstructGraphPlanner {
 
     // id needs to be generated
     val idTuple: (Var, Expr) = rel ->
-      prefixId(generateId(columnIdPartition, numberOfColumnPartitions), maybeCreatedEntityIdPrefix)
+      prefixId(generateId(columnIdPartition, numberOfColumnPartitions), maybeCreatedElementIdPrefix)
 
     // source and target are present: just copy
     val sourceTuple = {
@@ -265,8 +265,8 @@ object ConstructGraphPlanner {
         .toMap
   }
 
-  def prefixId(id: Expr, maybeCreatedEntityIdPrefix: Option[GraphIdPrefix]): Expr = {
-    maybeCreatedEntityIdPrefix.map(PrefixId(id, _)).getOrElse(id)
+  def prefixId(id: Expr, maybeCreatedElementIdPrefix: Option[GraphIdPrefix]): Expr = {
+    maybeCreatedElementIdPrefix.map(PrefixId(id, _)).getOrElse(id)
   }
 
   // TODO: improve documentation and add specific tests
@@ -285,7 +285,7 @@ object ConstructGraphPlanner {
 
   /**
     * Given the construction table this method extracts all possible scans over that table
-    * and compiles them to a ScanGraph. Note that cloned entities that are also present in an `ON GRAPH` are not
+    * and compiles them to a ScanGraph. Note that cloned elements that are also present in an `ON GRAPH` are not
     * included in the ScanGraph to avoid duplication. This improves scan performance as fewer DISTINCTs are needed.
     */
   private def extractScanGraph[T <: Table[T] : TypeTag](
@@ -304,34 +304,34 @@ object ConstructGraphPlanner {
       case (variable, list) => variable -> list.flatMap(_._2).toSet
     }
 
-    // Compute Scans from constructed and cloned entities
-    val createdEntityScanTypes = scanTypesFromCreatedEntities(logicalPatternGraph, setLabelItems)
-    val clonedEntityScanTypes = scanTypesFromClonedEntities(logicalPatternGraph, setLabelItems)
+    // Compute Scans from constructed and cloned elements
+    val createdElementScanTypes = scanTypesFromCreatedElements(logicalPatternGraph, setLabelItems)
+    val clonedElementScanTypes = scanTypesFromClonedElements(logicalPatternGraph, setLabelItems)
 
-    val scansForCreated = createScans(createdEntityScanTypes, inputOp, schema)
-    val scansForCloned = createScans(clonedEntityScanTypes, inputOp, schema, distinct = true)
+    val scansForCreated = createScans(createdElementScanTypes, inputOp, schema)
+    val scansForCloned = createScans(clonedElementScanTypes, inputOp, schema, distinct = true)
 
-    val scanGraphSchema: Schema = computeScanGraphSchema(schema, createdEntityScanTypes, clonedEntityScanTypes)
+    val scanGraphSchema: PropertyGraphSchema = computeScanGraphSchema(schema, createdElementScanTypes, clonedElementScanTypes)
 
     // Construct the scan graph
     context.session.graphs.create(Some(scanGraphSchema), scansForCreated ++ scansForCloned: _*)
   }
 
   /**
-    * Computes all scan types that can be created from created entities
+    * Computes all scan types that can be created from created elements.
     */
-  private def scanTypesFromCreatedEntities[T <: Table[T] : TypeTag](
+  private def scanTypesFromCreatedElements[T <: Table[T] : TypeTag](
     logicalPatternGraph: LogicalPatternGraph,
     setLabels: Map[Var, Set[String]]
   )(implicit context: RelationalRuntimeContext[T]): Set[(Var, CypherType)] = {
 
-    logicalPatternGraph.newEntities.flatMap {
-      case c: ConstructedNode if c.baseEntity.isEmpty =>
+    logicalPatternGraph.newElements.flatMap {
+      case c: ConstructedNode if c.baseElement.isEmpty =>
         val allLabels = c.labels.map(_.name) ++ setLabels.getOrElse(c.v, Set.empty)
         Seq(c.v -> CTNode(allLabels))
 
       case c: ConstructedNode =>
-        c.baseEntity.get.cypherType match {
+        c.baseElement.get.cypherType match {
           case CTNode(baseLabels, Some(sourceGraph)) =>
             val sourceSchema = context.resolveGraph(sourceGraph).schema
             val allLabels = c.labels.map(_.name) ++ baseLabels ++ setLabels.getOrElse(c.v, Set.empty)
@@ -339,11 +339,11 @@ object ConstructGraphPlanner {
           case other => throw UnsupportedOperationException(s"Cannot construct node scan from $other")
         }
 
-      case c: ConstructedRelationship if c.baseEntity.isEmpty =>
+      case c: ConstructedRelationship if c.baseElement.isEmpty =>
         Seq(c.v -> c.v.cypherType)
 
       case c: ConstructedRelationship =>
-        c.baseEntity.get.cypherType match {
+        c.baseElement.get.cypherType match {
           case CTRelationship(baseTypes, Some(sourceGraph)) =>
             val sourceSchema = context.resolveGraph(sourceGraph).schema
             val possibleTypes = c.typ match {
@@ -357,18 +357,18 @@ object ConstructGraphPlanner {
   }
 
   /**
-    * Computes all scan types that can be created from cloned entities
+    * Computes all scan types that can be created from cloned elements
     */
-  private def scanTypesFromClonedEntities[T <: Table[T] : TypeTag](
+  private def scanTypesFromClonedElements[T <: Table[T] : TypeTag](
     logicalPatternGraph: LogicalPatternGraph,
     setLabels: Map[Var, Set[String]]
   )(implicit context: RelationalRuntimeContext[T]): Set[(Var, CypherType)] = {
 
-    val clonedEntitiesToKeep = logicalPatternGraph.clones.filterNot {
+    val clonedElementsToKeep = logicalPatternGraph.clones.filterNot {
       case (_, base) => logicalPatternGraph.onGraphs.contains(base.cypherType.graph.get)
     }.mapValues(_.cypherType)
 
-    clonedEntitiesToKeep.toSeq.flatMap {
+    clonedElementsToKeep.toSeq.flatMap {
       case (v, CTNode(labels, Some(sourceGraph))) =>
         val sourceSchema = context.resolveGraph(sourceGraph).schema
         val allLabels = labels ++ setLabels.getOrElse(v, Set.empty)
@@ -386,12 +386,12 @@ object ConstructGraphPlanner {
     * Creates the scans for the given scan types
     */
   private def createScans[T <: Table[T] : TypeTag](
-    scanEntities: Set[(Var, CypherType)],
+    scanElements: Set[(Var, CypherType)],
     inputOp: RelationalOperator[T],
-    schema: Schema,
+    schema: PropertyGraphSchema,
     distinct: Boolean = false
-  )(implicit context: RelationalRuntimeContext[T]): Seq[EntityTable[T]] = {
-    val groupedScanEntities = scanEntities.map {
+  )(implicit context: RelationalRuntimeContext[T]): Seq[ElementTable[T]] = {
+    val groupedScanElements = scanElements.map {
       case (v, CTNode(labels, g)) =>
         v -> CTNode(labels, g)
       case other => other
@@ -401,25 +401,25 @@ object ConstructGraphPlanner {
       case (ct, list) => ct -> list.map(_._1).toSeq
     }
 
-    groupedScanEntities.map { case (ct, vars) => scansForType(ct, vars, inputOp, schema, distinct) }.toSeq
+    groupedScanElements.map { case (ct, vars) => scansForType(ct, vars, inputOp, schema, distinct) }.toSeq
   }
 
   def scansForType[T <: Table[T] : TypeTag](
     ct: CypherType,
     vars: Seq[Var],
     inputOp: RelationalOperator[T],
-    schema: Schema,
+    schema: PropertyGraphSchema,
     distinct: Boolean = false
-  ): EntityTable[T] = {
+  ): ElementTable[T] = {
 
     val scans = vars.map { v =>
-      val scanOp = scanForEntityAndType(v, ct, inputOp, schema)
-      val entity = scanOp.singleEntity
+      val scanOp = scanForElementAndType(v, ct, inputOp, schema)
+      val element = scanOp.singleElement
 
       // we need to get rid of the label and rel type columns
       val dropExprs = ct match {
-        case _: CTRelationship => scanOp.header.typesFor(entity)
-        case _: CTNode => scanOp.header.labelsFor(entity)
+        case _: CTRelationship => scanOp.header.typesFor(element)
+        case _: CTNode => scanOp.header.labelsFor(element)
         case other => throw UnsupportedOperationException(s"Cannot create scan for $other")
       }
 
@@ -431,9 +431,9 @@ object ConstructGraphPlanner {
 
       case head :: tail =>
         val targetHeader = head.header
-        val targetEntity = head.singleEntity
+        val targetElement = head.singleElement
         tail.map { op =>
-          op.alignWith(op.singleEntity, targetEntity, targetHeader)
+          op.alignWith(op.singleElement, targetElement, targetHeader)
         }.foldLeft(head)(_ unionAll _)
 
       case _ => throw IllegalArgumentException(
@@ -444,19 +444,19 @@ object ConstructGraphPlanner {
 
     val distinctScans = if (distinct) relational.Distinct(combinedScans, combinedScans.header.vars) else combinedScans
 
-    distinctScans.entityTable
+    distinctScans.elementTable
   }
 
-  private def scanForEntityAndType[T <: Table[T] : TypeTag](
+  private def scanForElementAndType[T <: Table[T] : TypeTag](
     extractionVar: Var,
-    entityType: CypherType,
+    elementType: CypherType,
     op: RelationalOperator[T],
-    schema: Schema
+    schema: PropertyGraphSchema
   ): RelationalOperator[T] = {
-    val targetEntity = Var.unnamed(entityType)
-    val targetEntityHeader = schema.headerForEntity(targetEntity, exactLabelMatch = true)
+    val targetElement = Var.unnamed(elementType)
+    val targetElementHeader = schema.headerForElement(targetElement, exactLabelMatch = true)
 
-    val labelOrTypePredicate = entityType match {
+    val labelOrTypePredicate = elementType match {
       case CTNode(labels, _) =>
         val labelFilters = op.header.labelsFor(extractionVar).map {
           case expr@HasLabel(_, Label(label)) if labels.contains(label) => Equals(expr, TrueLit)
@@ -476,21 +476,21 @@ object ConstructGraphPlanner {
     val selected = op.select(extractionVar)
     val idExprs = op.header.idExpressions(extractionVar).toSeq
 
-    val validEntityPredicate = Ands(idExprs.map(idExpr => IsNotNull(idExpr)) :+ labelOrTypePredicate: _*)
-    val filtered = relational.Filter(selected, validEntityPredicate)
+    val validElementPredicate = Ands(idExprs.map(idExpr => IsNotNull(idExpr)) :+ labelOrTypePredicate: _*)
+    val filtered = relational.Filter(selected, validElementPredicate)
 
-    val inputEntity = filtered.singleEntity
-    val alignedScan = filtered.alignWith(inputEntity, targetEntity, targetEntityHeader)
+    val inputElement = filtered.singleElement
+    val alignedScan = filtered.alignWith(inputElement, targetElement, targetElementHeader)
 
     alignedScan
   }
 
   private def computeScanGraphSchema[T <: Table[T]](
-    baseSchema: Schema,
-    createdEntityScanTypes: Set[(Var, CypherType)],
-    clonedEntityScanTypes: Set[(Var, CypherType)]
-  ): Schema = {
-    val (nodeTypes, relTypes) = (createdEntityScanTypes ++ clonedEntityScanTypes).partition {
+    baseSchema: PropertyGraphSchema,
+    createdElementScanTypes: Set[(Var, CypherType)],
+    clonedElementScanTypes: Set[(Var, CypherType)]
+  ): PropertyGraphSchema = {
+    val (nodeTypes, relTypes) = (createdElementScanTypes ++ clonedElementScanTypes).partition {
       case (_, _: CTNode) => true
       case _ => false
     }
@@ -503,7 +503,7 @@ object ConstructGraphPlanner {
       case (_, CTRelationship(types, _)) => types
     }.flatten
 
-    Schema.empty
+    PropertyGraphSchema.empty
       .foldLeftOver(scanGraphNodeLabelCombos) {
         case (acc, labelCombo) => acc.withNodePropertyKeys(labelCombo, baseSchema.nodePropertyKeys(labelCombo))
       }

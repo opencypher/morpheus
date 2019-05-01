@@ -42,9 +42,9 @@ import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext, QueryLocalCata
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.logical.impl._
 import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintOptimizedRelationalPlan, PrintQueryExecutionStages, PrintRelationalPlan}
-import org.opencypher.okapi.relational.api.io.EntityTable
+import org.opencypher.okapi.relational.api.io.ElementTable
 import org.opencypher.okapi.relational.api.planning.{RelationalCypherResult, RelationalRuntimeContext}
-import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, RelationalCypherRecordsFactory, RelationalEntityTableFactory, Table}
+import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, RelationalCypherRecordsFactory, RelationalElementTableFactory, Table}
 import org.opencypher.okapi.relational.impl.RelationalConverters._
 import org.opencypher.okapi.relational.impl.planning.{RelationalOptimizer, RelationalPlanner}
 
@@ -72,14 +72,14 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
   private implicit val session: RelationalCypherSession[T] = this
 
   /**
-    * Reads a graph from a sequence of entity tables that contains at least one node table.
+    * Reads a graph from a sequence of element tables that contains at least one node table.
     *
     * @param nodeTable    first parameter to guarantee there is at least one node table
-    * @param entityTables sequence of node and relationship tables defining the graph
+    * @param elementTables sequence of node and relationship tables defining the graph
     * @return property graph
     */
-  def readFrom(nodeTable: EntityTable[T], entityTables: EntityTable[T]*): RelationalCypherGraph[T] = {
-    graphs.create(nodeTable, entityTables: _ *)
+  def readFrom(nodeTable: ElementTable[T], elementTables: ElementTable[T]*): RelationalCypherGraph[T] = {
+    graphs.create(nodeTable, elementTables: _ *)
   }
 
   /**
@@ -102,7 +102,7 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
 
   private[opencypher] def graphs: RelationalCypherGraphFactory[T]
 
-  private[opencypher] def entityTables: RelationalEntityTableFactory[T]
+  private[opencypher] def elementTables: RelationalElementTableFactory[T]
 
   private[opencypher] def graphAt(qgn: QualifiedGraphName): Option[RelationalCypherGraph[T]] =
     if (catalog.graphNames.contains(qgn)) Some(catalog.graph(qgn).asRelational) else None

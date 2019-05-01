@@ -29,7 +29,7 @@ package org.opencypher.okapi.impl.io
 import org.mockito.Mockito._
 import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.graph.{GraphName, PropertyGraph}
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.impl.exception.GraphNotFoundException
 
 class SessionGraphDataSourceTest extends ApiBaseTest {
@@ -71,9 +71,9 @@ class SessionGraphDataSourceTest extends ApiBaseTest {
     val source = new SessionGraphDataSource
     val testGraphName = GraphName("test")
     val propertyGraph = mock[PropertyGraph]
-    when(propertyGraph.schema).thenReturn(Schema.empty.withRelationshipType("foo"))
+    when(propertyGraph.schema).thenReturn(PropertyGraphSchema.empty.withRelationshipType("foo"))
     source.store(testGraphName, propertyGraph)
-    source.schema(testGraphName).get should be(Schema.empty.withRelationshipType("foo"))
+    source.schema(testGraphName).get should be(PropertyGraphSchema.empty.withRelationshipType("foo"))
   }
 
   it("graphNames should return all names of stored graphs") {

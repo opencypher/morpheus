@@ -48,7 +48,7 @@ class TypedMatchBlockTest extends IrTestSuite {
       ))
   }
 
-  test("computes detailed type of entities also from WHERE clause") {
+  test("computes detailed type of elements also from WHERE clause") {
     implicit val (block, globals) = matchBlock("MATCH (n:Person:Foo)-[r:TYPE]->(m) WHERE n:Three RETURN n")
 
     typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(

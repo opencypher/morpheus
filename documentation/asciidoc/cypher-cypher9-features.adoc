@@ -3,10 +3,10 @@
 
 [abstract]
 --
-This section describes the Cypher9 features supported by CAPS.
+This section describes the Cypher9 features supported by Morpheus.
 --
 
-Not all features of Cypher9 are supported by CAPS.
+Not all features of Cypher9 are supported by Morpheus.
 Some will be supported in the future.
 Others will never be supported.
 

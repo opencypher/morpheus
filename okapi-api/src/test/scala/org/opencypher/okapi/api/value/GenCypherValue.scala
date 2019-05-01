@@ -165,7 +165,7 @@ object GenCypherValue {
     id: Id,
     labels: Set[String] = Set.empty,
     properties: CypherMap = CypherMap.empty
-  ) extends CypherNode[Id] {
+  ) extends Node[Id] {
     override type I = TestNode[Id]
     override def copy(
       id: Id,
@@ -186,7 +186,7 @@ object GenCypherValue {
 
   object TestNode {
 
-    def apply[Id](n: CypherNode[Id]): TestNode[Id] = {
+    def apply[Id](n: Node[Id]): TestNode[Id] = {
       TestNode(n.id, n.labels, n.properties)
     }
 
@@ -198,7 +198,7 @@ object GenCypherValue {
     endId: Id,
     relType: String,
     properties: CypherMap = CypherMap.empty
-  ) extends CypherRelationship[Id] {
+  ) extends Relationship[Id] {
     override type I = TestRelationship[Id]
     override def copy(
       id: Id,
@@ -221,7 +221,7 @@ object GenCypherValue {
 
   object TestRelationship {
 
-    def apply[Id](r: CypherRelationship[Id]): TestRelationship[Id] = {
+    def apply[Id](r: Relationship[Id]): TestRelationship[Id] = {
       TestRelationship(r.id, r.startId, r.endId, r.relType, r.properties)
     }
 

@@ -14,8 +14,6 @@ spark-warehouse_*/
 .idea/
 *.iml
 .settings
-caps-core/.project
-caps-core/.classpath
 .project
 out/
 

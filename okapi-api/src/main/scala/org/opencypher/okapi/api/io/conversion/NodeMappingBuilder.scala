@@ -63,7 +63,7 @@ object NodeMappingBuilder {
     nodeIdKey: String,
     impliedLabels: Set[String] = Set.empty,
     propertyKeys: Set[String] = Set.empty
-  ): EntityMapping = {
+  ): ElementMapping = {
 
     val mappingWithImpliedLabels = impliedLabels.foldLeft(NodeMappingBuilder.withSourceIdKey(nodeIdKey)) {
       (mapping, label) => mapping.withImpliedLabel(label)
@@ -76,7 +76,7 @@ object NodeMappingBuilder {
 }
 
 /**
-  * Builder to build EntityMapping with a [[NodePattern]].
+  * Builder to build ElementMapping with a [[NodePattern]].
   *
   * Represents a mapping from a source with key-based access of node components (e.g. a table definition) to a Cypher
   * node. The purpose of this class is to define a mapping from an external data source to a property graph.
@@ -99,7 +99,7 @@ final case class NodeMappingBuilder(
   nodeIdKey: String,
   impliedNodeLabels: Set[String] = Set.empty,
   propertyMapping: Map[String, String] = Map.empty
-) extends SingleEntityMappingBuilder {
+) extends SingleElementMappingBuilder {
 
   override type BuilderType = NodeMappingBuilder
 
@@ -112,14 +112,14 @@ final case class NodeMappingBuilder(
   override protected def updatePropertyMapping(updatedPropertyMapping: Map[String, String]): NodeMappingBuilder =
     copy(propertyMapping = updatedPropertyMapping)
 
-  override def build: EntityMapping = {
+  override def build: ElementMapping = {
     val pattern: NodePattern = NodePattern(CTNode(impliedNodeLabels))
-    val properties: Map[Entity, Map[String, String]] = Map(pattern.nodeEntity -> propertyMapping)
-    val idKeys: Map[Entity, Map[IdKey, String]] = Map(pattern.nodeEntity -> Map(SourceIdKey -> nodeIdKey))
+    val properties: Map[PatternElement, Map[String, String]] = Map(pattern.nodeElement -> propertyMapping)
+    val idKeys: Map[PatternElement, Map[IdKey, String]] = Map(pattern.nodeElement -> Map(SourceIdKey -> nodeIdKey))
 
     validate()
 
-    EntityMapping(pattern, properties, idKeys)
+    ElementMapping(pattern, properties, idKeys)
   }
 
   override protected def validate(): Unit = ()

@@ -1,6 +1,6 @@
 [[examples]]
 = Examples
-:caps-examples-repo-uri: https://github.com/opencypher/cypher-for-apache-spark/tree/master/spark-cypher-examples/src/main/scala/org/opencypher/spark/examples
+:morpheus-examples-repo-uri: https://github.com/opencypher/morpheus/tree/master/morpheus-examples/src/main/scala/org/opencypher/morpheus/examples
 
 [abstract]
 --
@@ -9,7 +9,7 @@ This chapter provides several small, focused, fully-functioning Neo4j Morpheus a
 
 // TODO: Replace with below line
 // Each of these examples are tested as part of building this manual and are supported by the same version as this manual documents.
-Each of these examples are tested and the sources are available at {caps-examples-repo-uri}.
+Each of these examples are tested and the sources are available at {morpheus-examples-repo-uri}.
 
 The following sections are included:
 
@@ -32,38 +32,38 @@ The following sections are included:
 * <<example-census-sql-jdbc>> -- Some description of this example.
 * <<example-northwind-sql-jdbc>> -- Some description of this example.
 
-// CAPS examples
+// Morpheus examples
 
-include::caps/details.adoc[leveloffset=+1]
+include::morpheus/details.adoc[leveloffset=+1]
 
-include::caps/case-class.adoc[leveloffset=+1]
+include::morpheus/case-class.adoc[leveloffset=+1]
 
-include::caps/custom-dataframe-input.adoc[leveloffset=+1]
+include::morpheus/custom-dataframe-input.adoc[leveloffset=+1]
 
-include::caps/cypher-sql-roundtrip.adoc[leveloffset=+1]
+include::morpheus/cypher-sql-roundtrip.adoc[leveloffset=+1]
 
-include::caps/dataframe-input.adoc[leveloffset=+1]
+include::morpheus/dataframe-input.adoc[leveloffset=+1]
 
-include::caps/dataframe-output.adoc[leveloffset=+1]
+include::morpheus/dataframe-output.adoc[leveloffset=+1]
 
-include::caps/datasource.adoc[leveloffset=+1]
+include::morpheus/datasource.adoc[leveloffset=+1]
 
-include::caps/graph-views.adoc[leveloffset=+1]
+include::morpheus/graph-views.adoc[leveloffset=+1]
 
-include::caps/graphx-pagerank.adoc[leveloffset=+1]
+include::morpheus/graphx-pagerank.adoc[leveloffset=+1]
 
-include::caps/multiple-graphs.adoc[leveloffset=+1]
+include::morpheus/multiple-graphs.adoc[leveloffset=+1]
 
-include::caps/neo4j-workflow.adoc[leveloffset=+1]
+include::morpheus/neo4j-workflow.adoc[leveloffset=+1]
 
-include::caps/neo4j-graph-merge.adoc[leveloffset=+1]
+include::morpheus/neo4j-graph-merge.adoc[leveloffset=+1]
 
-include::caps/recommendation.adoc[leveloffset=+1]
+include::morpheus/recommendation.adoc[leveloffset=+1]
 
-include::caps/update.adoc[leveloffset=+1]
+include::morpheus/update.adoc[leveloffset=+1]
 
-include::caps/census-sql-hive.adoc[leveloffset=+1]
+include::morpheus/census-sql-hive.adoc[leveloffset=+1]
 
-include::caps/census-sql-jdbc.adoc[leveloffset=+1]
+include::morpheus/census-sql-jdbc.adoc[leveloffset=+1]
 
-include::caps/northwind-sql-jdbc.adoc[leveloffset=+1]
+include::morpheus/northwind-sql-jdbc.adoc[leveloffset=+1]

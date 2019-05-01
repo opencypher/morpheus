@@ -3,10 +3,10 @@
 
 [abstract]
 --
-This section describes Cypher graph views support in CAPS.
+This section describes Cypher graph views support in Morpheus.
 --
 
-CAPS supports parameterized graph views.
+Morpheus supports parameterized graph views.
 Similar to SQL table views, graph views return a transformed version of an underlying graph.
 The main advantage of views is to modularize complex data integration pipelines into smaller, reusable units.
 

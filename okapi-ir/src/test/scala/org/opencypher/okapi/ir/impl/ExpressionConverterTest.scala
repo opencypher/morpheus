@@ -27,7 +27,7 @@
 package org.opencypher.okapi.ir.impl
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
@@ -86,7 +86,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   private val propertiesJoined =
     simple ++ Seq("name" -> CTAny, "age" -> CTUnion(CTInteger, CTFloat))
 
-  private val schema: Schema = Schema.empty
+  private val schema: PropertyGraphSchema = PropertyGraphSchema.empty
     .withNodePropertyKeys("Node")(properties : _*)
     .withRelationshipPropertyKeys("REL")(properties: _*)
     .withNodePropertyKeys("Node2")(properties2 : _*)
@@ -206,7 +206,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
     it("can convert") {
       convert(parseExpr("exists(NODE.name)")) shouldEqual(
-        Exists(EntityProperty('NODE, PropertyKey("name"))(CTString)), CTBoolean
+        Exists(ElementProperty('NODE, PropertyKey("name"))(CTString)), CTBoolean
       )
     }
   }
@@ -366,7 +366,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   it("can convert property access") {
     val convertedNodeProperty = convert(prop("NODE", "age"))
     convertedNodeProperty.cypherType shouldEqual CTInteger
-    convertedNodeProperty shouldEqual EntityProperty('NODE, PropertyKey("age"))(CTInteger)
+    convertedNodeProperty shouldEqual ElementProperty('NODE, PropertyKey("age"))(CTInteger)
 
     val convertedMapProperty = convert(prop(mapOf("age" -> literal(40)), "age"))
     convertedMapProperty.cypherType shouldEqual CTInteger
@@ -421,7 +421,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
     convert(given) match {
       case ands @ Ands(inner) =>
-        inner.toSet should equal( Set(HasLabel('NODE, Label("Person")),  Equals(EntityProperty('NODE, PropertyKey("name"))(CTAnyMaterial), StringLit("Mats"))))
+        inner.toSet should equal( Set(HasLabel('NODE, Label("Person")),  Equals(ElementProperty('NODE, PropertyKey("name"))(CTAnyMaterial), StringLit("Mats"))))
         ands.cypherType should equal(CTBoolean)
       case other => fail(s"Expected an `Ands` Expr, but got `$other`")
     }

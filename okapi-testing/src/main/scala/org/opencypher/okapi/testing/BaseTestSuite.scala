@@ -30,7 +30,7 @@ import org.junit.runner.RunWith
 import org.mockito.Mockito.when
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.impl.graph.QGNGenerator
 import org.scalactic.source
 import org.scalatestplus.junit.JUnitRunner
@@ -46,13 +46,13 @@ abstract class BaseTestSuite extends FunSpec with Matchers with MockitoSugar wit
   /* Shared test objects */
   val testNamespace = Namespace("testNamespace")
   val testGraphName = GraphName("test")
-  val testGraphSchema: Schema = Schema.empty
+  val testGraphSchema: PropertyGraphSchema = PropertyGraphSchema.empty
   val testQualifiedGraphName = QualifiedGraphName(testNamespace, testGraphName)
   val qgnGenerator: QGNGenerator = new QGNGenerator {
     override def generate: QualifiedGraphName = QualifiedGraphName(s"session.#${(Random.nextInt & Int.MaxValue) % 100}")
   }
 
-  def testGraphSource(graphsWithSchema: (GraphName, Schema)*): PropertyGraphDataSource = {
+  def testGraphSource(graphsWithSchema: (GraphName, PropertyGraphSchema)*): PropertyGraphDataSource = {
     val gs = mock[PropertyGraphDataSource]
     graphsWithSchema.foreach {
       case (graphName, schema) => when(gs.schema(graphName)).thenReturn(Some(schema))

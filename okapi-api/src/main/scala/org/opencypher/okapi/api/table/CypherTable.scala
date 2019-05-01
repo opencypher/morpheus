@@ -34,7 +34,7 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
   * Represents a table in which each row contains one [[org.opencypher.okapi.api.value.CypherValue]] per column and the
   * values in each column have the same Cypher type.
   *
-  * This interface is used to access simple Cypher values from a table. When it is implemented with an entity mapping
+  * This interface is used to access simple Cypher values from a table. When it is implemented with an element mapping
   * it can also be used to assemble complex Cypher values such as CypherNode/CypherRelationship that are stored over
   * multiple columns in a low-level Cypher table.
   */

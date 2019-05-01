@@ -93,7 +93,7 @@ abstract class VarLengthExpandPlanner[T <: Table[T] : TypeTag] {
     physicalSourceOp.join(startEdgeScanOp,
       Seq(source -> edgeJoinExpr),
       InnerJoin
-    ).filter(isomorphismFilter(startEdgeScan, physicalSourceOp.header.relationshipEntities))
+    ).filter(isomorphismFilter(startEdgeScan, physicalSourceOp.header.relationshipElements))
   }
 
   /**
@@ -147,7 +147,7 @@ abstract class VarLengthExpandPlanner[T <: Table[T] : TypeTag] {
 
     // check whether to include paths of length 0
     val unalignedOps: Seq[RelationalOperator[T]] = if (lower == 0) {
-      val zeroLengthExpand: RelationalOperator[T] = copyEntity(source, target, targetHeader, physicalSourceOp)
+      val zeroLengthExpand: RelationalOperator[T] = copyElement(source, target, targetHeader, physicalSourceOp)
       if (upper == 0) Seq(zeroLengthExpand) else paths :+ zeroLengthExpand
     } else paths
 
@@ -186,14 +186,14 @@ abstract class VarLengthExpandPlanner[T <: Table[T] : TypeTag] {
     * @param targetHeader target header
     * @param physicalOp   base operation
     */
-  protected def copyEntity(
+  protected def copyElement(
     from: Var,
     to: Var,
     targetHeader: RecordHeader,
     physicalOp: RelationalOperator[T]
   ): RelationalOperator[T] = {
-    // TODO: remove when https://github.com/opencypher/cypher-for-apache-spark/issues/513 is resolved
-    val correctTarget = targetHeader.entityVars.find(_ == to).get
+    // TODO: remove when https://github.com/opencypher/morpheus/issues/513 is resolved
+    val correctTarget = targetHeader.elementVars.find(_ == to).get
 
     val sourceChildren = targetHeader.expressionsFor(from)
     val targetChildren = targetHeader.expressionsFor(correctTarget)

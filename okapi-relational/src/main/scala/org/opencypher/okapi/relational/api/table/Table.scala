@@ -27,7 +27,6 @@
 package org.opencypher.okapi.relational.api.table
 
 import org.opencypher.okapi.api.table.CypherTable
-import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.ir.api.expr.{Aggregator, Expr, Var}
 import org.opencypher.okapi.relational.impl.planning.{JoinType, Order}
@@ -36,9 +35,9 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 /**
   * Main abstraction of a relational backend. A table represents a relation in terms of relational algebra and exposes
   * relational and additional auxiliary operators. Operators need to be implemented by the specific backend
-  * (e.g. spark-cypher).
+  * (e.g. morpheus-spark-cypher).
   *
-  * @tparam T backend-specific representation of that table (e.g. DataFrame for spark-cypher)
+  * @tparam T backend-specific representation of that table (e.g. DataFrame for morpheus-spark-cypher)
   */
 trait Table[T <: Table[T]] extends CypherTable {
 

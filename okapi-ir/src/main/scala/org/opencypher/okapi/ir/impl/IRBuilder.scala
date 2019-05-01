@@ -30,7 +30,7 @@ import cats.implicits._
 import org.atnos.eff._
 import org.atnos.eff.all._
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherString
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, UnsupportedOperationException}
@@ -285,7 +285,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
           refs <- {
             val onGraphs: List[QualifiedGraphName] = on.map(graph => QualifiedGraphName(graph.parts))
-            val schemaForOnGraphUnion = onGraphs.foldLeft(Schema.empty) { case (agg, next) =>
+            val schemaForOnGraphUnion = onGraphs.foldLeft(PropertyGraphSchema.empty) { case (agg, next) =>
               agg ++ context.schemaFor(next)
             }
 
@@ -307,7 +307,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
             val cloneItemMap = implicitCloneItemMap ++ explicitCloneItemMap
 
             // Fields inside of CONSTRUCT could have been matched on other graphs than just the workingGraph
-            val cloneSchema = schemaForEntityTypes(context, cloneItemMap.values.map(_.cypherType).toSet)
+            val cloneSchema = schemaForElementTypes(context, cloneItemMap.values.map(_.cypherType).toSet)
 
             // Make sure that there are no dangling relationships
             // we can currently only clone relationships that are also part of a new pattern
@@ -341,7 +341,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
                     updatedSchema -> rewrittenVarTypes.updated(variable, CTNode(labelsAfterSet, existingQgn))
                   case SetPropertyItem(propertyKey, variable, setValue) =>
                     val propertyType = setValue.cypherType
-                    val updatedSchema = currentSchema.addPropertyToEntity(propertyKey, propertyType, variable.cypherType)
+                    val updatedSchema = currentSchema.addPropertyToElement(propertyKey, propertyType, variable.cypherType)
                     updatedSchema -> rewrittenVarTypes
                 }
             }
@@ -397,14 +397,14 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
     }
   }
 
-  def schemaForEntityTypes(context: IRBuilderContext, cypherTypes: Set[CypherType]): Schema =
+  def schemaForElementTypes(context: IRBuilderContext, cypherTypes: Set[CypherType]): PropertyGraphSchema =
     cypherTypes
-      .map(schemaForEntityType(context, _))
-      .foldLeft(Schema.empty)(_ ++ _)
+      .map(schemaForElementType(context, _))
+      .foldLeft(PropertyGraphSchema.empty)(_ ++ _)
 
-  def schemaForEntityType(context: IRBuilderContext, cypherType: CypherType): Schema = {
+  def schemaForElementType(context: IRBuilderContext, cypherType: CypherType): PropertyGraphSchema = {
     val graphSchema = cypherType.graph.map(context.schemaFor).getOrElse(context.workingGraph.schema)
-    graphSchema.forEntityType(cypherType)
+    graphSchema.forElementType(cypherType)
   }
 
   private def registerProjectBlock(
@@ -604,10 +604,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
     }
   }
 
-  private def schemaForNewField(field: IRField, pattern: Pattern, context: IRBuilderContext): Schema = {
+  private def schemaForNewField(field: IRField, pattern: Pattern, context: IRBuilderContext): PropertyGraphSchema = {
     val baseFieldSchema = pattern.baseFields.get(field).map { baseNode =>
-      schemaForEntityType(context, baseNode.cypherType)
-    }.getOrElse(Schema.empty)
+      schemaForElementType(context, baseNode.cypherType)
+    }.getOrElse(PropertyGraphSchema.empty)
 
     val newPropertyKeys: Map[String, CypherType] = pattern.properties.get(field)
       .map(_.items.map(p => p._1 -> p._2.cypherType))
@@ -624,7 +624,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           case (oldLabelCombo, newLabelCombo) => newLabelCombo -> (baseFieldSchema.nodePropertyKeys(oldLabelCombo) ++ newPropertyKeys)
         }
 
-        updatedPropertyKeys.foldLeft(Schema.empty) {
+        updatedPropertyKeys.foldLeft(PropertyGraphSchema.empty) {
           case (acc, (labelCombo, propertyKeys)) => acc.withNodePropertyKeys(labelCombo, propertyKeys)
         }
 
@@ -642,12 +642,12 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
         val updatedPropertyKeys = joinedPropertyKeys ++ newPropertyKeys
 
-        Schema.empty.withRelationshipPropertyKeys(newTypes.head, updatedPropertyKeys)
+        PropertyGraphSchema.empty.withRelationshipPropertyKeys(newTypes.head, updatedPropertyKeys)
 
       case CTRelationship(newTypes, _) =>
         val actualTypes = if (newTypes.nonEmpty) newTypes else baseFieldSchema.relationshipTypes
 
-        actualTypes.foldLeft(Schema.empty) {
+        actualTypes.foldLeft(PropertyGraphSchema.empty) {
           case (acc, relType) => acc.withRelationshipPropertyKeys(relType, baseFieldSchema.relationshipPropertyKeys(relType) ++ newPropertyKeys)
         }
 

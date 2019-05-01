@@ -3,16 +3,16 @@
 
 [abstract]
 --
-This chapter documents the CAPS session, catalog and backends.
+This chapter documents the Morpheus session, catalog and backends.
 --
 
 // TODO: Consider folding session+catalog into in-memory backend.
 
-Using CAPS, graphs can be created from one or more backends, queried with Cypher, and optionally persisted back to one or more backends.
-A CAPS application performs work through a <<caps-session, CAPS Session>>.
+Using Morpheus, graphs can be created from one or more backends, queried with Cypher, and optionally persisted back to one or more backends.
+A Morpheus application performs work through a <<morpheus-session, Morpheus Session>>.
 The session maintains references to one or more graphs in a _Catalog_.
 
-The following backends are supported in CAPS and can be used in a CAPS application:
+The following backends are supported in Morpheus and can be used in a Morpheus application:
 
 * <<backend-in-memory, In-memory backend>>
 * <<backend-filesystem, Filesystem backend>>

@@ -26,18 +26,18 @@
  */
 package org.opencypher.okapi.relational.api.table
 
-import org.opencypher.okapi.api.io.conversion.EntityMapping
+import org.opencypher.okapi.api.io.conversion.ElementMapping
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.table.RecordsPrinter
 import org.opencypher.okapi.impl.util.PrintOptions
 import org.opencypher.okapi.ir.api.expr.Expr
-import org.opencypher.okapi.relational.api.io.EntityTable
+import org.opencypher.okapi.relational.api.io.ElementTable
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
-trait RelationalEntityTableFactory[T <: Table[T]] {
+trait RelationalElementTableFactory[T <: Table[T]] {
 
-  def entityTable(entityMapping: EntityMapping, table: T): EntityTable[T]
+  def elementTable(elementMapping: ElementMapping, table: T): ElementTable[T]
 }
 
 trait RelationalCypherRecordsFactory[T <: Table[T]] {
@@ -48,7 +48,7 @@ trait RelationalCypherRecordsFactory[T <: Table[T]] {
 
   def empty(initialHeader: RecordHeader = RecordHeader.empty): Records
 
-  def fromEntityTable(entityTable: EntityTable[T]): Records
+  def fromElementTable(elementTable: ElementTable[T]): Records
 
   def from(header: RecordHeader, table: T, returnItems: Option[Seq[String]] = None): Records
 }

@@ -33,7 +33,7 @@ import cats.data.State
 import cats.data.State._
 import cats.instances.list._
 import cats.syntax.all._
-import org.opencypher.okapi.api.value.CypherValue.{CypherBigDecimal, CypherEntity, CypherMap, CypherNode, CypherRelationship}
+import org.opencypher.okapi.api.value.CypherValue.{CypherBigDecimal, Element, CypherMap, Node, Relationship}
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
 import org.opencypher.okapi.impl.temporal.TemporalTypesHelper.parseDate
 import org.opencypher.okapi.impl.temporal.{Duration, TemporalTypesHelper}
@@ -143,10 +143,10 @@ object CreateGraphFactory extends InMemoryGraphFactory {
       case other => throw UnsupportedOperationException(s"Processing pattern: ${other.getClass.getSimpleName}")
     }
 
-    Foldable[List].sequence_[Result, CypherEntity[Long]](parts.toList.map(pe => processPatternElement(pe, merge)))
+    Foldable[List].sequence_[Result, Element[Long]](parts.toList.map(pe => processPatternElement(pe, merge)))
   }
 
-  def processPatternElement(patternElement: ASTNode, merge: Boolean): Result[CypherEntity[Long]] = {
+  def processPatternElement(patternElement: ASTNode, merge: Boolean): Result[Element[Long]] = {
     patternElement match {
       case NodePattern(Some(variable), labels, props, _) =>
         for {
@@ -175,8 +175,8 @@ object CreateGraphFactory extends InMemoryGraphFactory {
         for {
           source <- processPatternElement(first, merge)
           sourceId <- pure[ParsingContext, Long](source match {
-            case n: CypherNode[Long] => n.id
-            case r: CypherRelationship[Long] => r.endId
+            case n: Node[Long] => n.id
+            case r: Relationship[Long] => r.endId
           })
           target <- processPatternElement(third, merge)
           properties <- props match {
@@ -264,7 +264,7 @@ object CreateGraphFactory extends InMemoryGraphFactory {
         case Property(variable: Variable, propertyKey) =>
           inspect[ParsingContext, Any]({ context =>
             context.variableMapping(variable.name) match {
-              case a: CypherEntity[_] => a.properties(propertyKey.name)
+              case a: Element[_] => a.properties(propertyKey.name)
               case other =>
                 throw UnsupportedOperationException(s"Reading property from a ${other.getClass.getSimpleName}")
             }

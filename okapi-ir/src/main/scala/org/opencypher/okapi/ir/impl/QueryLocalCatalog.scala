@@ -28,7 +28,7 @@ package org.opencypher.okapi.ir.impl
 
 import org.opencypher.okapi.api.graph.{Namespace, PropertyGraph, QualifiedGraphName}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 
 /**
   * Represents a catalog storing the session graphs and schemas of constructed graphs and temporary graphs for
@@ -37,10 +37,10 @@ import org.opencypher.okapi.api.schema.Schema
 case class QueryLocalCatalog(
   dataSourceMapping: Map[Namespace, PropertyGraphDataSource],
   registeredGraphs: Map[QualifiedGraphName, PropertyGraph],
-  registeredSchemas: Map[QualifiedGraphName, Schema]
+  registeredSchemas: Map[QualifiedGraphName, PropertyGraphSchema]
 ) {
 
-  def schema(qgn: QualifiedGraphName): Schema = {
+  def schema(qgn: QualifiedGraphName): PropertyGraphSchema = {
     registeredSchemas.get(qgn) match {
       case Some(s) => s
       case None =>
@@ -58,10 +58,10 @@ case class QueryLocalCatalog(
     }
   }
 
-  private def schemaFromDataSource(qgn: QualifiedGraphName): Schema = {
+  private def schemaFromDataSource(qgn: QualifiedGraphName): PropertyGraphSchema = {
     val dataSource = dataSourceMapping(qgn.namespace)
     val graphName = qgn.graphName
-    val schema: Schema = dataSource.schema(graphName) match {
+    val schema: PropertyGraphSchema = dataSource.schema(graphName) match {
       case Some(s) => s
       case None => dataSource.graph(graphName).schema
     }
@@ -72,7 +72,7 @@ case class QueryLocalCatalog(
     copy(registeredGraphs = registeredGraphs.updated(qgn, graph))
   }
 
-  def withSchema(qgn: QualifiedGraphName, schema: Schema): QueryLocalCatalog = {
+  def withSchema(qgn: QualifiedGraphName, schema: PropertyGraphSchema): QueryLocalCatalog = {
     copy(registeredSchemas = registeredSchemas.updated(qgn, schema))
   }
 }

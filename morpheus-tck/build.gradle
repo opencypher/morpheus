@@ -1,0 +1,30 @@
+
+description = 'Cypher for Apache Spark - TCK'
+
+sourceSets{
+    generator{}
+}
+
+dependencies {
+    testCompile project(':okapi-tck')
+    testCompile project(':morpheus-testing')
+    generatorCompile project(':okapi-tck')
+    generatorCompile project(':morpheus-testing')
+}
+
+// split scenario name / key-words with | --> debugTCKScenarios -Pscenarios = 'sc1|sc2|..'
+task debugTCKScenarios() {
+    description 'Generates scala-test from TCK scenarios (keywords of the scenario names suffice)'
+    group 'generator' 
+    def outPath = project.findProperty('outDir') ?: 'src/test/scala/org/opencypher/morpheus/testing/'
+    def resDir = project.findProperty('resDir') ?: 'src/test/resources/'
+    def scenarios = project.findProperty('scenarios') ?: ''
+    dependsOn sourceSets.generator.runtimeClasspath
+    doLast {
+        javaexec {
+            classpath =  sourceSets.generator.runtimeClasspath
+            main = 'org.opencypher.morpheus.testing.MorpheusTestGenerator'
+            args = [outPath,resDir,scenarios]
+        }
+    }
+}

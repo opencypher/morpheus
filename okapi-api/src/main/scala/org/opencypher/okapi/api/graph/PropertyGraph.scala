@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.api.graph
 
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
@@ -37,8 +37,8 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
   * A graph is always tied to and managed by a session. The lifetime of a graph is bounded
   * by the session lifetime.
   *
-  * A graph always has a schema, which describes the properties of the entities in the graph,
-  * grouped by the labels and relationship types of the entities.
+  * A graph always has a schema, which describes the properties of the elements in the graph,
+  * grouped by the labels and relationship types of the elements.
   *
   * @see [[https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc openCypher Property Graph Model]]
   */
@@ -49,7 +49,7 @@ trait PropertyGraph {
     *
     * @return the schema of this graph.
     */
-  def schema: Schema
+  def schema: PropertyGraphSchema
 
   /**
     * The session in which this graph is managed.

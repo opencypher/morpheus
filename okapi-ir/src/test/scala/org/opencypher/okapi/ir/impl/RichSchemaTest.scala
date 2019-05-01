@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.api.schema.Schema
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.pattern.{DirectedRelationship, Pattern}
@@ -37,7 +37,7 @@ import scala.collection.immutable.ListMap
 class RichSchemaTest extends BaseTestSuite {
     describe("fromFields") {
       it("can convert fields in a pattern") {
-        val schema = Schema.empty
+        val schema = PropertyGraphSchema.empty
           .withNodePropertyKeys("Person")("name" -> CTString)
           .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
           .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
@@ -52,9 +52,9 @@ class RichSchemaTest extends BaseTestSuite {
           ListMap(
             IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode("Person")))
           )
-        ).fields.map(f => schema.forEntityType(f.cypherType)).reduce(_ ++ _)
+        ).fields.map(f => schema.forElementType(f.cypherType)).reduce(_ ++ _)
 
-        val expected = Schema.empty
+        val expected = PropertyGraphSchema.empty
           .withNodePropertyKeys("Person")("name" -> CTString)
           .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
 
@@ -62,7 +62,7 @@ class RichSchemaTest extends BaseTestSuite {
       }
 
       it("can compute a schema when a field is unknown") {
-        val schema = Schema.empty
+        val schema = PropertyGraphSchema.empty
           .withNodePropertyKeys("Person")("name" -> CTString)
           .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
           .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
@@ -77,9 +77,9 @@ class RichSchemaTest extends BaseTestSuite {
           ListMap(
             IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode()))
           )
-        ).fields.map(f => schema.forEntityType(f.cypherType)).reduce(_ ++ _)
+        ).fields.map(f => schema.forElementType(f.cypherType)).reduce(_ ++ _)
 
-        val expected = Schema.empty
+        val expected = PropertyGraphSchema.empty
           .withNodePropertyKeys("Person")("name" -> CTString)
           .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
           .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)

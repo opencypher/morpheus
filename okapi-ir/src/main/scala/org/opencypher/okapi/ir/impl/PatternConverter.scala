@@ -109,9 +109,9 @@ final class PatternConverter(irBuilderContext: IRBuilderContext) {
         val baseNodeField = baseNodeVar.map(x => IRField(x.name)(knownTypes(x)))
 
         for {
-          entity <- pure(IRField(nodeVar.name)(nodeVar.cypherType))
-          _ <- modify[Pattern](_.withEntity(entity, extractProperties(propertiesOpt)).withBaseField(entity, baseNodeField))
-        } yield entity
+          element <- pure(IRField(nodeVar.name)(nodeVar.cypherType))
+          _ <- modify[Pattern](_.withElement(element, extractProperties(propertiesOpt)).withBaseField(element, baseNodeField))
+        } yield element
 
       case rc@ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, rangeOpt, propertiesOpt, dir, _, baseRelVar), right) =>
 
@@ -126,7 +126,7 @@ final class PatternConverter(irBuilderContext: IRBuilderContext) {
           rel <- pure(IRField(relVar.name)(if (rangeOpt.isDefined) CTList(relVar.cypherType) else relVar.cypherType))
           _ <- modify[Pattern] { given =>
             val registered = given
-              .withEntity(rel)
+              .withElement(rel)
               .withBaseField(rel, baseRelField)
 
             rangeOpt match {

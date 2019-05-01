@@ -10,8 +10,8 @@ task asciidocJar(type: Jar) {
 task aggregatedScalaDoc(type: ScalaDoc) {
     ext.fromProjects = [
             project(':okapi-api'),
-            project(':spark-cypher'),
-            project(':spark-cypher-examples'),
+            project(':morpheus-spark-cypher'),
+            project(':morpheus-examples'),
     ]
 
     classpath = project.sourceSets.main.compileClasspath

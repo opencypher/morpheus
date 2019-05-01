@@ -7,8 +7,8 @@ This chapter contains a list of resources for further reading.
 --
 
 
-CAPS starter project::
-A thin Maven project setup intended for users to get up and running with CAPS in minimal time:
+Morpheus starter project::
+A thin Maven project setup intended for users to get up and running with Morpheus in minimal time:
 https://github.com/opencypher/caps-examples
 
 // TODO: Keep this page but add more useful resources.

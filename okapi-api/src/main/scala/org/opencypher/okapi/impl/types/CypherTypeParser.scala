@@ -89,7 +89,7 @@ object CypherTypeParser extends Logging {
 
   def ANYRELATIONSHIP[_: P]: P[CTRelationship] = P(IgnoreCase("RELATIONSHIP").map(_ => CTRelationship))
 
-  def ENTITY[_: P]: P[CTUnion] = P(IgnoreCase("ENTITY").map(_ => CTEntity))
+  def ELEMENT[_: P]: P[CTUnion] = P(IgnoreCase("ELEMENT").map(_ => CTElement))
 
   def PATH[_: P]: P[CTPath.type] = P(IgnoreCase("PATH").map(_ => CTPath))
 
@@ -113,7 +113,7 @@ object CypherTypeParser extends Logging {
       BOOLEAN |
       NODE |
       RELATIONSHIP |
-      ENTITY |
+      ELEMENT |
       ANYNODE |
       ANYRELATIONSHIP |
       MAP |

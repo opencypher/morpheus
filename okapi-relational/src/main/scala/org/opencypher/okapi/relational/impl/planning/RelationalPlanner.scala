@@ -39,7 +39,7 @@ import org.opencypher.okapi.ir.api.{Label, PropertyKey, RelType}
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.logical.impl.{Incoming, Outgoing, _}
 import org.opencypher.okapi.logical.{impl => logical}
-import org.opencypher.okapi.relational.api.io.EntityTable
+import org.opencypher.okapi.relational.api.io.ElementTable
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.Table
 import org.opencypher.okapi.relational.impl.operators._
@@ -55,7 +55,7 @@ object RelationalPlanner {
   def process[T <: Table[T] : TypeTag](input: LogicalOperator)
     (implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
 
-    implicit val caps: CypherSession = context.session
+    implicit val session: CypherSession = context.session
 
     input match {
       case logical.CartesianProduct(lhs, rhs, _) =>
@@ -117,8 +117,8 @@ object RelationalPlanner {
         process[T](lhs).join(process[T](rhs), joinExpressions, InnerJoin)
 
       case logical.Distinct(fields, in, _) =>
-        val entityExprs: Set[Var] = Set(fields.toSeq: _*)
-        relational.Distinct(process[T](in), entityExprs)
+        val elementExprs: Set[Var] = Set(fields.toSeq: _*)
+        relational.Distinct(process[T](in), elementExprs)
 
       case logical.TabularUnionAll(left, right) =>
         process[T](left).unionAll(process[T](right))
@@ -136,7 +136,7 @@ object RelationalPlanner {
           None,
           sourceOp.graph,
           relPattern,
-          Map(rel -> relPattern.relEntity)
+          Map(rel -> relPattern.relElement)
         )
 
         val startNode = StartNode(rel)(CTNode)
@@ -172,7 +172,7 @@ object RelationalPlanner {
           None,
           sourceOp.graph,
           relPattern,
-          Map(rel -> relPattern.relEntity)
+          Map(rel -> relPattern.relElement)
         )
 
         val startNode = StartNode(rel)(CTAny)
@@ -197,7 +197,7 @@ object RelationalPlanner {
           None,
           sourceOp.graph,
           edgePattern,
-          Map(edgeScan -> edgePattern.relEntity)
+          Map(edgeScan -> edgePattern.relElement)
         )
 
         val isExpandInto = sourceOp == targetOp
@@ -264,7 +264,7 @@ object RelationalPlanner {
     maybeInOp: Option[RelationalOperator[T]],
     logicalGraph: LogicalGraph,
     scanPattern: Pattern,
-    varPatternEntityMapping: Map[Var, Entity]
+    varPatternElementMapping: Map[Var, PatternElement]
   )(implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
     val inOp = maybeInOp match {
       case Some(relationalOp) => relationalOp
@@ -280,17 +280,17 @@ object RelationalPlanner {
 
     val scanOp = graph.scanOperator(scanPattern)
 
-    val validScan = scanPattern.entities.forall { entity =>
-      scanOp.header.entityVars.exists { headerVar =>
-        headerVar.name == entity.name && headerVar.cypherType.withoutGraph == entity.cypherType.withoutGraph
+    val validScan = scanPattern.elements.forall { patternElement =>
+      scanOp.header.elementVars.exists { headerVar =>
+        headerVar.name == patternElement.name && headerVar.cypherType.withoutGraph == patternElement.cypherType.withoutGraph
       }
     }
 
-    if (!validScan) throw SchemaException(s"Expected the scan to include Variables for all entities of ${scanPattern.entities}" +
-      s" but got ${scanOp.header.entityVars}")
+    if (!validScan) throw SchemaException(s"Expected the scan to include Variables for all elements of ${scanPattern.elements}" +
+      s" but got ${scanOp.header.elementVars}")
 
     scanOp
-      .assignScanName(varPatternEntityMapping.mapValues(_.toVar).map(_.swap))
+      .assignScanName(varPatternElementMapping.mapValues(_.toVar).map(_.swap))
       .switchContext(inOp.context)
   }
 
@@ -379,15 +379,15 @@ object RelationalPlanner {
 
       val elementVars = targetHeader.nodeVars ++ targetHeader.relationshipVars
 
-      val opWithAlignedEntities = elementVars.foldLeft(op) {
+      val opWithAlignedElements = elementVars.foldLeft(op) {
         case (acc, elementVar) => acc.alignExpressions(elementVar, elementVar, targetHeader)
       }.alignColumnNames(targetHeader)
 
-      val otherWithAlignedEntities = elementVars.foldLeft(other) {
+      val otherWithAlignedElements = elementVars.foldLeft(other) {
         case (acc, elementVar) => acc.alignExpressions(elementVar, elementVar, targetHeader)
       }.alignColumnNames(targetHeader)
 
-      relational.TabularUnionAll(opWithAlignedEntities, otherWithAlignedEntities)
+      relational.TabularUnionAll(opWithAlignedElements, otherWithAlignedElements)
     }
 
     def add(values: Expr*): RelationalOperator[T] = {
@@ -413,7 +413,7 @@ object RelationalPlanner {
 
     def alias(aliases: Set[AliasExpr]): RelationalOperator[T] = alias(aliases.toSeq: _*)
 
-    // Only works with single entity tables
+    // Only works with single element tables
     def assignScanName(mapping: Map[Var, Var]): RelationalOperator[T] = {
       val aliases = mapping.map {
         case (from, to) => AliasExpr(from, to)
@@ -431,13 +431,13 @@ object RelationalPlanner {
       op.addInto(prefixedIds.toSeq: _*)
     }
 
-    def alignWith(inputEntity: Var, targetEntity: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
-      op.alignExpressions(inputEntity, targetEntity, targetHeader).alignColumnNames(targetHeader)
+    def alignWith(inputElement: Var, targetElement: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
+      op.alignExpressions(inputElement, targetElement, targetHeader).alignColumnNames(targetHeader)
     }
 
-    // TODO: entity needs to contain all labels/relTypes: all case needs to be explicitly expanded with the schema
+    // TODO: element needs to contain all labels/relTypes: all case needs to be explicitly expanded with the schema
     /**
-      * Aligns a single element within the operator with the given target entity in the target header.
+      * Aligns a single element within the operator with the given target element in the target header.
       *
       * @param inputVar     the variable of the element that should be aligned
       * @param targetVar    the variable of the reference element
@@ -453,15 +453,15 @@ object RelationalPlanner {
       val existingLabels = op.header.labelsFor(inputVar).map(_.label.name)
       val existingRelTypes = op.header.typesFor(inputVar).map(_.relType.name)
 
-      val otherEntities = op.header -- Set(inputVar)
-      val toRetain = otherEntities.expressions + (inputVar as targetVar)
+      val otherElements = op.header -- Set(inputVar)
+      val toRetain = otherElements.expressions + (inputVar as targetVar)
 
-      // Rename variable and select columns owned by entityVar
-      val renamedEntity = op.select(toRetain.toSeq: _*)
+      // Rename variable and select columns owned by elementVar
+      val renamedElement = op.select(toRetain.toSeq: _*)
 
       // Drop expressions that are not in the target header
-      val dropExpressions = renamedEntity.header.expressions -- targetHeader.expressions
-      val withDroppedExpressions = renamedEntity.dropExprSet(dropExpressions)
+      val dropExpressions = renamedElement.header.expressions -- targetHeader.expressions
+      val withDroppedExpressions = renamedElement.dropExprSet(dropExpressions)
 
       // Fill in missing true label columns
       val trueLabels = inputVar.cypherType match {
@@ -563,23 +563,23 @@ object RelationalPlanner {
       }
     }
 
-    def singleEntity: Var = {
-      op.header.entityVars.toList match {
-        case entity :: Nil => entity
-        case Nil => throw SchemaException(s"Operation requires single entity table, input contains no entities")
-        case other => throw SchemaException(s"Operation requires single entity table, found ${other.mkString("[", ", ", "]")}")
+    def singleElement: Var = {
+      op.header.elementVars.toList match {
+        case element :: Nil => element
+        case Nil => throw SchemaException(s"Operation requires single element table, input contains no elements")
+        case other => throw SchemaException(s"Operation requires single element table, found ${other.mkString("[", ", ", "]")}")
       }
     }
 
-    def entityTable: EntityTable[T] = {
-      val entity = op.singleEntity
+    def elementTable: ElementTable[T] = {
+      val element = op.singleElement
 
       val header = op.header
-      val idCol = header.idColumns(entity).head
-      val properties = header.propertiesFor(entity).map(p => p -> header.column(p))
+      val idCol = header.idColumns(element).head
+      val properties = header.propertiesFor(element).map(p => p -> header.column(p))
       val propertyMapping = properties.map { case (p: Property, column) => p.key.name -> column }
 
-      entity.cypherType match {
+      element.cypherType match {
         case CTNode(labels, _) =>
           val mapping = NodeMappingBuilder
             .on(idCol)
@@ -587,11 +587,11 @@ object RelationalPlanner {
             .withPropertyKeyMappings(propertyMapping.toSeq: _*)
             .build
 
-          op.session.entityTables.entityTable(mapping, op.table)
+          op.session.elementTables.elementTable(mapping, op.table)
 
         case CTRelationship(typ, _) =>
-          val sourceCol = header.column(header.startNodeFor(entity))
-          val targetCol = header.column(header.endNodeFor(entity))
+          val sourceCol = header.column(header.startNodeFor(element))
+          val targetCol = header.column(header.endNodeFor(element))
           val mapping = RelationshipMappingBuilder
             .on(idCol)
             .from(sourceCol)
@@ -600,7 +600,7 @@ object RelationalPlanner {
             .withPropertyKeyMappings(propertyMapping.toSeq: _*)
             .build
 
-          op.session.entityTables.entityTable(mapping, op.table)
+          op.session.elementTables.elementTable(mapping, op.table)
 
         case other => throw UnsupportedOperationException(s"Cannot create scan for $other")
       }
