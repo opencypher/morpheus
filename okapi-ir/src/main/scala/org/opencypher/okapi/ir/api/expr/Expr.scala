@@ -631,7 +631,7 @@ sealed trait FunctionExpr extends Expr {
          case None => typ
         }
       case None =>
-          if (children.exists(_.cypherType == CTNull)) CTNull //todo: check corner cases
+          if (children.exists(_.cypherType == CTNull)) CTNull //todo: check corner cases (cases where no Propagation is specified)
           else throw UnsupportedOperationException(s"Type signature ${getClass.getSimpleName}($joinedCypherType) is not supported.")
     }
   }
@@ -674,7 +674,10 @@ object PrefixId {
 final case class PrefixId(expr: Expr, prefix: GraphIdPrefix) extends UnaryFunctionExpr {
   override def cypherType: CypherType = cypherType(Some(ChildNullPropagation()))
 
-  def signature(cypherType: CypherType): Option[CypherType] = Some(CTIdentity) //todo: allowed types?
+  def signature(cypherType: CypherType): Option[CypherType] = cypherType match {
+    case CTIdentity => Some(CTIdentity)
+    case _ => None
+  }
 }
 
 final case class ToId(expr: Expr) extends UnaryFunctionExpr {
@@ -715,7 +718,7 @@ final case class Size(expr: Expr) extends UnaryFunctionExpr {
   override val cypherType: CypherType = cypherType(Some(ChildNullPropagation()))
 
   def signature(cypherType: CypherType): Option[CypherType] = cypherType match {
-    case CTList | CTString => Some(CTInteger)
+    case CTList(_) | CTString => Some(CTInteger)
     case _ => None
   }
 }
@@ -724,7 +727,7 @@ final case class Keys(expr: Expr) extends UnaryFunctionExpr {
   override def cypherType: CypherType = cypherType(Some(ChildNullPropagation()))
 
   def signature(cypherType: CypherType): Option[CypherType] = cypherType match {
-    case CTNode(_, _) | CTRelationship(_, _) | CTMap => Some(CTList(CTString))
+    case CTNode(_, _) | CTRelationship(_, _) | CTMap(_) => Some(CTList(CTString))
     case _ => None
   }
 }
@@ -771,8 +774,8 @@ final case class ToString(expr: Expr) extends UnaryFunctionExpr {
   override val cypherType: CypherType = cypherType(Some(NullabilityPropagation()))
 
   def signature(cypherType: CypherType): Option[CypherType] = cypherType match {
-    case CTBoolean | CTString => Some(CTString)
-    case x if x.subTypeOf(CTNumber) || x.subTypeOf(CTTemporal) => Some(CTString)
+    case CTString => Some(CTString)
+    case x if x.subTypeOf(CTUnion(CTNumber, CTTemporal, CTBoolean)) => Some(CTString)
     case _ => None
   }
 }
@@ -781,7 +784,8 @@ final case class ToBoolean(expr: Expr) extends UnaryFunctionExpr {
   override val cypherType: CypherType = cypherType(Some(NullabilityPropagation()))
 
   def signature(cypherType: CypherType): Option[CypherType] = cypherType match {
-    case CTString | CTBoolean => Some(CTBoolean)
+    case CTString => Some(CTBoolean)
+    case x if x.subTypeOf(CTBoolean) => Some(CTBoolean)
     case _ => None
   }
 }
@@ -988,7 +992,7 @@ final case class Atan2(expr1: Expr, expr2: Expr) extends FunctionExpr {
   override val cypherType: CypherType = cypherType(Some(ChildNullPropagation()))
   override def exprs: List[Expr] = List(expr1, expr2)
   override def signature(inputCypherTypes: Vector[CypherType]): Option[CypherType] = inputCypherTypes match {
-    case Vector(c1, c2) if c1.subTypeOf(CTNumber) & c2.subTypeOf(CTNumber) => Some(CTFloat)
+    case Vector(c1, c2) if c1.subTypeOf(CTNumber) && c2.subTypeOf(CTNumber) => Some(CTFloat)
     case _ => None
   }
 }
