@@ -35,8 +35,8 @@ case object FunctionExtensions {
     Timestamp.name -> Timestamp,
     LocalDateTime.name -> LocalDateTime,
     Date.name -> Date,
-    Duration.name -> Duration,
-  ).map(p => p._1.toLowerCase -> p._2)
+    Duration.name -> Duration)
+    .map(p => p._1.toLowerCase -> p._2)
 
   def get(name: String): Option[Function] =
     mappings.get(name.toLowerCase())
