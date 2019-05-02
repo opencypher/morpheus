@@ -631,15 +631,8 @@ sealed trait FunctionExpr extends Expr {
          case None => typ
         }
       case None =>
-        typePropagationFunction match{
-          case Some(_: ChildNullPropagation) if children.exists(_.cypherType == CTNull)   => CTNull
-          case _ => throw UnsupportedOperationException(s"Type signature ${getClass.getSimpleName}($joinedCypherType) is not supported.")
-        }
-    }
-
-    }
-      case None =>  throw UnsupportedOperationException(s"Type signature ${getClass.getSimpleName}($joinedCypherType) is not supported.")
-        case None => throw UnsupportedOperationException(s"Type signature ${getClass.getSimpleName}($joinedCypherType) is not supported.")
+          if (children.exists(_.cypherType == CTNull)) CTNull //todo: check corner cases
+          else throw UnsupportedOperationException(s"Type signature ${getClass.getSimpleName}($joinedCypherType) is not supported.")
     }
   }
 
