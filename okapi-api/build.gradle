@@ -3,7 +3,9 @@ description = 'Okapi - openCypher API'
 dependencies {
     compile project(':okapi-trees')
 
-    compile(group: 'org.opencypher', name: 'front-end-9.0', version: ver.cypher.frontend)
+    compile(group: 'org.opencypher', name: 'front-end-9.0', version: ver.cypher.frontend) {
+        exclude group: 'org.scalacheck', module: 'scalacheck'.scala()
+    }
 
     compile group: 'org.typelevel', name: "cats-core".scala(), version: ver.cats
     compile(group: 'com.lihaoyi', name: "upickle".scala(), version: ver.upickle) {
