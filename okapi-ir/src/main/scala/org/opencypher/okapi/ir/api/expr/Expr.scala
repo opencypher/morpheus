@@ -607,7 +607,6 @@ final case class FullNullabilityPropagtion() extends PropagationTyp
 
 
 sealed trait FunctionExpr extends Expr {
-  //todo: handle ChildNullPropagation (CTNull is not part of the signatures)
   override final def toString = s"$name(${exprs.mkString(", ")})"
   override final def withoutType = s"$name(${exprs.map(_.withoutType).mkString(", ")})"
   def name: String = this.getClass.getSimpleName.toLowerCase
@@ -625,13 +624,22 @@ sealed trait FunctionExpr extends Expr {
 
     maybeType match {
       case Some(typ) =>
-        typePropagationFunction match {
-          case Some(_: ChildNullPropagation) => childNullPropagatesTo(typ)
-          case Some(_: NullabilityPropagation) => typ.asNullableAs(joinedCypherType)
-          case Some(_: FullNullabilityPropagtion) =>  if (exprs.exists(!_.cypherType.isNullable)) joinedCypherType.material else joinedCypherType.nullable
-          case None => typ
+       typePropagationFunction match {
+         case Some(_: ChildNullPropagation) => childNullPropagatesTo(typ)
+         case Some(_: NullabilityPropagation) => typ.asNullableAs(joinedCypherType)
+         case Some(_: FullNullabilityPropagtion) =>  if (exprs.exists(!_.cypherType.isNullable)) joinedCypherType.material else joinedCypherType.nullable
+         case None => typ
         }
+      case None =>
+        typePropagationFunction match{
+          case Some(_: ChildNullPropagation) if children.exists(_.cypherType == CTNull)   => CTNull
+          case _ => throw UnsupportedOperationException(s"Type signature ${getClass.getSimpleName}($joinedCypherType) is not supported.")
+        }
+    }
+
+    }
       case None =>  throw UnsupportedOperationException(s"Type signature ${getClass.getSimpleName}($joinedCypherType) is not supported.")
+        case None => throw UnsupportedOperationException(s"Type signature ${getClass.getSimpleName}($joinedCypherType) is not supported.")
     }
   }
 
