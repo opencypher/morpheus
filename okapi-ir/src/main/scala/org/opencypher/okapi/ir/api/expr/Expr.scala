@@ -603,7 +603,7 @@ final case class Divide(lhs: Expr, rhs: Expr) extends ArithmeticExpr {
 sealed trait PropagationTyp
 final case class ChildNullPropagation() extends PropagationTyp
 final case class NullabilityPropagation() extends PropagationTyp
-final case class FullNullabilityPropagtion() extends PropagationTyp
+final case class FullNullabilityPropagation() extends PropagationTyp
 
 
 sealed trait FunctionExpr extends Expr {
@@ -627,7 +627,7 @@ sealed trait FunctionExpr extends Expr {
        typePropagationFunction match {
          case Some(_: ChildNullPropagation) => childNullPropagatesTo(typ)
          case Some(_: NullabilityPropagation) => typ.asNullableAs(joinedCypherType)
-         case Some(_: FullNullabilityPropagtion) =>  if (exprs.exists(!_.cypherType.isNullable)) joinedCypherType.material else joinedCypherType.nullable
+         case Some(_: FullNullabilityPropagation) =>  if (exprs.exists(!_.cypherType.isNullable)) typ else typ.nullable
          case None => typ
         }
       case None =>
@@ -682,7 +682,7 @@ final case class ToId(expr: Expr) extends UnaryFunctionExpr {
 
   def signature(cypherType: CypherType): Option[CypherType] = cypherType match {
       case CTInteger | CTIdentity => Some(CTIdentity)
-      case x if x.subTypeOf(CTEntity) => Some(CTIdentity)
+      case x if x.subTypeOf(CTElement) => Some(CTIdentity)
       case _ => None
   }
 }
@@ -801,7 +801,7 @@ final case class BigDecimal(expr: Expr, precision: Long, scale: Long) extends Un
 final case class Coalesce(exprs: List[Expr]) extends FunctionExpr {
   override def nullInNullOut: Boolean = false
 
-  override def cypherType: CypherType = cypherType(Some(FullNullabilityPropagtion()))
+  override def cypherType: CypherType = cypherType(Some(FullNullabilityPropagation()))
 
   override def signature(inputCypherTypes: Vector[CypherType]): Option[CypherType] = Some(inputCypherTypes.reduceLeft(_ | _))
 
