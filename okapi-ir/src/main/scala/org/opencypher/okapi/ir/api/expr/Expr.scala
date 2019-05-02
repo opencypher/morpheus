@@ -962,7 +962,7 @@ case object Pi extends NullaryFunctionExpr {
 
 // Numeric functions
 
-final case class Abs(expr: Expr) extends UnaryMathematicalFunctionExpr(CTNumber)
+final case class Abs(expr: Expr) extends UnaryMathematicalFunctionExpr(expr.cypherType)
 
 final case class Ceil(expr: Expr) extends UnaryMathematicalFunctionExpr(CTInteger)
 
