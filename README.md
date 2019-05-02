@@ -6,6 +6,8 @@ It allows for the **integration** of many **data sources** and supports **multip
 It enables you to use your Spark cluster to run **analytical graph queries**.
 Queries can also return graphs to create **processing pipelines**.
 
+**Note** This is the repo formerly known as opencypher/cypher-for-apache-spark
+
 ## Intended audience
 
 Morpheus allows you to develop complex processing pipelines orchestrated by a powerful and expressive high-level language.
