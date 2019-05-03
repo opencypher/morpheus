@@ -11,22 +11,16 @@ dependencies {
 task allJar(type: ShadowJar) {
     classifier = 'all'
     def relocatePackage = 'org.opencypher.relocated.'
-    relocate 'acyclic', relocatePackage +'acyclic'
     relocate 'cats', relocatePackage +'cats'
     relocate 'fastparse', relocatePackage +'fastparse'
     relocate 'machinist', relocatePackage +'machinist'
     relocate 'org.apache', relocatePackage +'org.apache'
     relocate 'org.atnos', relocatePackage +'org.atnos'
     relocate 'org.parboiled', relocatePackage +'org.parboiled'
-    relocate 'org.scalacheck', relocatePackage +'org.scalacheck'
-    relocate 'org.scalatools', relocatePackage +'org.scalatools'
-    // TODO: remove sbt
-    relocate 'sbt', relocatePackage +'sbt'
     relocate 'sourcecode', relocatePackage +'sourcecode'
     relocate 'ujson', relocatePackage +'ujson'
     relocate 'upack', relocatePackage +'upack'
     relocate 'upickle', relocatePackage +'upickle'
-    relocate 'utest', relocatePackage +'utest'
 
     from project.sourceSets.main.output
     configurations = [project.configurations.runtime]
@@ -37,7 +31,6 @@ task allJar(type: ShadowJar) {
     }
     exclude "META-INF/versions/**/*"
     exclude "META-INF/services/**/*"
-    exclude "scalac-plugin.xml"
     exclude "utf8.json"
 }
 
