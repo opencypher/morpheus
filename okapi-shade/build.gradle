@@ -2,7 +2,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 
 apply plugin: 'com.github.johnrengelman.shadow'
 
-description = 'Okapi Relational - Relational Algebra for Cypher'
+description = 'Okapi Shade contains the full Okapi stack and its relocated dependencies'
 
 dependencies {
     compile project(':okapi-relational')
