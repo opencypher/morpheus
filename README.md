@@ -1,4 +1,4 @@
-[![Maven Central](https://img.shields.io/badge/Maven_Central-0.3.2-blue.svg?label=Maven%20Central)](https://search.maven.org/#artifactdetails%7Corg.opencypher%7Cspark-cypher%7C0.3.2%7Cjar)
+[![Maven Central](https://img.shields.io/badge/Maven_Central-0.4.0-blue.svg?label=Maven%20Central)](https://search.maven.org/#artifactdetails%7Corg.opencypher%7Cmorpheus-spark-cypher%7C0.4.0%7Cjar)
 # Morpheus: Cypher for Apache Spark
 
 Morpheus extends [Apache Spark™](https://spark.apache.org) with [Cypher](https://neo4j.com/docs/developer-manual/current/cypher/), the industry's most widely used [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) query language defined and maintained by the [openCypher](http://www.opencypher.org) project.
@@ -89,14 +89,14 @@ Maven:
 ```
 <dependency>
   <groupId>org.opencypher</groupId>
-  <artifactId>spark-cypher</artifactId>
-  <version>0.3.2</version>
+  <artifactId>morpheus-spark-cypher</artifactId>
+  <version>0.4.0</version>
 </dependency>
 ```
 
 sbt:
 ```
-libraryDependencies += "org.opencypher" % "spark-cypher" % "0.3.2"
+libraryDependencies += "org.opencypher" % "morpheus-spark-cypher" % "0.4.0"
 ```
 
 Remember to add `fork in run := true` in your `build.sbt` for scala projects; this is not Morpheus
