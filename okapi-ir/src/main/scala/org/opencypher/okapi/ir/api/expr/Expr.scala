@@ -795,8 +795,12 @@ final case class BigDecimal(expr: Expr, precision: Long, scale: Long) extends Un
     throw IllegalArgumentException("Greater precision than scale", s"precision: $precision, scale: $scale")
   }
   override def propagationType: Option[PropagationType] = Some(NullabilityPropagation)
-  //todo: allowed cyphertypes?
-  def signature(cypherType: CypherType): Option[CypherType] = Some(CTBigDecimal(precision.toInt, scale.toInt)) }
+
+  def signature(cypherType: CypherType): Option[CypherType] = cypherType match {
+    case x if x.subTypeOf(CTNumber) => Some(CTBigDecimal(precision.toInt, scale.toInt))
+    case _ => None
+  }
+}
 
 final case class Coalesce(exprs: List[Expr]) extends FunctionExpr {
   override def nullInNullOut: Boolean = false
