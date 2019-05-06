@@ -36,4 +36,5 @@ shadowJar {
     exclude "utf8.json"
 }
 
+pub.dev.artifacts += 'shadowJar'
 pub.full.artifacts += 'shadowJar'
