@@ -1,4 +1,4 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+apply plugin: 'com.github.johnrengelman.shadow'
 
 description = 'Morpheus: Cypher for Apache Spark'
 
@@ -14,7 +14,7 @@ dependencies {
     compileOnly group: 'org.apache.spark', name: "spark-catalyst".scala(), version: ver.spark
 }
 
-task allJar(type: ShadowJar) {
+shadowJar {
     classifier = 'all'
 
     from project.sourceSets.main.output
@@ -27,4 +27,4 @@ task allJar(type: ShadowJar) {
     exclude "META-INF/versions/**/*"
 }
 
-pub.full.artifacts += 'allJar'
+pub.full.artifacts += 'shadowJar'

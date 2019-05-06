@@ -1,5 +1,3 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
-
 apply plugin: 'com.github.johnrengelman.shadow'
 
 description = 'Okapi Shade contains the full Okapi stack and its relocated dependencies'
@@ -8,19 +6,23 @@ dependencies {
     compile project(':okapi-relational')
 }
 
-task allJar(type: ShadowJar) {
+shadowJar {
     classifier = 'all'
-    def relocatePackage = 'org.opencypher.relocated.'
-    relocate 'cats', relocatePackage +'cats'
-    relocate 'fastparse', relocatePackage +'fastparse'
-    relocate 'machinist', relocatePackage +'machinist'
-    relocate 'org.apache', relocatePackage +'org.apache'
-    relocate 'org.atnos', relocatePackage +'org.atnos'
-    relocate 'org.parboiled', relocatePackage +'org.parboiled'
-    relocate 'sourcecode', relocatePackage +'sourcecode'
-    relocate 'ujson', relocatePackage +'ujson'
-    relocate 'upack', relocatePackage +'upack'
-    relocate 'upickle', relocatePackage +'upickle'
+    def relocatePackage = 'org.opencypher.relocated'
+    [
+            'cats',
+            'fastparse',
+            'machinist',
+            'org.apache',
+            'org.atnos',
+            'org.parboiled',
+            'sourcecode',
+            'ujson',
+            'upack',
+            'upickle',
+    ].each { pkg ->
+        relocate(pkg, "${relocatePackage}.$pkg")
+    }
 
     from project.sourceSets.main.output
     configurations = [project.configurations.runtime]
@@ -34,4 +36,4 @@ task allJar(type: ShadowJar) {
     exclude "utf8.json"
 }
 
-pub.full.artifacts += 'allJar'
+pub.full.artifacts += 'shadowJar'
