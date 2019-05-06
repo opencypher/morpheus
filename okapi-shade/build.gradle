@@ -7,7 +7,7 @@ dependencies {
 }
 
 shadowJar {
-    classifier = 'all'
+    classifier = ''
     def relocatePackage = 'org.opencypher.relocated'
     [
             'cats',
@@ -36,5 +36,7 @@ shadowJar {
     exclude "utf8.json"
 }
 
+pub.dev.artifacts -= 'jar'
 pub.dev.artifacts += 'shadowJar'
+pub.full.artifacts -= 'jar'
 pub.full.artifacts += 'shadowJar'
