@@ -24,9 +24,6 @@ shadowJar {
         relocate(pkg, "${relocatePackage}.$pkg")
     }
 
-    from project.sourceSets.main.output
-    configurations = [project.configurations.runtime]
-
     dependencies {
         exclude(dependency('org.scala-lang:'))
         exclude(dependency('org.scala-lang.modules:'))
@@ -36,7 +33,7 @@ shadowJar {
     exclude "utf8.json"
 }
 
-pub.dev.artifacts -= 'jar'
-pub.dev.artifacts += 'shadowJar'
-pub.full.artifacts -= 'jar'
-pub.full.artifacts += 'shadowJar'
+pub.dev.artifacts = ['shadowJar']
+pub.full.artifacts = ['shadowJar']
+
+assemble.dependsOn shadowJar
