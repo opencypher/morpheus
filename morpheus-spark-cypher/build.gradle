@@ -3,8 +3,16 @@ apply plugin: 'com.github.johnrengelman.shadow'
 description = 'Morpheus: Cypher for Apache Spark'
 
 dependencies {
-    compile project(':okapi-relational')
-    compile project(':okapi-neo4j-io')
+    if (project.hasProperty('testOkapiShade')) {
+        compile project(path: ':okapi-shade', configuration: 'shadow')
+        compile(project(':okapi-neo4j-io')) {
+            exclude(group: 'org.opencypher', module: 'okapi-api')
+        }
+    } else {
+        compile project(':okapi-relational')
+        compile(project(':okapi-neo4j-io'))
+    }
+
     compile project(':graph-ddl')
 
     compile group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: ver.neo4j.driver
