@@ -607,14 +607,16 @@ case object FullNullabilityPropagation extends PropagationType
 
 
 sealed trait FunctionExpr extends Expr {
+  cypherType //check for invalid expr
+
   override final def toString = s"$name(${exprs.mkString(", ")})"
   override final def withoutType = s"$name(${exprs.map(_.withoutType).mkString(", ")})"
   def name: String = this.getClass.getSimpleName.toLowerCase
   def exprs: List[Expr]
-  def propagationType : Option[PropagationType] = None
 
   def cypherType: CypherType = computeCypherType
 
+  def propagationType : Option[PropagationType] = None
   def computeCypherType: CypherType = {
     val materialTypeVector = exprs.map(_.cypherType.material)
     val joinedCypherType = exprs.map(_.cypherType).foldLeft[CypherType](CTVoid)(_ join _)
@@ -952,11 +954,11 @@ final case class Log10(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat
 final case class Exp(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
 case object E extends NullaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat
+  override def cypherType: CypherType = CTFloat
 }
 
 case object Pi extends NullaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat
+  override def cypherType: CypherType = CTFloat
 }
 
 // Numeric functions
@@ -968,7 +970,7 @@ final case class Ceil(expr: Expr) extends UnaryMathematicalFunctionExpr(CTIntege
 final case class Floor(expr: Expr) extends UnaryMathematicalFunctionExpr(CTInteger)
 
 case object Rand extends NullaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat
+  override def cypherType: CypherType = CTFloat
 }
 
 final case class Round(expr: Expr) extends UnaryMathematicalFunctionExpr(CTInteger)
@@ -1010,7 +1012,7 @@ final case class Tan(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 // Time functions
 
 case object Timestamp extends NullaryFunctionExpr {
-  override val cypherType: CypherType = CTInteger
+  override def cypherType: CypherType = CTInteger
 }
 
 // Aggregators
@@ -1021,6 +1023,7 @@ sealed trait Aggregator extends Expr {
   override def nullInNullOut: Boolean = false
 }
 
+//todo: reuse typing from functionexpr (possible in extra type)
 sealed trait TypedAggregator extends Aggregator {
   def expr: Expr
 
@@ -1149,7 +1152,7 @@ final case class StringLit(v: String) extends Lit[String] {
 }
 
 sealed abstract class TemporalInstant(expr: Option[Expr], outputCypherType: CypherType) extends FunctionExpr {
-  override val exprs: List[Expr] = expr.toList
+  override def exprs: List[Expr] = expr.toList
   override def propagationType: Option[PropagationType] = Some(ChildNullPropagation)
 
   override def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes.headOption match {

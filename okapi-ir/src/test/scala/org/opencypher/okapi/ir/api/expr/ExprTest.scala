@@ -152,13 +152,13 @@ class ExprTest extends BaseTestSuite {
 
     it("types Trim correctly") {
       Trim(e).cypherType shouldBe CTString.nullable
-      an[UnsupportedOperationException] shouldBe thrownBy {Trim(datetime).cypherType}
+      an[UnsupportedOperationException] shouldBe thrownBy {Trim(datetime)}
     }
 
     it("types Range correctly") {
       Range(d, d, None).cypherType shouldBe CTList(CTInteger)
       Range(d, d, Some(d)).cypherType
-      an[UnsupportedOperationException] shouldBe thrownBy {Range(e, d, None).cypherType}
+      an[UnsupportedOperationException] shouldBe thrownBy {Range(e, d, None)}
     }
 
     it("types TemporalInstants correctly") {
