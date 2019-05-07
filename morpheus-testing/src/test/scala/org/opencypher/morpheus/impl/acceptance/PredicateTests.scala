@@ -179,13 +179,18 @@ class PredicateTests extends MorpheusTestSuite with ScanGraphInit {
     it("compares less than between different types") {
 
       // Given
-      val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val2: 'string'})""")
+      val given = initGraph(
+        """CREATE (:A {val: 4})-[:REL]->(:B {val2: 1.0}),
+          |       (:A {val: 1})-[:REL]->(:B {val2: 4.0})
+        """.stripMargin)
 
       // When
       val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val < b.val2 RETURN a.val")
 
       // Then
-      result.records.collect.toBag shouldBe empty
+      result.records.collect.toBag should equal(Bag(
+        CypherMap("a.val" -> 1)
+      ))
     }
 
     it("less than or equal") {
@@ -209,13 +214,19 @@ class PredicateTests extends MorpheusTestSuite with ScanGraphInit {
     it("compares less than or equal between different types") {
 
       // Given
-      val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val2: 'string'})""")
+      val given = initGraph(
+        """CREATE (:A {val: 4})-[:REL]->(:B {val2: 4.0}),
+          |       (:A {val: 1})-[:REL]->(:B {val2: 4.0})
+        """.stripMargin)
 
       // When
       val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val <= b.val2 RETURN a.val")
 
       // Then
-      result.records.collect.toBag shouldBe empty
+      result.records.collect.toBag should equal(Bag(
+        CypherMap("a.val" -> 4),
+        CypherMap("a.val" -> 1)
+      ))
     }
 
     it("greater than") {
@@ -234,13 +245,18 @@ class PredicateTests extends MorpheusTestSuite with ScanGraphInit {
     it("compares greater than between different types") {
 
       // Given
-      val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val2: 'string'})""")
+      val given = initGraph(
+        """CREATE (:A {val: 4})-[:REL]->(:B {val2: 1.0}),
+          |       (:A {val: 1})-[:REL]->(:B {val2: 4.0})
+        """.stripMargin)
 
       // When
       val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val > b.val2 RETURN a.val")
 
       // Then
-      result.records.collect.toBag shouldBe empty
+      result.records.collect.toBag should equal(Bag(
+        CypherMap("a.val" -> 4)
+      ))
     }
 
     it("greater than or equal") {
@@ -260,13 +276,19 @@ class PredicateTests extends MorpheusTestSuite with ScanGraphInit {
     it("compares greater than or equal between different types") {
 
       // Given
-      val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val2: 'string'})""")
+      val given = initGraph(
+        """CREATE (:A {val: 4})-[:REL]->(:B {val2: 1.0}),
+          |       (:A {val: 4})-[:REL]->(:B {val2: 4.0})
+        """.stripMargin)
 
       // When
       val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val >= b.val2 RETURN a.val")
 
       // Then
-      result.records.collect.toBag shouldBe empty
+      result.records.collect.toBag should equal(Bag(
+        CypherMap("a.val" -> 4),
+        CypherMap("a.val" -> 4)
+      ))
     }
   }
 
