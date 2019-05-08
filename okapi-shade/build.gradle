@@ -19,6 +19,8 @@ publishing {
     publications {
         shade(MavenPublication) { pub ->
             project.shadow.component(pub)
+            artifact sourceJar
+            artifact docJar
             pom pomConfig
             pom.withXml {
                 def dependenciesNode = asNode().dependencies[0]

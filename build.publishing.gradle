@@ -81,10 +81,6 @@ subprojects {
         }
     }
 
-    tasks.withType(PublishToMavenRepository) {
-        onlyIf { publication == publishing.publications.full }
-    }
-
     // Convenience for quick publish to maven local
     task devPublish {
         group 'publishing'
