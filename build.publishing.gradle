@@ -9,6 +9,28 @@ subprojects {
                                   'docJar',
                                   'testJar',]],
         ]
+        pomConfig = {
+            name = project.description
+            description = project.description
+            url = 'https://www.opencypher.org'
+            licenses {
+                license {
+                    name = 'Apache License, Version 2.0'
+                    url = 'http://www.apache.org/licenses/LICENSE-2.0'
+                }
+            }
+            developers {
+                developer {
+                    id = 'morpheus'
+                    name = 'The Morpheus team'
+                    email = 'opencypher@neo4j.com'
+                    url = 'https://www.opencypher.org'
+                }
+            }
+            scm {
+                url = 'https://github.com/opencypher/morpheus'
+            }
+        }
     }
 
     publishing {
@@ -21,29 +43,6 @@ subprojects {
         }
 
         publications {
-
-            def pomConfig = {
-                    name = project.description
-                    description = project.description
-                    url = 'https://www.opencypher.org'
-                    licenses {
-                        license {
-                            name = 'Apache License, Version 2.0'
-                            url = 'http://www.apache.org/licenses/LICENSE-2.0'
-                        }
-                    }
-                    developers {
-                        developer {
-                            id = 'morpheus'
-                            name = 'The Morpheus team'
-                            email = 'opencypher@neo4j.com'
-                            url = 'https://www.opencypher.org'
-                        }
-                    }
-                    scm {
-                        url = 'https://github.com/opencypher/morpheus'
-                    }
-            }
 
             dev(MavenPublication) {
                 from components.java
