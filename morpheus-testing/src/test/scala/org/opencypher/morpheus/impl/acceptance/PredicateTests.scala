@@ -28,6 +28,7 @@ package org.opencypher.morpheus.impl.acceptance
 
 import org.opencypher.morpheus.testing.MorpheusTestSuite
 import org.opencypher.okapi.api.value.CypherValue._
+import org.opencypher.okapi.impl.exception.NoSuitableSignatureForExpr
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 
@@ -193,6 +194,15 @@ class PredicateTests extends MorpheusTestSuite with ScanGraphInit {
       ))
     }
 
+    it("fails when comparing less than between incompatible types") {
+
+      // Given
+      val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val2: 'string'})""")
+
+      // Then
+      a[NoSuitableSignatureForExpr] shouldBe thrownBy(given.cypher("MATCH (a:A)-->(b:B) WHERE a.val < b.val2 RETURN a.val"))
+    }
+
     it("less than or equal") {
       // Given
       val given = initGraph(
@@ -229,6 +239,15 @@ class PredicateTests extends MorpheusTestSuite with ScanGraphInit {
       ))
     }
 
+    it("fails when comparing less than or equal between incompatible types") {
+
+      // Given
+      val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val2: 'string'})""")
+
+      // Then
+      a[NoSuitableSignatureForExpr] shouldBe thrownBy(given.cypher("MATCH (a:A)-->(b:B) WHERE a.val <= b.val2 RETURN a.val"))
+    }
+
     it("greater than") {
       // Given
       val given = initGraph("""CREATE (:Node {val: 4})-[:REL]->(:Node {val: 5})""")
@@ -257,6 +276,15 @@ class PredicateTests extends MorpheusTestSuite with ScanGraphInit {
       result.records.collect.toBag should equal(Bag(
         CypherMap("a.val" -> 4)
       ))
+    }
+
+    it("fails when comparing greater than between incompatible types") {
+
+      // Given
+      val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val2: 'string'})""")
+
+      // Then
+      a[NoSuitableSignatureForExpr] shouldBe thrownBy(given.cypher("MATCH (a:A)-->(b:B) WHERE a.val > b.val2 RETURN a.val"))
     }
 
     it("greater than or equal") {
@@ -289,6 +317,15 @@ class PredicateTests extends MorpheusTestSuite with ScanGraphInit {
         CypherMap("a.val" -> 4),
         CypherMap("a.val" -> 4)
       ))
+    }
+
+    it("fails when comparing greater than or equal between different types") {
+
+      // Given
+      val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val2: 'string'})""")
+
+      // Then
+      a[NoSuitableSignatureForExpr] shouldBe thrownBy(given.cypher("MATCH (a:A)-->(b:B) WHERE a.val >= b.val2 RETURN a.val"))
     }
   }
 
