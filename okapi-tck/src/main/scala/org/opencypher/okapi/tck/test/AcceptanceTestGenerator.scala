@@ -190,8 +190,7 @@ case class AcceptanceTestGenerator(
 
     val execString = stepsToString(execSteps.zipWithIndex)
     val testString =
-      s"""
-         |    val graph = $initQueryString
+      s"""val graph = $initQueryString
          |    $execString
        """.stripMargin
 
@@ -239,8 +238,7 @@ case class AcceptanceTestGenerator(
               case None => ""
             }
             val stepString =
-              s"""
-                 |    lazy val result$stepNr = graph.cypher(
+              s"""lazy val result$stepNr = graph.cypher(
                  |      $escapeStringMarks
                  |        ${alignString(query)}
                  |      $escapeStringMarks$parameters
@@ -259,8 +257,7 @@ case class AcceptanceTestGenerator(
 
         val equalMethod = if (sorted) "equals" else "equalsUnordered"
         val stepString =
-          s"""
-             |    val result${resultNumber}ValueRecords = convertToTckStrings(result$resultNumber.records).asValueRecords
+          s"""val result${resultNumber}ValueRecords = convertToTckStrings(result$resultNumber.records).asValueRecords
              |    val expected${resultNumber}ValueRecords = CypherValueRecords(List(${expectedResult.header.map(escapeString).mkString(",")}),
              |      List(${expectedResult.rows.map(tckCypherMapToTCKCreateString).mkString(s", \n           ")}))
              |
@@ -286,8 +283,7 @@ case class AcceptanceTestGenerator(
             case Some(v) => v
             case None => throw new IllegalStateException(s"no graph state found to check side effects")
           }
-          s"""
-             |    val afterState$contextStep = SideEffectOps.measureState(TCKGraph($graphFactoryName,graph))
+          s"""val afterState$contextStep = SideEffectOps.measureState(TCKGraph($graphFactoryName,graph))
              |    (beforeState$contextStep diff afterState$contextStep) shouldEqual ${diffToCreateString(expected)}
            """.stripMargin
         }
