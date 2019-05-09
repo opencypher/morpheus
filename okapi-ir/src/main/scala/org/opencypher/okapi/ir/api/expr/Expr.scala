@@ -128,11 +128,6 @@ sealed trait TypeValidatedExpr extends Expr{
           case Some(NullOrAnyNullable) => childNullPropagatesTo(typ)
           case Some(AnyNullable) => if(exprs.exists(_.cypherType.isNullable)) typ.nullable else typ
           case Some(AllNullable) =>  if (exprs.forall(_.cypherType.isNullable)) typ.nullable else typ
-          case Some(InPropagation) =>
-            typ match {
-              case CTFalse => typ
-              case _ => childNullPropagatesTo(typ)
-            }
           case None => typ
         }
       case None =>
@@ -441,15 +436,16 @@ final case class GreaterThanOrEqual(lhs: Expr, rhs: Expr) extends BinaryPredicat
 final case class In(lhs: Expr, rhs: Expr) extends BinaryPredicate {
   override val op = "IN"
 
-  override def propagationType: Option[PropagationType] = Some(InPropagation)
-  override def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = lhsType -> rhsType match {
-    case (_, CTEmptyList) => Some(CTFalse)
-    case (CTNull, _) => Some(CTNull)
-    case (l, _) if l.isNullable => Some(CTBoolean.nullable)
-    case (_, CTList(inner)) if inner.isNullable => Some(CTBoolean.nullable)
-    case (l, CTList(inner)) if !l.couldBeSameTypeAs(inner) => Some(CTFalse)
-    case _ => Some(CTBoolean)
+  override def computeCypherType: CypherType = lhs.cypherType -> rhs.cypherType match {
+    case (_, CTEmptyList) => CTFalse
+    case (CTNull, _) => CTNull
+    case (l, _) if l.isNullable => CTBoolean.nullable
+    case (_, CTList(inner)) if inner.isNullable => CTBoolean.nullable
+    case (l, CTList(inner)) if !l.couldBeSameTypeAs(inner) => CTFalse
+    case _ => childNullPropagatesTo(CTBoolean)
   }
+
+  def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = None //signatures not used as In to special
 }
 
 sealed trait Property extends Expr {
