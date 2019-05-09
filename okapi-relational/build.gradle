@@ -1,4 +1,4 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+apply plugin: 'com.github.johnrengelman.shadow'
 
 description = 'Okapi Relational - Relational Algebra for Cypher'
 
@@ -8,7 +8,7 @@ dependencies {
     testCompile project(':okapi-testing')
 }
 
-task allJar(type: ShadowJar) {
+shadowJar {
     classifier = 'all'
 
     from project.sourceSets.main.output
@@ -21,4 +21,4 @@ task allJar(type: ShadowJar) {
     exclude "META-INF/versions/**/*"
 }
 
-pub.full.artifacts += 'allJar'
+pub.full.artifacts += 'shadowJar'

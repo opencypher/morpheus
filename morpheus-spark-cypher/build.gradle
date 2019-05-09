@@ -1,12 +1,32 @@
-import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
+apply plugin: 'com.github.johnrengelman.shadow'
 
 description = 'Morpheus: Cypher for Apache Spark'
+
+if (project.hasProperty('testOkapiShade')) {
+    configurations {
+        compile {
+            exclude(group: 'org.opencypher', module: 'okapi-api')
+            exclude(group: 'org.opencypher', module: 'okapi-ir')
+            exclude(group: 'org.opencypher', module: 'okapi-logical')
+            exclude(group: 'org.opencypher', module: 'okapi-relational')
+            exclude(group: 'org.opencypher', module: 'okapi-trees')
+        }
+    }
+    dependencies {
+        compile group: 'org.opencypher', name: 'okapi-shade', version: ver.self
+    }
+}
 
 dependencies {
     compile project(':okapi-relational')
     compile project(':okapi-neo4j-io')
     compile project(':graph-ddl')
 
+    compile(group: 'com.lihaoyi', name: "upickle".scala(), version: ver.upickle) {
+        exclude group: 'com.lihaoyi', module: 'utest'.scala()
+        exclude group: 'com.lihaoyi', module: 'acyclic'.scala()
+    }
+    compile group: 'org.typelevel', name: "cats-core".scala(), version: ver.cats
     compile group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: ver.neo4j.driver
 
     compileOnly group: 'org.apache.spark', name: "spark-core".scala(), version: ver.spark
@@ -14,7 +34,7 @@ dependencies {
     compileOnly group: 'org.apache.spark', name: "spark-catalyst".scala(), version: ver.spark
 }
 
-task allJar(type: ShadowJar) {
+shadowJar {
     classifier = 'all'
 
     from project.sourceSets.main.output
@@ -27,4 +47,4 @@ task allJar(type: ShadowJar) {
     exclude "META-INF/versions/**/*"
 }
 
-pub.full.artifacts += 'allJar'
+pub.full.artifacts += 'shadowJar'

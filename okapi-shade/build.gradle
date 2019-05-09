@@ -1,0 +1,75 @@
+apply plugin: 'com.github.johnrengelman.shadow'
+
+description = 'Okapi Shade contains the full Okapi stack and its relocated dependencies'
+
+dependencies {
+    compile project(':okapi-relational')
+}
+
+ext.excludedDependencyGroups = [
+    'org.scala-lang',
+    'org.scala-lang.modules',
+]
+
+pub.each { k, v ->
+    v.artifacts = []
+}
+
+publishing {
+    publications {
+        shade(MavenPublication) { pub ->
+            project.shadow.component(pub)
+            artifact sourceJar
+            artifact docJar
+            pom pomConfig
+            pom.withXml {
+                def dependenciesNode = asNode().dependencies[0]
+                project.configurations.compile.allDependencies.findAll {
+                    excludedDependencyGroups.contains(it.group)
+                }.each { dep ->
+                    def dependencyNode = dependenciesNode.appendNode('dependency')
+                    dependencyNode.appendNode('groupId', dep.group)
+                    dependencyNode.appendNode('artifactId', dep.name)
+                    dependencyNode.appendNode('version', dep.version)
+                    dependencyNode.appendNode('scope', 'compile')
+                }
+            }
+        }
+    }
+}
+
+shadowJar {
+    classifier = ''
+    from generatePomFileForShadePublication {
+        rename('pom-default.xml',"META-INF/maven/${project.group}/${project.name}/pom.xml")
+    }
+    def relocatePackage = 'org.opencypher.relocated'
+    [
+            'cats',
+            'fastparse',
+            'machinist',
+            'org.apache',
+            'org.atnos',
+            'org.parboiled',
+            'sourcecode',
+            'ujson',
+            'upack',
+            'upickle',
+    ].each { pkg ->
+        relocate(pkg, "${relocatePackage}.$pkg")
+    }
+
+    dependencies {
+        excludedDependencyGroups.each {
+            exclude(dependency("$it:"))
+        }
+    }
+    exclude "META-INF/versions/**/*"
+    exclude "META-INF/services/**/*"
+    exclude "META-INF/NOTICE*"
+    exclude "META-INF/LICENSE*"
+    exclude "utf8.json"
+}
+
+
+assemble.dependsOn shadowJar
