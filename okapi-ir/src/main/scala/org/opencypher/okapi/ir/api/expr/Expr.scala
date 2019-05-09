@@ -27,7 +27,7 @@
 package org.opencypher.okapi.ir.api.expr
 
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NoSuitableSignatureForExpr}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr.FlattenOps._
 import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
@@ -144,7 +144,7 @@ sealed trait TypeValidatedExpr extends Expr{
         }
       case None =>
         if (children.exists(_.cypherType == CTNull)) CTNull //todo: check corner cases (cases where no Propagation is specified)
-        else throw UnsupportedOperationException(s"Type signature ${getClass.getSimpleName}($joinedCypherType) is not supported.")
+        else throw NoSuitableSignatureForExpr(s"Type signature ${getClass.getSimpleName}($joinedCypherType) is not supported.")
     }
   }
 
