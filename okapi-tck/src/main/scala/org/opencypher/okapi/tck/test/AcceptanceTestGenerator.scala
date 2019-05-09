@@ -191,8 +191,9 @@ case class AcceptanceTestGenerator(
     val execString = stepsToString(execSteps.zipWithIndex)
     val testString =
       s"""val graph = $initQueryString
-         |    $execString
-       """.stripMargin
+         |$execString
+         """.stripMargin
+    val alignedTestString = alignString(testString, 1)
 
     val expectsError = scenario.steps.exists {
       case _: ExpectError => true
@@ -202,17 +203,17 @@ case class AcceptanceTestGenerator(
     if (black)
       s"""  it("${scenario.name}") {
          |    Try({
-         |     ${alignString(testString, 1)}
+         |     $alignedTestString
          |    }) match{
          |      case Success(_) =>
          |        throw new RuntimeException("${if (expectsError) "False-positive as probably wrong error" else "A blacklisted scenario works"}")
          |      case Failure(_) =>
          |    }
-         |   }
+         |  }
       """.stripMargin
     else
       s"""  it("${scenario.name}") {
-         |    $testString
+         |    $alignedTestString
          |  }
       """.stripMargin
   }
@@ -238,11 +239,11 @@ case class AcceptanceTestGenerator(
               case None => ""
             }
             val stepString =
-              s"""lazy val result$stepNr = graph.cypher(
-                 |      $escapeStringMarks
-                 |        ${alignString(query)}
-                 |      $escapeStringMarks$parameters
-                 |    )
+              s"""|lazy val result$stepNr = graph.cypher(
+                  |$escapeStringMarks
+                  |  ${alignString(query)}
+                  |$escapeStringMarks$parameters
+                  |)
            """
             stepContext(Some(stepNr), context.ParameterStepNr, context.graphStateStepNr) -> (accString + s"\n    $stepString")
           case _ =>
@@ -257,12 +258,12 @@ case class AcceptanceTestGenerator(
 
         val equalMethod = if (sorted) "equals" else "equalsUnordered"
         val stepString =
-          s"""val result${resultNumber}ValueRecords = convertToTckStrings(result$resultNumber.records).asValueRecords
-             |    val expected${resultNumber}ValueRecords = CypherValueRecords(List(${expectedResult.header.map(escapeString).mkString(",")}),
-             |      List(${expectedResult.rows.map(tckCypherMapToTCKCreateString).mkString(s", \n           ")}))
-             |
-           |    result${resultNumber}ValueRecords.$equalMethod(expected${resultNumber}ValueRecords) shouldBe true
-           """.stripMargin
+          s"""|val result${resultNumber}ValueRecords = convertToTckStrings(result$resultNumber.records).asValueRecords
+              |val expected${resultNumber}ValueRecords = CypherValueRecords(List(${expectedResult.header.map(escapeString).mkString(",")}),
+              |  List(${expectedResult.rows.map(tckCypherMapToTCKCreateString).mkString(s", \n           ")}))
+              |
+              |result${resultNumber}ValueRecords.$equalMethod(expected${resultNumber}ValueRecords) shouldBe true
+           """
         context -> (accString + s"\n    $stepString")
       case ((context, accString), (ExpectError(errorType, errorPhase, detail, _), _)) =>
         val stepNumber = context.ExecQueryStepNr match {
@@ -273,7 +274,7 @@ case class AcceptanceTestGenerator(
         //todo: maybe check if they get imported? (or modify specificNamings case class with optional parameter
         val stepString =
         s"""
-           |     val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{result$stepNumber}
+           |val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{result$stepNumber}
            """.stripMargin
         context -> (accString + s"\n    $stepString")
       case ((context, accString), (SideEffects(expected, _), _)) =>
@@ -283,8 +284,8 @@ case class AcceptanceTestGenerator(
             case Some(v) => v
             case None => throw new IllegalStateException(s"no graph state found to check side effects")
           }
-          s"""val afterState$contextStep = SideEffectOps.measureState(TCKGraph($graphFactoryName,graph))
-             |    (beforeState$contextStep diff afterState$contextStep) shouldEqual ${diffToCreateString(expected)}
+          s"""|val afterState$contextStep = SideEffectOps.measureState(TCKGraph($graphFactoryName,graph))
+              |(beforeState$contextStep diff afterState$contextStep) shouldEqual ${diffToCreateString(expected)}
            """.stripMargin
         }
         else if (relevantSideEffects.nonEmpty) s"fail //due to ${relevantSideEffects.mkString(" ")} sideEffects expected"
