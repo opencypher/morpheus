@@ -136,29 +136,29 @@ class ExprTest extends BaseTestSuite {
     it("types Avg correctly") {
       Avg(duration).cypherType shouldBe CTDuration
       Avg(number).cypherType shouldBe CTNumber
-      an[UnsupportedOperationException] shouldBe thrownBy {Avg(datetime)}
+      an[NoSuitableSignatureForExpr] shouldBe thrownBy {Avg(datetime)}
     }
 
     it("types Sum correctly") {
       Sum(duration).cypherType shouldBe CTDuration
       Sum(number).cypherType shouldBe CTNumber
-      an[UnsupportedOperationException] shouldBe thrownBy {Sum(datetime)}
+      an[NoSuitableSignatureForExpr] shouldBe thrownBy {Sum(datetime)}
     }
 
     it("types Size correctly") {
       Size(e).cypherType shouldBe CTInteger.nullable
-      an[UnsupportedOperationException] shouldBe thrownBy {Size(datetime)}
+      an[NoSuitableSignatureForExpr] shouldBe thrownBy {Size(datetime)}
     }
 
     it("types Trim correctly") {
       Trim(e).cypherType shouldBe CTString.nullable
-      an[UnsupportedOperationException] shouldBe thrownBy {Trim(datetime)}
+      an[NoSuitableSignatureForExpr] shouldBe thrownBy {Trim(datetime)}
     }
 
     it("types Range correctly") {
       Range(d, d, None).cypherType shouldBe CTList(CTInteger)
       Range(d, d, Some(d)).cypherType
-      an[UnsupportedOperationException] shouldBe thrownBy {Range(e, d, None)}
+      an[NoSuitableSignatureForExpr] shouldBe thrownBy {Range(e, d, None)}
     }
 
     it("types TemporalInstants correctly") {
