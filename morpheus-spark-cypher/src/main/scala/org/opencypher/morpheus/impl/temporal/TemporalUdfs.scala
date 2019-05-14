@@ -30,8 +30,10 @@ import java.sql.{Date, Timestamp}
 import java.time.temporal.{ChronoField, IsoFields, TemporalField}
 
 import org.apache.logging.log4j.scala.Logging
-import org.apache.spark.sql.expressions.UserDefinedFunction
+import org.apache.spark.sql.Row
+import org.apache.spark.sql.expressions.{MutableAggregationBuffer, UserDefinedAggregateFunction, UserDefinedFunction}
 import org.apache.spark.sql.functions.udf
+import org.apache.spark.sql.types.{CalendarIntervalType, DataType, LongType, StructField, StructType}
 import org.apache.spark.unsafe.types.CalendarInterval
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 
