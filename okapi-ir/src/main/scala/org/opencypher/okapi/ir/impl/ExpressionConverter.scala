@@ -34,7 +34,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.parse.{functions => f}
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter.Signature
 import org.opencypher.okapi.ir.impl.typer.{InvalidArgument, InvalidContainerAccess, MissingParameter, UnTypedExpr, WrongNumberOfArguments}
-import org.opencypher.v9_0.expressions.{RegexMatch, functions}
+import org.opencypher.v9_0.expressions.{ExtractScope, LogicalVariable, RegexMatch, functions}
 import org.opencypher.v9_0.{expressions => ast}
 import SignatureTyping._
 
@@ -275,6 +275,20 @@ final class ExpressionConverter(context: IRBuilderContext) {
       case ast.ListSlice(list, Some(from), Some(to)) => ListSliceFromTo(convert(list), convert(from), convert(to))
       case ast.ListSlice(list, None, Some(to)) => ListSliceTo(convert(list), convert(to))
       case ast.ListSlice(list, Some(from), None) => ListSliceFrom(convert(list), convert(from))
+
+      //todo: context should also know type of introduced variable / find anotherway for Var() conversion to know the type
+      // todo: type Vars() inside of extractExpression
+      case ast.ListComprehension(ExtractScope(variable, innerPredicate, extractExpression), expr) =>
+        val listExpr = convert(expr)
+        val cypherType = listExpr.cypherType match {
+          case CTList(inner) => inner
+          case e => throw IllegalArgumentException(s"list comprehension expects a list to step over. Actual type: ${e.getClass.getSimpleName}")
+        }
+        val introducedVar = variable match {
+          case LogicalVariable(name) => Var(name)(cypherType)
+          case e => throw IllegalArgumentException(s"Expected a LogicalVariable, actual ${e.getClass.getSimpleName}")
+        }
+        ListComprehension(introducedVar, innerPredicate.map(convert), extractExpression.map(convert), listExpr)
 
       case ast.ContainerIndex(container, index) =>
         val convertedContainer = convert(container)
