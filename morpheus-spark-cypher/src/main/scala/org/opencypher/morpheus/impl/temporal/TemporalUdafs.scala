@@ -32,16 +32,9 @@ import org.apache.spark.sql.expressions.{MutableAggregationBuffer, UserDefinedAg
 import org.apache.spark.sql.types.{CalendarIntervalType, DataType, LongType, StructField, StructType}
 import org.apache.spark.unsafe.types.CalendarInterval
 import org.opencypher.okapi.impl.temporal.TemporalConstants
+import org.opencypher.morpheus.impl.temporal.TemporalConversions._
 
 object TemporalUdafs extends Logging{
-
-  def greaterThan(interval1 : CalendarInterval, interval2 : CalendarInterval): Boolean =
-    if(avgSeconds(interval1) >= avgSeconds(interval2)) true else false
-
-  //similar to comparison in neo4j (not the same as CalenderInterval only differs between seconds and months)
-  def avgSeconds(interval : CalendarInterval): Double = {
-    interval.months * TemporalConstants.AVG_DAYS_PER_MONTH + interval.microseconds / CalendarInterval.MICROS_PER_SECOND
-  }
 
   abstract class SimpleDurationAggregation(aggrName : String) extends UserDefinedAggregateFunction {
     override def inputSchema: StructType = StructType(Array(StructField("duration", CalendarIntervalType)))
@@ -67,12 +60,12 @@ object TemporalUdafs extends Logging{
     override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
       val currMaxInterval = buffer.getAs[CalendarInterval](0)
       val inputInterval = input.getAs[CalendarInterval](0)
-      buffer(0) = if(greaterThan(currMaxInterval, inputInterval)) currMaxInterval else inputInterval
+      buffer(0) = if(currMaxInterval.toDuration.compare(inputInterval.toDuration) >= 0) currMaxInterval else inputInterval
     }
     override def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
       val interval1 = buffer1.getAs[CalendarInterval](0)
       val interval2 = buffer2.getAs[CalendarInterval](0)
-      buffer1(0) = if(greaterThan(interval1, interval2)) interval1 else interval2
+      buffer1(0) = if(interval1.toDuration.compare(interval2.toDuration) >= 0) interval1 else interval2
     }
   }
 
@@ -83,12 +76,12 @@ object TemporalUdafs extends Logging{
     override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
       val currMinInterval = buffer.getAs[CalendarInterval](0)
       val inputInterval = input.getAs[CalendarInterval](0)
-      buffer(0) = if(greaterThan(inputInterval, currMinInterval)) currMinInterval else inputInterval
+      buffer(0) = if(inputInterval.toDuration.compare(currMinInterval.toDuration) >= 0) currMinInterval else inputInterval
     }
     override def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
       val interval1 = buffer1.getAs[CalendarInterval](0)
       val interval2 = buffer2.getAs[CalendarInterval](0)
-      buffer1(0) = if(greaterThan(interval2, interval1)) interval1 else interval2
+      buffer1(0) = if(interval2.toDuration.compare(interval1.toDuration) >= 0) interval1 else interval2
     }
   }
 
