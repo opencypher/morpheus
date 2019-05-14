@@ -43,7 +43,7 @@ object HiveUtils {
       // This is to avoid creating a local HIVE "metastore_db" on disk which needs to be cleaned up before each run,
       // e.g. avoids database and table already exists exceptions on re-runs - not to be used for production.
       // -----------------------------------------------------------------------------------------------------------
-      ("javax.jdo.option.ConnectionURL", s"jdbc:derby:memory:;databaseName=metastore_db;create=true"),
+      ("javax.jdo.option.ConnectionURL", "jdbc:derby:memory:;databaseName=metastore_db;create=true"),
       ("javax.jdo.option.ConnectionDriverName", "org.apache.derby.jdbc.EmbeddedDriver"),
       // ------------------------------------------------------------------------------------------------------------
       // An alternative way of enabling Spark Hive Support (e.g. you could use enableHiveSupport on the SparkSession)
