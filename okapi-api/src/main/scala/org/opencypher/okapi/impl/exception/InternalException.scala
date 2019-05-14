@@ -54,6 +54,8 @@ final case class IllegalArgumentException(expected: Any, actual: Any = "none", e
 
 final case class UnsupportedOperationException(msg: String, cause: Option[Throwable] = None) extends InternalException(msg, cause)
 
+final case class NoSuitableSignatureForExpr(msg: String, cause: Option[Throwable] = None) extends InternalException(msg, cause)
+
 final case class GraphNotFoundException(msg: String, cause: Option[Throwable] = None) extends InternalException(msg, cause)
 
 final case class InvalidGraphException(msg: String, cause: Option[Throwable] = None) extends InternalException(msg, cause)

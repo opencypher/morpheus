@@ -32,8 +32,8 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.tck.test.AcceptanceTestGenerator
 
 object MorpheusTestGenerator extends App {
-  val imports = List("import MorpheusTestSuite",
-    "import ScanGraphFactory")
+  val imports = List("import org.opencypher.morpheus.testing.MorpheusTestSuite",
+    "import org.opencypher.morpheus.testing.support.creation.graphs.ScanGraphFactory")
   val generator = AcceptanceTestGenerator(imports,
     graphFactoryName = "ScanGraphFactory",
     createGraphMethodName = "initGraph",

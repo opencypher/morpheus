@@ -24,45 +24,10 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.okapi.ir.impl.parse.functions
+package org.opencypher.okapi.ir.api.expr
 
-import org.opencypher.v9_0.expressions.functions.Function
-import org.opencypher.v9_0.util.symbols._
 
-case object FunctionExtensions {
-
-  private val mappings: Map[String, Function] = Map(
-    Timestamp.name -> Timestamp,
-    LocalDateTime.name -> LocalDateTime,
-    Date.name -> Date,
-    Duration.name -> Duration)
-    .map(p => p._1.toLowerCase -> p._2)
-
-  def get(name: String): Option[Function] =
-    mappings.get(name.toLowerCase())
-
-  def getOrElse(name: String, f: Function): Function =
-    mappings.getOrElse(name.toLowerCase(), f)
-}
-
-case object Timestamp extends Function {
-  override val name = "timestamp"
-}
-
-case object LocalDateTime extends Function {
-  override val name = "localdatetime"
-}
-
-case object Date extends Function {
-  override val name = "date"
-}
-
-case object Duration extends Function {
-  override val name = "duration"
-}
-
-object CTIdentity extends CypherType {
-  override def parentType: CypherType = CTAny
-  override def toNeoTypeString: String = "IDENTITY"
-}
-
+sealed trait PropagationType
+case object NullOrAnyNullable extends PropagationType
+case object AnyNullable extends PropagationType
+case object AllNullable extends PropagationType

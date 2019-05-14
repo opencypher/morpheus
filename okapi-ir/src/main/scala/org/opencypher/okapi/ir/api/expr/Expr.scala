@@ -27,7 +27,7 @@
 package org.opencypher.okapi.ir.api.expr
 
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NoSuitableSignatureForExpr}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr.FlattenOps._
 import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
@@ -84,7 +84,6 @@ sealed abstract class Expr extends AbstractTreeNode[Expr] {
 }
 
 final case class AliasExpr(expr: Expr, alias: Var) extends Expr {
-
   override val children: Array[Expr] = Array(expr)
 
   override def cypherType: CypherType = alias.cypherType
@@ -92,13 +91,10 @@ final case class AliasExpr(expr: Expr, alias: Var) extends Expr {
   override def nullInNullOut: Boolean = expr.nullInNullOut
 
   override def withoutType: String = s"$expr AS $alias"
-
 }
 
 final case class Param(name: String)(val cypherType: CypherType) extends Expr {
-
   override def withoutType: String = s"$$$name"
-
 }
 
 sealed trait Var extends Expr {
@@ -117,41 +113,60 @@ object Var {
   }
 }
 
-final case class ListSegment(index: Int, listVar: Var) extends Var {
+sealed trait TypeValidatedExpr extends Expr{
+  val cypherType: CypherType = computeCypherType
+  def exprs: List[Expr]
+  def propagationType : Option[PropagationType] = None
 
-  override def owner: Option[Var] = Some(listVar)
+  def computeCypherType: CypherType = {
+    val materialTypes = exprs.map(_.cypherType.material)
+    val maybeType = signature(materialTypes)
 
-  override def withOwner(v: Var): ListSegment = copy(listVar = v)
-
-  override def withoutType: String = s"${listVar.withoutType}($index)"
-
-  override def name: String = s"${listVar.name}($index)"
-
-  override def cypherType: CypherType = {
-    val innerType = listVar.cypherType match {
-      case CTList(inner) => inner
-
-      case CTUnion(options) =>
-        options.map {
-          case CTList(inner) => inner
-          case CTNull => CTNull
-          case _ => throw IllegalArgumentException("input cypher type to resolve to a list", listVar.cypherType)
-        }.reduceLeft(_ | _)
-
-      case CTNull => CTNull
-
-      case _ => throw IllegalArgumentException("input cypher type to resolve to a list", listVar.cypherType)
+    maybeType match {
+      case Some(typ) =>
+        propagationType match {
+          case Some(NullOrAnyNullable) => childNullPropagatesTo(typ)
+          case Some(AnyNullable) => if(exprs.exists(_.cypherType.isNullable)) typ.nullable else typ
+          case Some(AllNullable) =>  if (exprs.forall(_.cypherType.isNullable)) typ.nullable else typ
+          case None => typ
+        }
+      case None =>
+        if (children.exists(_.cypherType == CTNull)) CTNull
+        else throw NoSuitableSignatureForExpr(s"Type signature ${getClass.getSimpleName}($materialTypes) is not supported.")
     }
-
-    innerType.nullable
   }
 
+  def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType]
+}
+
+final case class ListSegment(index: Int, listVar: Var) extends Var with TypeValidatedExpr {
+  override def owner: Option[Var] = Some(listVar)
+  override def withOwner(v: Var): ListSegment = copy(listVar = v)
+  override def withoutType: String = s"${listVar.withoutType}($index)"
+  override def name: String = s"${listVar.name}($index)"
+
+  override def exprs: List[Expr] = List(listVar)
+  override def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes.head match {
+    case CTList(inner) => Some(inner.nullable)
+    case CTUnion(options) =>
+      options
+        .map {
+          case CTList(inner) => Some(inner)
+          case CTNull => Some(CTNull)
+          case _ => None}
+        .reduceLeft[Option[CypherType]]{
+          case (Some(acc),Some(x)) => Some(acc | x)
+          case (None, _) => None
+          case (_, None) => None}
+        .map(_.nullable)
+    case CTNull => Some(CTNull)
+    case _ => None
+  }
 }
 
 sealed trait ReturnItem extends Var
 
 final case class NodeVar(name: String)(val cypherType: CypherType = CTNode) extends ReturnItem {
-
   override def owner: Option[Var] = Some(this)
 
   override def withOwner(expr: Var): NodeVar = expr match {
@@ -164,7 +179,6 @@ final case class NodeVar(name: String)(val cypherType: CypherType = CTNode) exte
 }
 
 final case class RelationshipVar(name: String)(val cypherType: CypherType = CTRelationship) extends ReturnItem {
-
   override def owner: Option[Var] = Some(this)
 
   override def withOwner(expr: Var): RelationshipVar = expr match {
@@ -177,15 +191,12 @@ final case class RelationshipVar(name: String)(val cypherType: CypherType = CTRe
 }
 
 final case class SimpleVar(name: String)(val cypherType: CypherType) extends ReturnItem {
-
   override def owner: Option[Var] = Some(this)
 
   override def withOwner(expr: Var): SimpleVar = SimpleVar(expr.name)(expr.cypherType)
-
 }
 
 final case class StartNode(rel: Expr)(val cypherType: CypherType) extends Expr {
-
   type This = StartNode
 
   override def toString = s"source($rel) :: $cypherType"
@@ -196,13 +207,10 @@ final case class StartNode(rel: Expr)(val cypherType: CypherType) extends Expr {
   }
 
   override def withOwner(v: Var): StartNode = StartNode(v)(cypherType)
-
   override def withoutType: String = s"source(${rel.withoutType})"
-
 }
 
 final case class EndNode(rel: Expr)(val cypherType: CypherType) extends Expr {
-
   type This = EndNode
 
   override def toString = s"target($rel) :: $cypherType"
@@ -213,9 +221,7 @@ final case class EndNode(rel: Expr)(val cypherType: CypherType) extends Expr {
   }
 
   override def withOwner(v: Var): EndNode = EndNode(v)(cypherType)
-
   override def withoutType: String = s"target(${rel.withoutType})"
-
 }
 
 object FlattenOps {
@@ -296,21 +302,21 @@ final case class Ors(_exprs: List[Expr]) extends Expr {
 
 }
 
-sealed trait PredicateExpression extends Expr {
-  override val cypherType: CypherType = CTBoolean.asNullableAs(inner.cypherType)
+sealed trait PredicateExpression extends TypeValidatedExpr {
   def inner: Expr
+
+  override def exprs: List[Expr] = List(inner)
+  override def propagationType: Option[PropagationType] = Some(AnyNullable)
+  override def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = Some(CTBoolean)
 }
 
 final case class Not(expr: Expr) extends PredicateExpression {
-
   def inner: Expr = expr
 
   override def withoutType = s"NOT(${expr.withoutType})"
-
 }
 
 final case class HasLabel(node: Expr, label: Label) extends PredicateExpression {
-
   def inner: Expr = node
 
   override def owner: Option[Var] = node match {
@@ -319,13 +325,16 @@ final case class HasLabel(node: Expr, label: Label) extends PredicateExpression 
   }
 
   override def withOwner(v: Var): HasLabel = HasLabel(v, label)
-
   override def withoutType: String = s"${node.withoutType}:${label.name}"
 
+  override def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes.head match {
+    case CTNode(_, _) => Some(CTBoolean)
+    case u : CTUnion if u.alternatives.forall(_.subTypeOf(CTNode)) => Some(CTBoolean)
+    case _ => None
+  }
 }
 
 final case class HasType(rel: Expr, relType: RelType) extends PredicateExpression {
-
   def inner: Expr = rel
 
   override def owner: Option[Var] = rel match {
@@ -334,96 +343,100 @@ final case class HasType(rel: Expr, relType: RelType) extends PredicateExpressio
   }
 
   override def withOwner(v: Var): HasType = HasType(v, relType)
-
   override def withoutType: String = s"${rel.withoutType}:${relType.name}"
 
+  override def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes.head match {
+    case CTRelationship(_,_) => Some(CTBoolean)
+    case u : CTUnion if u.alternatives.forall(_.subTypeOf(CTRelationship)) => Some(CTBoolean)
+    case _ => None
+  }
 }
 
 final case class IsNull(expr: Expr) extends PredicateExpression {
-
-  override val cypherType: CypherType = CTBoolean
   def inner: Expr = expr
+  override def computeCypherType: CypherType = CTBoolean
   override def withoutType: String = s"type(${expr.withoutType}) IS NULL"
-
 }
 
 final case class IsNotNull(expr: Expr) extends PredicateExpression {
-
-  override val cypherType: CypherType = CTBoolean
   def inner: Expr = expr
+  override def computeCypherType: CypherType = CTBoolean
   override def withoutType: String = s"type(${expr.withoutType}) IS NOT NULL"
-
 }
 
-final case class StartsWith(lhs: Expr, rhs: Expr) extends BinaryPredicate {
+final case class StartsWith(lhs: Expr, rhs: Expr) extends BinaryPredicate with BinaryStrExprSignature {
   override def op: String = "STARTS WITH"
 }
 
-final case class EndsWith(lhs: Expr, rhs: Expr) extends BinaryPredicate {
+final case class EndsWith(lhs: Expr, rhs: Expr) extends BinaryPredicate with BinaryStrExprSignature {
   override def op: String = "ENDS WITH"
 }
 
-final case class Contains(lhs: Expr, rhs: Expr) extends BinaryPredicate {
+final case class Contains(lhs: Expr, rhs: Expr) extends BinaryPredicate with BinaryStrExprSignature {
   override def op: String = "CONTAINS"
 }
 
 // Binary expressions
+sealed trait BinaryStrExprSignature {
+  def signature(lhsType : CypherType, rhsType : CypherType): Option[CypherType] = lhsType -> rhsType match {
+    case (CTString, CTString) => Some(CTBoolean)
+    case _ => None
+  }
+}
 
-sealed trait BinaryExpr extends Expr {
+sealed trait InequalityExprSignature {
+  def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = lhsType -> rhsType match {
+    case (n1, n2) if n1.subTypeOf(CTNumber) && n2.subTypeOf(CTNumber) => Some(CTBoolean)
+    case (c1, c2) if c1.couldBeSameTypeAs(c2) => Some(CTBoolean)
+    case _ => Some(CTVoid)
+  }
+}
+
+sealed trait BinaryExpr extends TypeValidatedExpr {
   override final def toString = s"$lhs $op $rhs"
   override final def withoutType: String = s"${lhs.withoutType} $op ${rhs.withoutType}"
   def lhs: Expr
   def rhs: Expr
   def op: String
+
+  override def exprs: List[Expr] = List(lhs, rhs)
+  def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType]
+  override def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = signature(inputCypherTypes.head, inputCypherTypes(1))
 }
 
 sealed trait BinaryPredicate extends BinaryExpr {
-
-  override val cypherType: CypherType = childNullPropagatesTo(CTBoolean)
-
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
 }
 
 final case class Equals(lhs: Expr, rhs: Expr) extends BinaryPredicate {
-
   override val op = "="
-
+  override def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = Some(CTBoolean)
 }
 
-final case class RegexMatch(lhs: Expr, rhs: Expr) extends BinaryPredicate {
-
+final case class RegexMatch(lhs: Expr, rhs: Expr) extends BinaryPredicate with BinaryStrExprSignature {
   override def op: String = "=~"
-
 }
 
-final case class LessThan(lhs: Expr, rhs: Expr) extends BinaryPredicate {
-
+final case class LessThan(lhs: Expr, rhs: Expr) extends BinaryPredicate with InequalityExprSignature {
   override val op = "<"
-
 }
 
-final case class LessThanOrEqual(lhs: Expr, rhs: Expr) extends BinaryPredicate {
-
+final case class LessThanOrEqual(lhs: Expr, rhs: Expr) extends BinaryPredicate with InequalityExprSignature {
   override val op = "<="
-
 }
 
-final case class GreaterThan(lhs: Expr, rhs: Expr) extends BinaryPredicate {
-
+final case class GreaterThan(lhs: Expr, rhs: Expr) extends BinaryPredicate with InequalityExprSignature {
   override val op = ">"
-
 }
 
-final case class GreaterThanOrEqual(lhs: Expr, rhs: Expr) extends BinaryPredicate {
-
+final case class GreaterThanOrEqual(lhs: Expr, rhs: Expr) extends BinaryPredicate with InequalityExprSignature {
   override val op = ">="
-
 }
 
 final case class In(lhs: Expr, rhs: Expr) extends BinaryPredicate {
-
   override val op = "IN"
 
-  override val cypherType: CypherType = lhs.cypherType -> rhs.cypherType match {
+  override def computeCypherType: CypherType = lhs.cypherType -> rhs.cypherType match {
     case (_, CTEmptyList) => CTFalse
     case (CTNull, _) => CTNull
     case (l, _) if l.isNullable => CTBoolean.nullable
@@ -432,6 +445,7 @@ final case class In(lhs: Expr, rhs: Expr) extends BinaryPredicate {
     case _ => childNullPropagatesTo(CTBoolean)
   }
 
+  def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = None //signatures not used as In to special
 }
 
 sealed trait Property extends Expr {
@@ -506,16 +520,7 @@ sealed trait ArithmeticExpr extends BinaryExpr {
 
   def rhs: Expr
 
-  override val cypherType: CypherType = {
-    val maybeType = signature(lhs.cypherType.material, rhs.cypherType.material)
-
-    maybeType match {
-      case Some(typ) => typ.asNullableAs(rhs.cypherType join lhs.cypherType)
-      case None => throw UnsupportedOperationException(s"Type signature ${getClass.getSimpleName}(${lhs.cypherType}, ${rhs.cypherType}) is not supported.")
-    }
-  }
-
-  def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType]
+  override def propagationType: Option[PropagationType] = Some(AnyNullable)
 }
 
 final case class Add(lhs: Expr, rhs: Expr) extends ArithmeticExpr {
@@ -600,35 +605,38 @@ final case class Divide(lhs: Expr, rhs: Expr) extends ArithmeticExpr {
 }
 
 // Functions
-sealed trait FunctionExpr extends Expr {
-
+sealed trait FunctionExpr extends TypeValidatedExpr {
   override final def toString = s"$name(${exprs.mkString(", ")})"
   override final def withoutType = s"$name(${exprs.map(_.withoutType).mkString(", ")})"
   def name: String = this.getClass.getSimpleName.toLowerCase
-  def exprs: List[Expr]
-}
-
-final case class MonotonicallyIncreasingId() extends FunctionExpr {
-
-  override def exprs: List[Expr] = List.empty
-
-  override def cypherType: CypherType = CTInteger
 }
 
 sealed trait NullaryFunctionExpr extends FunctionExpr {
-
   def exprs: List[Expr] = List.empty[Expr]
+
+  override def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = Some(cypherType)
+}
+
+final case class MonotonicallyIncreasingId() extends NullaryFunctionExpr {
+  override val cypherType: CypherType = CTInteger
 }
 
 sealed trait UnaryFunctionExpr extends FunctionExpr {
-
   def expr: Expr
 
   def exprs: List[Expr] = List(expr)
+
+  def signature(inputCypherType: CypherType): Option[CypherType]
+  def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = signature(inputCypherTypes.head)
 }
 
 final case class Id(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = childNullPropagatesTo(CTIdentity)
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
+
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case CTNode(_, _) | CTRelationship(_, _) => Some(CTIdentity)
+    case _ => None
+  }
 }
 
 object PrefixId {
@@ -636,55 +644,120 @@ object PrefixId {
 }
 
 final case class PrefixId(expr: Expr, prefix: GraphIdPrefix) extends UnaryFunctionExpr {
-  override def cypherType: CypherType = childNullPropagatesTo(CTIdentity)
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
+
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case CTIdentity => Some(CTIdentity)
+    case _ => None
+  }
 }
 
 final case class ToId(expr: Expr) extends UnaryFunctionExpr {
-  override def cypherType: CypherType = childNullPropagatesTo(CTIdentity)
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
+
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+      case CTInteger | CTIdentity => Some(CTIdentity)
+      case x if x.subTypeOf(CTElement) => Some(CTIdentity)
+      case _ => None
+  }
 }
 
 final case class Labels(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = childNullPropagatesTo(CTList(CTString))
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
+
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case CTNode(_, _) => Some(CTList(CTString))
+    case _ => None
+  }
 }
 
 final case class Type(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = childNullPropagatesTo(CTString)
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
+
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case CTRelationship(_, _) => Some(CTString)
+    case _ => None
+  }
 }
 
 final case class Exists(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTBoolean
+  def signature(inputCypherType: CypherType): Option[CypherType] = Some(CTBoolean)
 }
 
 final case class Size(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = childNullPropagatesTo(CTInteger)
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
+
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case CTList(_) | CTString => Some(CTInteger)
+    case _ => None
+  }
 }
 
 final case class Keys(expr: Expr) extends UnaryFunctionExpr {
-  override def cypherType: CypherType = childNullPropagatesTo(CTList(CTString))
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
+
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case CTNode(_, _) | CTRelationship(_, _) | CTMap(_) => Some(CTList(CTString))
+    case _ => None
+  }
 }
 
 final case class StartNodeFunction(expr: Expr) extends UnaryFunctionExpr {
-  override def cypherType: CypherType = childNullPropagatesTo(CTNode)
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
+
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case CTRelationship(_, _) => Some(CTNode)
+    case _ => None
+  }
 }
 
 final case class EndNodeFunction(expr: Expr) extends UnaryFunctionExpr {
-  override def cypherType: CypherType = childNullPropagatesTo(CTNode)
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
+
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case CTRelationship(_, _) => Some(CTNode)
+    case _ => None
+  }
 }
 
 final case class ToFloat(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat.asNullableAs(expr.cypherType)
+  override def propagationType: Option[PropagationType] = Some(AnyNullable)
+
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+      case CTString => Some(CTFloat)
+      case x if x.subTypeOf(CTNumber) => Some(CTFloat)
+      case _ => None
+    }
 }
 
 final case class ToInteger(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTInteger.asNullableAs(expr.cypherType)
+  override def propagationType: Option[PropagationType] = Some(AnyNullable)
+
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case CTString => Some(CTInteger)
+    case x if x.subTypeOf(CTNumber) => Some(CTInteger)
+    case _ => None
+  }
 }
 
 final case class ToString(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTString.asNullableAs(expr.cypherType)
+  override def propagationType: Option[PropagationType] = Some(AnyNullable)
+
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case CTString => Some(CTString)
+    case x if x.subTypeOf(CTUnion(CTNumber, CTTemporal, CTBoolean)) => Some(CTString)
+    case _ => None
+  }
 }
 
 final case class ToBoolean(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTBoolean.asNullableAs(expr.cypherType)
+  override def propagationType: Option[PropagationType] = Some(AnyNullable)
+
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case CTString => Some(CTBoolean)
+    case x if x.subTypeOf(CTBoolean) => Some(CTBoolean)
+    case _ => None
+  }
 }
 
 object BigDecimal {
@@ -695,17 +768,21 @@ final case class BigDecimal(expr: Expr, precision: Long, scale: Long) extends Un
   if (scale > precision) {
     throw IllegalArgumentException("Greater precision than scale", s"precision: $precision, scale: $scale")
   }
-  override val cypherType: CypherType = CTBigDecimal(precision.toInt, scale.toInt).asNullableAs(expr.cypherType)
+  override def propagationType: Option[PropagationType] = Some(AnyNullable)
+
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case x if x.subTypeOf(CTNumber) => Some(CTBigDecimal(precision.toInt, scale.toInt))
+    case _ => None
+  }
 }
 
 final case class Coalesce(exprs: List[Expr]) extends FunctionExpr {
   override def nullInNullOut: Boolean = false
 
-  override def cypherType: CypherType = {
-    val exprUnionType = exprs.map(_.cypherType).reduceLeft(_ | _)
+  override def propagationType: Option[PropagationType] = Some(AllNullable)
 
-    if (exprs.exists(!_.cypherType.isNullable)) exprUnionType.material else exprUnionType.nullable
-  }
+  override def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = Some(inputCypherTypes.reduceLeft(_ | _))
+
 }
 
 final case class Explode(expr: Expr) extends Expr {
@@ -730,44 +807,68 @@ final case class Explode(expr: Expr) extends Expr {
   }
 }
 
-final case class Trim(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTString.asNullableAs(expr.cypherType)
+sealed trait UnaryStringFunctionExpr extends UnaryFunctionExpr{
+  override def propagationType: Option[PropagationType] = Some(AnyNullable)
+
+  def signature(cypherType: CypherType): Option[CypherType] = cypherType match {
+    case CTString => Some(CTString)
+    case _ => None
+  }
 }
 
-final case class LTrim(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTString.asNullableAs(expr.cypherType)
-}
+final case class Trim(expr: Expr) extends UnaryStringFunctionExpr
 
-final case class RTrim(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTString.asNullableAs(expr.cypherType)
-}
+final case class LTrim(expr: Expr) extends UnaryStringFunctionExpr
 
-final case class ToUpper(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTString.asNullableAs(expr.cypherType)
-}
+final case class RTrim(expr: Expr) extends UnaryStringFunctionExpr
 
-final case class ToLower(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTString.asNullableAs(expr.cypherType)
-}
+final case class ToUpper(expr: Expr) extends UnaryStringFunctionExpr
 
-final case class Properties(expr: Expr)(val cypherType: CypherType) extends UnaryFunctionExpr
+final case class ToLower(expr: Expr) extends UnaryStringFunctionExpr
+
+final case class Properties(expr: Expr)(override val cypherType: CypherType) extends UnaryFunctionExpr {
+  //actually not used here as type already checked at ExpressionConverter
+  override def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case CTNode(_, _) | CTRelationship(_, _) | CTMap(_) => Some(CTMap)
+    case _ => None
+  }
+}
 
 // NAry Function expressions
 
 final case class Range(from: Expr, to: Expr, o: Option[Expr]) extends FunctionExpr {
+  override def exprs: List[Expr] = o match {
+    case Some(e) => List(from, to, e)
+    case None => List(from, to)
+  }
 
-  override def exprs: List[Expr] = List(from, to)
-  override def cypherType: CypherType = CTList(CTInteger)
+  override def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes match {
+    case Seq(CTInteger, CTInteger) => Some(CTList(CTInteger))
+    case Seq(CTInteger, CTInteger, CTInteger) => Some(CTList(CTInteger))
+    case _ => None
+  }
 }
 
 final case class Replace(original: Expr, search: Expr, replacement: Expr) extends FunctionExpr {
   override def exprs: List[Expr] = List(original, search, replacement)
-  override def cypherType: CypherType = CTString
+
+  override def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes match {
+    case Seq(CTString, CTString, CTString) => Some(CTString)
+    case _ => None
+  }
 }
 
 final case class Substring(original: Expr, start: Expr, length: Option[Expr]) extends FunctionExpr {
-  override def exprs: List[Expr] = List(original, start)
-  override def cypherType: CypherType = CTString
+  override def exprs: List[Expr] = length match {
+    case Some(l) => List(original, start, l)
+    case None => List(original, start)
+  }
+
+  override def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes match {
+    case Seq(CTString, CTInteger) => Some(CTString)
+    case Seq(CTString, CTInteger, CTInteger) => Some(CTString)
+    case _ => None
+  }
 }
 
 // Bit operators
@@ -779,7 +880,7 @@ final case class ShiftLeft(value: Expr, shiftBits: IntegerLit) extends BinaryExp
   override def rhs: Expr = shiftBits
   override def op: String = "<<"
 
-  override def cypherType: CypherType = value.cypherType
+  override def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = Some(value.cypherType)
 }
 
 final case class ShiftRightUnsigned(value: Expr, shiftBits: IntegerLit) extends BinaryExpr {
@@ -789,40 +890,40 @@ final case class ShiftRightUnsigned(value: Expr, shiftBits: IntegerLit) extends 
   override def rhs: Expr = shiftBits
   override def op: String = ">>>"
 
-  override def cypherType: CypherType = value.cypherType
+  override def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = Some(value.cypherType)
 }
 
 final case class BitwiseAnd(lhs: Expr, rhs: Expr) extends BinaryExpr {
 
   override def op: String = "&"
 
-  override def cypherType: CypherType = lhs.cypherType | rhs.cypherType
+  override def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = Some(lhs.cypherType | rhs.cypherType)
 }
 
 final case class BitwiseOr(lhs: Expr, rhs: Expr) extends BinaryExpr {
 
   override def op: String = "|"
 
-  override def cypherType: CypherType = lhs.cypherType | rhs.cypherType
+  override def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = Some(lhs.cypherType | rhs.cypherType)
 }
 
 // Mathematical functions
+sealed abstract class UnaryMathematicalFunctionExpr(outPutCypherType : CypherType) extends UnaryFunctionExpr {
+  override def propagationType: Option[PropagationType] = Some(AnyNullable)
 
-final case class Sqrt(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat.asNullableAs(expr.cypherType)
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case n if n.subTypeOf(CTNumber) => Some(outPutCypherType)
+    case _ => None
+  }
 }
 
-final case class Log(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat.asNullableAs(expr.cypherType)
-}
+final case class Sqrt(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Log10(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat.asNullableAs(expr.cypherType)
-}
+final case class Log(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Exp(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat.asNullableAs(expr.cypherType)
-}
+final case class Log10(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
+
+final case class Exp(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
 case object E extends NullaryFunctionExpr {
   override val cypherType: CypherType = CTFloat
@@ -834,76 +935,51 @@ case object Pi extends NullaryFunctionExpr {
 
 // Numeric functions
 
-final case class Abs(expr: Expr) extends UnaryFunctionExpr {
-  override def cypherType: CypherType = expr.cypherType
-}
+final case class Abs(expr: Expr) extends UnaryMathematicalFunctionExpr(expr.cypherType)
 
-final case class Ceil(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTInteger.asNullableAs(expr.cypherType)
-}
+final case class Ceil(expr: Expr) extends UnaryMathematicalFunctionExpr(CTInteger)
 
-final case class Floor(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTInteger.asNullableAs(expr.cypherType)
-}
+final case class Floor(expr: Expr) extends UnaryMathematicalFunctionExpr(CTInteger)
 
 case object Rand extends NullaryFunctionExpr {
   override val cypherType: CypherType = CTFloat
 }
 
-final case class Round(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTInteger.asNullableAs(expr.cypherType)
-}
+final case class Round(expr: Expr) extends UnaryMathematicalFunctionExpr(CTInteger)
 
-final case class Sign(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTInteger.asNullableAs(expr.cypherType)
-}
+final case class Sign(expr: Expr) extends UnaryMathematicalFunctionExpr(CTInteger)
 
 // Trigonometric functions
 
-final case class Acos(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat.asNullableAs(expr.cypherType)
-}
+final case class Acos(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Asin(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat.asNullableAs(expr.cypherType)
-}
+final case class Asin(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Atan(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat.asNullableAs(expr.cypherType)
-}
+final case class Atan(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
 final case class Atan2(expr1: Expr, expr2: Expr) extends FunctionExpr {
-  override val cypherType: CypherType = childNullPropagatesTo(CTFloat)
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
   override def exprs: List[Expr] = List(expr1, expr2)
+
+  override def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes match {
+    case Seq(c1, c2) if c1.subTypeOf(CTNumber) && c2.subTypeOf(CTNumber) => Some(CTFloat)
+    case _ => None
+  }
 }
 
-final case class Cos(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat.asNullableAs(expr.cypherType)
-}
+final case class Cos(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Cot(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat.asNullableAs(expr.cypherType)
-}
+final case class Cot(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Degrees(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat.asNullableAs(expr.cypherType)
-}
+final case class Degrees(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Haversin(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat.asNullableAs(expr.cypherType)
-}
+final case class Haversin(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Radians(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat.asNullableAs(expr.cypherType)
-}
+final case class Radians(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Sin(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat.asNullableAs(expr.cypherType)
-}
+final case class Sin(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
-final case class Tan(expr: Expr) extends UnaryFunctionExpr {
-  override val cypherType: CypherType = CTFloat.asNullableAs(expr.cypherType)
-}
+final case class Tan(expr: Expr) extends UnaryMathematicalFunctionExpr(CTFloat)
 
 // Time functions
 
@@ -919,25 +995,20 @@ sealed trait Aggregator extends Expr {
   override def nullInNullOut: Boolean = false
 }
 
-sealed trait TypedAggregator extends Aggregator {
-  def expr: Expr
 
-  override def cypherType: CypherType = {
-    val maybeType = signature(expr.cypherType.material)
+sealed trait TypedAggregator extends Aggregator with TypeValidatedExpr {
+  def expr : Expr
+  def exprs: List[Expr] = List(expr)
 
-    maybeType match {
-      case Some(typ) => childNullPropagatesTo(typ)
-      case None => throw UnsupportedOperationException(s"Type signature ${getClass.getSimpleName}(${expr.cypherType}) is not supported.")
-    }
-  }
+  override def propagationType : Option[PropagationType] = Some(AnyNullable)
 
-  def signature(exprType: CypherType): Option[CypherType] = {
-    exprType match {
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
       case CTDuration => Some(CTDuration)
       case x if CTNumber.superTypeOf(x) => Some(x)
       case _ => None
-    }
   }
+
+  def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = signature(inputCypherTypes.head)
 }
 
 final case class Avg(expr: Expr) extends TypedAggregator {
@@ -1021,7 +1092,7 @@ sealed abstract class ListSlice(maybeFrom: Option[Expr], maybeTo: Option[Expr]) 
   override def withoutType: String = s"${list.withoutType}[${maybeFrom.map(_.withoutType).getOrElse("")}..${maybeTo.map(_.withoutType).getOrElse("")}]"
 
 }
-
+//todo: validateCyphertype
 final case class ListSliceFromTo(list: Expr, from: Expr, to: Expr) extends ListSlice(Some(from), Some(to))
 
 final case class ListSliceFrom(list: Expr, from: Expr) extends ListSlice(Some(from), None)
@@ -1046,26 +1117,28 @@ final case class StringLit(v: String) extends Lit[String] {
   override val cypherType: CypherType = CTString
 }
 
-sealed abstract class TemporalInstant(expr: Option[Expr]) extends FunctionExpr {
+sealed abstract class TemporalInstant(expr: Option[Expr], outputCypherType: CypherType) extends FunctionExpr {
+  override def exprs: List[Expr] = expr.toList
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
 
-  override val exprs: List[Expr] = expr.toList
+  override def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes.headOption match {
+    case Some(CTString)  | Some(CTMap(_)) => Some(outputCypherType)
+    case None => Some(outputCypherType)
+    case _ => None
+  }
 }
 
-final case class LocalDateTime(maybeExpr: Option[Expr]) extends TemporalInstant(maybeExpr) {
+final case class LocalDateTime(maybeExpr: Option[Expr]) extends TemporalInstant(maybeExpr, CTLocalDateTime)
 
-  override val cypherType: CypherType = childNullPropagatesTo(CTLocalDateTime)
-
-}
-
-final case class Date(expr: Option[Expr]) extends TemporalInstant(expr) {
-
-  override val cypherType: CypherType = childNullPropagatesTo(CTDate)
-
-}
+final case class Date(expr: Option[Expr]) extends TemporalInstant(expr, CTDate)
 
 final case class Duration(expr: Expr) extends UnaryFunctionExpr {
+  override def propagationType: Option[PropagationType] = Some(AnyNullable)
 
-  override val cypherType: CypherType = CTDuration.asNullableAs(expr.cypherType)
+  override def signature(cypherType: CypherType): Option[CypherType] = cypherType match{
+    case CTMap(_) | CTString => Some(CTDuration)
+    case _ => None
+  }
 
 }
 
