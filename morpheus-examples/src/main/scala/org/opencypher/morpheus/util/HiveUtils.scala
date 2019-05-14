@@ -24,65 +24,14 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-// tag::full-example[]
-package org.opencypher.morpheus.examples
+package org.opencypher.morpheus.util
 
 import java.io.File
 
-import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
-import org.opencypher.morpheus.api.io.sql.SqlDataSourceConfig.Hive
-import org.opencypher.morpheus.api.{GraphSources, MorpheusSession}
-import org.opencypher.morpheus.util.{App, CensusDB}
-import org.opencypher.okapi.api.graph.Namespace
 
-object CensusHiveExample extends App {
-
-  implicit val resourceFolder: String = "/census"
-
-  // tag::create-session[]
-  // Create a Spark and a Morpheus session
-  implicit val morpheus: MorpheusSession = MorpheusSession.local(hiveExampleSettings: _*)
-  implicit val sparkSession: SparkSession = morpheus.sparkSession
-  // end::create-session[]
-
-
-  // tag::register-sql-source-in-session[]
-  // Register a SQL source (for Hive) in the Cypher session
-  val graphName = "Census_1901"
-  val sqlGraphSource = GraphSources
-      .sql(resource("ddl/census.ddl").getFile)
-      .withSqlDataSourceConfigs("CENSUS" -> Hive)
-
-  // tag::prepare-sql-database[]
-  // Create the data in Hive
-  CensusDB.createHiveData(Hive)
-  // end::prepare-sql-database[]
-
-  morpheus.registerSource(Namespace("sql"), sqlGraphSource)
-  // end::register-sql-source-in-session[]
-
-  // tag::access-registered-graph[]
-  // Access the graph via its qualified graph name
-  val census = morpheus.catalog.graph("sql." + graphName)
-  // end::access-registered-graph[]
-
-  // tag::query-graph[]
-  // Run a simple Cypher query
-  census.cypher(
-    s"""
-       |FROM GRAPH sql.$graphName
-       |MATCH (n:Person)-[r]->(m)
-       |WHERE n.age >= 30
-       |RETURN n,r,m
-       |ORDER BY n.age
-    """.stripMargin)
-    .records
-    .show
-  // end::query-graph[]
-
-  // Set up temporary spark and hive directories for this example
-  private def hiveExampleSettings: Seq[(String, String)] = {
+object HiveUtils {
+  def hiveExampleSettings: Seq[(String, String)] = {
     val sparkWarehouseDir = new File(s"spark-warehouse_${System.currentTimeMillis}").getAbsolutePath
     Seq(
       // ------------------------------------------------------------------------
@@ -94,7 +43,7 @@ object CensusHiveExample extends App {
       // This is to avoid creating a local HIVE "metastore_db" on disk which needs to be cleaned up before each run,
       // e.g. avoids database and table already exists exceptions on re-runs - not to be used for production.
       // -----------------------------------------------------------------------------------------------------------
-      ("javax.jdo.option.ConnectionURL", s"jdbc:derby:memory:;databaseName=metastore_db;create=true"),
+      ("javax.jdo.option.ConnectionURL", "jdbc:derby:memory:;databaseName=metastore_db;create=true"),
       ("javax.jdo.option.ConnectionDriverName", "org.apache.derby.jdbc.EmbeddedDriver"),
       // ------------------------------------------------------------------------------------------------------------
       // An alternative way of enabling Spark Hive Support (e.g. you could use enableHiveSupport on the SparkSession)
@@ -103,6 +52,4 @@ object CensusHiveExample extends App {
       (CATALOG_IMPLEMENTATION.key, "hive") // Enable hive
     )
   }
-
 }
-// end::full-example[]

@@ -29,7 +29,7 @@ package org.opencypher.morpheus.examples
 
 import org.opencypher.morpheus.api.{GraphSources, MorpheusSession}
 import org.opencypher.morpheus.impl.MorpheusConverters._
-import org.opencypher.morpheus.util.App
+import org.opencypher.morpheus.util.{App, HiveUtils}
 import org.opencypher.okapi.api.graph.Namespace
 
 /**
@@ -40,7 +40,7 @@ import org.opencypher.okapi.api.graph.Namespace
   */
 object CypherSQLRoundtripExample extends App {
   // 1) Create Morpheus session
-  implicit val morpheus: MorpheusSession = MorpheusSession.local()
+  implicit val morpheus: MorpheusSession = MorpheusSession.local(HiveUtils.hiveExampleSettings: _*)
 
   // 2) Register a file based data source at the session
   //    It contains a purchase network graph called 'products'

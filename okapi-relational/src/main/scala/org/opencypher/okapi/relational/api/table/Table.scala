@@ -137,12 +137,12 @@ trait Table[T <: Table[T]] extends CypherTable {
   def distinct: T
 
   /**
-    * Convenience operator for select and distinct.
+    * Returns a table where each row is unique with regard to the specified columns
     *
-    * @param cols columns to select and perform distinct on.
+    * @param cols columns to consider when comparing rows
     * @return table containing the specific columns and distinct rows
     */
-  def distinct(cols: String*): T = select(cols: _*).distinct
+  def distinct(cols: String*): T
 
   /**
     * Groups the rows within the table by the given query variables. Additionally a set of aggregations can be performed

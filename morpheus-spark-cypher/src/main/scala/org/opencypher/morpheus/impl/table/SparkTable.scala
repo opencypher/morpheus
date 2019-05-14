@@ -195,28 +195,9 @@ object SparkTable {
       }
     }
 
-    override def distinct: DataFrameTable = distinct(df.columns: _*)
+    override def distinct: DataFrameTable = df.dropDuplicates()
 
-    // workaround for https://issues.apache.org/jira/browse/SPARK-26572
-    override def distinct(colNames: String*): DataFrameTable = {
-      val uniqueSuffix = "_temp_distinct"
-
-      val originalColNames = df.columns
-
-      val renames = originalColNames.map { c =>
-        if (colNames.contains(c)) c -> s"$c$uniqueSuffix"
-        else c -> c
-      }.toMap
-
-      val renamedDf = df.safeRenameColumns(colNames.map(c => c -> renames(c)): _*)
-
-      val extractRowFromGrouping = originalColNames.map(c => functions.first(renames(c)) as c)
-      val groupedDf = renamedDf
-        .groupBy(colNames.map(c => functions.col(renames(c))): _*)
-        .agg(extractRowFromGrouping.head, extractRowFromGrouping.tail: _*)
-
-      groupedDf.safeDropColumns(colNames.map(renames): _*)
-    }
+    override def distinct(cols: String*): DataFrameTable = df.dropDuplicates(cols.toSeq)
 
     override def cache(): DataFrameTable = {
       val planToCache = df.queryExecution.analyzed

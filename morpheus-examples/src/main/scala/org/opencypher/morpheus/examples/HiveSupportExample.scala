@@ -27,24 +27,14 @@
 // tag::full-example[]
 package org.opencypher.morpheus.examples
 
-import java.util.UUID
-
-import org.apache.spark.sql.SparkSession
 import org.opencypher.morpheus.api.io.util.HiveTableName
 import org.opencypher.morpheus.api.{GraphSources, MorpheusSession}
-import org.opencypher.morpheus.util.App
+import org.opencypher.morpheus.util.{App, HiveUtils}
 import org.opencypher.okapi.api.graph.{GraphName, Node}
 
 object HiveSupportExample extends App {
 
-  val sparkSession = SparkSession
-    .builder()
-    .master("local[*]")
-    .enableHiveSupport()
-    .appName(s"morpheus-local-${UUID.randomUUID()}")
-    .getOrCreate()
-    sparkSession.sparkContext.setLogLevel("error")
-  implicit val session = MorpheusSession.create(sparkSession)
+  implicit val session: MorpheusSession = MorpheusSession.local(HiveUtils.hiveExampleSettings: _*)
 
   val hiveDatabaseName = "socialNetwork"
   session.sparkSession.sql(s"DROP DATABASE IF EXISTS $hiveDatabaseName CASCADE")
