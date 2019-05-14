@@ -199,8 +199,11 @@ class PredicateTests extends MorpheusTestSuite with ScanGraphInit {
       // Given
       val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val2: 'string'})""")
 
+      // Where
+      val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val < b.val2 RETURN a.val")
+
       // Then
-      a[NoSuitableSignatureForExpr] shouldBe thrownBy(given.cypher("MATCH (a:A)-->(b:B) WHERE a.val < b.val2 RETURN a.val"))
+      result.records.collect.toBag shouldBe empty
     }
 
     it("less than or equal") {
@@ -244,8 +247,11 @@ class PredicateTests extends MorpheusTestSuite with ScanGraphInit {
       // Given
       val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val2: 'string'})""")
 
+      // Where
+      val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val <= b.val2 RETURN a.val")
+
       // Then
-      a[NoSuitableSignatureForExpr] shouldBe thrownBy(given.cypher("MATCH (a:A)-->(b:B) WHERE a.val <= b.val2 RETURN a.val"))
+      result.records.collect.toBag shouldBe empty
     }
 
     it("greater than") {
@@ -283,8 +289,11 @@ class PredicateTests extends MorpheusTestSuite with ScanGraphInit {
       // Given
       val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val2: 'string'})""")
 
+      // Where
+      val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val > b.val2 RETURN a.val")
+
       // Then
-      a[NoSuitableSignatureForExpr] shouldBe thrownBy(given.cypher("MATCH (a:A)-->(b:B) WHERE a.val > b.val2 RETURN a.val"))
+      result.records.collect.toBag shouldBe empty
     }
 
     it("greater than or equal") {
@@ -324,8 +333,11 @@ class PredicateTests extends MorpheusTestSuite with ScanGraphInit {
       // Given
       val given = initGraph("""CREATE (:A {val: 4})-[:REL]->(:B {val2: 'string'})""")
 
+      // Where
+      val result = given.cypher("MATCH (a:A)-->(b:B) WHERE a.val >= b.val2 RETURN a.val")
+
       // Then
-      a[NoSuitableSignatureForExpr] shouldBe thrownBy(given.cypher("MATCH (a:A)-->(b:B) WHERE a.val >= b.val2 RETURN a.val"))
+      result.records.collect.toBag shouldBe empty
     }
   }
 

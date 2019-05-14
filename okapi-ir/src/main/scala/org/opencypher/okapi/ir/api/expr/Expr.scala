@@ -131,7 +131,7 @@ sealed trait TypeValidatedExpr extends Expr{
           case None => typ
         }
       case None =>
-        if (children.exists(_.cypherType == CTNull)) CTNull //todo: check corner cases (cases where no Propagation is specified)
+        if (children.exists(_.cypherType == CTNull)) CTNull
         else throw NoSuitableSignatureForExpr(s"Type signature ${getClass.getSimpleName}($materialTypes) is not supported.")
     }
   }
@@ -388,7 +388,7 @@ sealed trait InequalityExprSignature {
   def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = lhsType -> rhsType match {
     case (n1, n2) if n1.subTypeOf(CTNumber) && n2.subTypeOf(CTNumber) => Some(CTBoolean)
     case (c1, c2) if c1.couldBeSameTypeAs(c2) => Some(CTBoolean)
-    case _ => None
+    case _ => Some(CTVoid)
   }
 }
 
@@ -827,7 +827,7 @@ final case class ToUpper(expr: Expr) extends UnaryStringFunctionExpr
 final case class ToLower(expr: Expr) extends UnaryStringFunctionExpr
 
 final case class Properties(expr: Expr)(override val cypherType: CypherType) extends UnaryFunctionExpr {
-  //todo: actually not needed here as type already checked at ExpressionConverter
+  //actually not used here as type already checked at ExpressionConverter
   override def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
     case CTNode(_, _) | CTRelationship(_, _) | CTMap(_) => Some(CTMap)
     case _ => None
