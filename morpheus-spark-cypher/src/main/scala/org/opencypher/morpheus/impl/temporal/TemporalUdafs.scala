@@ -34,9 +34,9 @@ import org.apache.spark.unsafe.types.CalendarInterval
 import org.opencypher.okapi.impl.temporal.TemporalConstants
 import org.opencypher.morpheus.impl.temporal.TemporalConversions._
 
-object TemporalUdafs extends Logging{
+object TemporalUdafs extends Logging {
 
-  abstract class SimpleDurationAggregation(aggrName : String) extends UserDefinedAggregateFunction {
+  abstract class SimpleDurationAggregation(aggrName: String) extends UserDefinedAggregateFunction {
     override def inputSchema: StructType = StructType(Array(StructField("duration", CalendarIntervalType)))
     override def bufferSchema: StructType = StructType(Array(StructField(aggrName, CalendarIntervalType)))
     override def dataType: DataType = CalendarIntervalType
@@ -56,36 +56,36 @@ object TemporalUdafs extends Logging{
     }
   }
 
-  class DurationMax extends SimpleDurationAggregation("max"){
+  class DurationMax extends SimpleDurationAggregation("max") {
     override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
       val currMaxInterval = buffer.getAs[CalendarInterval](0)
       val inputInterval = input.getAs[CalendarInterval](0)
-      buffer(0) = if(currMaxInterval.toDuration.compare(inputInterval.toDuration) >= 0) currMaxInterval else inputInterval
+      buffer(0) = if (currMaxInterval.toDuration.compare(inputInterval.toDuration) >= 0) currMaxInterval else inputInterval
     }
     override def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
       val interval1 = buffer1.getAs[CalendarInterval](0)
       val interval2 = buffer2.getAs[CalendarInterval](0)
-      buffer1(0) = if(interval1.toDuration.compare(interval2.toDuration) >= 0) interval1 else interval2
+      buffer1(0) = if (interval1.toDuration.compare(interval2.toDuration) >= 0) interval1 else interval2
     }
   }
 
-  class DurationMin extends SimpleDurationAggregation("min"){
+  class DurationMin extends SimpleDurationAggregation("min") {
     override def initialize(buffer: MutableAggregationBuffer): Unit = {
       buffer(0) = new CalendarInterval(Integer.MAX_VALUE, Long.MaxValue)
     }
     override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
       val currMinInterval = buffer.getAs[CalendarInterval](0)
       val inputInterval = input.getAs[CalendarInterval](0)
-      buffer(0) = if(inputInterval.toDuration.compare(currMinInterval.toDuration) >= 0) currMinInterval else inputInterval
+      buffer(0) = if (inputInterval.toDuration.compare(currMinInterval.toDuration) >= 0) currMinInterval else inputInterval
     }
     override def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
       val interval1 = buffer1.getAs[CalendarInterval](0)
       val interval2 = buffer2.getAs[CalendarInterval](0)
-      buffer1(0) = if(interval2.toDuration.compare(interval1.toDuration) >= 0) interval1 else interval2
+      buffer1(0) = if (interval2.toDuration.compare(interval1.toDuration) >= 0) interval1 else interval2
     }
   }
 
-  class DurationAvg extends UserDefinedAggregateFunction{
+  class DurationAvg extends UserDefinedAggregateFunction {
     override def inputSchema: StructType = StructType(Array(StructField("duration", CalendarIntervalType)))
     override def bufferSchema: StructType = StructType(Array(StructField("sum", CalendarIntervalType), StructField("cnt", LongType)))
     override def dataType: DataType = CalendarIntervalType

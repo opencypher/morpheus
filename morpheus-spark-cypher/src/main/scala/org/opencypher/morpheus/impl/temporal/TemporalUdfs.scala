@@ -30,10 +30,8 @@ import java.sql.{Date, Timestamp}
 import java.time.temporal.{ChronoField, IsoFields, TemporalField}
 
 import org.apache.logging.log4j.scala.Logging
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.expressions.{MutableAggregationBuffer, UserDefinedAggregateFunction, UserDefinedFunction}
+import org.apache.spark.sql.expressions.UserDefinedFunction
 import org.apache.spark.sql.functions.udf
-import org.apache.spark.sql.types.{CalendarIntervalType, DataType, LongType, StructField, StructType}
 import org.apache.spark.unsafe.types.CalendarInterval
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 
@@ -121,7 +119,7 @@ object TemporalUdfs extends Logging {
       } else {
         val days = duration.microseconds / CalendarInterval.MICROS_PER_DAY
         // Note: in cypher days (and weeks) make up their own group, thus we have to exclude them for all values < day
-        val daysInMicros =  days * CalendarInterval.MICROS_PER_DAY
+        val daysInMicros = days * CalendarInterval.MICROS_PER_DAY
 
         val l: Long = accessor match {
           case "years" => duration.months / 12
@@ -129,20 +127,20 @@ object TemporalUdfs extends Logging {
           case "months" => duration.months
           case "weeks" => duration.microseconds / CalendarInterval.MICROS_PER_DAY / 7
           case "days" => duration.microseconds / CalendarInterval.MICROS_PER_DAY
-          case "hours" => (duration.microseconds - daysInMicros ) / CalendarInterval.MICROS_PER_HOUR
-          case "minutes" => (duration.microseconds - daysInMicros ) / CalendarInterval.MICROS_PER_MINUTE
-          case "seconds" => (duration.microseconds - daysInMicros ) / CalendarInterval.MICROS_PER_SECOND
-          case "milliseconds" => (duration.microseconds - daysInMicros ) / CalendarInterval.MICROS_PER_MILLI
+          case "hours" => (duration.microseconds - daysInMicros) / CalendarInterval.MICROS_PER_HOUR
+          case "minutes" => (duration.microseconds - daysInMicros) / CalendarInterval.MICROS_PER_MINUTE
+          case "seconds" => (duration.microseconds - daysInMicros) / CalendarInterval.MICROS_PER_SECOND
+          case "milliseconds" => (duration.microseconds - daysInMicros) / CalendarInterval.MICROS_PER_MILLI
           case "microseconds" => duration.microseconds - daysInMicros
 
           case "quartersofyear" => (duration.months / 3) % 4
           case "monthsofquarter" => duration.months % 3
           case "monthsofyear" => duration.months % 12
           case "daysofweek" => (duration.microseconds / CalendarInterval.MICROS_PER_DAY) % 7
-          case "minutesofhour" => ((duration.microseconds  - daysInMicros )/ CalendarInterval.MICROS_PER_MINUTE) % 60
-          case "secondsofminute" => ((duration.microseconds - daysInMicros ) / CalendarInterval.MICROS_PER_SECOND) % 60
-          case "millisecondsofsecond" => ((duration.microseconds - daysInMicros ) / CalendarInterval.MICROS_PER_MILLI) % 1000
-          case "microsecondsofsecond" => (duration.microseconds - daysInMicros ) % 1000000
+          case "minutesofhour" => ((duration.microseconds - daysInMicros) / CalendarInterval.MICROS_PER_MINUTE) % 60
+          case "secondsofminute" => ((duration.microseconds - daysInMicros) / CalendarInterval.MICROS_PER_SECOND) % 60
+          case "millisecondsofsecond" => ((duration.microseconds - daysInMicros) / CalendarInterval.MICROS_PER_MILLI) % 1000
+          case "microsecondsofsecond" => (duration.microseconds - daysInMicros) % 1000000
 
           case other => throw UnsupportedOperationException(s"Unknown Duration accessor: $other")
         }
