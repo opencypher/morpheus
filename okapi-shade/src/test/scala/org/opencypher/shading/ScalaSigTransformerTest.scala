@@ -46,4 +46,15 @@ class ScalaSigTransformerTest extends BaseTestSuite {
 
     inputByteArray.mkString("") should equal(transformedByteArray.mkString(""))
   }
+
+  it("print the signatures") {
+    val className = "org.neo4j.ShadingClass"
+
+    val cw = new ClassWriter(0)
+    val cr = new ClassReader(className)
+    val inputByteArray = cr.b.clone()
+    val visitor = new ScalaSigTransformer(Opcodes.ASM4, cw)
+    cr.accept(visitor, 0)
+    val transformedByteArray = cw.toByteArray
+  }
 }

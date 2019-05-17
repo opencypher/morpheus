@@ -30,7 +30,7 @@ import java.io.ByteArrayOutputStream
 
 import org.opencypher.shading.ScalaSigTransformer._
 
-import scala.reflect.internal.pickling.ByteCodecs
+import scala.reflect.internal.pickling.{ByteCodecs, PickleFormat}
 import scala.tools.asm.tree.AnnotationNode
 import scala.tools.asm.{AnnotationVisitor, ClassVisitor, ClassWriter}
 import scala.tools.scalap.scalax.rules.scalasig.{ByteCode, ScalaSig, ScalaSigAttributeParsers}
@@ -50,7 +50,7 @@ class ScalaSigTransformer(api: Int, writer: ClassWriter) extends ClassVisitor(ap
             val length = ByteCodecs.decode(bytes)
             val sig = ScalaSigAttributeParsers.parse(ByteCode(bytes.take(length)))
 
-//            sig.printComparison()
+            sig.printComparison()
 
             writer.visitAnnotation(desc, visible).visit(name, sig.encodeToString)
           case _ =>
@@ -68,8 +68,16 @@ object ScalaSigTransformer {
       NatWriter.write(sig.minorVersion, baos)
 
       NatWriter.write(sig.table.size, baos)
-      sig.table.foreach {
-        case ~(i, b) =>
+      sig.table.zipWithIndex.foreach {
+        case (~(PickleFormat.EXTMODCLASSref, b), idx) =>
+          baos.write(PickleFormat.EXTMODCLASSref)
+          NatWriter.write(b.length, baos)
+          baos.write(b.bytes, b.pos, b.length)
+
+          println("I FOUND A EXTMODCLASSREF")
+          println(sig.parseEntry(idx))
+
+        case (~(i, b), idx) =>
           baos.write(i)
           NatWriter.write(b.length, baos)
           baos.write(b.bytes, b.pos, b.length)
