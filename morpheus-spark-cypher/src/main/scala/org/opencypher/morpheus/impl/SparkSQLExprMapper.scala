@@ -35,7 +35,7 @@ import org.opencypher.morpheus.impl.convert.SparkConversions._
 import org.opencypher.morpheus.impl.expressions.AddPrefix._
 import org.opencypher.morpheus.impl.expressions.EncodeLong._
 import org.opencypher.morpheus.impl.temporal.TemporalConversions._
-import org.opencypher.morpheus.impl.temporal.TemporalUdfs
+import org.opencypher.morpheus.impl.temporal.{TemporalUdafs, TemporalUdfs}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception._
@@ -348,11 +348,26 @@ object SparkSQLExprMapper {
           else collect_list(child0)
 
         case CountStar => count(ONE_LIT)
-        case _: Avg => avg(child0)
-
-        case _: Max => max(child0)
-        case _: Min => min(child0)
-        case _: Sum => sum(child0)
+        case _: Avg =>
+          expr.cypherType match {
+            case CTDuration => TemporalUdafs.durationAvg(child0)
+            case _ => avg(child0)
+          }
+        case _: Max =>
+          expr.cypherType match {
+            case CTDuration => TemporalUdafs.durationMax(child0)
+            case _ => max(child0)
+          }
+        case _: Min =>
+          expr.cypherType match {
+            case CTDuration => TemporalUdafs.durationMin(child0)
+            case _ => min(child0)
+          }
+        case _: Sum =>
+          expr.cypherType match {
+            case CTDuration => TemporalUdafs.durationSum(child0)
+            case _ => sum(child0)
+          }
 
 
         case BigDecimal(_, precision, scale) =>

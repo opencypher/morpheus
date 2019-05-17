@@ -126,12 +126,11 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
       ))
     }
 
-    //todo: cypher should allow avg on durations, but spark does not support avg on durations (calendarintervals)
-    ignore("avg on durations") {
-      val result = morpheus.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT200H')] AS d RETURN AVG(d) as res")
+    it("avg on durations") {
+      val result = morpheus.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT20H')] AS d RETURN AVG(d) as res")
 
       result.records.toMaps should equal(Bag(
-        CypherMap("res" -> Duration(days = 1, hours = 12))
+        CypherMap("res" -> Duration(days = 1, hours = 16))
       ))
     }
   }
@@ -366,8 +365,7 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
       ))
     }
 
-    //todo: spark does not support min on durations (calendarintervals)
-    ignore("min on durations") {
+    it("min on durations") {
       val result = morpheus.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT200H')] AS d RETURN MIN(d) as res")
 
       result.records.toMaps should equal(Bag(
@@ -472,12 +470,11 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
       ))
     }
 
-    //todo: spark does not support max on durations (calendarintervals)
-    ignore("max on durations") {
-      val result = morpheus.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT200H')] AS d RETURN MAX(d) as res")
+    it("max on durations") {
+      val result = morpheus.graphs.empty.cypher("UNWIND [duration('P10DT12H'), duration('P1DT24H')] AS d RETURN MAX(d) as res")
 
       result.records.toMaps should equal(Bag(
-        CypherMap("res" -> Duration(days = 1, hours = 200))
+        CypherMap("res" -> Duration(days = 10, hours = 12))
       ))
     }
 
@@ -584,12 +581,11 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
       ))
     }
 
-    //todo: cypher should sum over durations, but spark does not support sum over durations (calendarintervals)
-    ignore("sum on durations") {
-      val result = morpheus.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT200H')] AS d RETURN SUM(d) as res")
+    it("sum on durations") {
+      val result = morpheus.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT24H')] AS d RETURN SUM(d) as res")
 
       result.records.toMaps should equal(Bag(
-        CypherMap("res" -> Duration(days = 2, hours = 12))
+        CypherMap("res" -> Duration(days = 3, hours = 12))
       ))
     }
   }
