@@ -62,7 +62,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
     }
   }
 
-  def convert(e: ast.Expression): Expr = {
+  def convert(e: ast.Expression)(implicit context: IRBuilderContext = this.context): Expr = {
 
     lazy val child0: Expr = convert(e.arguments.head)
 
@@ -275,20 +275,17 @@ final class ExpressionConverter(context: IRBuilderContext) {
       case ast.ListSlice(list, Some(from), Some(to)) => ListSliceFromTo(convert(list), convert(from), convert(to))
       case ast.ListSlice(list, None, Some(to)) => ListSliceTo(convert(list), convert(to))
       case ast.ListSlice(list, Some(from), None) => ListSliceFrom(convert(list), convert(from))
-
-      //todo: context should also know type of introduced variable / find anotherway for Var() conversion to know the type
-      // todo: type Vars() inside of extractExpression
+        
       case ast.ListComprehension(ExtractScope(variable, innerPredicate, extractExpression), expr) =>
         val listExpr = convert(expr)
         val cypherType = listExpr.cypherType match {
           case CTList(inner) => inner
-          case e => throw IllegalArgumentException(s"list comprehension expects a list to step over. Actual type: ${e.getClass.getSimpleName}")
+          case err => throw IllegalArgumentException(s"list comprehension expects a list to step over. Actual type: ${err.getClass.getSimpleName}")
         }
-        val introducedVar = variable match {
-          case LogicalVariable(name) => Var(name)(cypherType)
-          case e => throw IllegalArgumentException(s"Expected a LogicalVariable, actual ${e.getClass.getSimpleName}")
-        }
-        ListComprehension(introducedVar, innerPredicate.map(convert), extractExpression.map(convert), listExpr)
+
+        val updatedContext = context.withFields(Set(IRField(variable.name)(cypherType)))
+
+        ListComprehension(convert(variable)(updatedContext), innerPredicate.map(convert(_)(updatedContext)), extractExpression.map(convert(_)(updatedContext)), listExpr)
 
       case ast.ContainerIndex(container, index) =>
         val convertedContainer = convert(container)
