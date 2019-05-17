@@ -4,6 +4,9 @@ description = 'Okapi Shade contains the full Okapi stack and its relocated depen
 
 dependencies {
     compile project(':okapi-relational')
+    compile group: 'org.typelevel', name: 'scalap', version: '2.12.1'
+
+    testCompile project(':okapi-testing')
 }
 
 ext.excludedDependencyGroups = [
