@@ -456,9 +456,6 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     it("can convert list comprehension with inner predicate") {
       convert("[x IN [1,2] WHERE x < 1 | 1]") shouldEqual ListComprehension(intVar, Some(LessThan(intVar, IntegerLit(1))), Some(IntegerLit(1)), ListLit(List(IntegerLit(1), IntegerLit(2))))
     }
-
-    //todo find case with PredicateExpr
-    // todo find case with no extractExpr
   }
 
   implicit def toVar(s: Symbol): Var = all.find(_.name == s.name).get

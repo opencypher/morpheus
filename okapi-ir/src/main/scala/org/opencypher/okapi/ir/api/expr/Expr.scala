@@ -1100,8 +1100,15 @@ final case class ListSliceFrom(list: Expr, from: Expr) extends ListSlice(Some(fr
 final case class ListSliceTo(list: Expr, to: Expr) extends ListSlice(None, Some(to))
 
 final case class ListComprehension(variable: Expr, innerPredicate: Option[Expr], extractExpression: Option[Expr], expr : Expr) extends Expr {
-  override def withoutType: String = s"[${variable.withoutType} IN ${expr.withoutType}|${extractExpression.map(_.withoutType)}]"
-  override def cypherType: CypherType = CTList(extractExpression.getOrElse(expr).cypherType)
+  override def withoutType: String = {
+    val p = innerPredicate.map(" WHERE " + _.withoutType).getOrElse("")
+    val e = extractExpression.map(" | " + _.withoutType).getOrElse("")
+    s"[${variable.withoutType} IN ${expr.withoutType}$p$e]"
+  }
+  override def cypherType: CypherType = extractExpression match {
+    case Some(x) => CTList(x.cypherType)
+    case None => expr.cypherType
+  }
 }
 
 final case class ContainerIndex(container: Expr, index: Expr)(val cypherType: CypherType) extends Expr {
