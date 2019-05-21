@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.table.CypherRecords
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-
+import org.opencypher.okapi.api.schema.LabelPropertyMap._
 /**
   * A Property Graph as defined by the openCypher Property Graph Model.
   *
@@ -62,20 +62,20 @@ trait PropertyGraph {
     * Returns all nodes in this graph with the given [[org.opencypher.okapi.api.types.CTNode]] type.
     *
     * @param name            field name for the returned nodes
-    * @param nodeCypherType  node type used for selection
+    * @param knownLabels     TODO: node type used for selection
     * @param exactLabelMatch return only nodes that have exactly the given labels
     * @return table of nodes of the specified type
     */
-  def nodes(name: String, nodeCypherType: CTNode = CTNode, exactLabelMatch: Boolean = false): CypherRecords
+  def nodes(name: String, knownLabels: Set[String] = Set.empty, exactLabelMatch: Boolean = false): CypherRecords
 
   /**
     * Returns all relationships in this graph with the given [[org.opencypher.okapi.api.types.CTRelationship]] type.
     *
     * @param name          field name for the returned relationships
-    * @param relCypherType relationship type used for selection
+    * @param knownType TODO: relationship type used for selection
     * @return table of relationships of the specified type
     */
-  def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CypherRecords
+  def relationships(name: String, knownType: Option[String] = None): CypherRecords
 
   /**
     * Constructs the union of this graph and the argument graphs. Note that the argument graphs have to
@@ -108,7 +108,10 @@ trait PropertyGraph {
     *
     * @return patterns that the graph can provide
     */
-  def patterns: Set[Pattern] =
-    schema.labelCombinations.combos.map(c => NodePattern(CTNode(c))) ++
-    schema.relationshipTypes.map(r => RelationshipPattern(CTRelationship(r)))
+  def patterns: Set[Pattern] = {
+    val nodePatterns = schema.labelCombinations.combos.flatMap { c => schema.nodeType(c).map(NodePattern) }
+    val relPatterns = schema.relationshipTypes.flatMap { c => schema.relationshipType(c).map(RelationshipPattern) }
+
+    nodePatterns ++ relPatterns
+  }
 }

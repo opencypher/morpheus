@@ -34,6 +34,7 @@ import org.opencypher.okapi.ir.impl.exception.PatternConversionException
 
 import scala.annotation.tailrec
 import scala.collection.immutable.ListMap
+import scala.reflect.ClassTag
 
 case object Pattern {
   def empty[E]: Pattern = Pattern(fields = Set.empty, topology = ListMap.empty)
@@ -48,11 +49,15 @@ final case class Pattern(
   baseFields: Map[IRField, IRField]= Map.empty
 ) extends Binds {
 
-  lazy val nodes: Set[IRField] = getElement(CTNode)
-  lazy val rels: Set[IRField] = getElement(CTRelationship)
+  lazy val nodes: Set[IRField] = getElement[CTNode]
+  lazy val rels: Set[IRField] = getElement[CTRelationship]
 
-  private def getElement(t: CypherType) =
-    fields.collect { case e if e.cypherType.subTypeOf(t) => e }
+  private def getElement[T <: CTElement : ClassTag]: Set[IRField] =
+    fields.filter { e => e.cypherType match  {
+      case _: T => true
+      case _ => false
+      }
+    }
 
   /**
     * Fuse patterns but fail if they disagree in the definitions of elements or connections

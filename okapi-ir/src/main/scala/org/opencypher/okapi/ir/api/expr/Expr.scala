@@ -111,8 +111,8 @@ object Var {
   def unapply(arg: Var): Option[String] = Some(arg.name)
   def unnamed: CypherType => Var = apply("")
   def apply(name: String)(cypherType: CypherType = CTAny): Var = cypherType match {
-    case n if n.subTypeOf(CTNode.nullable) => NodeVar(name)(n)
-    case r if r.subTypeOf(CTRelationship.nullable) => RelationshipVar(name)(r)
+    case n: CTNode => NodeVar(name)(n)
+    case r: CTRelationship => RelationshipVar(name)(r)
     case _ => SimpleVar(name)(cypherType)
   }
 }
@@ -150,27 +150,27 @@ final case class ListSegment(index: Int, listVar: Var) extends Var {
 
 sealed trait ReturnItem extends Var
 
-final case class NodeVar(name: String)(val cypherType: CypherType = CTNode) extends ReturnItem {
+final case class NodeVar(name: String)(val cypherType: CypherType) extends ReturnItem {
 
   override def owner: Option[Var] = Some(this)
 
   override def withOwner(expr: Var): NodeVar = expr match {
     case n: NodeVar => n
     case other => other.cypherType match {
-      case n if n.subTypeOf(CTNode.nullable) => NodeVar(other.name)(n)
+      case n: CTNode => NodeVar(other.name)(n)
       case o => throw IllegalArgumentException(CTNode, o)
     }
   }
 }
 
-final case class RelationshipVar(name: String)(val cypherType: CypherType = CTRelationship) extends ReturnItem {
+final case class RelationshipVar(name: String)(val cypherType: CypherType) extends ReturnItem {
 
   override def owner: Option[Var] = Some(this)
 
   override def withOwner(expr: Var): RelationshipVar = expr match {
     case r: RelationshipVar => r
     case other => other.cypherType match {
-      case r if r.subTypeOf(CTRelationship.nullable) => RelationshipVar(other.name)(r)
+      case r: CTRelationship => RelationshipVar(other.name)(r)
       case o => throw IllegalArgumentException(CTRelationship, o)
     }
   }
@@ -664,11 +664,11 @@ final case class Keys(expr: Expr) extends UnaryFunctionExpr {
 }
 
 final case class StartNodeFunction(expr: Expr) extends UnaryFunctionExpr {
-  override def cypherType: CypherType = childNullPropagatesTo(CTNode)
+  override def cypherType: CypherType = childNullPropagatesTo(CTIdentity)
 }
 
 final case class EndNodeFunction(expr: Expr) extends UnaryFunctionExpr {
-  override def cypherType: CypherType = childNullPropagatesTo(CTNode)
+  override def cypherType: CypherType = childNullPropagatesTo(CTIdentity)
 }
 
 final case class ToFloat(expr: Expr) extends UnaryFunctionExpr {

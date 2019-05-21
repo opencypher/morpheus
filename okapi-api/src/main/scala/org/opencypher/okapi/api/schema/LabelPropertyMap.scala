@@ -29,7 +29,7 @@ package org.opencypher.okapi.api.schema
 import cats.instances.all._
 import cats.syntax.semigroup._
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.{CTNode, CTVoid, CypherType}
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 
 object PropertyKeys {
@@ -70,6 +70,11 @@ object LabelPropertyMap {
       * @return associated property keys
       */
     def properties(labels: Set[String]): PropertyKeys = map.getOrElse(labels, PropertyKeys.empty)
+
+
+    def cypherType(labels: Set[String]): Option[CTNode] = {
+      map.get(labels).map(CTNode(labels, _))
+    }
 
     /**
       * Merges this LabelPropertyMap with the given map. Property keys for label sets that exist in both maps are being

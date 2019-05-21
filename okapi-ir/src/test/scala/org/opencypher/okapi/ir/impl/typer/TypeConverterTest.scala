@@ -46,8 +46,8 @@ class TypeConverterTest extends BaseTestSuite {
   }
 
   test("should convert element types") {
-    frontend.CTNode shouldBeConvertedTo CTNode
-    frontend.CTRelationship shouldBeConvertedTo CTRelationship
+    frontend.CTNode shouldBeConvertedTo CTNode.empty
+    frontend.CTRelationship shouldBeConvertedTo CTRelationship.empty
     frontend.CTPath shouldBeConvertedTo CTPath
   }
 

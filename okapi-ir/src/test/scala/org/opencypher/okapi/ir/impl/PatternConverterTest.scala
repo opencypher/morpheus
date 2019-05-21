@@ -46,14 +46,14 @@ class PatternConverterTest extends IrTestSuite {
     val pattern = parse("(x)")
 
     convert(pattern) should equal(
-      Pattern.empty.withElement('x -> CTNode)
+      Pattern.empty.withElement('x -> CTNode.empty)
     )
   }
 
   it("converts element properties") {
     val pattern = parse("(a:A {name:'Hans'})-[rel:KNOWS {since:2007}]->(a)")
-    val a: IRField = 'a -> CTNode("A")
-    val rel: IRField = 'rel -> CTRelationship("KNOWS")
+    val a: IRField = 'a -> CTNode.empty("A")
+    val rel: IRField = 'rel -> CTRelationship.empty("KNOWS")
 
     convert(pattern).properties should equal(
       Map(
@@ -68,9 +68,9 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withElement('x -> CTNode)
-        .withElement('b -> CTNode)
-        .withElement('r -> CTRelationship)
+        .withElement('x -> CTNode.empty)
+        .withElement('b -> CTNode.empty)
+        .withElement('r -> CTRelationship.empty)
         .withConnection('r, DirectedRelationship('x, 'b))
     )
   }
@@ -80,11 +80,11 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withElement('x -> CTNode)
-        .withElement('y -> CTNode)
-        .withElement('z -> CTNode)
-        .withElement('r1 -> CTRelationship)
-        .withElement('r2 -> CTRelationship)
+        .withElement('x -> CTNode.empty)
+        .withElement('y -> CTNode.empty)
+        .withElement('z -> CTNode.empty)
+        .withElement('r1 -> CTRelationship.empty)
+        .withElement('r2 -> CTRelationship.empty)
         .withConnection('r1, DirectedRelationship('x, 'y))
         .withConnection('r2, DirectedRelationship('y, 'z))
     )
@@ -95,11 +95,11 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withElement('x -> CTNode)
-        .withElement('y -> CTNode)
-        .withElement('z -> CTNode)
-        .withElement('foo -> CTNode)
-        .withElement('r -> CTRelationship)
+        .withElement('x -> CTNode.empty)
+        .withElement('y -> CTNode.empty)
+        .withElement('z -> CTNode.empty)
+        .withElement('foo -> CTNode.empty)
+        .withElement('r -> CTRelationship.empty)
         .withConnection('r, DirectedRelationship('y, 'z))
     )
   }
@@ -109,9 +109,9 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withElement('x -> CTNode)
-        .withElement('y -> CTNode)
-        .withElement('r -> CTRelationship)
+        .withElement('x -> CTNode.empty)
+        .withElement('y -> CTNode.empty)
+        .withElement('r -> CTRelationship.empty)
         .withConnection('r, UndirectedRelationship('y, 'x))
     )
   }
@@ -121,8 +121,8 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withElement('x -> CTNode("Person"))
-        .withElement('y -> CTNode("Person", "Dog"))
+        .withElement('x -> CTNode.empty("Person"))
+        .withElement('y -> CTNode.empty("Person", "Dog"))
     )
   }
 
@@ -131,9 +131,9 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withElement('x -> CTNode)
-        .withElement('y -> CTNode)
-        .withElement('r -> CTRelationship("KNOWS", "LOVES"))
+        .withElement('x -> CTNode.empty)
+        .withElement('y -> CTNode.empty)
+        .withElement('r -> CTRelationship.empty("KNOWS", "LOVES"))
         .withConnection('r, DirectedRelationship('x, 'y))
     )
   }
@@ -142,16 +142,16 @@ class PatternConverterTest extends IrTestSuite {
     val pattern = parse("(x)-[r]->(y:Person)-[newR:IN]->(z)")
 
     val knownTypes: Map[ast.Expression, CypherType] = Map(
-      ast.Variable("x")(NONE) -> CTNode("Person"),
-      ast.Variable("z")(NONE) -> CTNode("Customer"),
-      ast.Variable("r")(NONE) -> CTRelationship("FOO")
+      ast.Variable("x")(NONE) -> CTNode.empty("Person"),
+      ast.Variable("z")(NONE) -> CTNode.empty("Customer"),
+      ast.Variable("r")(NONE) -> CTRelationship.empty("FOO")
     )
 
-    val x: IRField = 'x -> CTNode("Person")
-    val y: IRField = 'y -> CTNode("Person")
-    val z: IRField = 'z -> CTNode("Customer")
-    val r: IRField = 'r -> CTRelationship("FOO")
-    val newR: IRField = 'newR -> CTRelationship("IN")
+    val x: IRField = 'x -> CTNode.empty("Person")
+    val y: IRField = 'y -> CTNode.empty("Person")
+    val z: IRField = 'z -> CTNode.empty("Customer")
+    val r: IRField = 'r -> CTRelationship.empty("FOO")
+    val newR: IRField = 'newR -> CTRelationship.empty("IN")
 
     convert(pattern, knownTypes) should equal(
       Pattern.empty
@@ -170,11 +170,11 @@ class PatternConverterTest extends IrTestSuite {
       val pattern = parse("(y), (x COPY OF y)")
 
       val knownTypes: Map[ast.Expression, CypherType] = Map(
-        ast.Variable("y")(NONE) -> CTNode("Person")
+        ast.Variable("y")(NONE) -> CTNode.empty("Person")
       )
 
-      val x: IRField = 'x -> CTNode("Person")
-      val y: IRField = 'y -> CTNode("Person")
+      val x: IRField = 'x -> CTNode.empty("Person")
+      val y: IRField = 'y -> CTNode.empty("Person")
 
       convert(pattern, knownTypes) should equal(
         Pattern.empty
@@ -188,11 +188,11 @@ class PatternConverterTest extends IrTestSuite {
       val pattern = parse("(x), (y COPY OF x:Employee)")
 
       val knownTypes: Map[ast.Expression, CypherType] = Map(
-        ast.Variable("x")(NONE) -> CTNode("Person")
+        ast.Variable("x")(NONE) -> CTNode.empty("Person")
       )
 
-      val x: IRField = 'x -> CTNode("Person")
-      val y: IRField = 'y -> CTNode("Person", "Employee")
+      val x: IRField = 'x -> CTNode.empty("Person")
+      val y: IRField = 'y -> CTNode.empty("Person", "Employee")
 
       convert(pattern, knownTypes) should equal(
         Pattern.empty
@@ -206,15 +206,15 @@ class PatternConverterTest extends IrTestSuite {
       val pattern = parse("(x)-[r]->(y), (x)-[r2 COPY OF r]->(y)")
 
       val knownTypes: Map[ast.Expression, CypherType] = Map(
-        ast.Variable("x")(NONE) -> CTNode("Person"),
-        ast.Variable("y")(NONE) -> CTNode("Customer"),
-        ast.Variable("r")(NONE) -> CTRelationship("FOO")
+        ast.Variable("x")(NONE) -> CTNode.empty("Person"),
+        ast.Variable("y")(NONE) -> CTNode.empty("Customer"),
+        ast.Variable("r")(NONE) -> CTRelationship.empty("FOO")
       )
 
-      val x: IRField = 'x -> CTNode("Person")
-      val y: IRField = 'y -> CTNode("Person")
-      val r: IRField = 'r -> CTRelationship("FOO")
-      val r2: IRField = 'r2 -> CTRelationship("FOO")
+      val x: IRField = 'x -> CTNode.empty("Person")
+      val y: IRField = 'y -> CTNode.empty("Person")
+      val r: IRField = 'r -> CTRelationship.empty("FOO")
+      val r2: IRField = 'r2 -> CTRelationship.empty("FOO")
 
       convert(pattern, knownTypes) should equal(
         Pattern.empty
@@ -232,15 +232,15 @@ class PatternConverterTest extends IrTestSuite {
       val pattern = parse("(x)-[r]->(y), (x)-[r2 COPY OF r:BAR]->(y)")
 
       val knownTypes: Map[ast.Expression, CypherType] = Map(
-        ast.Variable("x")(NONE) -> CTNode("Person"),
-        ast.Variable("y")(NONE) -> CTNode("Customer"),
-        ast.Variable("r")(NONE) -> CTRelationship("FOO")
+        ast.Variable("x")(NONE) -> CTNode.empty("Person"),
+        ast.Variable("y")(NONE) -> CTNode.empty("Customer"),
+        ast.Variable("r")(NONE) -> CTRelationship.empty("FOO")
       )
 
-      val x: IRField = 'x -> CTNode("Person")
-      val y: IRField = 'y -> CTNode("Person")
-      val r: IRField = 'r -> CTRelationship("FOO")
-      val r2: IRField = 'r2 -> CTRelationship("BAR")
+      val x: IRField = 'x -> CTNode.empty("Person")
+      val y: IRField = 'y -> CTNode.empty("Person")
+      val r: IRField = 'r -> CTRelationship.empty("FOO")
+      val r2: IRField = 'r2 -> CTRelationship.empty("BAR")
 
       convert(pattern, knownTypes) should equal(
         Pattern.empty

@@ -74,7 +74,7 @@ case class ElementMapping(
     }
 
     pattern.elements.foreach {
-      case e@PatternElement(_, CTRelationship(types, _)) if types.size != 1 =>
+      case e@PatternElement(_, CTRelationship(types, _, _)) if types.size != 1 =>
         throw IllegalArgumentException(
           s"A single implied type for element $e",
           types

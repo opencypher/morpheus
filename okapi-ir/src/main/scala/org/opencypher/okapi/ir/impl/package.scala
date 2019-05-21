@@ -59,7 +59,7 @@ package object impl {
   implicit final class RichSchema(schema: PropertyGraphSchema) {
 
     def forElementType(cypherType: CypherType): PropertyGraphSchema = cypherType match {
-      case CTNode(labels, _) =>
+      case CTNode(labels, _, _) =>
         schema.forNode(labels)
       case r: CTRelationship =>
         schema.forRelationship(r)
@@ -75,14 +75,14 @@ package object impl {
 
     def addPropertyToElement(propertyKey: String, propertyType: CypherType, elementType: CypherType): PropertyGraphSchema = {
       elementType match {
-        case CTNode(labels, _) =>
+        case CTNode(labels, _, _) =>
           val allRelevantLabelCombinations = schema.combinationsFor(labels)
           val property = if (allRelevantLabelCombinations.size == 1) propertyType else propertyType.nullable
           allRelevantLabelCombinations.foldLeft(schema) { case (innerCurrentSchema, combo) =>
             val updatedPropertyKeys = innerCurrentSchema.nodePropertyKeysForCombinations(Set(combo)).updated(propertyKey, property)
             innerCurrentSchema.withOverwrittenNodePropertyKeys(combo, updatedPropertyKeys)
           }
-        case CTRelationship(types, _) =>
+        case CTRelationship(types, _, _) =>
           val typesToUpdate = if (types.isEmpty) schema.relationshipTypes else types
           typesToUpdate.foldLeft(schema) { case (innerCurrentSchema, relType) =>
             val updatedPropertyKeys = innerCurrentSchema.relationshipPropertyKeys(relType).updated(propertyKey, propertyType)

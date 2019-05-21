@@ -27,7 +27,7 @@
 package org.opencypher.okapi.api.io.conversion
 
 import org.opencypher.okapi.api.graph._
-import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 object RelationshipMappingBuilder {
@@ -171,7 +171,8 @@ final case class RelationshipMappingBuilder(
   override def build: ElementMapping = {
     validate()
 
-    val pattern: RelationshipPattern = RelationshipPattern(CTRelationship(relType))
+    //TODO: review if we should fill with property information
+    val pattern: RelationshipPattern = RelationshipPattern(CTRelationship(relType, Map.empty[String, CypherType]))
 
     val properties: Map[PatternElement, Map[String, String]] = Map(pattern.relElement -> propertyMapping)
     val idKeys: Map[PatternElement, Map[IdKey, String]] = Map(

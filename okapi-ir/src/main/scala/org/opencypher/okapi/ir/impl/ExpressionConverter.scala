@@ -89,24 +89,8 @@ final class ExpressionConverter(context: IRBuilderContext) {
         val key = PropertyKey(name)
         owner.cypherType.material match {
           case CTVoid => NullLit
-          // This means that the node can have any possible label combination, as the user did not specify any constraints
-          case CTNode =>
-            val propertyType = schema.allCombinations
-              .map(l => schema.nodePropertyKeyType(l, name).getOrElse(CTNull))
-              .foldLeft(CTVoid: CypherType)(_ join _)
-            // User specified label constraints - we can use those for type inference
-            ElementProperty(owner, key)(propertyType)
-          case CTNode(labels, None) =>
-            val propertyType = schema.nodePropertyKeyType(labels, name).getOrElse(CTNull)
-            ElementProperty(owner, key)(propertyType)
-          case CTNode(labels, Some(qgn)) =>
-            val propertyType = context.queryLocalCatalog.schema(qgn).nodePropertyKeyType(labels, name).getOrElse(CTNull)
-            ElementProperty(owner, key)(propertyType)
-          case CTRelationship(types, None) =>
-            val propertyType = schema.relationshipPropertyKeyType(types, name).getOrElse(CTNull)
-            ElementProperty(owner, key)(propertyType)
-          case CTRelationship(types, Some(qgn)) =>
-            val propertyType = context.queryLocalCatalog.schema(qgn).relationshipPropertyKeyType(types, name).getOrElse(CTNull)
+          case e: CTElement =>
+            val propertyType = e.properties.getOrElse(name, CTNull)
             ElementProperty(owner, key)(propertyType)
           case _: CTMap =>
             MapProperty(owner, key)
@@ -190,10 +174,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
           case functions.Properties =>
             val outType = child0.cypherType.material match {
               case CTVoid => CTNull
-              case CTNode(labels, _) =>
-                CTMap(schema.nodePropertyKeysForCombinations(schema.combinationsFor(labels)))
-              case CTRelationship(types, _) =>
-                CTMap(schema.relationshipPropertyKeysForTypes(types))
+              case e: CTElement => CTMap(e.properties)
               case m: CTMap => m
               case _ => throw InvalidArgument(funcInv, funcInv.args(0))
             }

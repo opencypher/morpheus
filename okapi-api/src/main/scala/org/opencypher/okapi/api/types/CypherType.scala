@@ -49,46 +49,47 @@ trait CypherType {
 
   def material: CypherType = this
 
-  def &(other: CypherType): CypherType = meet(other)
-
-  def meet(other: CypherType): CypherType = {
-    if (this.subTypeOf(other)) this
-    else if (other.subTypeOf(this)) other
-    else {
-      this -> other match {
-        case (l: CTNode, r: CTNode) if l.graph == r.graph => CTNode(l.labels ++ r.labels, l.graph)
-        case (l: CTNode, r: CTNode) => CTNode(l.labels ++ r.labels)
-        case (l: CTRelationship, r: CTRelationship) =>
-          val types = l.types.intersect(r.types)
-          if (types.isEmpty) CTVoid
-          else if (l.graph == r.graph) CTRelationship(types, l.graph)
-          else CTRelationship(types)
-        case (CTList(l), CTList(r)) => CTList(l & r)
-        case (CTUnion(ls), CTUnion(rs)) => CTUnion({
-          for {
-            l <- ls
-            r <- rs
-          } yield l & r
-        }.toSeq: _*)
-        case (CTUnion(ls), r) => CTUnion(ls.map(_ & r).toSeq: _*)
-        case (l, CTUnion(rs)) => CTUnion(rs.map(_ & l).toSeq: _*)
-        case (CTMap(pl), CTMap(pr)) =>
-          val intersectedProps = (pl.keys ++ pr.keys).map { k =>
-            val ct = pl.get(k) -> pr.get(k) match {
-              case (Some(tl), Some(tr)) => tl | tr
-              case (Some(tl), None) => tl.nullable
-              case (None, Some(tr)) => tr.nullable
-              case (None, None) => CTVoid
-            }
-            k -> ct
-          }.toMap
-          CTMap(intersectedProps)
-        case (_, _) => CTVoid
-      }
-    }
-  }
-
-  def intersects(other: CypherType): Boolean = meet(other) != CTVoid
+// TODO Do we need these functions
+//  def &(other: CypherType): CypherType = meet(other)
+//
+//  def meet(other: CypherType): CypherType = {
+//    if (this.subTypeOf(other)) this
+//    else if (other.subTypeOf(this)) other
+//    else {
+//      this -> other match {
+//        case (l: CTNode, r: CTNode) if l.graph == r.graph => CTNode(l.labels ++ r.labels, l.graph)
+//        case (l: CTNode, r: CTNode) => CTNode(l.labels ++ r.labels)
+////        case (l: CTRelationship, r: CTRelationship) =>
+////          val types = l.types.intersect(r.types)
+////          if (types.isEmpty) CTVoid
+////          else if (l.graph == r.graph) CTRelationship(types, l.graph)
+////          else CTRelationship(types)
+//        case (CTList(l), CTList(r)) => CTList(l & r)
+//        case (CTUnion(ls), CTUnion(rs)) => CTUnion({
+//          for {
+//            l <- ls
+//            r <- rs
+//          } yield l & r
+//        }.toSeq: _*)
+//        case (CTUnion(ls), r) => CTUnion(ls.map(_ & r).toSeq: _*)
+//        case (l, CTUnion(rs)) => CTUnion(rs.map(_ & l).toSeq: _*)
+//        case (CTMap(pl), CTMap(pr)) =>
+//          val intersectedProps = (pl.keys ++ pr.keys).map { k =>
+//            val ct = pl.get(k) -> pr.get(k) match {
+//              case (Some(tl), Some(tr)) => tl | tr
+//              case (Some(tl), None) => tl.nullable
+//              case (None, Some(tr)) => tr.nullable
+//              case (None, None) => CTVoid
+//            }
+//            k -> ct
+//          }.toMap
+//          CTMap(intersectedProps)
+//        case (_, _) => CTVoid
+//      }
+//    }
+//  }
+//
+//  def intersects(other: CypherType): Boolean = meet(other) != CTVoid
 
   lazy val nullable: CypherType = {
     if (isNullable) this
@@ -102,7 +103,17 @@ trait CypherType {
     else if (other.subTypeOf(this)) this
     else {
       this -> other match {
-        case (l: CTRelationship, r: CTRelationship) if l.graph == r.graph => CTRelationship(l.types ++ r.types, l.graph)
+        case (l: CTElement, r: CTElement) if l.getClass == r.getClass =>
+          val labels = l.labels ++ r.labels
+          val properties = (l.properties.keys ++ r.properties.keys).map { key =>
+            key -> (l.properties.getOrElse(key, CTNull) | r.properties.getOrElse(key, CTNull))
+          }.toMap
+          val maybeGraph = l.graph.orElse(r.graph)
+
+          l match {
+            case _: CTNode => CTNode(labels, properties, maybeGraph)
+            case _: CTRelationship => CTRelationship(labels.map(_.head), properties, maybeGraph)
+          }
         case (CTBigDecimal(lp, ls), CTBigDecimal(rp, rs)) =>
           val maxScale = Math.max(ls, rs)
           val maxDiff = Math.max(lp - ls, rp - rs)
@@ -114,7 +125,6 @@ trait CypherType {
       }
     }
   }
-
   def superTypeOf(other: CypherType): Boolean = other.subTypeOf(this)
 
   def subTypeOf(other: CypherType): Boolean = {
@@ -126,13 +136,13 @@ trait CypherType {
       case (CTBigDecimal, _: CTBigDecimal) => false
       case (CTBigDecimal(lp, ls), CTBigDecimal(rp, rs)) => (lp <= rp) && (ls <= rs) && (lp - ls <= rp - rs)
       case (l, CTAnyMaterial) if !l.isNullable => true
-      case (_: CTRelationship, CTRelationship) => true
       case (_: CTMap, CTMap) => true
-      case (_: CTNode, CTNode) => true
-      case (l: CTNode, r: CTNode)
-        if l != CTNode && l.graph == r.graph && r.labels.subsetOf(l.labels) => true
-      case (l: CTRelationship, r: CTRelationship)
-        if l != CTRelationship && l.graph == r.graph && l.types.subsetOf(r.types) => true
+      case (l: CTElement, r: CTElement) if l.getClass == r.getClass =>
+        l.graph == r.graph &&
+        r.labels.subsetOf(l.labels) &&
+        (l.properties.keys ++ r.properties.keys).forall { key =>
+            l.properties.getOrElse(key, CTNull).subTypeOf(r.properties.getOrElse(key, CTNull))
+        }
       case (CTUnion(las), r: CTUnion) => las.forall(_.subTypeOf(r))
       case (l, CTUnion(ras)) => ras.exists(l.subTypeOf)
       case (CTList(l), CTList(r)) => l.subTypeOf(r)
@@ -225,44 +235,57 @@ case class CTList(inner: CypherType) extends CypherType {
 
 }
 
-object CTNode extends CTNode(Set.empty, None) {
-  def apply(labels: String*): CTNode = CTNode(labels.toSet)
+sealed trait CTElement extends CypherType {
+  def labels: Set[Set[String]]
+  def properties: Map[String, CypherType]
+}
+
+object CTNode {
+  def apply(labels: Set[String], properties: Map[String, CypherType]): CTNode = CTNode(Set(labels), properties)
+
+  def apply(label: String, properties: Map[String, CypherType]): CTNode = CTNode(Set(label), properties)
+  def apply(label1: String, label2: String, properties: Map[String, CypherType]): CTNode = CTNode(Set(label1, label2), properties)
+  def apply(label1: String, label2: String, label3: String, properties: Map[String, CypherType]): CTNode = CTNode(Set(label1, label2, label3), properties)
+
+  def empty(labels: String*): CTNode = CTNode(labels.map(l => Set(l)).toSet, Map.empty[String, CypherType], None)
+  def empty: CTNode = CTNode(Set.empty[Set[String]], Map.empty[String, CypherType], None)
 }
 
 case class CTNode(
-  labels: Set[String] = Set.empty,
+  labels: Set[Set[String]] = Set.empty,
+  properties: Map[String, CypherType],
   override val graph: Option[QualifiedGraphName] = None
-) extends CypherType {
-  override def withGraph(qgn: QualifiedGraphName): CTNode = copy(graph = Some(qgn))
-  override def withoutGraph: CTNode = CTNode(labels)
+) extends CTElement {
 
+  override def withGraph(qgn: QualifiedGraphName): CTNode = copy(graph = Some(qgn))
+  override def withoutGraph: CTNode = CTNode(labels, properties)
+
+  //TODO adjust
   override def name: String =
-    if (this == CTNode) {
-      "NODE"
-    } else {
       s"NODE(${labels.map(l => s":$l").mkString})${graph.map(g => s" @ $g").getOrElse("")}"
-    }
 
 }
 
-object CTRelationship extends CTRelationship(Set.empty, None) {
-  def apply(relTypes: String*): CTRelationship = CTRelationship(relTypes.toSet)
+object CTRelationship {
+  def apply(relTypes: String, properties: Map[String, CypherType]): CTRelationship = CTRelationship(Set(relTypes), properties)
+
+  def empty(labels: String*): CTRelationship = CTRelationship(labels.toSet, Map.empty[String, CypherType], None)
+  def empty: CTRelationship = CTRelationship(Set.empty[String], Map.empty[String, CypherType], None)
+
 }
 
 case class CTRelationship(
   types: Set[String] = Set.empty,
+  properties: Map[String, CypherType],
   override val graph: Option[QualifiedGraphName] = None
-) extends CypherType {
+) extends CTElement {
   override def withGraph(qgn: QualifiedGraphName): CTRelationship = copy(graph = Some(qgn))
-  override def withoutGraph: CTRelationship = CTRelationship(types)
+  override def withoutGraph: CTRelationship = CTRelationship(types, properties)
 
-  override def name: String = {
-    if (this == CTRelationship) {
-      "RELATIONSHIP"
-    } else {
+  override val labels: Set[Set[String]] = types.map(Set(_))
+
+  override def name: String =
       s"RELATIONSHIP(${types.map(l => s":$l").mkString("|")})${graph.map(g => s" @ $g").getOrElse("")}"
-    }
-  }
 
 }
 
@@ -301,7 +324,6 @@ case class CTUnion(alternatives: Set[CypherType]) extends CypherType {
   override def name: String = {
     if (this == CTAny) "ANY?"
     else if (this == CTBoolean) "BOOLEAN"
-    else if (this == CTElement) "ELEMENT"
     else if (isNullable) s"${material.name}?"
     else if (subTypeOf(CTNumber)) "NUMBER"
     else s"UNION(${alternatives.mkString(", ")})"

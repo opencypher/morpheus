@@ -97,13 +97,16 @@ final class PatternConverter(irBuilderContext: IRBuilderContext) {
         val (knownLabels, qgnOption) = vOpt.flatMap(expr => knownTypes.get(expr)).flatMap {
           case n: CTNode => Some(n.labels -> n.graph)
           case _ => None
-        }.getOrElse(Set.empty[String] -> Some(qualifiedGraphName))
+        }.getOrElse(Set.empty[Set[String]] -> Some(qualifiedGraphName))
 
-        val allLabels = patternLabels ++ knownLabels ++ baseNodeLabels
+        val allLabels = knownLabels.flatMap(known => baseNodeLabels.map(_ ++ patternLabels ++ known))
+
+        val schema = irBuilderContext.queryLocalCatalog.schema(qgnOption.getOrElse(qualifiedGraphName))
+        val propertySchema = schema.nodePropertyKeysForCombinations(allLabels)
 
         val nodeVar = vOpt match {
-          case Some(v) => Var(v.name)(CTNode(allLabels, qgnOption))
-          case None => FreshVariableNamer(np.position.offset, CTNode(allLabels, qgnOption))
+          case Some(v) => Var(v.name)(CTNode(allLabels,propertySchema, qgnOption))
+          case None => FreshVariableNamer(np.position.offset, CTNode(allLabels, propertySchema, qgnOption))
         }
 
         val baseNodeField = baseNodeVar.map(x => IRField(x.name)(knownTypes(x)))
@@ -205,7 +208,7 @@ final class PatternConverter(irBuilderContext: IRBuilderContext) {
 
     // types defined in outside scope, passed in by IRBuilder
     val (knownRelTypes, qgnOption) = eOpt.flatMap(expr => knownTypes.get(expr)).flatMap {
-      case CTRelationship(t, qgn) => Some(t -> qgn)
+      case CTRelationship(t, _, qgn) => Some(t -> qgn)
       case _ => None
     }.getOrElse(Set.empty[String] -> Some(qualifiedGraphName))
 
@@ -215,9 +218,12 @@ final class PatternConverter(irBuilderContext: IRBuilderContext) {
       else knownRelTypes
     }
 
+    val schema = irBuilderContext.queryLocalCatalog.schema(qgnOption.getOrElse(qualifiedGraphName))
+    val propertySchema = schema.relationshipPropertyKeysForTypes(relTypes)
+
     val rel = eOpt match {
-      case Some(v) => Var(v.name)(CTRelationship(relTypes, qgnOption))
-      case None => FreshVariableNamer(offset, CTRelationship(relTypes, qgnOption))
+      case Some(v) => Var(v.name)(CTRelationship(relTypes, propertySchema, qgnOption))
+      case None => FreshVariableNamer(offset, CTRelationship(relTypes, propertySchema, qgnOption))
     }
     rel
   }

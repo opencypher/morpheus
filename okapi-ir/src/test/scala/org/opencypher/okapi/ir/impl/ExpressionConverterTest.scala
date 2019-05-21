@@ -59,10 +59,10 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     .map { case (n, t) => s"LIST_$n" -> CTList(t) }
 
   private val maps = Seq(
-    "NODE" -> CTNode(Set("Node")),
-    "NODE_EMPTY" -> CTNode(),
-    "REL" -> CTRelationship(Set("REL")),
-    "REL_EMPTY" -> CTRelationship(),
+    "NODE" -> CTNode.empty("Node"),
+    "NODE_EMPTY" -> CTNode.empty,
+    "REL" -> CTRelationship.empty("REL"),
+    "REL_EMPTY" -> CTRelationship.empty,
     "MAP" -> CTMap(simple.toMap),
     "MAP_EMPTY" -> CTMap()
   )
@@ -174,7 +174,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
       CaseExpr(List((GreaterThan('INTEGER, 'INTEGER), 'INTEGER)), Some('FLOAT))(CTUnion(CTInteger, CTFloat))
     )
     convert(parseExpr("CASE WHEN STRING > STRING_OR_NULL THEN NODE END")) should equal(
-      CaseExpr(List((GreaterThan('STRING, 'STRING_OR_NULL), 'NODE)), None)(CTNode("Node").nullable)
+      CaseExpr(List((GreaterThan('STRING, 'STRING_OR_NULL), 'NODE)), None)(CTNode.empty("Node").nullable)
     )
   }
 

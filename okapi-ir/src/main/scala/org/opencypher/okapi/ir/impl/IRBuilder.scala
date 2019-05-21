@@ -332,13 +332,13 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
               case ((currentSchema, rewrittenVarTypes), setItem: SetItem) =>
                 setItem match {
                   case SetLabelItem(variable, labels) =>
-                    val (existingLabels, existingQgn) = rewrittenVarTypes.getOrElse(variable, variable.cypherType) match {
-                      case CTNode(ls, qualifiedGraphName) => ls -> qualifiedGraphName
+                    val (existingLabels, existingProperties, existingQgn) = rewrittenVarTypes.getOrElse(variable, variable.cypherType) match {
+                      case CTNode(ls, props, qualifiedGraphName) => (ls, props, qualifiedGraphName)
                       case other => throw UnsupportedOperationException(s"SET label on something that is not a node: $other")
                     }
-                    val labelsAfterSet = existingLabels ++ labels
-                    val updatedSchema = currentSchema.addLabelsToCombo(labels, existingLabels)
-                    updatedSchema -> rewrittenVarTypes.updated(variable, CTNode(labelsAfterSet, existingQgn))
+                    val labelsAfterSet = existingLabels.map(_ ++ labels)
+                    val updatedSchema = existingLabels.foldLeft(currentSchema)(_.addLabelsToCombo(labels, _))
+                    updatedSchema -> rewrittenVarTypes.updated(variable, CTNode(labelsAfterSet, existingProperties, existingQgn))
                   case SetPropertyItem(propertyKey, variable, setValue) =>
                     val propertyType = setValue.cypherType
                     val updatedSchema = currentSchema.addPropertyToElement(propertyKey, propertyType, variable.cypherType)
@@ -604,6 +604,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
     }
   }
 
+  // TODO improve
   private def schemaForNewField(field: IRField, pattern: Pattern, context: IRBuilderContext): PropertyGraphSchema = {
     val baseFieldSchema = pattern.baseFields.get(field).map { baseNode =>
       schemaForElementType(context, baseNode.cypherType)
@@ -614,14 +615,14 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
       .getOrElse(Map.empty)
 
     field.cypherType match {
-      case CTNode(newLabels, _) =>
+      case CTNode(newLabels, properties, _) =>
         val oldLabelCombosToNewLabelCombos = if (baseFieldSchema.labels.nonEmpty)
-          baseFieldSchema.allCombinations.map(oldLabels => oldLabels -> (oldLabels ++ newLabels))
+          baseFieldSchema.allCombinations.flatMap(oldLabels => newLabels.map { l => oldLabels -> (oldLabels ++ l)} )
         else
-          Set(Set.empty[String] -> newLabels)
+          newLabels.map(Set.empty[String] -> _)
 
         val updatedPropertyKeys = oldLabelCombosToNewLabelCombos.map {
-          case (oldLabelCombo, newLabelCombo) => newLabelCombo -> (baseFieldSchema.nodePropertyKeys(oldLabelCombo) ++ newPropertyKeys)
+          case (_, newLabelCombo) => newLabelCombo -> (properties ++ newPropertyKeys)
         }
 
         updatedPropertyKeys.foldLeft(PropertyGraphSchema.empty) {
@@ -629,26 +630,26 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
         }
 
       // if there is only one relationship type we need to merge all existing types and update them
-      case CTRelationship(newTypes, _) if newTypes.size == 1 =>
-        val possiblePropertyKeys = baseFieldSchema
-          .relTypePropertyMap
-          .values
-          .map(_.keySet)
-          .foldLeft(Set.empty[String])(_ ++ _)
+      case CTRelationship(newTypes, oldProperties, _) if newTypes.size == 1 =>
+//        val possiblePropertyKeys = baseFieldSchema
+//          .relTypePropertyMap
+//          .values
+//          .map(_.keySet)
+//          .foldLeft(Set.empty[String])(_ ++ _)
 
-        val joinedPropertyKeys = possiblePropertyKeys.map { key =>
-          key -> baseFieldSchema.relationshipPropertyKeyType(Set.empty, key).get
-        }.toMap
+//        val joinedPropertyKeys = possiblePropertyKeys.map { key =>
+//          key -> baseFieldSchema.relationshipPropertyKeyType(Set.empty, key).get
+//        }.toMap
 
-        val updatedPropertyKeys = joinedPropertyKeys ++ newPropertyKeys
+        val updatedPropertyKeys = oldProperties ++ newPropertyKeys
 
         PropertyGraphSchema.empty.withRelationshipPropertyKeys(newTypes.head, updatedPropertyKeys)
 
-      case CTRelationship(newTypes, _) =>
+      case CTRelationship(newTypes, oldProperties, _) =>
         val actualTypes = if (newTypes.nonEmpty) newTypes else baseFieldSchema.relationshipTypes
 
         actualTypes.foldLeft(PropertyGraphSchema.empty) {
-          case (acc, relType) => acc.withRelationshipPropertyKeys(relType, baseFieldSchema.relationshipPropertyKeys(relType) ++ newPropertyKeys)
+          case (acc, relType) => acc.withRelationshipPropertyKeys(relType, oldProperties ++ newPropertyKeys)
         }
 
       case other => throw IllegalArgumentException("CTNode or CTRelationship", other)

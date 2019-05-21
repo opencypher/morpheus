@@ -27,7 +27,7 @@
 package org.opencypher.okapi.api.io.conversion
 
 import org.opencypher.okapi.api.graph._
-import org.opencypher.okapi.api.types.CTNode
+import org.opencypher.okapi.api.types.{CTNode, CypherType}
 
 object NodeMappingBuilder {
   /**
@@ -113,7 +113,8 @@ final case class NodeMappingBuilder(
     copy(propertyMapping = updatedPropertyMapping)
 
   override def build: ElementMapping = {
-    val pattern: NodePattern = NodePattern(CTNode(impliedNodeLabels))
+    // TODO: fill the node with property information
+    val pattern: NodePattern = NodePattern(CTNode(impliedNodeLabels, Map.empty[String, CypherType]))
     val properties: Map[PatternElement, Map[String, String]] = Map(pattern.nodeElement -> propertyMapping)
     val idKeys: Map[PatternElement, Map[IdKey, String]] = Map(pattern.nodeElement -> Map(SourceIdKey -> nodeIdKey))
 

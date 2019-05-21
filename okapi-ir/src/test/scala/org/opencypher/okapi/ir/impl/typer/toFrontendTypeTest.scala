@@ -55,10 +55,10 @@ class toFrontendTypeTest extends BaseTestSuite {
   }
 
   test("should convert element types") {
-    CTNode shouldBeConvertedTo frontend.CTNode
-    CTNode.nullable shouldBeConvertedTo frontend.CTNode
-    CTRelationship shouldBeConvertedTo frontend.CTRelationship
-    CTRelationship.nullable shouldBeConvertedTo frontend.CTRelationship
+    CTNode.empty shouldBeConvertedTo frontend.CTNode
+    CTNode.empty.nullable shouldBeConvertedTo frontend.CTNode
+    CTRelationship.empty shouldBeConvertedTo frontend.CTRelationship
+    CTRelationship.empty.nullable shouldBeConvertedTo frontend.CTRelationship
     CTPath shouldBeConvertedTo frontend.CTPath
   }
 

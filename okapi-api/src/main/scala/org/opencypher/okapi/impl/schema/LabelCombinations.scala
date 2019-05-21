@@ -35,8 +35,8 @@ case class LabelCombinations(combos: Set[Set[String]]) {
   /**
     * Returns all combinations that contain the argument `labels`
     */
-  def combinationsFor(labels: Set[String]): Set[Set[String]] =
-    combos.filter(labels.subsetOf)
+  def combinationsFor(labels: Set[Set[String]]): Set[Set[String]] =
+    labels.flatMap(combo => combos.filter(combo.subsetOf))
 
   def withCombinations(coExistingLabels: String*): LabelCombinations = {
     val (lhs, rhs) = combos.partition(labels => coExistingLabels.exists(labels(_)))

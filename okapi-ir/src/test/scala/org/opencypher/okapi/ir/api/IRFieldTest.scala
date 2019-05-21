@@ -33,14 +33,14 @@ class IRFieldTest extends BaseTestSuite {
 
   describe("equality") {
     it("ignores cypher type in equality") {
-      val a = IRField("a")(CTNode)
-      val b = IRField("a")(CTRelationship)
+      val a = IRField("a")(CTNode.empty)
+      val b = IRField("a")(CTRelationship.empty)
       a should equal(b)
     }
 
     it("has same hash code for different cypher types") {
-      val n = IRField("a")(CTNode("a"))
-      val r = IRField("a")(CTRelationship("b"))
+      val n = IRField("a")(CTNode("a", Map.empty[String, CypherType]))
+      val r = IRField("a")(CTRelationship("b", Map.empty[String, CypherType]))
       n.hashCode should equal(r.hashCode)
     }
 

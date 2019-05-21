@@ -45,12 +45,12 @@ class RichSchemaTest extends BaseTestSuite {
 
         val actual = Pattern(
           Set(
-            IRField("n")(CTNode("Person")),
-            IRField("r")(CTRelationship("BAR")),
-            IRField("m")(CTNode("Person"))
+            IRField("n")(CTNode.empty("Person")),
+            IRField("r")(CTRelationship.empty("BAR")),
+            IRField("m")(CTNode.empty("Person"))
           ),
           ListMap(
-            IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode("Person")))
+            IRField("r")(CTRelationship.empty("BAR")) -> DirectedRelationship(IRField("n")(CTNode.empty("Person")), IRField("m")(CTNode.empty("Person")))
           )
         ).fields.map(f => schema.forElementType(f.cypherType)).reduce(_ ++ _)
 
@@ -70,12 +70,12 @@ class RichSchemaTest extends BaseTestSuite {
 
         val actual = Pattern(
           Set(
-            IRField("n")(CTNode("Person")),
-            IRField("r")(CTRelationship("BAR")),
-            IRField("m")(CTNode())
+            IRField("n")(CTNode.empty("Person")),
+            IRField("r")(CTRelationship.empty("BAR")),
+            IRField("m")(CTNode.empty)
           ),
           ListMap(
-            IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode()))
+            IRField("r")(CTRelationship.empty("BAR")) -> DirectedRelationship(IRField("n")(CTNode.empty("Person")), IRField("m")(CTNode.empty))
           )
         ).fields.map(f => schema.forElementType(f.cypherType)).reduce(_ ++ _)
 

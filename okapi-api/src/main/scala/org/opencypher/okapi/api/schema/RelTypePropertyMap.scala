@@ -29,7 +29,7 @@ package org.opencypher.okapi.api.schema
 import cats.instances.all._
 import cats.syntax.semigroup._
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
-import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.api.types.CypherType.joinMonoid
 
 object RelTypePropertyMap {
@@ -46,6 +46,9 @@ object RelTypePropertyMap {
     }
 
     def properties(relKey: String): PropertyKeys = map.getOrElse(relKey, Map.empty)
+
+    def cypherType(relKey: String): Option[CTRelationship] =
+      map.get(relKey).map(CTRelationship(Set(relKey), _))
 
     def filterForRelTypes(relType: Set[String]): RelTypePropertyMap = map.filterKeys(relType.contains)
 

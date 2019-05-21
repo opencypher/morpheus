@@ -180,12 +180,12 @@ final case class PropertyGraphSchemaImpl(
   override def nodePropertyKeys(labelCombination: Set[String]): PropertyKeys = labelPropertyMap.properties(labelCombination)
 
   override def allCombinations: Set[Set[String]] =
-    combinationsFor(Set.empty)
+    combinationsFor(Set(Set.empty))
 
-  override def combinationsFor(knownLabels: Set[String]): Set[Set[String]] =
+  override def combinationsFor(knownLabels: Set[Set[String]]): Set[Set[String]] =
     labelCombinations.combinationsFor(knownLabels)
 
-  override def nodePropertyKeyType(knownLabels: Set[String], key: String): Option[CypherType] = {
+  override def nodePropertyKeyType(knownLabels: Set[Set[String]], key: String): Option[CypherType] = {
     val combos = combinationsFor(knownLabels)
     nodePropertyKeysForCombinations(combos).get(key)
   }
@@ -268,7 +268,7 @@ final case class PropertyGraphSchemaImpl(
             |Should be one of: ${labels.mkString("[", ", ", "]")}""".stripMargin)
     }
 
-    val propertyKeys = nodePropertyKeysForCombinations(combinationsFor(Set(label)))
+    val propertyKeys = nodePropertyKeysForCombinations(combinationsFor(Set(Set(label))))
 
     if (!nodeKey.subsetOf(propertyKeys.keySet)) {
       throw SchemaException(
@@ -396,18 +396,14 @@ final case class PropertyGraphSchemaImpl(
     )
   }
 
-  def forNode(labelConstraints: Set[String]): PropertyGraphSchema = {
-    val requiredLabels = {
-      val explicitLabels = labelConstraints
-      val impliedLabels = this.impliedLabels.transitiveImplicationsFor(explicitLabels)
-      explicitLabels union impliedLabels
-    }
+  def forNode(labelConstraints: Set[Set[String]]): PropertyGraphSchema = {
+    val requiredLabels = labelConstraints.map(l => l ++ this.impliedLabels.transitiveImplicationsFor(l))
 
     val possibleLabels = if (labelConstraints.isEmpty) {
       allCombinations
     } else {
       // add required labels because they might not be present in the schema already (newly created)
-      combinationsFor(requiredLabels) + requiredLabels
+      combinationsFor(requiredLabels) ++ requiredLabels
     }
 
     // take all label properties that might appear on the possible labels
@@ -424,22 +420,15 @@ final case class PropertyGraphSchemaImpl(
     )
   }
 
-  def forRelationship(relType: CTRelationship): PropertyGraphSchema = {
-    val givenRelTypes = if (relType.types.isEmpty) {
-      relationshipTypes
-    } else {
-      relType.types
-    }
+  def forRelationship(relationship: CTRelationship): PropertyGraphSchema = {
+    val relTypePropertyMap = relationship.types.map { relType =>
+      relType -> relationship.properties
+    }.toMap
 
-    val updatedRelTypePropertyMap = this.relTypePropertyMap.filterForRelTypes(givenRelTypes)
-    val updatedMap = givenRelTypes.foldLeft(updatedRelTypePropertyMap) {
-      case (map, givenRelType) =>
-        if (!map.contains(givenRelType)) map.updated(givenRelType, PropertyKeys.empty) else map
-    }
 
     PropertyGraphSchemaImpl(
       labelPropertyMap = LabelPropertyMap.empty,
-      relTypePropertyMap = updatedMap
+      relTypePropertyMap = relTypePropertyMap
     )
   }
 

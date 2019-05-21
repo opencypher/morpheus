@@ -89,7 +89,7 @@ class IrBuilderTest extends IrTestSuite {
         case GraphResultBlock(_, IRPatternGraph(qgn, _, clones, _, _, _)) =>
           clones.keys.size should equal(1)
           val (b, a) = clones.head
-          a should equal(NodeVar("a")())
+          a should equal(NodeVar("a")(CTNode.empty))
           a.asInstanceOf[Var].cypherType.graph should equal(Some(testGraph.qualifiedGraphName))
           b.cypherType.graph should equal(Some(qgn))
         case _ => fail("no matching graph result found")
@@ -733,7 +733,7 @@ class IrBuilderTest extends IrTestSuite {
           val matchBlock = model.findExactlyOne {
             case MatchBlock(deps, Pattern(fields, topo, _, _), exprs, _, _) =>
               deps should equalWithTracing(List(loadBlock))
-              fields should equal(Set(toField('a -> CTNode("Person"))))
+              fields should equal(Set(toField('a -> CTNode.empty("Person"))))
               topo shouldBe empty
               exprs should equalWithTracing(Set.empty)
           }
@@ -767,7 +767,7 @@ class IrBuilderTest extends IrTestSuite {
           val matchBlock = model.findExactlyOne {
             case NoWhereBlock(MatchBlock(deps, Pattern(fields, topo, _, _), _, _, _)) =>
               deps should equalWithTracing(List(loadBlock))
-              fields should equal(Set[IRField]('a -> CTNode, 'b -> CTNode, 'r -> CTRelationship))
+              fields should equal(Set[IRField]('a -> CTNode.empty, 'b -> CTNode.empty, 'r -> CTRelationship.empty))
               val map = Map(toField('r) -> DirectedRelationship('a, 'b))
               topo should equal(map)
           }
@@ -809,7 +809,7 @@ class IrBuilderTest extends IrTestSuite {
           val matchBlock = model.findExactlyOne {
             case MatchBlock(deps, Pattern(fields, topo, _, _), exprs, _, _) =>
               deps should equalWithTracing(List(loadBlock))
-              fields should equal(Set(toField('a -> CTNode("Person"))))
+              fields should equal(Set(toField('a -> CTNode.empty("Person"))))
               topo shouldBe empty
               exprs should equalWithTracing(Set.empty)
           }
@@ -819,8 +819,8 @@ class IrBuilderTest extends IrTestSuite {
               deps should equalWithTracing(List(matchBlock))
               map should equal(
                 Map(
-                  toField('name) -> ElementProperty(Var("a")(CTNode), PropertyKey("name"))(CTString),
-                  toField('age) -> ElementProperty(Var("a")(CTNode), PropertyKey("age"))(CTInteger)
+                  toField('name) -> ElementProperty(Var("a")(CTNode.empty), PropertyKey("name"))(CTString),
+                  toField('age) -> ElementProperty(Var("a")(CTNode.empty), PropertyKey("age"))(CTInteger)
                 ))
           }
 

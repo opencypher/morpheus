@@ -27,7 +27,7 @@
 package org.opencypher.okapi.ir.impl.util
 
 import org.opencypher.okapi.api.graph.PatternElement
-import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr.{NodeVar, RelationshipVar, Var}
 
@@ -49,9 +49,9 @@ object VarConverters {
 
   implicit def toVar(s: Symbol): Var = Var(s.name)()
 
-  def toNodeVar(s: Symbol): Var = NodeVar(s.name)()
+  def toNodeVar(s: Symbol): Var = NodeVar(s.name)(CTNode.empty)
 
-  def toRelVar(s: Symbol): Var = RelationshipVar(s.name)()
+  def toRelVar(s: Symbol): Var = RelationshipVar(s.name)(CTRelationship.empty)
 
   implicit def toVar(t: (Symbol, CypherType)): Var = Var(t._1.name)(t._2)
 

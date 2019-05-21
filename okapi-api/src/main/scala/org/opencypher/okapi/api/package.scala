@@ -34,8 +34,6 @@ package object types {
 
   val CTBoolean: CTUnion = CTUnion(Set[CypherType](CTTrue, CTFalse))
 
-  val CTElement: CTUnion = CTUnion(Set[CypherType](CTNode, CTRelationship))
-
   val CTAny: CTUnion = CTUnion(Set[CypherType](CTAnyMaterial, CTNull))
 
   val CTTemporalInstant: CTUnion = CTUnion(Set[CypherType](CTLocalDateTime, CTDate))

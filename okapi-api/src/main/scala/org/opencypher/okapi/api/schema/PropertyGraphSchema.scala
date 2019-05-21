@@ -29,7 +29,7 @@ package org.opencypher.okapi.api.schema
 import org.opencypher.okapi.api.schema.LabelPropertyMap._
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.RelTypePropertyMap._
-import org.opencypher.okapi.api.types.{CTRelationship, CypherType}
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.impl.annotations.experimental
 import org.opencypher.okapi.impl.schema.PropertyGraphSchemaImpl._
 import org.opencypher.okapi.impl.schema.{ImpliedLabels, LabelCombinations, PropertyGraphSchemaImpl}
@@ -143,6 +143,8 @@ trait PropertyGraphSchema {
     */
   def nodePropertyKeys(labelCombination: Set[String]): PropertyKeys
 
+  def nodeType(labelCombination: Set[String]): Option[CTNode] = labelPropertyMap.cypherType(labelCombination)
+
   /**
     * Returns some property type for a property given the known labels of a node.
     * Returns none if this property does not appear on nodes with the given label combination.
@@ -152,7 +154,7 @@ trait PropertyGraphSchema {
     * @param key         property key
     * @return Cypher type of the property on nodes with the given label combination
     */
-  def nodePropertyKeyType(knownLabels: Set[String], key: String): Option[CypherType]
+  def nodePropertyKeyType(knownLabels: Set[Set[String]], key: String): Option[CypherType]
 
   /**
     * Returns all combinations of labels that exist on a node in the graph.
@@ -162,7 +164,7 @@ trait PropertyGraphSchema {
   /**
     * Given a set of labels that a node definitely has, returns all combinations of labels that the node could possibly have.
     */
-  def combinationsFor(knownLabels: Set[String]): Set[Set[String]]
+  def combinationsFor(knownLabels: Set[Set[String]]): Set[Set[String]]
 
   /**
     * Returns property keys for the set of label combinations.
@@ -178,6 +180,8 @@ trait PropertyGraphSchema {
     * Returns the property schema for a given relationship type
     */
   def relationshipPropertyKeys(relType: String): PropertyKeys
+
+  def relationshipType(relType: String): Option[CTRelationship] = relTypePropertyMap.cypherType(relType)
 
   /**
     * Returns some property type for a property given the possible types of a relationship.
@@ -334,7 +338,7 @@ trait PropertyGraphSchema {
     * @param knownLabels Specifies the labels that the node is guaranteed to have
     * @return sub-schema for `knownLabels`
     */
-  private[opencypher] def forNode(knownLabels: Set[String]): PropertyGraphSchema
+  private[opencypher] def forNode(knownLabels: Set[Set[String]]): PropertyGraphSchema
 
   /**
     * Returns the sub-schema for `relType`

@@ -38,18 +38,18 @@ class ExprTest extends BaseTestSuite {
     val r = Var("a")(CTString)
     n should equal(r)
 
-    val a = StartNode(Var("rel")(CTRelationship))(CTAny)
-    val b = StartNode(Var("rel")(CTRelationship))(CTNode)
+    val a = StartNode(Var("rel")(CTRelationship.empty))(CTAny)
+    val b = StartNode(Var("rel")(CTRelationship.empty))(CTNode.empty)
     a should equal(b)
   }
 
   test("same expressions with different cypher types have the same hash code") {
-    val n = Var("a")(CTNode("a"))
-    val r = Var("a")(CTRelationship("b"))
+    val n = Var("a")(CTNode("a", Map.empty[String, CypherType]))
+    val r = Var("a")(CTRelationship("b", Map.empty[String, CypherType]))
     n.hashCode should equal(r.hashCode)
 
-    val a = StartNode(Var("rel")(CTRelationship))(CTAny)
-    val b = StartNode(Var("rel")(CTRelationship))(CTNode)
+    val a = StartNode(Var("rel")(CTRelationship.empty))(CTAny)
+    val b = StartNode(Var("rel")(CTRelationship.empty))(CTNode.empty)
     a.hashCode should equal(b.hashCode)
   }
 
@@ -66,13 +66,13 @@ class ExprTest extends BaseTestSuite {
   }
 
   test("alias expression has updated type") {
-    val n = Var("n")(CTNode)
+    val n = Var("n")(CTNode.empty)
     val aliasVar = Var("m")()
     (n as aliasVar).cypherType should equal(aliasVar.cypherType)
   }
 
   describe("CypherType computation") {
-    val a = Var("a")(CTNode)
+    val a = Var("a")(CTNode.empty)
     val b = Var("b")(CTUnion(CTInteger, CTString))
     val c = Var("c")(CTUnion(CTInteger, CTString.nullable))
     val d = Var("d")(CTInteger.nullable)
@@ -82,16 +82,16 @@ class ExprTest extends BaseTestSuite {
     val number = Var("number")(CTNumber)
 
     it("types Coalesce correctly") {
-      Coalesce(List(a, b)).cypherType should equal(CTUnion(CTNode, CTInteger, CTString))
+      Coalesce(List(a, b)).cypherType should equal(CTUnion(CTNode.empty, CTInteger, CTString))
       Coalesce(List(b, c)).cypherType should equal(CTUnion(CTInteger, CTString))
-      Coalesce(List(a, b, c, d)).cypherType should equal(CTUnion(CTNode, CTInteger, CTString))
+      Coalesce(List(a, b, c, d)).cypherType should equal(CTUnion(CTNode.empty, CTInteger, CTString))
 
       Coalesce(List(d,e)).cypherType should equal(CTUnion(CTInteger, CTString).nullable)
     }
 
     it("types ListSegment correctly") {
-      ListSegment(3, Var("list")(CTList(CTNode))).cypherType should equalWithTracing(
-        CTNode.nullable
+      ListSegment(3, Var("list")(CTList(CTNode.empty))).cypherType should equalWithTracing(
+        CTNode.empty.nullable
       )
 
       ListSegment(3, Var("list")(CTUnion(CTList(CTString), CTList(CTInteger)))).cypherType should equalWithTracing(
@@ -114,13 +114,13 @@ class ExprTest extends BaseTestSuite {
     }
 
     it("types ListLit correctly") {
-      ListLit(List(a, b)).cypherType should equal(CTList(CTUnion(CTNode, CTInteger, CTString)))
+      ListLit(List(a, b)).cypherType should equal(CTList(CTUnion(CTNode.empty, CTInteger, CTString)))
       ListLit(List(b, c)).cypherType should equal(CTList(CTUnion(CTInteger, CTString.nullable)))
-      ListLit(List(a, b, c, d)).cypherType should equal(CTList(CTUnion(CTNode, CTInteger, CTString).nullable))
+      ListLit(List(a, b, c, d)).cypherType should equal(CTList(CTUnion(CTNode.empty, CTInteger, CTString).nullable))
     }
 
     it("types Explode correctly") {
-      Explode(Var("list")(CTList(CTNode))).cypherType should equalWithTracing(
+      Explode(Var("list")(CTList(CTNode.empty))).cypherType should equalWithTracing(
         CTNode
       )
 

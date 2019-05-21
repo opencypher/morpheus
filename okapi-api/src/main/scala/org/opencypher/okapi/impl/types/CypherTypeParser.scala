@@ -76,20 +76,20 @@ object CypherTypeParser extends Logging {
   def BIGDECIMAL[_: P]: P[CTBigDecimal] =
     (IgnoreCase("BIGDECIMAL") ~/ "(" ~/ integer ~/ "," ~/ integer ~/ ")").map { case (s, p) => CTBigDecimal(s, p) }
 
-  // element types
-  def NODE[_: P]: P[CTNode] = P(
-    IgnoreCase("NODE") ~ ("(" ~/ label.rep ~ ")") ~ ("@" ~/ (identifier | ".").rep.!).?
-  ).map { case (l, mg) => CTNode(l.toSet, mg.map(QualifiedGraphName(_))) }
+//  // element types
+//  def NODE[_: P]: P[CTNode] = P(
+//    IgnoreCase("NODE") ~ ("(" ~/ label.rep ~ ")") ~ ("@" ~/ (identifier | ".").rep.!).?
+//  ).map { case (l, mg) => CTNode(l.toSet, mg.map(QualifiedGraphName(_))) }
+//
+//  def ANYNODE[_: P]: P[CTNode.type] = P(IgnoreCase("NODE").map(_ => CTNode))
+//
+//  def RELATIONSHIP[_: P]: P[CTRelationship] = P(
+//    IgnoreCase("RELATIONSHIP") ~ ("(" ~/ label.rep(sep = "|") ~/ ")") ~ ("@" ~/ (identifier | ".").rep.!).?
+//  ).map { case (l, mg) => CTRelationship(l.toSet, mg.map(QualifiedGraphName(_))) }
+//
+//  def ANYRELATIONSHIP[_: P]: P[CTRelationship] = P(IgnoreCase("RELATIONSHIP").map(_ => CTRelationship))
 
-  def ANYNODE[_: P]: P[CTNode.type] = P(IgnoreCase("NODE").map(_ => CTNode))
-
-  def RELATIONSHIP[_: P]: P[CTRelationship] = P(
-    IgnoreCase("RELATIONSHIP") ~ ("(" ~/ label.rep(sep = "|") ~/ ")") ~ ("@" ~/ (identifier | ".").rep.!).?
-  ).map { case (l, mg) => CTRelationship(l.toSet, mg.map(QualifiedGraphName(_))) }
-
-  def ANYRELATIONSHIP[_: P]: P[CTRelationship] = P(IgnoreCase("RELATIONSHIP").map(_ => CTRelationship))
-
-  def ELEMENT[_: P]: P[CTUnion] = P(IgnoreCase("ELEMENT").map(_ => CTElement))
+//  def ELEMENT[_: P]: P[CTUnion] = P(IgnoreCase("ELEMENT").map(_ => CTElement))
 
   def PATH[_: P]: P[CTPath.type] = P(IgnoreCase("PATH").map(_ => CTPath))
 
@@ -111,11 +111,11 @@ object CypherTypeParser extends Logging {
       TRUE |
       FALSE |
       BOOLEAN |
-      NODE |
-      RELATIONSHIP |
-      ELEMENT |
-      ANYNODE |
-      ANYRELATIONSHIP |
+//      NODE |
+//      RELATIONSHIP |
+//      ELEMENT |
+//      ANYNODE |
+//      ANYRELATIONSHIP |
       MAP |
       ANYMAP |
       ANYMATERIAL |
