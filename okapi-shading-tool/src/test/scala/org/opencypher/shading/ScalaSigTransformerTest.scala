@@ -48,7 +48,7 @@ class ScalaSigTransformerTest extends BaseTestSuite {
   }
 
   it("print the signatures") {
-    val className = "org.neo4j.ShadingClass"
+    val className = "org.opencypher.relocated.cats.kernel.Monoid"
 
     val cw = new ClassWriter(0)
     val cr = new ClassReader(className)
@@ -56,5 +56,18 @@ class ScalaSigTransformerTest extends BaseTestSuite {
     val visitor = new ScalaSigTransformer(Opcodes.ASM4, cw)
     cr.accept(visitor, 0)
     val transformedByteArray = cw.toByteArray
+  }
+
+  it("print the signatures 2") {
+    val className = "cats.kernel.Monoid"
+
+    val cw = new ClassWriter(0)
+    val cr = new ClassReader(className)
+    val inputByteArray = cr.b.clone()
+    val visitor = new ScalaSigTransformer(Opcodes.ASM4, cw)
+    cr.accept(visitor, 0)
+    val transformedByteArray = cw.toByteArray
+
+//    inputByteArray.mkString("") should equal(transformedByteArray.mkString(""))
   }
 }

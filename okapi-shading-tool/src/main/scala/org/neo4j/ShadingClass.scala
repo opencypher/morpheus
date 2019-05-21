@@ -26,7 +26,7 @@
  */
 package org.neo4j
 
-import cats.kernel.Monoid
+//import cats.kernel.Monoid
 
 object ShadingClass {
   val empty = new ShadingClass()
@@ -34,7 +34,7 @@ object ShadingClass {
 
 class ShadingClass {
 
-  def myCats(monoid: Monoid[String]): Unit = {}
+//  def myCats(monoid: Monoid[String]): Unit = {}
 
   def publicFunction(a: String, b: Int): Boolean = true
 

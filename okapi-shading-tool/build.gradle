@@ -1,0 +1,11 @@
+
+description = 'Tool to repair ScalaSignature annotations when relocating classes'
+
+dependencies {
+    compile group: 'org.typelevel', name: 'scalap', version: '2.12.1'
+    compile project(':okapi-relational')
+
+    compile group: 'org.opencypher', name: 'okapi-shade', version: '0.4.1-SNAPSHOT'
+
+    testCompile project(':okapi-testing')
+}
