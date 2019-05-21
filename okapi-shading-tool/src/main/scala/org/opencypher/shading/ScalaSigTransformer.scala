@@ -89,8 +89,12 @@ object ScalaSigTransformer {
             case symbol@ExternalSymbol(name, None, entry) if symbol.path.startsWith("cats") =>
 
               baos.write(PickleFormat.EXTMODCLASSref)
-              NatWriter.write(2, baos)  // b.length is actually 1, but we want to insert a symbol reference here
-              baos.write(b.bytes, b.pos, 1)
+              NatWriter.write(b.length + ???, baos)  // b.length is actually 1, but we want to insert a symbol reference here
+              baos.write(b.bytes, b.pos, b.length)
+              // TODO: Fix these things
+              // add the new reference; how large is it?
+              val tableIndex = sig.table.size + 1
+              val natEncodingSize = (tableIndex >> 7) + 1 // how many bytes do we need to encode the index (at least 1)
               baos.write(b.bytes.length)
 
             case symbol@ExternalSymbol(name, None, entry) =>
