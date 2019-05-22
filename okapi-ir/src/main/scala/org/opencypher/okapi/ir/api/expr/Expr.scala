@@ -196,6 +196,8 @@ final case class SimpleVar(name: String)(val cypherType: CypherType) extends Ret
   override def withOwner(expr: Var): SimpleVar = SimpleVar(expr.name)(expr.cypherType)
 }
 
+final case class LambdaVar(name: String)(val cypherType: CypherType) extends Var
+
 final case class StartNode(rel: Expr)(val cypherType: CypherType) extends Expr {
   type This = StartNode
 

@@ -62,18 +62,21 @@ final class ExpressionConverter(context: IRBuilderContext) {
     }
   }
 
-  def convert(e: ast.Expression)(implicit context: IRBuilderContext = this.context): Expr = {
+  def convert(e: ast.Expression, lambdaField: Option[IRField] = None): Expr = {
 
-    lazy val child0: Expr = convert(e.arguments.head)
+    lazy val child0: Expr = convert(e.arguments.head, lambdaField)
 
-    lazy val child1: Expr = convert(e.arguments(1))
+    lazy val child1: Expr = convert(e.arguments(1), lambdaField)
 
-    lazy val child2: Expr = convert(e.arguments(2))
+    lazy val child2: Expr = convert(e.arguments(2), lambdaField)
 
-    lazy val convertedChildren: List[Expr] = e.arguments.toList.map(convert)
+    lazy val convertedChildren: List[Expr] = e.arguments.toList.map(convert(_, lambdaField))
 
     e match {
-      case ast.Variable(name) => Var(name)(context.knownTypes.getOrElse(e, throw UnTypedExpr(e)))
+      case ast.Variable(name) => lambdaField match {
+        case Some(l) if l.name.equals(name) => LambdaVar(name)(l.cypherType)
+        case None => Var(name)(context.knownTypes.getOrElse(e, throw UnTypedExpr(e)))
+      }
       case p@ast.Parameter(name, _) => Param(name)(parameterType(p))
 
       // Literals
@@ -125,7 +128,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
       case ast.HasLabels(_, labels) => Ands(labels.map(l => HasLabel(child0, Label(l.name))).toSet)
       case _: ast.Not => Not(child0)
       case ast.Equals(f: ast.FunctionInvocation, s: ast.StringLiteral) if f.function == functions.Type =>
-        HasType(convert(f.args.head), RelType(s.value))
+        HasType(convert(f.args.head, lambdaField), RelType(s.value))
       case _: ast.Equals => Equals(child0, child1)
       case _: ast.LessThan => LessThan(child0, child1)
       case _: ast.LessThanOrEqual => LessThanOrEqual(child0, child1)
@@ -260,32 +263,30 @@ final class ExpressionConverter(context: IRBuilderContext) {
 
       // Case When .. Then .. [Else ..] End
       case ast.CaseExpression(None, alternatives, default) =>
-        val convertedAlternatives = alternatives.toList.map { case (left, right) => convert(left) -> convert(right) }
-        val maybeConvertedDefault: Option[Expr] = default.map(expr => convert(expr))
+        val convertedAlternatives = alternatives.toList.map { case (left, right) => convert(left, lambdaField) -> convert(right, lambdaField) }
+        val maybeConvertedDefault: Option[Expr] = default.map(expr => convert(expr, lambdaField))
         val possibleTypes = convertedAlternatives.map { case (_, thenExpr) => thenExpr.cypherType }
         val defaultCaseType = maybeConvertedDefault.map(_.cypherType).getOrElse(CTNull)
         val returnType = possibleTypes.foldLeft(defaultCaseType)(_ join _)
         CaseExpr(convertedAlternatives, maybeConvertedDefault)(returnType)
 
       case ast.MapExpression(items) =>
-        val convertedMap = items.map { case (key, value) => key.name -> convert(value) }.toMap
+        val convertedMap = items.map { case (key, value) => key.name -> convert(value, lambdaField) }.toMap
         MapExpression(convertedMap)
 
       // Expression
-      case ast.ListSlice(list, Some(from), Some(to)) => ListSliceFromTo(convert(list), convert(from), convert(to))
-      case ast.ListSlice(list, None, Some(to)) => ListSliceTo(convert(list), convert(to))
-      case ast.ListSlice(list, Some(from), None) => ListSliceFrom(convert(list), convert(from))
-        
+      case ast.ListSlice(list, Some(from), Some(to)) => ListSliceFromTo(convert(list, lambdaField), convert(from, lambdaField), convert(to, lambdaField))
+      case ast.ListSlice(list, None, Some(to)) => ListSliceTo(convert(list, lambdaField), convert(to, lambdaField))
+      case ast.ListSlice(list, Some(from), None) => ListSliceFrom(convert(list, lambdaField), convert(from, lambdaField))
+
       case ast.ListComprehension(ExtractScope(variable, innerPredicate, extractExpression), expr) =>
-        val listExpr = convert(expr)
+        val listExpr = convert(expr, lambdaField)
         val cypherType = listExpr.cypherType match {
           case CTList(inner) => inner
           case err => throw IllegalArgumentException(s"list comprehension expects a list to step over. Actual type: ${err.getClass.getSimpleName}")
         }
-
-        val updatedContext = context.withFields(Set(IRField(variable.name)(cypherType)))
-
-        ListComprehension(convert(variable)(updatedContext), innerPredicate.map(convert(_)(updatedContext)), extractExpression.map(convert(_)(updatedContext)), listExpr)
+        val lambdaVar = Some(IRField(variable.name)(cypherType))
+        ListComprehension(convert(variable, lambdaVar), innerPredicate.map(convert(_, lambdaVar)), extractExpression.map(convert(_, lambdaVar)), listExpr)
 
       case ast.ContainerIndex(container, index) =>
         val convertedContainer = convert(container)
