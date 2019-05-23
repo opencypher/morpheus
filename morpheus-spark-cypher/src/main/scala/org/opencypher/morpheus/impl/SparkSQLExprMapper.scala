@@ -26,7 +26,7 @@
  */
 package org.opencypher.morpheus.impl
 
-import org.apache.spark.sql.catalyst.expressions.{ArrayFilter, CaseWhen, LambdaFunction, NamedLambdaVariable}
+import org.apache.spark.sql.catalyst.expressions.{ArrayFilter, ArrayTransform, CaseWhen, ExprId, LambdaFunction, NamedLambdaVariable}
 import org.apache.spark.sql.functions.{array_contains => _, translate => _, _}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame}
@@ -88,10 +88,10 @@ object SparkSQLExprMapper {
       */
     def asSparkSQLExpr(implicit header: RecordHeader, df: DataFrame, parameters: CypherMap): Column = {
       val outCol = expr match {
-        // Evaluate based on already present data; no recursion
         case v: LambdaVar =>
           val sparkType = v.cypherType.toSparkType.getOrElse(throw IllegalStateException(s"No valid dataType for LambdaVar $v"))
-          new Column(NamedLambdaVariable(v.name, sparkType, nullable = false))
+          new Column(NamedLambdaVariable(v.name, sparkType, nullable = v.cypherType.isNullable, ExprId(v.hashCode.toLong)))
+        // Evaluate based on already present data; no recursion
         case _: Var | _: HasLabel | _: HasType | _: StartNode | _: EndNode => column_for(expr)
         // Evaluate bottom-up
         case _ => nullSafeConversion(expr)(convert)
@@ -333,15 +333,21 @@ object SparkSQLExprMapper {
         case _: ListSliceTo => list_slice(child0, None, Some(child1))
 
         case ListComprehension(variable, innerPredicate, extractExpression, listExpr) =>
-          //todo: extractExpr on (listExpr filter on innerPredicate)
-          val filteredColumn = innerPredicate match {
+          val lambdaVar = variable.asSparkSQLExpr.expr.asInstanceOf[NamedLambdaVariable]
+          val filteredExpr = innerPredicate match {
             case Some(filterExpr) =>
-              val lambdaVar = variable.asSparkSQLExpr.expr.asInstanceOf[NamedLambdaVariable]
-              val lambdaFunc = LambdaFunction(filterExpr.asSparkSQLExpr.expr, Seq(lambdaVar))
-              new Column(ArrayFilter(listExpr.asSparkSQLExpr.expr, lambdaFunc))
-            case None => listExpr.asSparkSQLExpr
+              val filterFunc = LambdaFunction(filterExpr.asSparkSQLExpr.expr, Seq(lambdaVar))
+              ArrayFilter(listExpr.asSparkSQLExpr.expr, filterFunc)
+            case None => listExpr.asSparkSQLExpr.expr
           }
-          filteredColumn
+          val result = extractExpression match{
+            case Some(extractExpr) =>
+              val extractFunc = LambdaFunction(extractExpr.asSparkSQLExpr.expr, Seq(lambdaVar))
+              ArrayTransform(filteredExpr, extractFunc)
+            case None => filteredExpr
+          }
+          new Column(result)
+
 
         case MapExpression(items) => expr.cypherType.material match {
           case CTMap(_) =>
