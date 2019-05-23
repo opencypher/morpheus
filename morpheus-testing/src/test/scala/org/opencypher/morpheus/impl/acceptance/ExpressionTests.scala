@@ -1468,4 +1468,66 @@ class ExpressionTests extends MorpheusTestSuite with ScanGraphInit with Checkers
       }
     }
   }
+
+  describe("list comprehension") {
+    it("supports list comprehension with static mapping") {
+      val result = morpheus.cypher(
+        """
+		        |WITH [1, 2, 3] AS things
+						|RETURN [n IN things | 1] AS value
+		    """.stripMargin)
+
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("value" -> List(1,1,1))
+      )
+    }
+
+    it("supports list comprehension with simple mapping") {
+      val result = morpheus.cypher(
+        """
+          		        |WITH [1, 2, 3] AS things
+          						|RETURN [n IN things | n*3] AS value
+        		    """.stripMargin)
+
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("value" -> List(3, 6, 9))
+      )
+    }
+
+    it("supports list comprehension with more complex mapping") {
+      val result = morpheus.cypher(
+        """
+          		        |WITH ['1', '2', '3'] AS things
+          						|RETURN [n IN things | toInteger(n)*3 + toInteger(n)] AS value
+        		    """.stripMargin)
+
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("value" -> List(4, 8, 12))
+      )
+    }
+
+    it("supports list comprehension with inner predicate") {
+      val result = morpheus.cypher(
+        """
+          		        |WITH [1, 2, 3] AS things
+          						|RETURN [n IN things WHERE n > 2] AS value
+        		    """.stripMargin)
+
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("value" -> List(3))
+      )
+    }
+
+    it("supports list comprehension with inner predicate and more complex mapping") {
+      val result = morpheus.cypher(
+        """
+          		        |WITH ['1', '2', '3'] AS things
+          						|RETURN [n IN things WHERE toInteger(n) > 2 | toInteger(n)*3 + toInteger(n)] AS value
+        		    """.stripMargin)
+
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("value" -> List(12))
+      )
+    }
+  }
 }

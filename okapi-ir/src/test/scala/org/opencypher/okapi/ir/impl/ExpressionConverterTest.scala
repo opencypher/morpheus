@@ -439,6 +439,28 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     )
   }
 
+  describe("list comprehension") {
+    val intVar = Var("x")(CTInteger)
+    it("can convert list comprehension with static mapping") {
+      convert("[x IN [1,2] | 1]") shouldEqual ListComprehension(intVar, None, Some(IntegerLit(1)), ListLit(List(IntegerLit(1), IntegerLit(2))))
+    }
+
+    it("can convert list comprehension with unary mapping") {
+      convert("[x IN [1,2] | toString(x)]")
+    }
+
+    it("can convert list comprehension with 2 var-calls") {
+      convert("[x IN [1,2] | x + x * 2]") shouldEqual ListComprehension(intVar, None, Some(Add(intVar, Multiply(intVar, IntegerLit(2)))), ListLit(List(IntegerLit(1), IntegerLit(2))))
+    }
+
+    it("can convert list comprehension with inner predicate") {
+      convert("[x IN [1,2] WHERE x < 1 | 1]") shouldEqual ListComprehension(intVar, Some(LessThan(intVar, IntegerLit(1))), Some(IntegerLit(1)), ListLit(List(IntegerLit(1), IntegerLit(2))))
+    }
+
+    //todo find case with PredicateExpr
+    // todo find case with no extractExpr
+  }
+
   implicit def toVar(s: Symbol): Var = all.find(_.name == s.name).get
 
   private def convert(e: ast.Expression): Expr =
