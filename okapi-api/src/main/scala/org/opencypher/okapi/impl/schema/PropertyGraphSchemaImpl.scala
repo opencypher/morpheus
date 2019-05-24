@@ -32,7 +32,7 @@ import org.opencypher.okapi.api.schema.LabelPropertyMap._
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.schema.RelTypePropertyMap._
 import org.opencypher.okapi.api.schema.{LabelPropertyMap, RelTypePropertyMap, _}
-import org.opencypher.okapi.api.types.CypherType.joinMonoid
+import org.opencypher.okapi.api.types.CypherTypeHelp._
 import org.opencypher.okapi.api.types.{CypherType, _}
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.impl.schema.PropertyGraphSchemaImpl._

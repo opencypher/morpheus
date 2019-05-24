@@ -30,9 +30,8 @@ import cats.instances.all._
 import cats.syntax.semigroup._
 import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.schema.RelTypePropertyMap._
-import org.opencypher.okapi.api.types.CypherType.joinMonoid
+import org.opencypher.okapi.api.types.CypherTypeHelp.joinMonoid
 import org.opencypher.okapi.api.types._
-import org.scalatest.{FunSpec, Matchers}
 
 class RelTypePropertyMapTest extends ApiBaseTest {
 

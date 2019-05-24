@@ -35,6 +35,7 @@ import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.schema.PropertyKeys
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.types.CypherType
+import org.opencypher.okapi.api.types.CypherTypeHelp.joinMonoid
 
 import scala.language.higherKinds
 

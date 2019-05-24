@@ -30,7 +30,7 @@ import cats.instances.all._
 import cats.syntax.semigroup._
 import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.schema.LabelPropertyMap._
-import org.opencypher.okapi.api.types.CypherType.joinMonoid
+import org.opencypher.okapi.api.types.CypherTypeHelp.joinMonoid
 import org.opencypher.okapi.api.types._
 
 class LabelPropertyMapTest extends ApiBaseTest {
