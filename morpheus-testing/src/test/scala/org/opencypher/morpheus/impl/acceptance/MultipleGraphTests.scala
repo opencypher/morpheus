@@ -35,6 +35,7 @@ import org.opencypher.morpheus.testing.MorpheusTestSuite
 import org.opencypher.okapi.api.schema.{PropertyGraphSchema, PropertyKeys}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.impl.graph.UnionGraph
 import org.opencypher.okapi.relational.impl.operators.SwitchContext
@@ -971,5 +972,14 @@ class MultipleGraphTests extends MorpheusTestSuite with ScanGraphInit {
     result.records.toMaps shouldBe Bag(
       CypherMap("n" -> MorpheusNode(0, Set("FOO")))
     )
+  }
+
+  it("fails early on incompatible graphs in CONSTRUCT") {
+    val g1 = morpheus.cypher("CONSTRUCT CREATE (:A {p: 1}) RETURN GRAPH").graph
+    val g2 = morpheus.cypher("CONSTRUCT CREATE (:A {p: 'foo'}) RETURN GRAPH").graph
+    morpheus.catalog.store("g1", g1)
+    morpheus.catalog.store("g2", g2)
+
+    an[SchemaException] should be thrownBy morpheus.cypher("CONSTRUCT ON g1, g2 RETURN GRAPH")
   }
 }
