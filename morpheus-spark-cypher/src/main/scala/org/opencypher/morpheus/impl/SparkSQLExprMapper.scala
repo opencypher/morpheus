@@ -271,7 +271,7 @@ object SparkSQLExprMapper {
         case _: Substring => child0.substr(child1 + ONE_LIT, convertedChildren.lift(2).getOrElse(length(child0) - child1))
         case _: Split =>
           child1.expr match {
-            case Literal(v, StringType) => split(child0, v.asInstanceOf[UTF8String].toString)
+            case Literal(v: UTF8String, StringType) => split(child0, v.toString)
             case _ => throw UnsupportedOperationException("Spark only allows 'split()' with a constant delimiter")
           }
 
