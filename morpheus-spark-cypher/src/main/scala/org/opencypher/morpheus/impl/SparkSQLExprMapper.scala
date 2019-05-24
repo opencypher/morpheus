@@ -333,7 +333,10 @@ object SparkSQLExprMapper {
         case _: ListSliceTo => list_slice(child0, None, Some(child1))
 
         case ListComprehension(variable, innerPredicate, extractExpression, listExpr) =>
-          val lambdaVar = variable.asSparkSQLExpr.expr.asInstanceOf[NamedLambdaVariable]
+          val lambdaVar = variable.asSparkSQLExpr.expr match {
+            case v: NamedLambdaVariable => v
+            case err => throw IllegalStateException(s"$variable should be converted into a NamedLambdaVariable instead of $err")
+          }
           val filteredExpr = innerPredicate match {
             case Some(filterExpr) =>
               val filterFunc = LambdaFunction(filterExpr.asSparkSQLExpr.expr, Seq(lambdaVar))
@@ -347,7 +350,6 @@ object SparkSQLExprMapper {
             case None => filteredExpr
           }
           new Column(result)
-
 
         case MapExpression(items) => expr.cypherType.material match {
           case CTMap(_) =>
