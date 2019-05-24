@@ -26,10 +26,11 @@
  */
 package org.opencypher.morpheus.impl
 
-import org.apache.spark.sql.catalyst.expressions.{ArrayFilter, ArrayTransform, CaseWhen, ExprId, LambdaFunction, NamedLambdaVariable}
+import org.apache.spark.sql.catalyst.expressions.{ArrayFilter, ArrayTransform, CaseWhen, ExprId, LambdaFunction, Literal, NamedLambdaVariable}
 import org.apache.spark.sql.functions.{array_contains => _, translate => _, _}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame}
+import org.apache.spark.unsafe.types.UTF8String
 import org.opencypher.morpheus.impl.MorpheusFunctions._
 import org.opencypher.morpheus.impl.convert.SparkConversions._
 import org.opencypher.morpheus.impl.expressions.AddPrefix._
@@ -261,14 +262,18 @@ object SparkSQLExprMapper {
         case _: Trim => trim(child0)
         case _: LTrim => ltrim(child0)
         case _: RTrim => rtrim(child0)
+        case _: Reverse => reverse(child0)
         case _: ToUpper => upper(child0)
         case _: ToLower => lower(child0)
 
         case _: Range => sequence(child0, child1, convertedChildren.lift(2).getOrElse(ONE_LIT))
-
         case _: Replace => translate(child0, child1, child2)
-
         case _: Substring => child0.substr(child1 + ONE_LIT, convertedChildren.lift(2).getOrElse(length(child0) - child1))
+        case _: Split =>
+          child1.expr match {
+            case Literal(v, StringType) => split(child0, v.asInstanceOf[UTF8String].toString)
+            case _ => throw UnsupportedOperationException("Spark only allows 'split()' with a constant delimiter")
+          }
 
         // Mathematical functions
         case E => E_LIT

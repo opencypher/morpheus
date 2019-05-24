@@ -29,9 +29,9 @@ package org.opencypher.morpheus.impl.acceptance
 import org.opencypher.morpheus.api.value.MorpheusElement._
 import org.opencypher.morpheus.api.value.MorpheusNode
 import org.opencypher.morpheus.testing.MorpheusTestSuite
-import org.opencypher.okapi.api.value.CypherValue
+import org.opencypher.morpheus.testing.support.creation.graphs.ScanGraphFactory
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
-import org.opencypher.okapi.impl.exception.NotImplementedException
+import org.opencypher.okapi.impl.exception.{NotImplementedException, UnsupportedOperationException}
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 
@@ -1628,42 +1628,89 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
     }
   }
 
-  it("head") {
-    val result = morpheus.cypher(
-      """
-        |WITH [1, 2, 3] AS things
-        |Return head(things) as head
-      """.stripMargin)
-    result.records.toMaps should equal(Bag(
-      CypherMap("head"-> 1)
-    ))
+  describe("list-access") {
+    it("head") {
+      val result = morpheus.cypher(
+        """
+          |WITH [1, 2, 3] AS things
+          |Return head(things) as head
+        """.stripMargin)
+      result.records.toMaps should equal(Bag(
+        CypherMap("head" -> 1)
+      ))
+    }
+
+    it("tail") {
+      val result = morpheus.cypher(
+        """
+          |WITH [1, 2, 3] AS things
+          |Return tail(things) as tail
+        """.stripMargin)
+      result.records.toMaps should equal(Bag(
+        CypherMap("tail" -> List(2, 3))
+      ))
+    }
+
+    it("last") {
+      val result = morpheus.cypher(
+        """
+          |WITH [1, 2, 3] AS things
+          |Return last(things) as last
+        """.stripMargin)
+      result.records.toMaps should equal(Bag(
+        CypherMap("last" -> 3)
+      ))
+    }
   }
 
-  it("tail") {
-    val result = morpheus.cypher(
-      """
-        |WITH [1, 2, 3] AS things
-        |Return tail(things) as tail
-      """.stripMargin)
-    result.records.toMaps should equal(Bag(
-      CypherMap("tail"-> List(2, 3))
-    ))
+  describe("reverse") {
+    it("reverse on string") {
+      val result = morpheus.cypher(
+        """
+          |RETURN reverse("anagram") as rev
+        """.stripMargin)
+      result.records.toMaps should equal(Bag(
+        CypherMap("rev" -> "margana")
+      ))
+    }
+
+    it("reverse on lists") {
+      val result = morpheus.cypher(
+        """
+          |RETURN reverse([1, 2, 3]) as rev
+        """.stripMargin)
+      result.records.toMaps should equal(Bag(
+        CypherMap("rev" -> List(3, 2, 1))
+      ))
+    }
   }
 
-  it("last") {
-    val result = morpheus.cypher(
-      """
-        |WITH [1, 2, 3] AS things
-        |Return last(things) as last
-      """.stripMargin)
-    result.records.toMaps should equal(Bag(
-      CypherMap("last"-> 3)
-    ))
+  describe("split") {
+    it("split with constant delimiter") {
+      val result = morpheus.cypher(
+        """
+          |RETURN split("1,2,3",",2,") as split
+        """.stripMargin)
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("split" -> List("1", "3"))
+      ))
+    }
+
+    it("split with variable delimiter") {
+      val graph = ScanGraphFactory.initGraph(
+        """
+          |CREATE ({friends: 'Bob, Eve', delimiter:","}),
+          |       ({friends: 'Eve; Bob', delimiter:";"})
+        """.stripMargin)
+
+      a[UnsupportedOperationException] shouldBe thrownBy(graph.cypher("""MATCH (n) RETURN split(n.friends, n.delimiter)""").records)
+    }
   }
 
   describe("negative tests") {
     it("should give a good error message on unimplemented functions") {
-      val unimplementedFunction = "tail"
+      val unimplementedFunction = "point"
       the[NotImplementedException] thrownBy {
         morpheus.cypher(s"RETURN $unimplementedFunction([1, 2])")
       } should have message s"Support for converting function '$unimplementedFunction' is not yet implemented"

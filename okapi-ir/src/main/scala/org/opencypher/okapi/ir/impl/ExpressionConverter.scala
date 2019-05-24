@@ -34,7 +34,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.parse.{functions => f}
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter.Signature
 import org.opencypher.okapi.ir.impl.typer.{InvalidArgument, InvalidContainerAccess, MissingParameter, UnTypedExpr, WrongNumberOfArguments}
-import org.opencypher.v9_0.expressions.{ExtractScope, LogicalVariable, RegexMatch, functions}
+import org.opencypher.v9_0.expressions.{ExtractScope, functions}
 import org.opencypher.v9_0.{expressions => ast}
 import SignatureTyping._
 
@@ -182,9 +182,11 @@ final class ExpressionConverter(context: IRBuilderContext) {
             }
           case functions.Range => Range(child0, child1, convertedChildren.lift(2))
           case functions.Substring => Substring(child0, child1, convertedChildren.lift(2))
+          case functions.Split => Split(child0, child1)
           case functions.Left => Substring(child0, IntegerLit(0), convertedChildren.lift(1))
           case functions.Right => Substring(child0, Subtract(Multiply(IntegerLit(-1), child1), IntegerLit(1)), None)
           case functions.Replace => Replace(child0, child1, child2)
+          case functions.Reverse => Reverse(child0)
           case functions.Trim => Trim(child0)
           case functions.LTrim => LTrim(child0)
           case functions.RTrim => RTrim(child0)
@@ -311,7 +313,8 @@ final class ExpressionConverter(context: IRBuilderContext) {
 
       case ast.Null() => NullLit
 
-      case RegexMatch(lhs, rhs) => expr.RegexMatch(convert(lhs), convert(rhs))
+      case ast.RegexMatch(lhs, rhs) => RegexMatch(convert(lhs), convert(rhs))
+
 
       case _ =>
         throw NotImplementedException(s"Not yet able to convert expression: $e")

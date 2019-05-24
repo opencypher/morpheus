@@ -850,6 +850,14 @@ final case class Properties(expr: Expr)(override val cypherType: CypherType) ext
   }
 }
 
+final case class Reverse(expr: Expr) extends UnaryFunctionExpr{
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case l : CTList => Some(l)
+    case CTString => Some(CTString)
+    case _ => None
+  }
+}
+
 // NAry Function expressions
 
 final case class Range(from: Expr, to: Expr, o: Option[Expr]) extends FunctionExpr {
@@ -885,6 +893,16 @@ final case class Substring(original: Expr, start: Expr, length: Option[Expr]) ex
     case Seq(CTString, CTInteger, CTInteger) => Some(CTString)
     case _ => None
   }
+}
+
+final case class Split(original: Expr, delimiter: Expr) extends FunctionExpr {
+  def exprs: List[Expr] = List(original, delimiter)
+  def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes match {
+    case Seq(CTString, CTString) => Some(CTList(CTString))
+    case _ => None
+  }
+
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
 }
 
 // Bit operators
@@ -1102,12 +1120,11 @@ final case class ListLit(v: List[Expr]) extends Lit[List[Expr]] {
 }
 
 sealed abstract class ListSlice(maybeFrom: Option[Expr], maybeTo: Option[Expr]) extends TypeValidatedExpr {
-
-  override val cypherType: CypherType = list.cypherType
   def list: Expr
   override def withoutType: String = s"${list.withoutType}[${maybeFrom.map(_.withoutType).getOrElse("")}..${maybeTo.map(_.withoutType).getOrElse("")}]"
 
-  override def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes.head match {
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
+  def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes.head match {
     case CTList(_) if inputCypherTypes.tail.forall(_.couldBeSameTypeAs(CTInteger)) => Some(list.cypherType)
     case _ => None
   }
