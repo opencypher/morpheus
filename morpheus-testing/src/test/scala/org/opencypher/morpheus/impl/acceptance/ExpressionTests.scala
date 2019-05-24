@@ -1529,5 +1529,17 @@ class ExpressionTests extends MorpheusTestSuite with ScanGraphInit with Checkers
         CypherMap("value" -> List(12))
       )
     }
+
+    it("supports nested list comprehensions") {
+      val result = morpheus.cypher(
+        """
+          |WITH [[1,2,3], [2,2,3], [3,4]] AS things
+          |RETURN [n IN things | [n IN n WHERE n < 2]] AS value
+        """.stripMargin)
+
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("value" -> List(List(1), List(), List()))
+      )
+    }
   }
 }

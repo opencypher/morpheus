@@ -280,7 +280,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
       case ast.ListSlice(list, Some(from), None) => ListSliceFrom(convert(list), convert(from))
 
       case ast.ListComprehension(ExtractScope(variable, innerPredicate, extractExpression), expr) =>
-        val listExpr = convert(expr)(None)
+        val listExpr = convert(expr)(lambdaField)
         val listInnerType = listExpr.cypherType match {
           case CTList(inner) => inner
           case err => throw IllegalArgumentException("a list to step over", err, "Wrong list comprehension type")
