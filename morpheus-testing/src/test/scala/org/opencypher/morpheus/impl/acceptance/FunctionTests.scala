@@ -29,6 +29,7 @@ package org.opencypher.morpheus.impl.acceptance
 import org.opencypher.morpheus.api.value.MorpheusElement._
 import org.opencypher.morpheus.api.value.MorpheusNode
 import org.opencypher.morpheus.testing.MorpheusTestSuite
+import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherNull}
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.testing.Bag
@@ -1625,6 +1626,39 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
         CypherMap("substring" -> CypherNull)
       ))
     }
+  }
+
+  it("head") {
+    val result = morpheus.cypher(
+      """
+        |WITH [1, 2, 3] AS things
+        |Return head(things) as head
+      """.stripMargin)
+    result.records.toMaps should equal(Bag(
+      CypherMap("head"-> 1)
+    ))
+  }
+
+  it("tail") {
+    val result = morpheus.cypher(
+      """
+        |WITH [1, 2, 3] AS things
+        |Return tail(things) as tail
+      """.stripMargin)
+    result.records.toMaps should equal(Bag(
+      CypherMap("tail"-> List(2, 3))
+    ))
+  }
+
+  it("last") {
+    val result = morpheus.cypher(
+      """
+        |WITH [1, 2, 3] AS things
+        |Return last(things) as last
+      """.stripMargin)
+    result.records.toMaps should equal(Bag(
+      CypherMap("last"-> 3)
+    ))
   }
 
   describe("negative tests") {

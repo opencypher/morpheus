@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherString}
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NoSuitableSignatureForExpr}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.test.support.Neo4jAstTestSupport
@@ -455,6 +455,23 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
     it("can convert list comprehension with inner predicate") {
       convert("[x IN [1,2] WHERE x < 1 | 1]") shouldEqual ListComprehension(intVar, Some(LessThan(intVar, IntegerLit(1))), Some(IntegerLit(1)), ListLit(List(IntegerLit(1), IntegerLit(2))))
+    }
+  }
+
+  describe("list-access functions") {
+    it("can convert tail()") {
+      convert("tail([1])") shouldEqual ListSliceFrom(ListLit(List(IntegerLit(1))), IntegerLit(1))
+    }
+    it("can convert head()"){
+      convert("head([1])") shouldEqual Head(ListLit(List(IntegerLit(1))))
+    }
+    it("can convert last()"){
+      convert("head([1])") shouldEqual Last(ListLit(List(IntegerLit(1))))
+    }
+    it("cannot convert list-acces functions with non-list argument"){
+      a[NoSuitableSignatureForExpr]  shouldBe thrownBy(convert("head(1)"))
+      a[NoSuitableSignatureForExpr]  shouldBe thrownBy(convert("tail(1)"))
+      a[NoSuitableSignatureForExpr]  shouldBe thrownBy(convert("last(1)"))
     }
   }
 

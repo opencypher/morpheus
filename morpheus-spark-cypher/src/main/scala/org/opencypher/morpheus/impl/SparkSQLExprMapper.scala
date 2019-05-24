@@ -162,6 +162,10 @@ object SparkSQLExprMapper {
           case _ => NULL_LIT
         }
 
+        //list-access
+        case _: Head => element_at(child0, 1)
+        case _: Last => element_at(child0, -1)
+
         // Arithmetic
         case Add(lhs, rhs) =>
           val lhsCT = lhs.cypherType.material

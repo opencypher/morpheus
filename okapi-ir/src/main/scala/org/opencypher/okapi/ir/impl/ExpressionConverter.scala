@@ -201,6 +201,10 @@ final class ExpressionConverter(context: IRBuilderContext) {
               case _ => throw InvalidArgument(funcInv, funcInv.args(0))
             }
             Properties(child0)(outType)
+          //List-access functions
+          case functions.Last => Last(child0)
+          case functions.Head => Head(child0)
+          case functions.Tail => ListSliceFrom(child0, IntegerLit(1))
 
           // Logarithmic functions
           case functions.Sqrt => Sqrt(child0)
