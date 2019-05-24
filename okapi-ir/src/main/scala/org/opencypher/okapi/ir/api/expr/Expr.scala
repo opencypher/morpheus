@@ -1101,19 +1101,29 @@ final case class ListLit(v: List[Expr]) extends Lit[List[Expr]] {
   override def cypherType: CypherType = CTList(v.foldLeft(CTVoid: CypherType)(_ | _.cypherType))
 }
 
-sealed abstract class ListSlice(maybeFrom: Option[Expr], maybeTo: Option[Expr]) extends Expr {
+sealed abstract class ListSlice(maybeFrom: Option[Expr], maybeTo: Option[Expr]) extends TypeValidatedExpr {
 
   override val cypherType: CypherType = list.cypherType
   def list: Expr
   override def withoutType: String = s"${list.withoutType}[${maybeFrom.map(_.withoutType).getOrElse("")}..${maybeTo.map(_.withoutType).getOrElse("")}]"
 
+  override def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes.head match {
+    case CTList(_) if inputCypherTypes.tail.forall(_.couldBeSameTypeAs(CTInteger)) => Some(list.cypherType)
+    case _ => None
+  }
 }
-//todo: validateCyphertype
-final case class ListSliceFromTo(list: Expr, from: Expr, to: Expr) extends ListSlice(Some(from), Some(to))
 
-final case class ListSliceFrom(list: Expr, from: Expr) extends ListSlice(Some(from), None)
+final case class ListSliceFromTo(list: Expr, from: Expr, to: Expr) extends ListSlice(Some(from), Some(to)) {
+  def exprs = List(list, from, to)
+}
 
-final case class ListSliceTo(list: Expr, to: Expr) extends ListSlice(None, Some(to))
+final case class ListSliceFrom(list: Expr, from: Expr) extends ListSlice(Some(from), None) {
+  override def exprs: List[Expr] = List(list, from)
+}
+
+final case class ListSliceTo(list: Expr, to: Expr) extends ListSlice(None, Some(to)) {
+  override def exprs: List[Expr] = List(list, to)
+}
 
 final case class ListComprehension(variable: Expr, innerPredicate: Option[Expr], extractExpression: Option[Expr], expr : Expr) extends Expr {
   override def withoutType: String = {
