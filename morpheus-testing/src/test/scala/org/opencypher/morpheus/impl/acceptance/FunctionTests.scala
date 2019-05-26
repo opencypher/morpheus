@@ -1712,7 +1712,7 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
     it("should give a good error message on unimplemented functions") {
       val unimplementedFunction = "point"
       the[NotImplementedException] thrownBy {
-        morpheus.cypher(s"RETURN $unimplementedFunction([1, 2])")
+        morpheus.cypher(s"RETURN $unimplementedFunction({x: 1, y: 2})")
       } should have message s"Support for converting function '$unimplementedFunction' is not yet implemented"
     }
   }

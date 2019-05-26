@@ -466,7 +466,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
       convert("head([1])") shouldEqual Head(ListLit(List(IntegerLit(1))))
     }
     it("can convert last()"){
-      convert("head([1])") shouldEqual Last(ListLit(List(IntegerLit(1))))
+      convert("last([1])") shouldEqual Last(ListLit(List(IntegerLit(1))))
     }
     it("cannot convert list-acces functions with non-list argument"){
       a[NoSuitableSignatureForExpr]  shouldBe thrownBy(convert("head(1)"))
