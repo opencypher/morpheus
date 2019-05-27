@@ -28,7 +28,7 @@ package org.opencypher.okapi.api.io.conversion
 
 import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.graph._
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
+import org.opencypher.okapi.api.types.{CTInteger, CTNode, CTRelationship, CTString}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 class PatternElementMappingTest extends ApiBaseTest {
@@ -40,7 +40,7 @@ class PatternElementMappingTest extends ApiBaseTest {
         .withPropertyKey("age" -> "YEARS").build
 
 
-      val pattern = NodePattern(CTNode("Person"))
+      val pattern = NodePattern(CTNode.empty("Person"))
       val expected = ElementMapping(
         pattern,
         Map(
@@ -68,7 +68,7 @@ class PatternElementMappingTest extends ApiBaseTest {
         .withPropertyKey("name")
         .withPropertyKey("age" -> "YEARS").build
 
-      val pattern = RelationshipPattern(CTRelationship("KNOWS"))
+      val pattern = RelationshipPattern(CTRelationship.empty("KNOWS"))
       val actual = ElementMapping(
         pattern,
         Map(
@@ -102,10 +102,10 @@ class PatternElementMappingTest extends ApiBaseTest {
 
   describe("validation") {
     it("throws an error if relationship elements do not have exactly one type") {
-      val pattern1 = RelationshipPattern(CTRelationship("Foo", "Bar"))
+      val pattern1 = RelationshipPattern(CTRelationship.empty("Foo", "Bar"))
       raisesIllegalArgument(ElementMapping.empty(pattern1))
 
-      val pattern2 = RelationshipPattern(CTRelationship())
+      val pattern2 = RelationshipPattern(CTRelationship.empty)
       raisesIllegalArgument(ElementMapping.empty(pattern2))
     }
   }

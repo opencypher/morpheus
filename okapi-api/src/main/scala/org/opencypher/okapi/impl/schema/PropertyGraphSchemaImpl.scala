@@ -421,8 +421,8 @@ final case class PropertyGraphSchemaImpl(
   }
 
   def forRelationship(relationship: CTRelationship): PropertyGraphSchema = {
-    val relTypePropertyMap = relationship.types.map { relType =>
-      relType -> relationship.properties
+    val relTypePropertyMap = relationship.labels.map { relType =>
+      relType.combo.head -> relationship.properties
     }.toMap
 
 

@@ -112,11 +112,11 @@ class PropertyGraphSchemaTest extends ApiBaseTest {
       .withNodePropertyKeys("Person", "Director")()
       .withNodePropertyKeys("Employee", "Director")()
 
-    schema.combinationsFor(Set("Employee")) should equal(Set(Set("Person", "Employee"), Set("Employee", "Director")))
-    schema.combinationsFor(Set("Director")) should equal(Set(Set("Person", "Director"), Set("Employee", "Director")))
-    schema.combinationsFor(Set("Person")) should equal(Set(Set("Person", "Employee"), Set("Person", "Director")))
-    schema.combinationsFor(Set("Person", "Employee")) should equal(Set(Set("Person", "Employee")))
-    schema.labels should equal(Set("Person", "Employee", "Director"))
+    schema.combinationsFor(Set(Set("Employee"))) should equal(Set(Set("Person", "Employee"), Set("Employee", "Director")))
+    schema.combinationsFor(Set(Set("Director"))) should equal(Set(Set("Person", "Director"), Set("Employee", "Director")))
+    schema.combinationsFor(Set(Set("Person"))) should equal(Set(Set("Person", "Employee"), Set("Person", "Director")))
+    schema.combinationsFor(Set(Set("Person", "Employee"))) should equal(Set(Set("Person", "Employee")))
+    schema.labels should equal(Set(Set("Person", "Employee", "Director")))
   }
 
   it("should get simple combinations correct") {
@@ -124,12 +124,12 @@ class PropertyGraphSchemaTest extends ApiBaseTest {
       .withNodePropertyKeys("Person", "Employee")()
       .withNodePropertyKeys("Dog", "Pet")()
 
-    schema.combinationsFor(Set("NotEmployee")) should equal(Set())
-    schema.combinationsFor(Set("Employee")) should equal(Set(Set("Person", "Employee")))
-    schema.combinationsFor(Set("Person")) should equal(Set(Set("Person", "Employee")))
-    schema.combinationsFor(Set("Dog")) should equal(Set(Set("Dog", "Pet")))
-    schema.combinationsFor(Set("Pet", "Employee")) should equal(Set())
-    schema.labels should equal(Set("Person", "Employee", "Dog", "Pet"))
+    schema.combinationsFor(Set(Set("NotEmployee"))) should equal(Set())
+    schema.combinationsFor(Set(Set("Employee"))) should equal(Set(Set("Person", "Employee")))
+    schema.combinationsFor(Set(Set("Person"))) should equal(Set(Set("Person", "Employee")))
+    schema.combinationsFor(Set(Set("Dog"))) should equal(Set(Set("Dog", "Pet")))
+    schema.combinationsFor(Set(Set("Pet", "Employee"))) should equal(Set())
+    schema.labels should equal(Set(Set("Person", "Employee", "Dog", "Pet")))
   }
 
   it("chaining calls should amend types") {
@@ -221,18 +221,18 @@ class PropertyGraphSchemaTest extends ApiBaseTest {
       .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
       .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
 
-    schema.forNode(Set("Person")) should equal(
+    schema.forNode(Set(Set("Person"))) should equal(
       PropertyGraphSchema.empty
         .withNodePropertyKeys("Person")("name" -> CTString)
         .withNodePropertyKeys("Employee", "Person")("name" -> CTString, "salary" -> CTInteger)
     )
 
-    schema.forNode(Set("Dog")) should equal(
+    schema.forNode(Set(Set("Dog"))) should equal(
       PropertyGraphSchema.empty
         .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
     )
 
-    schema.forNode(Set("Dog", "Pet")) should equal(
+    schema.forNode(Set(Set("Dog", "Pet"))) should equal(
       PropertyGraphSchema.empty
         .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
     )
@@ -250,12 +250,12 @@ class PropertyGraphSchemaTest extends ApiBaseTest {
       .withNodePropertyKeys("Pet")()
       .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
 
-    schema.forRelationship(CTRelationship("KNOWS")) should equal(
+    schema.forRelationship(CTRelationship.empty("KNOWS")) should equal(
       PropertyGraphSchema.empty
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
     )
 
-    schema.forRelationship(CTRelationship) should equal(
+    schema.forRelationship(CTRelationship.empty) should equal(
       PropertyGraphSchema.empty
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
         .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)
@@ -263,7 +263,7 @@ class PropertyGraphSchemaTest extends ApiBaseTest {
         .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
     )
 
-    schema.forRelationship(CTRelationship("KNOWS", "LOVES")) should equal(
+    schema.forRelationship(CTRelationship.empty("KNOWS", "LOVES")) should equal(
       PropertyGraphSchema.empty
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
         .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)
@@ -284,11 +284,11 @@ class PropertyGraphSchemaTest extends ApiBaseTest {
       .withNodePropertyKeys(Set("A"), Map("a" -> CTInteger, "b" -> CTString, "c" -> CTFloat, "d" -> CTFloat.nullable))
       .withNodePropertyKeys(Set.empty[String], Map("a" -> CTString))
 
-    schema.nodePropertyKeyType(Set("A"), "a") should equal(Some(CTInteger))
-    schema.nodePropertyKeyType(Set.empty[String], "a") should equal(Some(CTUnion(CTString, CTInteger)))
-    schema.nodePropertyKeyType(Set.empty[String], "b") should equal(Some(CTString.nullable))
-    schema.nodePropertyKeyType(Set("B"), "b") should equal(None)
-    schema.nodePropertyKeyType(Set("A"), "x") should equal(None)
+    schema.nodePropertyKeyType(Set(Set("A")), "a") should equal(Some(CTInteger))
+    schema.nodePropertyKeyType(Set(Set.empty[String]), "a") should equal(Some(CTUnion(CTString, CTInteger)))
+    schema.nodePropertyKeyType(Set(Set.empty[String]), "b") should equal(Some(CTString.nullable))
+    schema.nodePropertyKeyType(Set(Set("B")), "b") should equal(None)
+    schema.nodePropertyKeyType(Set(Set("A")), "x") should equal(None)
   }
 
   it("get rel key type") {

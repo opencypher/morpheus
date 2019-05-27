@@ -420,7 +420,7 @@ object CypherValue {
 
     override def value: Node[Id] = this
 
-    override def cypherType: CypherType = CTNode(Set(labels), properties.value.mapValues(_.cypherType))
+    override def cypherType: CypherType = CTNode(labels, properties.value.mapValues(_.cypherType))
 
     override def unwrap: Node[Id] = this
 

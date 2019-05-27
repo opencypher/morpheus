@@ -48,7 +48,7 @@ object RelTypePropertyMap {
     def properties(relKey: String): PropertyKeys = map.getOrElse(relKey, Map.empty)
 
     def cypherType(relKey: String): Option[CTRelationship] =
-      map.get(relKey).map(CTRelationship(Set(relKey), _))
+      map.get(relKey).map(CTRelationship(relKey, _))
 
     def filterForRelTypes(relType: Set[String]): RelTypePropertyMap = map.filterKeys(relType.contains)
 

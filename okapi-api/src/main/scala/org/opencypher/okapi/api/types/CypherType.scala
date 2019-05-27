@@ -111,8 +111,8 @@ trait CypherType {
           val maybeGraph = l.graph.orElse(r.graph)
 
           l match {
-            case _: CTNode => CTNode(labels, properties, maybeGraph)
-            case _: CTRelationship => CTRelationship(labels.map(_.head), properties, maybeGraph)
+            case _: CTNode => CTNode(AnyOf(labels.toSet), properties, maybeGraph)
+            case _: CTRelationship => CTRelationship(AnyOf(labels.toSet), properties, maybeGraph)
           }
         case (CTBigDecimal(lp, ls), CTBigDecimal(rp, rs)) =>
           val maxScale = Math.max(ls, rs)
@@ -235,24 +235,53 @@ case class CTList(inner: CypherType) extends CypherType {
 
 }
 
+/**
+  * Represents a set of labels which an entity definitely carries
+  */
+case class AllOf(combo: Set[String]) extends Traversable[String] {
+  override def foreach[U](f: String => U): Unit = combo.foreach(f)
+  override def toString(): String = s"AllOf(${combo.mkString(", ")}"
+}
+
+object AllOf {
+  def apply(combo: String*): AllOf = AllOf(combo.toSet)
+  def empty = AllOf(Set.empty[String])
+}
+/**
+  * Represents a set of label combination alternatives, one of which an element definitely carries
+  */
+case class AnyOf(alternatives: Set[AllOf]) extends Traversable[AllOf] {
+  override def foreach[U](f: AllOf => U): Unit = alternatives.foreach(f)
+  override def toString(): String = s"AnyOf(${alternatives.mkString(", ")})"
+
+  def subsetOf(other: AnyOf): Boolean = {
+    alternatives.forall(alternative => other.alternatives.contains(alternative))
+  }
+}
+object AnyOf {
+  def apply(allOf: String*): AnyOf = AnyOf(Set(AllOf(allOf.toSet)))
+  def empty = AnyOf(Set.empty[AllOf])
+}
+
+
 sealed trait CTElement extends CypherType {
-  def labels: Set[Set[String]]
+  def labels: AnyOf
   def properties: Map[String, CypherType]
 }
 
 object CTNode {
-  def apply(labels: Set[String], properties: Map[String, CypherType]): CTNode = CTNode(Set(labels), properties)
+  def apply(labels: Set[String], properties: Map[String, CypherType]): CTNode = CTNode(AnyOf(labels.toSeq: _*), properties)
 
   def apply(label: String, properties: Map[String, CypherType]): CTNode = CTNode(Set(label), properties)
   def apply(label1: String, label2: String, properties: Map[String, CypherType]): CTNode = CTNode(Set(label1, label2), properties)
   def apply(label1: String, label2: String, label3: String, properties: Map[String, CypherType]): CTNode = CTNode(Set(label1, label2, label3), properties)
 
-  def empty(labels: String*): CTNode = CTNode(labels.map(l => Set(l)).toSet, Map.empty[String, CypherType], None)
-  def empty: CTNode = CTNode(Set.empty[Set[String]], Map.empty[String, CypherType], None)
+  def empty(labels: String*): CTNode = CTNode(AnyOf(labels: _*), Map.empty[String, CypherType], None)
+  def empty: CTNode = CTNode(AnyOf.empty, Map.empty[String, CypherType], None)
 }
 
 case class CTNode(
-  labels: Set[Set[String]] = Set.empty,
+  labels: AnyOf = AnyOf.empty,
   properties: Map[String, CypherType],
   override val graph: Option[QualifiedGraphName] = None
 ) extends CTElement {
@@ -262,30 +291,27 @@ case class CTNode(
 
   //TODO adjust
   override def name: String =
-      s"NODE(${labels.map(l => s":$l").mkString})${graph.map(g => s" @ $g").getOrElse("")}"
+      s"NODE(labels = $labels)${graph.map(g => s" @ $g").getOrElse("")}"
 
 }
 
 object CTRelationship {
-  def apply(relTypes: String, properties: Map[String, CypherType]): CTRelationship = CTRelationship(Set(relTypes), properties)
+  def apply(relTypes: String, properties: Map[String, CypherType]): CTRelationship = CTRelationship(AnyOf(relTypes), properties)
 
-  def empty(labels: String*): CTRelationship = CTRelationship(labels.toSet, Map.empty[String, CypherType], None)
-  def empty: CTRelationship = CTRelationship(Set.empty[String], Map.empty[String, CypherType], None)
-
+  def empty(labels: String*): CTRelationship = CTRelationship(AnyOf(labels.map(t => AllOf(t)).toSet), Map.empty[String, CypherType], None)
+  def empty: CTRelationship = CTRelationship(AnyOf.empty, Map.empty[String, CypherType], None)
 }
 
 case class CTRelationship(
-  types: Set[String] = Set.empty,
+  labels: AnyOf,
   properties: Map[String, CypherType],
   override val graph: Option[QualifiedGraphName] = None
 ) extends CTElement {
   override def withGraph(qgn: QualifiedGraphName): CTRelationship = copy(graph = Some(qgn))
-  override def withoutGraph: CTRelationship = CTRelationship(types, properties)
-
-  override val labels: Set[Set[String]] = types.map(Set(_))
+  override def withoutGraph: CTRelationship = CTRelationship(labels, properties)
 
   override def name: String =
-      s"RELATIONSHIP(${types.map(l => s":$l").mkString("|")})${graph.map(g => s" @ $g").getOrElse("")}"
+      s"RELATIONSHIP(types = $labels)${graph.map(g => s" @ $g").getOrElse("")}"
 
 }
 
