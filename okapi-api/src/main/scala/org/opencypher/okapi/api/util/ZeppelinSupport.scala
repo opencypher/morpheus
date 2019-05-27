@@ -28,7 +28,7 @@ package org.opencypher.okapi.api.util
 
 import org.opencypher.okapi.api.graph.{CypherResult, PropertyGraph}
 import org.opencypher.okapi.api.table.CypherRecords
-import org.opencypher.okapi.api.value.CypherValue
+import org.opencypher.okapi.api.value.{CypherValue, CypherValueHelp}
 import org.opencypher.okapi.api.value.CypherValue.Element._
 import org.opencypher.okapi.api.value.CypherValue.Node._
 import org.opencypher.okapi.api.value.CypherValue.Relationship._
@@ -206,7 +206,7 @@ object ZeppelinSupport {
       * }}}
       */
     def toZeppelinJson()(implicit formatValue: Any => String): Value = {
-      val default = n.toJson
+      val default = CypherValueHelp.toJson(n)
       Obj(
         idJsonKey -> default(idJsonKey),
         labelJsonKey -> Str(n.labels.headOption.getOrElse("")),
@@ -235,7 +235,7 @@ object ZeppelinSupport {
       * }}}
       */
     def toZeppelinJson()(implicit formatValue: Any => String): Value = {
-      val default = r.toJson
+      val default = CypherValueHelp.toJson(r)
       Obj(
         idJsonKey -> default(idJsonKey),
         sourceJsonKey -> default(startIdJsonKey),

@@ -30,7 +30,7 @@ import cats.instances.all._
 import cats.syntax.semigroup._
 import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.types.CypherType
-import org.opencypher.okapi.api.types.CypherType.joinMonoid
+import org.opencypher.okapi.api.types.CypherTypeHelp.joinMonoid
 
 object PropertyKeys {
   type PropertyKeys = Map[String, CypherType]

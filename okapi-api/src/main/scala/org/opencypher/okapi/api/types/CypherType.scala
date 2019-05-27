@@ -26,10 +26,8 @@
  */
 package org.opencypher.okapi.api.types
 
-import cats.Monoid
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.opencypher.okapi.impl.types.CypherTypeParser
-import upickle.default._
 
 trait CypherType {
 
@@ -173,14 +171,6 @@ object CypherType {
     * @see {{{org.opencypher.okapi.api.types.CypherType#name}}}
     */
   def fromName(name: String): Option[CypherType] = CypherTypeParser.parseCypherType(name)
-
-  implicit val typeRw: ReadWriter[CypherType] = readwriter[String].bimap[CypherType](_.name, s => fromName(s).get)
-
-  implicit val joinMonoid: Monoid[CypherType] = new Monoid[CypherType] {
-    override def empty: CypherType = CTVoid
-
-    override def combine(x: CypherType, y: CypherType): CypherType = x | y
-  }
 
 }
 

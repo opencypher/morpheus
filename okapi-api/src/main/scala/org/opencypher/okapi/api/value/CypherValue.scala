@@ -234,38 +234,6 @@ object CypherValue {
       }
     }
 
-    def toJson()(implicit formatValue: Any => String): Value = {
-      this match {
-        case CypherNull => Null
-        case CypherString(s) => Str(s)
-        case CypherList(l) => l.map(_.toJson)
-        case CypherMap(m) => m.mapValues(_.toJson).toSeq.sortBy(_._1)
-        case Relationship(id, startId, endId, relType, properties) =>
-          Obj(
-            idJsonKey -> Str(formatValue(id)),
-            typeJsonKey -> Str(relType),
-            startIdJsonKey -> Str(formatValue(startId)),
-            endIdJsonKey -> Str(formatValue(endId)),
-            propertiesJsonKey -> properties.toJson
-          )
-        case Node(id, labels, properties) =>
-          Obj(
-            idJsonKey -> Str(formatValue(id)),
-            labelsJsonKey -> labels.toSeq.sorted.map(Str),
-            propertiesJsonKey -> properties.toJson
-          )
-        case CypherFloat(d) => Num(d)
-        case CypherInteger(l) => Str(l.toString) // `Num` would lose precision
-        case CypherBoolean(b) => Bool(b)
-        case CypherBigDecimal(b) => Obj(
-          "type" -> Str("BigDecimal"),
-          "scale" -> Num(b.bigDecimal.scale()),
-          "precision" -> Num(b.bigDecimal.precision())
-        )
-        case other => Str(formatValue(other.value))
-      }
-    }
-
     private def escape(str: String): String = {
       str
         .replaceAllLiterally("""\""", """\\""")
