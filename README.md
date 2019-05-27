@@ -66,7 +66,8 @@ Additionally [SPARK-26028](https://issues.apache.org/jira/browse/SPARK-26028) pr
 ## Supported Spark and Scala versions
 
 As of Morpheus `0.3.0`, the project has migrated to Scala 2.12 and Spark 2.4 series.
-[As of Spark 2.4.1](https://spark.apache.org/releases/spark-release-2-4-1.html) Scala 2.12 is the default Scala version for Spark, and Morpheus is attempting to mimic this.
+[As of Spark 2.4.1](https://spark.apache.org/releases/spark-release-2-4-1.html) Scala 2.12 is officially supported for Spark.
+However, only Spark `2.4.2` uses Scala 2.12 for its prebuilt convenience binaries, which means that in order to use Morpheus with a later Spark version, one needs to build it manually.
 
 ## Get started with Morpheus
 Morpheus is currently easiest to use with Scala. 
