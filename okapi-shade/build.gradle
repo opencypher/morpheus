@@ -11,9 +11,13 @@ ext.excludedDependencyGroups = [
     'org.scala-lang.modules',
 ]
 
+pub.each { k, v ->
+    v.artifacts = []
+}
+
 publishing {
     publications {
-        shade(MavenPublication) { pub ->
+        full(MavenPublication) { pub ->
             project.shadow.component(pub)
             artifact sourceJar
             artifact docJar
@@ -36,7 +40,7 @@ publishing {
 
 shadowJar {
     classifier = ''
-    from generatePomFileForShadePublication {
+    from generatePomFileForFullPublication {
         rename('pom-default.xml',"META-INF/maven/${project.group}/${project.name}/pom.xml")
     }
     def relocatePackage = 'org.opencypher.relocated'
@@ -66,6 +70,5 @@ shadowJar {
     exclude "META-INF/LICENSE*"
     exclude "utf8.json"
 }
-
 
 assemble.dependsOn shadowJar

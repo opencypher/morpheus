@@ -42,27 +42,30 @@ subprojects {
             }
         }
 
+
         publications {
+            // We do not want to have dev and full publications for okapi-shade
+            if (project.name != "okapi-shade") {
+                dev(MavenPublication) {
+                    from components.java
 
-            dev(MavenPublication) {
-                from components.java
-
-                afterEvaluate {
-                    pom pomConfig
-                    artifacts = pub.dev.artifacts
-                            .findResults { tasks.findByName(it) }
-                            .findAll { it.enabled }
+                    afterEvaluate {
+                        pom pomConfig
+                        artifacts = pub.dev.artifacts
+                                .findResults { tasks.findByName(it) }
+                                .findAll { it.enabled }
+                    }
                 }
-            }
 
-            full(MavenPublication) {
-                from components.java
+                full(MavenPublication) {
+                    from components.java
 
-                afterEvaluate {
-                    pom pomConfig
-                    artifacts = pub.full.artifacts
-                            .findResults { tasks.findByName(it) }
-                            .findAll { it.enabled }
+                    afterEvaluate {
+                        pom pomConfig
+                        artifacts = pub.full.artifacts
+                                .findResults { tasks.findByName(it) }
+                                .findAll { it.enabled }
+                    }
                 }
             }
 
@@ -77,21 +80,23 @@ subprojects {
 
     jar {
         from generatePomFileForJarPublication {
-            rename('pom-default.xml',"META-INF/maven/${project.group}/${project.name}/pom.xml")
+            rename('pom-default.xml', "META-INF/maven/${project.group}/${project.name}/pom.xml")
         }
     }
 
-    // Convenience for quick publish to maven local
-    task devPublish {
-        group 'publishing'
-        description ' Publishes main jars to the local Maven repository.'
-        dependsOn tasks.publishDevPublicationToMavenLocal
+    if (project.name != "okapi-shade") {
+        // Convenience for quick publish to maven local
+        task devPublish {
+            group 'publishing'
+            description ' Publishes main jars to the local Maven repository.'
+            dependsOn tasks.publishDevPublicationToMavenLocal
+        }
     }
 
     // Task run by teamcity
     task ci {
         dependsOn tasks.check
-        dependsOn tasks.publish
+        dependsOn { tasks.publishFullPublicationToBuildDirRepository }
     }
 
 }
