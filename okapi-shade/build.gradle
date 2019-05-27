@@ -11,10 +11,6 @@ ext.excludedDependencyGroups = [
     'org.scala-lang.modules',
 ]
 
-pub.each { k, v ->
-    v.artifacts = []
-}
-
 publishing {
     publications {
         shade(MavenPublication) { pub ->
