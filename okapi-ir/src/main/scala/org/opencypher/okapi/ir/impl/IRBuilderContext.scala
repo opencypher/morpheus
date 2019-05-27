@@ -61,7 +61,7 @@ final case class IRBuilderContext(
     patternConverter.convert(p, knownTypes, qgn.getOrElse(workingGraph.qualifiedGraphName))
   }
 
-  def convertExpression(e: ast.Expression): Expr = exprConverter.convert(e)(lambdaField = None)
+  def convertExpression(e: ast.Expression): Expr = exprConverter.convert(e)(lambdaVars = Map())
 
   def schemaFor(qgn: QualifiedGraphName): PropertyGraphSchema = queryLocalCatalog.schema(qgn)
 

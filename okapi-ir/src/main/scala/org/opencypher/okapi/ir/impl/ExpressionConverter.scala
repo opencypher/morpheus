@@ -62,7 +62,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
     }
   }
 
-  def convert(e: ast.Expression) (implicit lambdaField: Option[IRField]): Expr = {
+  def convert(e: ast.Expression) (implicit lambdaVars: Map[String, CypherType]): Expr = {
 
     lazy val child0: Expr = convert(e.arguments.head)
 
@@ -73,10 +73,10 @@ final class ExpressionConverter(context: IRBuilderContext) {
     lazy val convertedChildren: List[Expr] = e.arguments.toList.map(convert(_))
 
     e match {
-      case ast.Variable(name) => lambdaField match {
-        case Some(l) if l.name.equals(name) => LambdaVar(name)(l.cypherType)
-        case None => Var(name)(context.knownTypes.getOrElse(e, throw UnTypedExpr(e)))
-      }
+      case ast.Variable(name) => lambdaVars.get(name) match {
+          case Some(varType) => LambdaVar(name)(varType)
+          case None => Var(name)(context.knownTypes.getOrElse(e, throw UnTypedExpr(e)))
+        }
       case p@ast.Parameter(name, _) => Param(name)(parameterType(p))
 
       // Literals
@@ -280,13 +280,14 @@ final class ExpressionConverter(context: IRBuilderContext) {
       case ast.ListSlice(list, Some(from), None) => ListSliceFrom(convert(list), convert(from))
 
       case ast.ListComprehension(ExtractScope(variable, innerPredicate, extractExpression), expr) =>
-        val listExpr = convert(expr)(lambdaField)
+        val listExpr = convert(expr)(lambdaVars)
         val listInnerType = listExpr.cypherType match {
           case CTList(inner) => inner
           case err => throw IllegalArgumentException("a list to step over", err, "Wrong list comprehension type")
         }
-        implicit val lambdaVar: Some[IRField] = Some(IRField(variable.name)(listInnerType))
-        ListComprehension(convert(variable), innerPredicate.map(convert(_)), extractExpression.map(convert(_)), listExpr)
+        val updatedLambdaVars: Map[String, CypherType] = lambdaVars + (variable.name -> listInnerType)
+        ListComprehension(convert(variable)(updatedLambdaVars), innerPredicate.map(convert(_)(updatedLambdaVars)),
+          extractExpression.map(convert(_)(updatedLambdaVars)), listExpr)
 
       case ast.ContainerIndex(container, index) =>
         val convertedContainer = convert(container)

@@ -461,7 +461,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   implicit def toVar(s: Symbol): Var = all.find(_.name == s.name).get
 
   private def convert(e: ast.Expression): Expr =
-    new ExpressionConverter(testContext).convert(e)(None)
+    new ExpressionConverter(testContext).convert(e)(Map())
 
   implicit class TestExpr(expr: Expr) {
     def shouldEqual(other: Expr): Assertion = {
