@@ -477,9 +477,6 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   describe("IterablePredicateExpr") {
     val intVar = LambdaVar("x")(CTInteger)
-    it("can convert filter()") {
-      convert("filter(x IN [1] WHERE x < 1)") shouldEqual ListFilter(intVar, LessThan(intVar, IntegerLit(1)), ListLit(List(IntegerLit(1))))
-    }
 
     it("can convert none()") {
       convert("none(x IN [1] WHERE x < 1)") shouldEqual ListNone(intVar, LessThan(intVar, IntegerLit(1)), ListLit(List(IntegerLit(1))))

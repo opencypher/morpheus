@@ -313,13 +313,6 @@ final class ExpressionConverter(context: IRBuilderContext) {
         ListReduction(convert(accumulator)(updatedLambdaVars), convert(variable)(updatedLambdaVars),
           convert(reduceExpression)(updatedLambdaVars), initExpr, convert(list)(updatedLambdaVars))
 
-      case ast.FilterExpression(scope, list) => scope.innerPredicate match {
-        case Some(innerPredicate) =>
-          val (lambdaVar, predicate) = convertFilterScope(scope.variable, innerPredicate, child0)
-          ListFilter(lambdaVar, predicate, child0)
-        case None => child0
-      }
-
       case predExpr: ast.IterablePredicateExpression => predExpr.scope.innerPredicate match {
         case Some(innerPredicate) => val (lambdaVar, predicate) = convertFilterScope(predExpr.scope.variable, innerPredicate, child0)
           predExpr match {
@@ -330,7 +323,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
           }
         case None =>
           predExpr match {
-            case _ => throw IllegalArgumentException("requires a predicate") //sane behaviour as neo4j
+            case _ => throw IllegalArgumentException("requires a predicate") //same behaviour as neo4j
           }
       }
 

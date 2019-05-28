@@ -372,16 +372,6 @@ object SparkSQLExprMapper {
           val reduceExpr = ArrayAggregate(convertedChildrenExpr(4), convertedChildrenExpr(3), reduceFunc, finishFunc)
           new Column(reduceExpr)
 
-        case ListFilter(v, predicate, list) =>
-          val convertedChildrenExpr = convertedChildren.map(_.expr)
-          val lambdaVar = child0.expr match {
-            case v: NamedLambdaVariable => v
-            case err => throw IllegalStateException(s"$v should be converted into a NamedLambdaVariable instead of $err")
-          }
-          val filterFunc = LambdaFunction(convertedChildrenExpr(1), Seq(lambdaVar))
-          val filterExpr = ArrayFilter(convertedChildrenExpr(2), filterFunc)
-          new Column(filterExpr)
-
         case predExpr: IterablePredicateExpr =>
           val convertedChildrenExpr = convertedChildren.map(_.expr)
           val lambdaVar = child0.expr match {
@@ -406,7 +396,6 @@ object SparkSQLExprMapper {
               val filterExpr = ArrayFilter(convertedChildrenExpr(2), filterFunc)
               val lengthAfter = size(new Column(filterExpr))
               ONE_LIT === lengthAfter
-
           }
 
 

@@ -184,7 +184,7 @@ Here follows a comprehensive reference of Cypher9 features and their implementat
 | allShortestPaths       | {no}
 | any                    | {yes}
 | extract                | {never}
-| filter                 | {yes}
+| filter                 | {never}
 | list comprehension     | {yes}
 | map projections        | {no}
 | none                   | {yes}
@@ -209,7 +209,7 @@ Here follows a comprehensive reference of Cypher9 features and their implementat
 | >=                    | {yes}
 | =~                    | {yes}
 | pass:[+ (arithmetic)] | {yes}
-| pass:[+ (list)]       | {no}
+| pass:[+ (list)]       | {yes}
 | pass:[+ (string)]     | {yes}
 | /                     | {yes}
 | pass:[*]              | {yes}

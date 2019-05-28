@@ -1568,17 +1568,6 @@ class ExpressionTests extends MorpheusTestSuite with ScanGraphInit with Checkers
       )
     }
 
-    it("filter") {
-      val result = morpheus.cypher(
-        """
-          |WITH [1,2,3] AS things
-          |RETURN filter(n in things WHERE n < 2) AS value
-        """.stripMargin)
-      result.records.toMaps shouldEqual Bag(
-        CypherMap("value" -> List(1))
-      )
-    }
-
     it("none") {
       val result = morpheus.cypher(
         """
