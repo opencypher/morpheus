@@ -196,6 +196,8 @@ final case class SimpleVar(name: String)(val cypherType: CypherType) extends Ret
   override def withOwner(expr: Var): SimpleVar = SimpleVar(expr.name)(expr.cypherType)
 }
 
+final case class LambdaVar(name: String)(val cypherType: CypherType) extends Var
+
 final case class StartNode(rel: Expr)(val cypherType: CypherType) extends Expr {
   type This = StartNode
 
@@ -1098,6 +1100,18 @@ final case class ListSliceFromTo(list: Expr, from: Expr, to: Expr) extends ListS
 final case class ListSliceFrom(list: Expr, from: Expr) extends ListSlice(Some(from), None)
 
 final case class ListSliceTo(list: Expr, to: Expr) extends ListSlice(None, Some(to))
+
+final case class ListComprehension(variable: Expr, innerPredicate: Option[Expr], extractExpression: Option[Expr], expr : Expr) extends Expr {
+  override def withoutType: String = {
+    val p = innerPredicate.map(" WHERE " + _.withoutType).getOrElse("")
+    val e = extractExpression.map(" | " + _.withoutType).getOrElse("")
+    s"[${variable.withoutType} IN ${expr.withoutType}$p$e]"
+  }
+  override def cypherType: CypherType = extractExpression match {
+    case Some(x) => CTList(x.cypherType)
+    case None => expr.cypherType
+  }
+}
 
 final case class ContainerIndex(container: Expr, index: Expr)(val cypherType: CypherType) extends Expr {
 

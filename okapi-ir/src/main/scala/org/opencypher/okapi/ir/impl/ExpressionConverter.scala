@@ -34,7 +34,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.parse.{functions => f}
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter.Signature
 import org.opencypher.okapi.ir.impl.typer.{InvalidArgument, InvalidContainerAccess, MissingParameter, UnTypedExpr, WrongNumberOfArguments}
-import org.opencypher.v9_0.expressions.{RegexMatch, functions}
+import org.opencypher.v9_0.expressions.{ExtractScope, LogicalVariable, RegexMatch, functions}
 import org.opencypher.v9_0.{expressions => ast}
 import SignatureTyping._
 
@@ -62,7 +62,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
     }
   }
 
-  def convert(e: ast.Expression): Expr = {
+  def convert(e: ast.Expression) (implicit lambdaVars: Map[String, CypherType]): Expr = {
 
     lazy val child0: Expr = convert(e.arguments.head)
 
@@ -70,10 +70,13 @@ final class ExpressionConverter(context: IRBuilderContext) {
 
     lazy val child2: Expr = convert(e.arguments(2))
 
-    lazy val convertedChildren: List[Expr] = e.arguments.toList.map(convert)
+    lazy val convertedChildren: List[Expr] = e.arguments.toList.map(convert(_))
 
     e match {
-      case ast.Variable(name) => Var(name)(context.knownTypes.getOrElse(e, throw UnTypedExpr(e)))
+      case ast.Variable(name) => lambdaVars.get(name) match {
+          case Some(varType) => LambdaVar(name)(varType)
+          case None => Var(name)(context.knownTypes.getOrElse(e, throw UnTypedExpr(e)))
+        }
       case p@ast.Parameter(name, _) => Param(name)(parameterType(p))
 
       // Literals
@@ -275,6 +278,16 @@ final class ExpressionConverter(context: IRBuilderContext) {
       case ast.ListSlice(list, Some(from), Some(to)) => ListSliceFromTo(convert(list), convert(from), convert(to))
       case ast.ListSlice(list, None, Some(to)) => ListSliceTo(convert(list), convert(to))
       case ast.ListSlice(list, Some(from), None) => ListSliceFrom(convert(list), convert(from))
+
+      case ast.ListComprehension(ExtractScope(variable, innerPredicate, extractExpression), expr) =>
+        val listExpr = convert(expr)(lambdaVars)
+        val listInnerType = listExpr.cypherType match {
+          case CTList(inner) => inner
+          case err => throw IllegalArgumentException("a list to step over", err, "Wrong list comprehension type")
+        }
+        val updatedLambdaVars: Map[String, CypherType] = lambdaVars + (variable.name -> listInnerType)
+        ListComprehension(convert(variable)(updatedLambdaVars), innerPredicate.map(convert(_)(updatedLambdaVars)),
+          extractExpression.map(convert(_)(updatedLambdaVars)), listExpr)
 
       case ast.ContainerIndex(container, index) =>
         val convertedContainer = convert(container)
