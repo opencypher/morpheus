@@ -34,7 +34,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.parse.{functions => f}
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter.Signature
 import org.opencypher.okapi.ir.impl.typer.{InvalidArgument, InvalidContainerAccess, MissingParameter, UnTypedExpr, WrongNumberOfArguments}
-import org.opencypher.v9_0.expressions.{ExtractScope, ReduceScope, functions}
+import org.opencypher.v9_0.expressions.{ExtractScope, LogicalVariable, ReduceScope, functions}
 import org.opencypher.v9_0.{expressions => ast}
 import SignatureTyping._
 
@@ -60,6 +60,17 @@ final class ExpressionConverter(context: IRBuilderContext) {
       case l: IntegerLit => l.v
       case _ => throw IllegalArgumentException("a literal value", expr)
     }
+  }
+
+  private def convertFilterScope(variable: LogicalVariable, innerPredicate: ast.Expression, list: Expr)(implicit lambdaVars: Map[String, CypherType]) : (LambdaVar, Expr) = {
+      val listInnerType = list.cypherType match {
+        case CTList(inner) => inner
+        case err => throw IllegalArgumentException("a list to step over", err, "Wrong list comprehension type")
+      }
+      val lambdaVar = LambdaVar(variable.name) (listInnerType) //todo: use normal convert + match instead?
+      val updatedLambdaVars = lambdaVars + (variable.name -> listInnerType)
+
+      lambdaVar -> convert(innerPredicate)(updatedLambdaVars)
   }
 
   def convert(e: ast.Expression) (implicit lambdaVars: Map[String, CypherType]): Expr = {
@@ -301,6 +312,28 @@ final class ExpressionConverter(context: IRBuilderContext) {
         val updatedLambdaVars = lambdaVars ++ introduceLambdaVars
         ListReduction(convert(accumulator)(updatedLambdaVars), convert(variable)(updatedLambdaVars),
           convert(reduceExpression)(updatedLambdaVars), initExpr, convert(list)(updatedLambdaVars))
+
+      case ast.FilterExpression(scope, list) => scope.innerPredicate match {
+        case Some(innerPredicate) =>
+          val (lambdaVar, predicate) = convertFilterScope(scope.variable, innerPredicate, child0)
+          ListFilter(lambdaVar, predicate, child0)
+        case None => child0
+      }
+
+      case predExpr: ast.IterablePredicateExpression => predExpr.scope.innerPredicate match {
+        case Some(innerPredicate) => val (lambdaVar, predicate) = convertFilterScope(predExpr.scope.variable, innerPredicate, child0)
+          predExpr match {
+            case _: ast.AnyIterablePredicate => ListAny(lambdaVar, predicate, child0)
+            case _: ast.AllIterablePredicate => ListAll(lambdaVar, predicate, child0)
+            case _: ast.NoneIterablePredicate => ListNone(lambdaVar, predicate, child0)
+            case _: ast.SingleIterablePredicate => ListSingle(lambdaVar, predicate, child0)
+          }
+        case None =>
+          predExpr match {
+            case _ => throw IllegalArgumentException("requires a predicate") //sane behaviour as neo4j
+            case _ => throw NotImplementedException(s"Not yet able to convert expression: $predExpr")
+          }
+      }
 
       case ast.ContainerIndex(container, index) =>
         val convertedContainer = convert(container)

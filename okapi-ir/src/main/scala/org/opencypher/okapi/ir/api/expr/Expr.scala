@@ -1166,6 +1166,44 @@ final case class ListReduction(accumulator: Expr, variable: Expr, reduceExpr: Ex
   }
 }
 
+sealed abstract class IterablePredicateExpr(variable: LambdaVar, predicate: Expr, list: Expr) extends TypeValidatedExpr {
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
+
+  def exprs: List[Expr] = List(variable, predicate, list)
+  def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes match {
+    case Seq(_, CTBoolean, CTList(_)) => Some(CTBoolean)
+    case _ => None
+  }
+  override def withoutType: String = s"($variable IN $list WHERE $predicate)"
+}
+
+final case class ListFilter(variable: LambdaVar, predicate: Expr, list: Expr) extends TypeValidatedExpr {
+  override  def withoutType: String = s"filter($variable IN $list WHERE $predicate)"
+  def exprs: List[Expr] = List(variable, predicate, list)
+
+  def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes match {
+    case Seq(_, CTBoolean, l: CTList) => Some(l)
+    case _ => None
+  }
+}
+
+final case class ListAny(variable: LambdaVar, predicate: Expr, list: Expr) extends IterablePredicateExpr(variable, predicate, list) {
+  override  def withoutType: String = s"any(${super.withoutType})"
+}
+
+final case class ListNone(variable: LambdaVar, predicate: Expr, list: Expr) extends IterablePredicateExpr(variable, predicate, list) {
+  override  def withoutType: String = s"none(${super.withoutType})"
+}
+
+final case class ListAll(variable: LambdaVar, predicate: Expr, list: Expr) extends IterablePredicateExpr(variable, predicate, list) {
+  override  def withoutType: String = s"all(${super.withoutType})"
+}
+
+final case class ListSingle(variable: LambdaVar, predicate: Expr, list: Expr) extends IterablePredicateExpr(variable, predicate, list) {
+  override  def withoutType: String = s"single(${super.withoutType})"
+}
+
+
 final case class ContainerIndex(container: Expr, index: Expr)(val cypherType: CypherType) extends Expr {
 
   override def withoutType: String = s"${container.withoutType}[${index.withoutType}]"

@@ -468,10 +468,33 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     it("can convert last()"){
       convert("last([1])") shouldEqual Last(ListLit(List(IntegerLit(1))))
     }
-    it("cannot convert list-acces functions with non-list argument"){
+    it("cannot convert list-access functions with non-list argument"){
       a[NoSuitableSignatureForExpr]  shouldBe thrownBy(convert("head(1)"))
       a[NoSuitableSignatureForExpr]  shouldBe thrownBy(convert("tail(1)"))
       a[NoSuitableSignatureForExpr]  shouldBe thrownBy(convert("last(1)"))
+    }
+  }
+
+  describe("IterablePredicateExpr") {
+    val intVar = LambdaVar("x")(CTInteger)
+    it("can convert filter()") {
+      convert("filter(x IN [1] WHERE x < 1)") shouldEqual ListFilter(intVar, LessThan(intVar, IntegerLit(1)), ListLit(List(IntegerLit(1))))
+    }
+
+    it("can convert none()") {
+      convert("none(x IN [1] WHERE x < 1)") shouldEqual ListNone(intVar, LessThan(intVar, IntegerLit(1)), ListLit(List(IntegerLit(1))))
+    }
+
+    it("can convert all()") {
+      convert("all(x IN [1] WHERE x < 1)") shouldEqual ListAll(intVar, LessThan(intVar, IntegerLit(1)), ListLit(List(IntegerLit(1))))
+    }
+
+    it("can convert any()") {
+      convert("any(x IN [1] WHERE x < 1)") shouldEqual ListAny(intVar, LessThan(intVar, IntegerLit(1)), ListLit(List(IntegerLit(1))))
+    }
+
+    it("can convert single()") {
+      convert("single(x IN [1] WHERE x < 1)") shouldEqual ListSingle(intVar, LessThan(intVar, IntegerLit(1)), ListLit(List(IntegerLit(1))))
     }
   }
 
