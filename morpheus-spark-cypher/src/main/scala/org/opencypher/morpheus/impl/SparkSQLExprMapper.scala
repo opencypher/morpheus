@@ -26,7 +26,7 @@
  */
 package org.opencypher.morpheus.impl
 
-import org.apache.spark.sql.catalyst.expressions.{ArrayAggregate, ArrayFilter, ArrayTransform, CaseWhen, ExprId, LambdaFunction, Literal, NamedLambdaVariable}
+import org.apache.spark.sql.catalyst.expressions.{ArrayAggregate, ArrayExists, ArrayFilter, ArrayTransform, CaseWhen, ExprId, LambdaFunction, Literal, NamedLambdaVariable}
 import org.apache.spark.sql.functions.{array_contains => _, translate => _, _}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame}
@@ -371,6 +371,44 @@ object SparkSQLExprMapper {
 
           val reduceExpr = ArrayAggregate(convertedChildrenExpr(4), convertedChildrenExpr(3), reduceFunc, finishFunc)
           new Column(reduceExpr)
+
+        case ListFilter(v, predicate, list) =>
+          val convertedChildrenExpr = convertedChildren.map(_.expr)
+          val lambdaVar = child0.expr match {
+            case v: NamedLambdaVariable => v
+            case err => throw IllegalStateException(s"$v should be converted into a NamedLambdaVariable instead of $err")
+          }
+          val filterFunc = LambdaFunction(convertedChildrenExpr(1), Seq(lambdaVar))
+          val filterExpr = ArrayFilter(convertedChildrenExpr(2), filterFunc)
+          new Column(filterExpr)
+
+        case predExpr: IterablePredicateExpr =>
+          val convertedChildrenExpr = convertedChildren.map(_.expr)
+          val lambdaVar = child0.expr match {
+            case v: NamedLambdaVariable => v
+            case err => throw IllegalStateException(s"${predExpr.exprs.head} should be converted into a NamedLambdaVariable instead of $err")
+          }
+          val filterFunc = LambdaFunction(convertedChildrenExpr(1), Seq(lambdaVar))
+          predExpr match {
+            case _: ListAll =>
+              val lengthBefore = size(convertedChildren(2))
+              val filterExpr = ArrayFilter(convertedChildrenExpr(2), filterFunc)
+              val lengthAfter = size(new Column(filterExpr))
+              lengthBefore === lengthAfter
+            case _: ListAny =>
+              val resExpr = ArrayExists(convertedChildrenExpr(2), filterFunc)
+              new Column(resExpr)
+            case _: ListNone =>
+              val resExpr = ArrayExists(convertedChildrenExpr(2), filterFunc)
+              val resCol = new Column(resExpr)
+              not(resCol)
+            case _: ListSingle =>
+              val filterExpr = ArrayFilter(convertedChildrenExpr(2), filterFunc)
+              val lengthAfter = size(new Column(filterExpr))
+              ONE_LIT === lengthAfter
+
+          }
+
 
         case MapExpression(items) => expr.cypherType.material match {
           case CTMap(_) =>

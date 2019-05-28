@@ -1555,4 +1555,73 @@ class ExpressionTests extends MorpheusTestSuite with ScanGraphInit with Checkers
       )
     }
   }
+
+  describe("iterable predicates") {
+    it("any") {
+      val result = morpheus.cypher(
+        """
+          |WITH [1,2,3] AS things
+          |RETURN any(n in things WHERE n < 2) AS value
+        """.stripMargin)
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("value" -> true)
+      )
+    }
+
+    it("filter") {
+      val result = morpheus.cypher(
+        """
+          |WITH [1,2,3] AS things
+          |RETURN filter(n in things WHERE n < 2) AS value
+        """.stripMargin)
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("value" -> List(1))
+      )
+    }
+
+    it("none") {
+      val result = morpheus.cypher(
+        """
+          |WITH [1,2,3] AS things
+          |RETURN none(n in things WHERE n < 2) AS value
+        """.stripMargin)
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("value" -> false)
+      )
+    }
+
+    it("all") {
+      val result = morpheus.cypher(
+        """
+          |WITH [1,2,3] AS things
+          |RETURN all(n in things WHERE n < 4) AS value
+        """.stripMargin)
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("value" -> true)
+      )
+    }
+
+    it("negative single") {
+      val result = morpheus.cypher(
+        """
+          |WITH [1,2,3] AS things
+          |RETURN single(n in things WHERE n < 3) AS value
+        """.stripMargin)
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("value" -> false)
+      )
+    }
+
+    it("positive single") {
+      val result = morpheus.cypher(
+        """
+          |WITH [1,2,3] AS things
+          |RETURN single(n in things WHERE n < 2) AS value
+        """.stripMargin)
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("value" -> true)
+      )
+    }
+  }
 }
+
