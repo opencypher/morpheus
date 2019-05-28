@@ -1154,6 +1154,18 @@ final case class ListComprehension(variable: Expr, innerPredicate: Option[Expr],
   }
 }
 
+final case class ListReduction(accumulator: Expr, variable: Expr, reduceExpr: Expr, initExpr: Expr, list: Expr) extends TypeValidatedExpr {
+  override def withoutType: String = {
+    s"reduce(${accumulator.withoutType} = ${initExpr.withoutType}, ${variable.withoutType} IN ${list.withoutType} | ${reduceExpr.withoutType})"
+  }
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
+  def exprs: List[Expr] = List(initExpr, reduceExpr, list) //only exprs which need to be type-checked
+  def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes match {
+    case Seq(initType: CypherType, reduceStepType: CypherType, CTList(_)) if initType.couldBeSameTypeAs(reduceStepType) => Some(initType)
+    case _ => None
+  }
+}
+
 final case class ContainerIndex(container: Expr, index: Expr)(val cypherType: CypherType) extends Expr {
 
   override def withoutType: String = s"${container.withoutType}[${index.withoutType}]"

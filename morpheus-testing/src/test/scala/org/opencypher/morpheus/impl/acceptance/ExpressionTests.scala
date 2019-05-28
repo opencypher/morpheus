@@ -1542,4 +1542,17 @@ class ExpressionTests extends MorpheusTestSuite with ScanGraphInit with Checkers
       )
     }
   }
+
+  describe("list reduce") {
+    it("simple reduction") {
+      val result = morpheus.cypher(
+        """
+          |WITH [1,2,3] AS things
+          |RETURN reduce(acc = 0, n in things | acc + n) AS value
+        """.stripMargin)
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("value" -> 6)
+      )
+    }
+  }
 }

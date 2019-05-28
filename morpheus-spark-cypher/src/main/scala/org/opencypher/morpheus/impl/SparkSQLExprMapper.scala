@@ -26,7 +26,7 @@
  */
 package org.opencypher.morpheus.impl
 
-import org.apache.spark.sql.catalyst.expressions.{ArrayFilter, ArrayTransform, CaseWhen, ExprId, LambdaFunction, Literal, NamedLambdaVariable}
+import org.apache.spark.sql.catalyst.expressions.{ArrayAggregate, ArrayFilter, ArrayTransform, CaseWhen, ExprId, LambdaFunction, Literal, NamedLambdaVariable}
 import org.apache.spark.sql.functions.{array_contains => _, translate => _, _}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame}
@@ -359,6 +359,18 @@ object SparkSQLExprMapper {
             case None => filteredExpr
           }
           new Column(result)
+
+        case ListReduction(acc, v, _, _, _) =>
+          val convertedChildrenExpr = convertedChildren.map(_.expr)
+          val (initVar, accVar) = convertedChildrenExpr.slice(0, 2) match {
+            case Seq(i: NamedLambdaVariable, a: NamedLambdaVariable) => i -> a
+            case err => throw IllegalStateException(s"($v,$acc) should be converted into a NamedLambdaVariables instead of $err")
+          }
+          val reduceFunc = LambdaFunction(convertedChildrenExpr(2), Seq(initVar, accVar))
+          val finishFunc = LambdaFunction(accVar, Seq(accVar))
+
+          val reduceExpr = ArrayAggregate(convertedChildrenExpr(4), convertedChildrenExpr(3), reduceFunc, finishFunc)
+          new Column(reduceExpr)
 
         case MapExpression(items) => expr.cypherType.material match {
           case CTMap(_) =>
