@@ -60,7 +60,7 @@ package object impl {
 
     def forElementType(cypherType: CypherType): PropertyGraphSchema = cypherType match {
       case CTNode(labels, _, _) =>
-        schema.forNode(labels)
+        schema.forNode(labels.unpack)
       case r: CTRelationship =>
         schema.forRelationship(r)
       case x => throw IllegalArgumentException("element type", x)
@@ -76,14 +76,14 @@ package object impl {
     def addPropertyToElement(propertyKey: String, propertyType: CypherType, elementType: CypherType): PropertyGraphSchema = {
       elementType match {
         case CTNode(labels, _, _) =>
-          val allRelevantLabelCombinations = schema.combinationsFor(labels)
+          val allRelevantLabelCombinations = schema.combinationsFor(labels.unpack())
           val property = if (allRelevantLabelCombinations.size == 1) propertyType else propertyType.nullable
           allRelevantLabelCombinations.foldLeft(schema) { case (innerCurrentSchema, combo) =>
             val updatedPropertyKeys = innerCurrentSchema.nodePropertyKeysForCombinations(Set(combo)).updated(propertyKey, property)
             innerCurrentSchema.withOverwrittenNodePropertyKeys(combo, updatedPropertyKeys)
           }
         case CTRelationship(types, _, _) =>
-          val typesToUpdate = if (types.isEmpty) schema.relationshipTypes else types
+          val typesToUpdate = if (types.isEmpty) schema.relationshipTypes else types.unpackRelTypes()
           typesToUpdate.foldLeft(schema) { case (innerCurrentSchema, relType) =>
             val updatedPropertyKeys = innerCurrentSchema.relationshipPropertyKeys(relType).updated(propertyKey, propertyType)
             innerCurrentSchema.withOverwrittenRelationshipPropertyKeys(relType, updatedPropertyKeys)

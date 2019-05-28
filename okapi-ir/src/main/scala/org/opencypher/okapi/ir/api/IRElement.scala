@@ -35,9 +35,9 @@ import org.opencypher.okapi.ir.api.pattern._
 import org.opencypher.okapi.ir.api.set.SetItem
 
 object IRField {
-  def relTypes(field: IRField): Set[String] = field.cypherType match {
+  def relTypes(field: IRField): AnyOf = field.cypherType match {
     case CTRelationship(types, _, _) => types
-    case _ => Set.empty
+    case _ => ???
   }
 }
 

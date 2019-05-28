@@ -336,8 +336,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
                       case CTNode(ls, props, qualifiedGraphName) => (ls, props, qualifiedGraphName)
                       case other => throw UnsupportedOperationException(s"SET label on something that is not a node: $other")
                     }
-                    val labelsAfterSet = existingLabels.map(_ ++ labels)
-                    val updatedSchema = existingLabels.foldLeft(currentSchema)(_.addLabelsToCombo(labels, _))
+                    val labelsAfterSet = existingLabels.addLabelToAlternatives(labels)
+                    val updatedSchema = existingLabels.alternatives.foldLeft(currentSchema)((schema, labelCombo) => schema.addLabelsToCombo(labels, labelCombo.combo))
                     updatedSchema -> rewrittenVarTypes.updated(variable, CTNode(labelsAfterSet, existingProperties, existingQgn))
                   case SetPropertyItem(propertyKey, variable, setValue) =>
                     val propertyType = setValue.cypherType
@@ -617,9 +617,9 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
     field.cypherType match {
       case CTNode(newLabels, properties, _) =>
         val oldLabelCombosToNewLabelCombos = if (baseFieldSchema.labels.nonEmpty)
-          baseFieldSchema.allCombinations.flatMap(oldLabels => newLabels.map { l => oldLabels -> (oldLabels ++ l)} )
+          baseFieldSchema.allCombinations.flatMap(oldLabels => newLabels.alternatives.map { l => oldLabels -> (oldLabels ++ l.combo)} )
         else
-          newLabels.map(Set.empty[String] -> _)
+          newLabels.alternatives.map(Set.empty[String] -> _.combo)
 
         val updatedPropertyKeys = oldLabelCombosToNewLabelCombos.map {
           case (_, newLabelCombo) => newLabelCombo -> (properties ++ newPropertyKeys)
@@ -643,10 +643,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
         val updatedPropertyKeys = oldProperties ++ newPropertyKeys
 
-        PropertyGraphSchema.empty.withRelationshipPropertyKeys(newTypes.head, updatedPropertyKeys)
+        PropertyGraphSchema.empty.withRelationshipPropertyKeys(newTypes.alternatives.head.combo.head, updatedPropertyKeys)
 
       case CTRelationship(newTypes, oldProperties, _) =>
-        val actualTypes = if (newTypes.nonEmpty) newTypes else baseFieldSchema.relationshipTypes
+        val actualTypes = newTypes.alternatives.map(_.combo.head)
 
         actualTypes.foldLeft(PropertyGraphSchema.empty) {
           case (acc, relType) => acc.withRelationshipPropertyKeys(relType, oldProperties ++ newPropertyKeys)
