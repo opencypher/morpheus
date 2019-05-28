@@ -331,7 +331,6 @@ final class ExpressionConverter(context: IRBuilderContext) {
         case None =>
           predExpr match {
             case _ => throw IllegalArgumentException("requires a predicate") //sane behaviour as neo4j
-            case _ => throw NotImplementedException(s"Not yet able to convert expression: $predExpr")
           }
       }
 
