@@ -127,7 +127,7 @@ Here follows a comprehensive reference of Cypher9 features and their implementat
 | percentileDisc() | {no}
 | pi()             | {yes}
 | point()          | {no}
-| properties()     | {no}
+| properties()     | {yes}
 | rTrim()          | {yes}
 | radians()        | {yes}
 | rand()           | {yes}
@@ -186,7 +186,7 @@ Here follows a comprehensive reference of Cypher9 features and their implementat
 | extract                | {never}
 | filter                 | {never}
 | list comprehension     | {yes}
-| map projections        | {no}
+| map projections        | {yes}
 | none                   | {yes}
 | parameters             | {yes}
 | pattern comprehensions | {no}
