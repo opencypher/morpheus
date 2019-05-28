@@ -515,6 +515,11 @@ final case class MapExpression(items: Map[String, Expr]) extends Expr {
   override def cypherType: CypherType = CTMap(items.map { case (key, value) => key -> value.cypherType })
 }
 
+final case class MapProjection(mapOwner: Expr, items: Seq[Expr], includeAllProps: Boolean) extends Expr {
+  def cypherType: CypherType = CTMap
+  def withoutType: String = if(includeAllProps) s"{all properties from $mapOwner}" else s"{${items.map(_.withoutType)}}"
+}
+
 // Arithmetic expressions
 
 sealed trait ArithmeticExpr extends BinaryExpr {

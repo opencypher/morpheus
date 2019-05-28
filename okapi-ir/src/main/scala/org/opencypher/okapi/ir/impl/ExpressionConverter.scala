@@ -31,12 +31,12 @@ import org.opencypher.okapi.api.value.CypherValue.CypherInteger
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.impl.SignatureTyping._
 import org.opencypher.okapi.ir.impl.parse.{functions => f}
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter.Signature
 import org.opencypher.okapi.ir.impl.typer.{InvalidArgument, InvalidContainerAccess, MissingParameter, UnTypedExpr, WrongNumberOfArguments}
-import org.opencypher.v9_0.expressions.{ExtractScope, LogicalVariable, ReduceScope, functions}
+import org.opencypher.v9_0.expressions.{ExtractScope, RegexMatch, functions}
 import org.opencypher.v9_0.{expressions => ast}
-import SignatureTyping._
 
 import scala.language.implicitConversions
 
@@ -326,6 +326,13 @@ final class ExpressionConverter(context: IRBuilderContext) {
             case _ => throw IllegalArgumentException("requires a predicate") //same behaviour as neo4j
           }
       }
+
+      case ast.DesugaredMapProjection(owner, items, includeAllProps) =>
+        val convertedItems = items.map {
+          case ast.LiteralEntry(key, exp) => convert(ast.Property(owner, key)(e.position)) //todo: also use exp
+          case err => throw IllegalArgumentException("expected only LiteralEntries", err)
+        }
+        MapProjection(owner, convertedItems, includeAllProps)
 
       case ast.ContainerIndex(container, index) =>
         val convertedContainer = convert(container)

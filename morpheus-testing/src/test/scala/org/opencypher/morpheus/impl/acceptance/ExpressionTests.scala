@@ -29,6 +29,7 @@ package org.opencypher.morpheus.impl.acceptance
 import claimant.Claim
 import org.opencypher.morpheus.impl.SparkSQLMappingException
 import org.opencypher.morpheus.testing.MorpheusTestSuite
+import org.opencypher.morpheus.testing.support.creation.graphs.ScanGraphFactory
 import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.Format.defaultValueFormatter
 import org.opencypher.okapi.api.value.CypherValue.{CypherFloat, CypherInteger, CypherList, CypherMap}
@@ -1621,6 +1622,19 @@ class ExpressionTests extends MorpheusTestSuite with ScanGraphInit with Checkers
         CypherMap("value" -> true)
       )
     }
+  }
+  describe("map projection") {
+    it("simple map-projection") {
+      val graph = ScanGraphFactory.initGraph("""CREATE ({prop: 1})""")
+      val result = graph.cypher(
+        """
+          |MATCH (n)
+          |RETURN n  {.prop} AS map
+        """.stripMargin)
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("map" -> Map("prop" -> 1))
+      )
+  }
   }
 }
 
