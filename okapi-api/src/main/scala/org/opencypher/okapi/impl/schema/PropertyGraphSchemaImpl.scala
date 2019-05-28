@@ -421,14 +421,17 @@ final case class PropertyGraphSchemaImpl(
   }
 
   def forRelationship(relationship: CTRelationship): PropertyGraphSchema = {
-    val relTypePropertyMap = relationship.labels.map { relType =>
-      relType.combo.head -> relationship.properties
-    }.toMap
+    val givenRelTypes = relationship.labels.alternatives.map(_.combo.head)
 
+    val updatedRelTypePropertyMap = this.relTypePropertyMap.filterForRelTypes(givenRelTypes)
+    val updatedMap = givenRelTypes.foldLeft(updatedRelTypePropertyMap) {
+      case (map, givenRelType) =>
+        if (!map.contains(givenRelType)) map.updated(givenRelType, PropertyKeys.empty) else map
+    }
 
     PropertyGraphSchemaImpl(
       labelPropertyMap = LabelPropertyMap.empty,
-      relTypePropertyMap = relTypePropertyMap
+      relTypePropertyMap = updatedMap
     )
   }
 

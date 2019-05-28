@@ -104,9 +104,6 @@ class PatternElementMappingTest extends ApiBaseTest {
     it("throws an error if relationship elements do not have exactly one type") {
       val pattern1 = RelationshipPattern(CTRelationship.empty("Foo", "Bar"))
       raisesIllegalArgument(ElementMapping.empty(pattern1))
-
-      val pattern2 = RelationshipPattern(CTRelationship.empty)
-      raisesIllegalArgument(ElementMapping.empty(pattern2))
     }
   }
 

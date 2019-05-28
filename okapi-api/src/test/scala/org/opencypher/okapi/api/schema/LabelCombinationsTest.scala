@@ -36,7 +36,6 @@ class LabelCombinationsTest extends ApiBaseTest {
       Set("A"), Set("A", "B", "X"), Set("A", "X"), Set("B")
     ))
 
-    in.combinationsFor(Set.empty) should equal(in.combos)
     in.combinationsFor(Set(Set("A"))) should equal(Set(
       Set("A"), Set("A", "B", "X"), Set("A", "X")
     ))

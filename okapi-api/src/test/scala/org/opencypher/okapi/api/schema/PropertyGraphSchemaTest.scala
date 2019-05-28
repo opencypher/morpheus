@@ -116,7 +116,7 @@ class PropertyGraphSchemaTest extends ApiBaseTest {
     schema.combinationsFor(Set(Set("Director"))) should equal(Set(Set("Person", "Director"), Set("Employee", "Director")))
     schema.combinationsFor(Set(Set("Person"))) should equal(Set(Set("Person", "Employee"), Set("Person", "Director")))
     schema.combinationsFor(Set(Set("Person", "Employee"))) should equal(Set(Set("Person", "Employee")))
-    schema.labels should equal(Set(Set("Person", "Employee", "Director")))
+    schema.labels should equal(Set("Person", "Employee", "Director"))
   }
 
   it("should get simple combinations correct") {
@@ -129,7 +129,7 @@ class PropertyGraphSchemaTest extends ApiBaseTest {
     schema.combinationsFor(Set(Set("Person"))) should equal(Set(Set("Person", "Employee")))
     schema.combinationsFor(Set(Set("Dog"))) should equal(Set(Set("Dog", "Pet")))
     schema.combinationsFor(Set(Set("Pet", "Employee"))) should equal(Set())
-    schema.labels should equal(Set(Set("Person", "Employee", "Dog", "Pet")))
+    schema.labels should equal(Set("Person", "Employee", "Dog", "Pet"))
   }
 
   it("chaining calls should amend types") {
@@ -255,7 +255,7 @@ class PropertyGraphSchemaTest extends ApiBaseTest {
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
     )
 
-    schema.forRelationship(CTRelationship.empty) should equal(
+    schema.forRelationship(CTRelationship.empty(schema.relationshipTypes.toSeq: _*)) should equal(
       PropertyGraphSchema.empty
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
         .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)
@@ -263,7 +263,9 @@ class PropertyGraphSchemaTest extends ApiBaseTest {
         .withRelationshipPropertyKeys("OWNER")("since" -> CTInteger)
     )
 
-    schema.forRelationship(CTRelationship.empty("KNOWS", "LOVES")) should equal(
+    schema.forRelationship(
+      CTRelationship.empty("KNOWS", "LOVES")
+    ) should equal(
       PropertyGraphSchema.empty
         .withRelationshipPropertyKeys("KNOWS")("name" -> CTString)
         .withRelationshipPropertyKeys("LOVES")("deeply" -> CTBoolean, "salary" -> CTInteger)

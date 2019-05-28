@@ -73,7 +73,7 @@ object LabelPropertyMap {
 
 
     def cypherType(labels: Set[String]): Option[CTNode] = {
-      map.get(labels).map(CTNode(labels, _))
+      map.get(labels).map(CTNode.fromCombo(labels, _))
     }
 
     /**

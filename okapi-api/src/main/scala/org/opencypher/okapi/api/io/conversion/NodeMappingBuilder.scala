@@ -114,7 +114,7 @@ final case class NodeMappingBuilder(
 
   override def build: ElementMapping = {
     // TODO: fill the node with property information
-    val pattern: NodePattern = NodePattern(CTNode(impliedNodeLabels, Map.empty[String, CypherType]))
+    val pattern: NodePattern = NodePattern(CTNode.fromCombo(impliedNodeLabels, Map.empty[String, CypherType]))
     val properties: Map[PatternElement, Map[String, String]] = Map(pattern.nodeElement -> propertyMapping)
     val idKeys: Map[PatternElement, Map[IdKey, String]] = Map(pattern.nodeElement -> Map(SourceIdKey -> nodeIdKey))
 

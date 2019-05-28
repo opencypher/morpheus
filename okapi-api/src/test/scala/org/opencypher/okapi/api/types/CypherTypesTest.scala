@@ -56,15 +56,12 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTNode.empty(),
     CTNode.empty("Person"),
     CTNode.empty("Person", "Employee"),
-    CTNode(AnyOf.empty, Map.empty[String, CypherType], someGraphA),
-    CTNode(AnyOf("Person"), Map.empty[String, CypherType], someGraphA),
-    CTNode(AnyOf("Person", "Employee"), Map.empty[String, CypherType], someGraphA),
-    CTNode(AnyOf.empty, Map.empty[String, CypherType], someGraphB),
-    CTNode(AnyOf("Person"), Map.empty[String, CypherType], someGraphB),
-    CTNode(AnyOf("Person", "Employee"), Map.empty[String, CypherType], someGraphB),
+    CTNode.fromCombo(Set("Person"), Map.empty[String, CypherType], someGraphA),
+    CTNode.fromCombo(Set("Person", "Employee"), Map.empty[String, CypherType], someGraphA),
+    CTNode.fromCombo(Set("Person"), Map.empty[String, CypherType], someGraphB),
+    CTNode.fromCombo(Set("Person", "Employee"), Map.empty[String, CypherType], someGraphB),
     CTRelationship.empty("KNOWS"),
     CTRelationship.empty("KNOWS", "LOVES"),
-    CTRelationship.empty,
     CTRelationship(AnyOf("KNOWS"), Map.empty[String, CypherType], someGraphA),
     CTRelationship(AnyOf("KNOWS", "LOVES"),Map.empty[String, CypherType],  someGraphA),
     CTRelationship(AnyOf("KNOWS"), Map.empty[String, CypherType],  someGraphB),
@@ -84,14 +81,12 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     materialTypes ++ nullableTypes
 
   it("couldBe") {
-    CTAnyMaterial couldBeSameTypeAs CTNode.empty shouldBe true
-    CTNode.empty couldBeSameTypeAs CTAnyMaterial shouldBe true
+    CTAnyMaterial couldBeSameTypeAs CTNode.empty() shouldBe true
+    CTNode.empty() couldBeSameTypeAs CTAnyMaterial shouldBe true
     CTInteger couldBeSameTypeAs CTNumber shouldBe true
     CTNumber couldBeSameTypeAs CTInteger shouldBe true
     CTFloat couldBeSameTypeAs CTInteger shouldBe false
     CTBoolean couldBeSameTypeAs CTInteger shouldBe false
-
-    CTRelationship.empty couldBeSameTypeAs CTNode.empty shouldBe false
 
     CTList(CTInteger) couldBeSameTypeAs CTList(CTFloat) shouldBe false
     CTList(CTInteger) couldBeSameTypeAs CTList(CTAnyMaterial) shouldBe true
@@ -112,7 +107,7 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
   }
 
 //  it("intersects") {
-//    CTAnyMaterial intersects CTNode.empty shouldBe true
+//    CTAnyMaterial intersects CTNode.empty() shouldBe true
 //    CTNode intersects CTAnyMaterial shouldBe true
 //    CTInteger intersects CTNumber shouldBe true
 //    CTNumber intersects CTInteger shouldBe true
@@ -153,11 +148,11 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
       CTInteger -> ("INTEGER" -> "INTEGER?"),
       CTFloat -> ("FLOAT" -> "FLOAT?"),
       CTMap(Map("foo" -> CTString, "bar" -> CTInteger)) -> ("MAP(foo: STRING, bar: INTEGER)" -> "MAP(foo: STRING, bar: INTEGER)?"),
-//      CTNode.empty -> ("NODE" -> "NODE?"),
+//      CTNode.empty() -> ("NODE" -> "NODE?"),
 //      CTNode.empty("Person") -> ("NODE(:Person)" -> "NODE(:Person)?"),
 //      CTNode.empty("Person", "Employee") -> ("NODE(:Person:Employee)" -> "NODE(:Person:Employee)?"),
 //      CTNode(AnyOf("Person"), Map.empty[String, CypherType], Some(QualifiedGraphName("foo.bar"))) -> ("NODE(:Person) @ foo.bar" -> "NODE(:Person) @ foo.bar?"),
-//      CTRelationship.empty -> ("RELATIONSHIP" -> "RELATIONSHIP?"),
+//      CTRelationship.empty() -> ("RELATIONSHIP" -> "RELATIONSHIP?"),
 //      CTRelationship.empty("KNOWS") -> ("RELATIONSHIP(:KNOWS)" -> "RELATIONSHIP(:KNOWS)?"),
 //      CTRelationship.empty("KNOWS", "LOVES") -> ("RELATIONSHIP(:KNOWS|:LOVES)" -> "RELATIONSHIP(:KNOWS|:LOVES)?"),
 //      CTRelationship(AnyOf("KNOWS"),Map.empty[String, CypherType], Some(QualifiedGraphName("foo.bar"))) -> ("RELATIONSHIP(:KNOWS) @ foo.bar" -> "RELATIONSHIP(:KNOWS) @ foo.bar?"),
@@ -179,10 +174,6 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
 
   // todo add tests with properties
   it("RELATIONSHIP type") {
-    CTRelationship.empty().superTypeOf(CTRelationship.empty) shouldBe true
-    CTRelationship.empty().superTypeOf(CTRelationship.empty("KNOWS")) shouldBe true
-    CTRelationship.empty("KNOWS").superTypeOf(CTRelationship.empty) shouldBe false
-    CTRelationship.empty().subTypeOf(CTRelationship.empty("KNOWS")) shouldBe false
     CTRelationship.empty("KNOWS").superTypeOf(CTRelationship.empty("KNOWS")) shouldBe true
     CTRelationship.empty("KNOWS").superTypeOf(CTRelationship.empty("KNOWS", "LOVES")) shouldBe false
     CTRelationship.empty("KNOWS", "LOVES").superTypeOf(CTRelationship.empty("LOVES")) shouldBe true
@@ -191,8 +182,6 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
 
   // todo add tests with properties
   it("RELATIONSHIP? type") {
-    CTRelationship.empty.nullable.superTypeOf(CTRelationship.empty.nullable) shouldBe true
-    CTRelationship.empty.nullable.superTypeOf(CTRelationship.empty("KNOWS").nullable) shouldBe true
     CTRelationship.empty("KNOWS").nullable.superTypeOf(CTRelationship.empty("KNOWS").nullable) shouldBe true
     CTRelationship.empty("KNOWS").nullable.superTypeOf(CTRelationship.empty("KNOWS", "LOVES").nullable) shouldBe false
     CTRelationship.empty("KNOWS", "LOVES").nullable.superTypeOf(CTRelationship.empty("LOVES").nullable) shouldBe true
@@ -201,20 +190,20 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
   }
 
   it("NODE type") {
-    CTNode.empty().superTypeOf(CTNode.empty) shouldBe true
-    CTNode.empty().superTypeOf(CTNode.empty("Person")) shouldBe true
-    CTNode.empty("Person").superTypeOf(CTNode.empty) shouldBe false
+    CTNode.empty().superTypeOf(CTNode.empty()) shouldBe true
+    CTNode.empty().superTypeOf(CTNode.empty("Person")) shouldBe false
+    CTNode.empty("Person").superTypeOf(CTNode.empty()) shouldBe false
     CTNode.empty().subTypeOf(CTNode.empty("Person")) shouldBe false
     CTNode.empty("Person").superTypeOf(CTNode.empty("Person")) shouldBe true
     CTNode.empty("Person").superTypeOf(CTNode.empty("Person", "Employee")) shouldBe true
     CTNode.empty("Person", "Employee").superTypeOf(CTNode.empty("Employee")) shouldBe false
     CTNode.empty("Person").superTypeOf(CTNode.empty("Foo")) shouldBe false
-    CTNode.empty("Person").superTypeOf(CTNode.empty) shouldBe false
+    CTNode.empty("Person").superTypeOf(CTNode.empty()) shouldBe false
   }
 
   it("NODE? type") {
-    CTNode.empty.nullable.superTypeOf(CTNode.empty.nullable) shouldBe true
-    CTNode.empty.nullable.superTypeOf(CTNode.empty("Person").nullable) shouldBe true
+    CTNode.empty().nullable.superTypeOf(CTNode.empty().nullable) shouldBe true
+    CTNode.empty().nullable.superTypeOf(CTNode.empty("Person").nullable) shouldBe false
     CTNode.empty("Person").nullable.superTypeOf(CTNode.empty("Person").nullable) shouldBe true
     CTNode.empty("Person").nullable.superTypeOf(CTNode.empty("Person", "Employee").nullable) shouldBe true
     CTNode.empty("Person", "Employee").nullable.superTypeOf(CTNode.empty("Employee").nullable) shouldBe false
@@ -257,8 +246,7 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTAnyMaterial superTypeOf CTNumber shouldBe true
     CTAnyMaterial superTypeOf CTBoolean shouldBe true
     CTAnyMaterial superTypeOf CTMap() shouldBe true
-    CTAnyMaterial superTypeOf CTNode.empty shouldBe true
-    CTAnyMaterial superTypeOf CTRelationship.empty shouldBe true
+    CTAnyMaterial superTypeOf CTNode.empty() shouldBe true
     CTAnyMaterial superTypeOf CTPath shouldBe true
     CTAnyMaterial superTypeOf CTList(CTAnyMaterial) shouldBe true
     CTAnyMaterial superTypeOf CTVoid shouldBe true
@@ -270,8 +258,7 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTVoid subTypeOf CTNumber shouldBe true
     CTVoid subTypeOf CTBoolean shouldBe true
     CTVoid subTypeOf CTMap() shouldBe true
-    CTVoid subTypeOf CTNode.empty shouldBe true
-    CTVoid subTypeOf CTRelationship.empty shouldBe true
+    CTVoid subTypeOf CTNode.empty() shouldBe true
     CTVoid subTypeOf CTPath shouldBe true
     CTVoid subTypeOf CTList(CTAnyMaterial) shouldBe true
     CTVoid subTypeOf CTVoid shouldBe true
@@ -306,13 +293,14 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTAnyMaterial join CTInteger shouldBe CTAnyMaterial
 
     CTList(CTInteger) join CTList(CTFloat) shouldBe CTUnion(CTList(CTInteger), CTList(CTFloat))
-    CTList(CTInteger) join CTNode.empty shouldBe CTUnion(CTList(CTInteger), CTNode.empty)
+    CTList(CTInteger) join CTNode.empty() shouldBe CTUnion(CTList(CTInteger), CTNode.empty())
 
     CTAnyMaterial join CTVoid shouldBe CTAnyMaterial
     CTVoid join CTAnyMaterial shouldBe CTAnyMaterial
 
-    CTNode.empty("Car") join CTNode.empty shouldBe CTNode
-    CTNode join CTNode("Person") shouldBe CTNode
+    val rhsNodeType = CTNode(AnyOf.alternatives(Set("Car", "Animal")), Map.empty[String, CypherType], None)
+    CTNode.empty("Car") join rhsNodeType shouldBe rhsNodeType
+    CTNode.empty() join CTNode.empty("Person") shouldBe CTNode(AnyOf(Set(AllOf("Person"), AllOf.empty)), Map.empty[String, CypherType])
 
     CTNumber join CTBigDecimal(1, 1) shouldBe CTNumber
     CTBigDecimal(1, 1) join CTBigDecimal(1, 1) shouldBe CTBigDecimal(1, 1)
@@ -334,49 +322,52 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
   }
 
   it("join with labels and types") {
-    CTNode join CTNode("Person") shouldBe CTNode
-    CTNode("Other") join CTNode("Person") shouldBe CTUnion(CTNode("Other"), CTNode("Person"))
-    CTNode("Person") join CTNode("Person") shouldBe CTNode("Person")
-    CTNode("L1", "L2", "Lx") join CTNode("L1", "L2", "Ly") shouldBe CTUnion(CTNode("L1", "L2", "Lx"), CTNode("L1", "L2", "Ly"))
+    CTNode.empty() join CTNode.empty("Person") shouldBe CTNode(AnyOf(Set(AllOf(Set.empty[String]),   AllOf(Set("Person")))), Map.empty[String, CypherType])
+    CTNode.empty("Other") join CTNode.empty("Person") shouldBe CTNode(AnyOf.alternatives(Set("Person", "Other")), Map.empty[String, CypherType])
+    CTNode.empty("Person") join CTNode.empty("Person") shouldBe CTNode.empty("Person")
+    CTNode.empty("L1", "L2", "Lx") join CTNode.empty("L1", "L2", "Ly") shouldBe CTNode(
+      AnyOf(
+        Set(
+          AllOf("L1", "L2", "Lx"),
+          AllOf("L1", "L2", "Ly")
+        )
+      ),
+      Map.empty[String, CypherType]
+    )
 
-    CTRelationship join CTRelationship("KNOWS") shouldBe CTRelationship
-    CTRelationship("OTHER") join CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS", "OTHER")
-    CTRelationship("KNOWS") join CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS")
-    CTRelationship("T1", "T2", "Tx") join CTRelationship("T1", "T2", "Ty") shouldBe CTRelationship(
-      "T1",
-      "T2",
-      "Tx",
-      "Ty")
+    CTRelationship.empty("OTHER") join CTRelationship.empty("KNOWS") shouldBe CTRelationship.empty("KNOWS", "OTHER")
+    CTRelationship.empty("KNOWS") join CTRelationship.empty("KNOWS") shouldBe CTRelationship.empty("KNOWS")
+    CTRelationship.empty("T1", "T2", "Tx") join CTRelationship.empty("T1", "T2", "Ty") shouldBe CTRelationship.empty("T1", "T2", "Tx", "Ty")
   }
 
-  it("meet") {
-    CTInteger meet CTNumber shouldBe CTInteger
-    CTAnyMaterial meet CTNumber shouldBe CTNumber
+//  it("meet") {
+//    CTInteger meet CTNumber shouldBe CTInteger
+//    CTAnyMaterial meet CTNumber shouldBe CTNumber
+//
+//    CTList(CTInteger) meet CTList(CTFloat) shouldBe CTEmptyList
+//    CTList(CTInteger) meet CTNode shouldBe CTVoid
+//
+//    CTVoid meet CTInteger shouldBe CTVoid
+//    CTVoid meet CTAnyMaterial shouldBe CTVoid
+//
+//    CTInteger meet CTVoid shouldBe CTVoid
+//
+//    CTNode meet CTNode("Person") shouldBe CTNode("Person")
+//
+//    CTMap("age" -> CTInteger) meet CTMap() shouldBe CTMap("age" -> CTInteger.nullable)
+//    CTMap() meet CTMap("age" -> CTInteger)  shouldBe CTMap("age" -> CTInteger.nullable)
+//    CTMap("age" -> CTInteger) meet CTMap shouldBe CTMap("age" -> CTInteger)
+//  }
 
-    CTList(CTInteger) meet CTList(CTFloat) shouldBe CTEmptyList
-    CTList(CTInteger) meet CTNode shouldBe CTVoid
-
-    CTVoid meet CTInteger shouldBe CTVoid
-    CTVoid meet CTAnyMaterial shouldBe CTVoid
-
-    CTInteger meet CTVoid shouldBe CTVoid
-
-    CTNode meet CTNode("Person") shouldBe CTNode("Person")
-
-    CTMap("age" -> CTInteger) meet CTMap() shouldBe CTMap("age" -> CTInteger.nullable)
-    CTMap() meet CTMap("age" -> CTInteger)  shouldBe CTMap("age" -> CTInteger.nullable)
-    CTMap("age" -> CTInteger) meet CTMap shouldBe CTMap("age" -> CTInteger)
-  }
-
-  it("meet with labels and types") {
-    CTNode("Person") meet CTNode shouldBe CTNode("Person")
-    CTNode("Person") meet CTNode("Foo") shouldBe CTNode("Person", "Foo")
-    CTNode("Person", "Foo") meet CTNode("Foo") shouldBe CTNode("Person", "Foo")
-
-    CTRelationship("KNOWS") meet CTRelationship shouldBe CTRelationship("KNOWS")
-    CTRelationship("KNOWS") meet CTRelationship("LOVES") shouldBe CTVoid
-    CTRelationship("KNOWS", "LOVES") meet CTRelationship("LOVES") shouldBe CTRelationship("LOVES")
-  }
+//  it("meet with labels and types") {
+//    CTNode.empty("Person") meet CTNode.empty() shouldBe CTNode.empty("Person")
+//    CTNode.empty("Person") meet CTNode.empty("Foo") shouldBe CTNode.empty("Person", "Foo")
+//    CTNode.empty("Person", "Foo") meet CTNode.empty("Foo") shouldBe CTNode.empty("Person", "Foo")
+//
+//    CTRelationship.empty("KNOWS") meet CTRelationship shouldBe CTRelationship.empty("KNOWS")
+//    CTRelationship.empty("KNOWS") meet CTRelationship.empty("LOVES") shouldBe CTVoid
+//    CTRelationship.empty("KNOWS", "LOVES") meet CTRelationship.empty("LOVES") shouldBe CTRelationship.empty("LOVES")
+//  }
 
   it("type equality for all types") {
     for {
@@ -405,14 +396,15 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     allTypes.foreach(t => t superTypeOf t)
     allTypes.foreach(t => t subTypeOf t)
     allTypes.foreach(t => (t join t) == t)
-    allTypes.foreach(t => (t meet t) == t)
+//    allTypes.foreach(t => (t meet t) == t)
   }
 
-  it("contains nullable") {
-    CTNode.containsNullable shouldBe false
-    CTNode.nullable.containsNullable shouldBe true
-    CTList(CTAnyMaterial).containsNullable shouldBe false
-  }
+  // TODO: do we need that still?
+//  it("contains nullable") {
+//    CTNode.containsNullable shouldBe false
+//    CTNode.nullable.containsNullable shouldBe true
+//    CTList(CTAnyMaterial).containsNullable shouldBe false
+//  }
 
   it("as nullable as") {
     materialTypes.foreach { t =>
@@ -436,8 +428,13 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
 
   describe("fromName") {
 
+    // TODO enable parsing of CTNode and CTRelationship
     it("can parse CypherType names into CypherTypes") {
-      allTypes.foreach { t =>
+      allTypes.filterNot {
+        case _: CTElement => true
+        case u: CTUnion => u.alternatives.exists(_.isInstanceOf[CTElement])
+        case _ => false
+      }.foreach { t =>
         parseCypherType(t.name) should equal(Some(t))
       }
     }
@@ -447,22 +444,23 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
       parseCypherType(input) should equal(Some(CTMap(Map("foo bar_my baz" -> CTString))))
     }
 
-    it("can parse node types with escaped labels") {
-      val input = "Node(:`foo bar_my baz`:bar)"
-      parseCypherType(input) should equal(Some(CTNode("foo bar_my baz", "bar")))
-    }
-
-    it("can parse relationship types with escaped labels") {
-      val input = "Relationship(:`foo bar_my baz`|:bar)"
-      parseCypherType(input) should equal(Some(CTRelationship("foo bar_my baz", "bar")))
-    }
-
-    it("handles white space") {
-      val input =
-        """| Node  (
-           |        :`foo bar_my baz` :bar)""".stripMargin
-      parseCypherType(input) should equal(Some(CTNode("foo bar_my baz", "bar")))
-    }
+    // TODO enable parsing of CTNode and CTRelationship
+    //    it("can parse node types with escaped labels") {
+//      val input = "Node(:`foo bar_my baz`:bar)"
+//      parseCypherType(input) should equal(Some(CTNode.empty("foo bar_my baz", "bar")))
+//    }
+//
+//    it("can parse relationship types with escaped labels") {
+//      val input = "Relationship(:`foo bar_my baz`|:bar)"
+//      parseCypherType(input) should equal(Some(CTRelationship.empty("foo bar_my baz", "bar")))
+//    }
+//
+//    it("handles white space") {
+//      val input =
+//        """| Node  (
+//           |        :`foo bar_my baz` :bar)""".stripMargin
+//      parseCypherType(input) should equal(Some(CTNode.empty("foo bar_my baz", "bar")))
+//    }
   }
 
   it("types for literals") {
@@ -495,16 +493,16 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     }, minSuccessful(100))
   }
 
-  it("intersects map types with different properties") {
-    CTMap(Map("name" -> CTString)) & CTMap(Map("age" -> CTInteger)) should equal(
-      CTMap(Map("name" -> CTString.nullable, "age" -> CTInteger.nullable))
-    )
-  }
-
-  it("intersects map types with overlapping properties") {
-    CTMap(Map("name" -> CTString)) & CTMap(Map("name" -> CTInteger)) should equal(
-      CTMap(Map("name" -> (CTString | CTInteger)))
-    )
-  }
+//  it("intersects map types with different properties") {
+//    CTMap(Map("name" -> CTString)) & CTMap(Map("age" -> CTInteger)) should equal(
+//      CTMap(Map("name" -> CTString.nullable, "age" -> CTInteger.nullable))
+//    )
+//  }
+//
+//  it("intersects map types with overlapping properties") {
+//    CTMap(Map("name" -> CTString)) & CTMap(Map("name" -> CTInteger)) should equal(
+//      CTMap(Map("name" -> (CTString | CTInteger)))
+//    )
+//  }
 
 }
