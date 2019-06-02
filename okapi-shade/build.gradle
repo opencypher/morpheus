@@ -64,6 +64,7 @@ shadowJar {
             exclude(dependency("$it:"))
         }
     }
+    exclude "META-INF/maven/org.apache*/**"
     exclude "META-INF/versions/**/*"
     exclude "META-INF/services/**/*"
     exclude "META-INF/NOTICE*"
