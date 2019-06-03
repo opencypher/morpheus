@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.v9_0.util.{symbols => frontend}
 import org.scalatest.Assertion
+import org.opencypher.okapi.testing.support.CTElementCreationSupport._
 
 class toFrontendTypeTest extends BaseTestSuite {
 
@@ -55,10 +56,10 @@ class toFrontendTypeTest extends BaseTestSuite {
   }
 
   test("should convert element types") {
-    CTNode.empty shouldBeConvertedTo frontend.CTNode
-    CTNode.empty.nullable shouldBeConvertedTo frontend.CTNode
-    CTRelationship.empty shouldBeConvertedTo frontend.CTRelationship
-    CTRelationship.empty.nullable shouldBeConvertedTo frontend.CTRelationship
+    getNode shouldBeConvertedTo frontend.CTNode
+    getNode.nullable shouldBeConvertedTo frontend.CTNode
+    getRelationship shouldBeConvertedTo frontend.CTRelationship
+    getRelationship.nullable shouldBeConvertedTo frontend.CTRelationship
     CTPath shouldBeConvertedTo frontend.CTPath
   }
 

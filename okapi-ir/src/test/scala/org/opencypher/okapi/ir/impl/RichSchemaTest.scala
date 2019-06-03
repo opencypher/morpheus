@@ -33,6 +33,7 @@ import org.opencypher.okapi.ir.api.pattern.{DirectedRelationship, Pattern}
 import org.opencypher.okapi.testing.BaseTestSuite
 
 import scala.collection.immutable.ListMap
+import org.opencypher.okapi.testing.support.CTElementCreationSupport._
 
 class RichSchemaTest extends BaseTestSuite {
     describe("fromFields") {
@@ -45,12 +46,12 @@ class RichSchemaTest extends BaseTestSuite {
 
         val actual = Pattern(
           Set(
-            IRField("n")(CTNode.empty("Person")),
-            IRField("r")(CTRelationship.empty("BAR")),
-            IRField("m")(CTNode.empty("Person"))
+            IRField("n")(getNode("Person")),
+            IRField("r")(getRelationship("BAR")),
+            IRField("m")(getNode("Person"))
           ),
           ListMap(
-            IRField("r")(CTRelationship.empty("BAR")) -> DirectedRelationship(IRField("n")(CTNode.empty("Person")), IRField("m")(CTNode.empty("Person")))
+            IRField("r")(getRelationship("BAR")) -> DirectedRelationship(IRField("n")(getNode("Person")), IRField("m")(getNode("Person")))
           )
         ).fields.map(f => schema.forElementType(f.cypherType)).reduce(_ ++ _)
 
@@ -70,12 +71,12 @@ class RichSchemaTest extends BaseTestSuite {
 
         val actual = Pattern(
           Set(
-            IRField("n")(CTNode.empty("Person")),
-            IRField("r")(CTRelationship.empty("BAR")),
-            IRField("m")(CTNode.empty)
+            IRField("n")(getNode("Person")),
+            IRField("r")(getRelationship("BAR")),
+            IRField("m")(getNode)
           ),
           ListMap(
-            IRField("r")(CTRelationship.empty("BAR")) -> DirectedRelationship(IRField("n")(CTNode.empty("Person")), IRField("m")(CTNode.empty))
+            IRField("r")(getRelationship("BAR")) -> DirectedRelationship(IRField("n")(getNode("Person")), IRField("m")(getNode))
           )
         ).fields.map(f => schema.forElementType(f.cypherType)).reduce(_ ++ _)
 

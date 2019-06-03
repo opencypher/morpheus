@@ -26,6 +26,7 @@
  */
 package org.opencypher.okapi.ir.api.pattern
 
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.v9_0.expressions.SemanticDirection
 import org.opencypher.v9_0.expressions.SemanticDirection.OUTGOING
 import org.opencypher.okapi.api.types.CTRelationship
@@ -43,6 +44,8 @@ sealed trait Connection {
 
   def source: IRField
   def target: IRField
+
+  def updateFields(newFields: Set[IRField], schema: PropertyGraphSchema): Connection
 
   override def hashCode(): Int = orientation.hash(endpoints, seed)
   override def equals(obj: scala.Any): Boolean = super.equals(obj) || (obj != null && equalsIfNotEq(obj))
@@ -96,6 +99,12 @@ final case class DirectedRelationship(endpoints: DifferentEndpoints, semanticDir
     case other: DirectedRelationship => orientation.eqv(endpoints, other.endpoints)
     case _ => false
   }
+
+  override def updateFields(newFields: Set[IRField], schema: PropertyGraphSchema): Connection = {
+    val updatedSource = newFields.find(_ == endpoints.source).getOrElse(endpoints.source)
+    val updatedTarget = newFields.find(_ == endpoints.target).getOrElse(endpoints.target)
+    DirectedRelationship(Endpoints.two(updatedSource -> updatedTarget), semanticDirection)
+  }
 }
 
 case object DirectedRelationship {
@@ -112,6 +121,12 @@ final case class UndirectedRelationship(endpoints: DifferentEndpoints)
     case other: UndirectedRelationship => orientation.eqv(endpoints, other.endpoints)
     case _ => false
   }
+
+  override def updateFields(newFields: Set[IRField], schema: PropertyGraphSchema): Connection = {
+    val updatedSource = newFields.find(_ == endpoints.source).getOrElse(endpoints.source)
+    val updatedTarget = newFields.find(_ == endpoints.target).getOrElse(endpoints.target)
+    UndirectedRelationship(Endpoints.two(updatedSource -> updatedTarget))
+  }
 }
 
 case object UndirectedRelationship {
@@ -127,6 +142,12 @@ final case class CyclicRelationship(endpoints: IdenticalEndpoints) extends Singl
     case other: CyclicRelationship => orientation.eqv(endpoints, other.endpoints)
     case _ => false
   }
+
+  override def updateFields(newFields: Set[IRField], schema: PropertyGraphSchema): Connection = {
+    val updatedField = newFields.find(_ == endpoints.field).getOrElse(endpoints.field)
+    CyclicRelationship(Endpoints.one(updatedField))
+  }
+
 }
 
 object VarLengthRelationship {
@@ -153,6 +174,14 @@ final case class DirectedVarLengthRelationship(
     case other: DirectedVarLengthRelationship => orientation.eqv(endpoints, other.endpoints)
     case _ => false
   }
+
+  override def updateFields(newFields: Set[IRField], schema: PropertyGraphSchema): Connection = {
+    val updatedSource = newFields.find(_ == endpoints.source).getOrElse(endpoints.source)
+    val updatedTarget = newFields.find(_ == endpoints.target).getOrElse(endpoints.target)
+    val updatedEdgeType = edgeType.copy(properties = schema.relationshipPropertyKeysForTypes(edgeType.labels.unpackRelTypes()))
+    copy(edgeType = updatedEdgeType, endpoints = Endpoints.two(updatedSource -> updatedTarget))
+  }
+
 }
 
 final case class UndirectedVarLengthRelationship(edgeType: CTRelationship, endpoints: DifferentEndpoints, lower: Int, upper: Option[Int]) extends VarLengthRelationship with UndirectedConnection {
@@ -160,5 +189,12 @@ final case class UndirectedVarLengthRelationship(edgeType: CTRelationship, endpo
   override protected def equalsIfNotEq(obj: Any): Boolean = obj match {
     case other: UndirectedVarLengthRelationship => orientation.eqv(endpoints, other.endpoints)
     case _ => false
+  }
+
+  override def updateFields(newFields: Set[IRField], schema: PropertyGraphSchema): Connection = {
+    val updatedSource = newFields.find(_ == endpoints.source).getOrElse(endpoints.source)
+    val updatedTarget = newFields.find(_ == endpoints.target).getOrElse(endpoints.target)
+    val updatedEdgeType = edgeType.copy(properties = schema.relationshipPropertyKeysForTypes(edgeType.labels.unpackRelTypes()))
+    copy(edgeType = updatedEdgeType, endpoints = Endpoints.two(updatedSource -> updatedTarget))
   }
 }

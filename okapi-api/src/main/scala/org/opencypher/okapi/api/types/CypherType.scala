@@ -267,7 +267,7 @@ case class AnyOf(alternatives: Set[AllOf]) {
 
   def subsetOf(other: AnyOf): Boolean = alternatives.forall(alt => other.alternatives.exists(oalt => oalt.subsetOf(alt)))
 
-  def addLabelToAlternatives(labels: Set[String]): AnyOf = {
+  def addLabelsToAlternatives(labels: Set[String]): AnyOf = {
     this.copy(alternatives = alternatives.map(_.addLabels(labels)))
   }
 
@@ -277,6 +277,8 @@ case class AnyOf(alternatives: Set[AllOf]) {
   def ++(other: AnyOf): AnyOf = AnyOf(alternatives ++ other.alternatives)
 
   def size: Int = alternatives.size
+
+  def isEmpty: Boolean = ???
 }
 
 object AnyOf {
@@ -293,10 +295,12 @@ object AnyOf {
     * a single label.
     */
   def alternatives(labels: Set[String]): AnyOf = AnyOf(labels.map(combo => AllOf(Set(combo))))
+
+  def allLabels: AnyOf = AnyOf(Set.empty[AllOf])
 }
 
 sealed trait CTElement extends CypherType {
-  require(labels.alternatives.nonEmpty, "Label alternatives cannot be empty")
+//  require(labels.alternatives.nonEmpty, "Label alternatives cannot be empty")
 
   def labels: AnyOf
   def properties: Map[String, CypherType]
@@ -339,7 +343,7 @@ object CTRelationship {
   def fromAlternatives(
     labels: Set[String],
     properties: Map[String, CypherType],
-    maybeGraph: Option[QualifiedGraphName]): CTRelationship =
+    maybeGraph: Option[QualifiedGraphName] = None): CTRelationship =
     CTRelationship(AnyOf.alternatives(labels), properties, maybeGraph)
 }
 
@@ -348,7 +352,7 @@ case class CTRelationship(
   properties: Map[String, CypherType],
   override val graph: Option[QualifiedGraphName] = None
 ) extends CTElement {
-  require(labels.alternatives.forall(_.combo.nonEmpty), "A rel type must be set")
+//  require(labels.alternatives.forall(_.combo.nonEmpty), "A rel type must be set")
 
   override def withGraph(qgn: QualifiedGraphName): CTRelationship = copy(graph = Some(qgn))
   override def withoutGraph: CTRelationship = CTRelationship(labels, properties)

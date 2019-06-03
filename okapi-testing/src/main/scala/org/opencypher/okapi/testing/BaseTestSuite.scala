@@ -28,6 +28,8 @@ package org.opencypher.okapi.testing
 
 import org.junit.runner.RunWith
 import org.mockito.Mockito.when
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.api.schema.PropertyGraphSchema
@@ -53,7 +55,11 @@ abstract class BaseTestSuite extends FunSpec with Matchers with MockitoSugar wit
   }
 
   def testGraphSource(graphsWithSchema: (GraphName, PropertyGraphSchema)*): PropertyGraphDataSource = {
-    val gs = mock[PropertyGraphDataSource]
+    object NoneAnswer extends Answer[Option[PropertyGraphSchema]] {
+      override def answer(invocation: InvocationOnMock): Option[PropertyGraphSchema] = None
+    }
+
+    val gs = mock[PropertyGraphDataSource](NoneAnswer)
     graphsWithSchema.foreach {
       case (graphName, schema) => when(gs.schema(graphName)).thenReturn(Some(schema))
     }

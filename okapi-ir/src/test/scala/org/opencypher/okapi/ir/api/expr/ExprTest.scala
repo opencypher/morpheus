@@ -30,6 +30,7 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.testing.BaseTestSuite
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.okapi.impl.exception._
+import org.opencypher.okapi.testing.support.CTElementCreationSupport._
 
 class ExprTest extends BaseTestSuite {
 
@@ -38,18 +39,18 @@ class ExprTest extends BaseTestSuite {
     val r = Var("a")(CTString)
     n should equal(r)
 
-    val a = StartNode(Var("rel")(CTRelationship.empty))(CTAny)
-    val b = StartNode(Var("rel")(CTRelationship.empty))(CTNode.empty)
+    val a = StartNode(Var("rel")(getRelationship))(CTAny)
+    val b = StartNode(Var("rel")(getRelationship))(getNode)
     a should equal(b)
   }
 
   test("same expressions with different cypher types have the same hash code") {
-    val n = Var("a")(CTNode("a", Map.empty[String, CypherType]))
-    val r = Var("a")(CTRelationship("b", Map.empty[String, CypherType]))
+    val n = Var("a")(getNode)
+    val r = Var("a")(getRelationship)
     n.hashCode should equal(r.hashCode)
 
-    val a = StartNode(Var("rel")(CTRelationship.empty))(CTAny)
-    val b = StartNode(Var("rel")(CTRelationship.empty))(CTNode.empty)
+    val a = StartNode(Var("rel")(getRelationship))(CTAny)
+    val b = StartNode(Var("rel")(getRelationship))(getNode)
     a.hashCode should equal(b.hashCode)
   }
 
@@ -66,32 +67,33 @@ class ExprTest extends BaseTestSuite {
   }
 
   test("alias expression has updated type") {
-    val n = Var("n")(CTNode.empty)
+    val n = Var("n")(getNode)
     val aliasVar = Var("m")()
     (n as aliasVar).cypherType should equal(aliasVar.cypherType)
   }
 
   describe("CypherType computation") {
-    val a = Var("a")(CTNode.empty)
+    val a = Var("a")(getNode)
     val b = Var("b")(CTUnion(CTInteger, CTString))
     val c = Var("c")(CTUnion(CTInteger, CTString.nullable))
     val d = Var("d")(CTInteger.nullable)
     val e = Var("e")(CTString.nullable)
+    val f = Var("f")(CTBoolean)
     val datetime = Var("datetime")(CTLocalDateTime)
     val duration = Var("duration")(CTDuration)
     val number = Var("number")(CTNumber)
 
     it("types Coalesce correctly") {
-      Coalesce(List(a, b)).cypherType should equal(CTUnion(CTNode.empty, CTInteger, CTString))
+      Coalesce(List(f, b)).cypherType should equal(CTUnion(CTBoolean, CTInteger, CTString))
       Coalesce(List(b, c)).cypherType should equal(CTUnion(CTInteger, CTString))
-      Coalesce(List(a, b, c, d)).cypherType should equal(CTUnion(CTNode.empty, CTInteger, CTString))
+      Coalesce(List(a, b, c, d)).cypherType should equal(CTUnion(getNode, CTInteger, CTString))
 
       Coalesce(List(d,e)).cypherType should equal(CTUnion(CTInteger, CTString).nullable)
     }
 
     it("types ListSegment correctly") {
-      ListSegment(3, Var("list")(CTList(CTNode.empty))).cypherType should equalWithTracing(
-        CTNode.empty.nullable
+      ListSegment(3, Var("list")(CTList(getNode))).cypherType should equalWithTracing(
+        getNode.nullable
       )
 
       ListSegment(3, Var("list")(CTUnion(CTList(CTString), CTList(CTInteger)))).cypherType should equalWithTracing(
@@ -114,14 +116,14 @@ class ExprTest extends BaseTestSuite {
     }
 
     it("types ListLit correctly") {
-      ListLit(List(a, b)).cypherType should equal(CTList(CTUnion(CTNode.empty, CTInteger, CTString)))
+      ListLit(List(a, b)).cypherType should equal(CTList(CTUnion(getNode, CTInteger, CTString)))
       ListLit(List(b, c)).cypherType should equal(CTList(CTUnion(CTInteger, CTString.nullable)))
-      ListLit(List(a, b, c, d)).cypherType should equal(CTList(CTUnion(CTNode.empty, CTInteger, CTString).nullable))
+      ListLit(List(a, b, c, d)).cypherType should equal(CTList(CTUnion(getNode, CTInteger, CTString).nullable))
     }
 
     it("types Explode correctly") {
-      Explode(Var("list")(CTList(CTNode.empty))).cypherType should equalWithTracing(
-        CTNode
+      Explode(Var("list")(CTList(getNode))).cypherType should equalWithTracing(
+        getNode
       )
 
       Explode(Var("list")(CTUnion(CTList(CTString), CTList(CTInteger)))).cypherType should equalWithTracing(

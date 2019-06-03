@@ -39,6 +39,7 @@ import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.ir.impl.typer.UnTypedExpr
 import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
+import org.opencypher.okapi.testing.support.CTElementCreationSupport._
 
 import scala.collection.immutable.Set
 
@@ -52,7 +53,8 @@ class IrBuilderTest extends IrTestSuite {
           |  CREATE (a)
           |RETURN GRAPH""".stripMargin
 
-      query.asCypherQuery().model.result match {
+
+      query.asCypherQuery()(testGraphSchema).model.result match {
         case GraphResultBlock(_, IRPatternGraph(qgn, _, _, news, _, _)) =>
           news.fields.size should equal(1)
           val a = news.fields.head
@@ -89,7 +91,7 @@ class IrBuilderTest extends IrTestSuite {
         case GraphResultBlock(_, IRPatternGraph(qgn, _, clones, _, _, _)) =>
           clones.keys.size should equal(1)
           val (b, a) = clones.head
-          a should equal(NodeVar("a")(CTNode.empty))
+          a should equal(NodeVar("a")(getNode))
           a.asInstanceOf[Var].cypherType.graph should equal(Some(testGraph.qualifiedGraphName))
           b.cypherType.graph should equal(Some(qgn))
         case _ => fail("no matching graph result found")
@@ -767,7 +769,7 @@ class IrBuilderTest extends IrTestSuite {
           val matchBlock = model.findExactlyOne {
             case NoWhereBlock(MatchBlock(deps, Pattern(fields, topo, _, _), _, _, _)) =>
               deps should equalWithTracing(List(loadBlock))
-              fields should equal(Set[IRField]('a -> CTNode.empty, 'b -> CTNode.empty, 'r -> CTRelationship.empty))
+              fields should equal(Set[IRField]('a -> getNode, 'b -> getNode, 'r -> getRelationship))
               val map = Map(toField('r) -> DirectedRelationship('a, 'b))
               topo should equal(map)
           }
@@ -809,7 +811,7 @@ class IrBuilderTest extends IrTestSuite {
           val matchBlock = model.findExactlyOne {
             case MatchBlock(deps, Pattern(fields, topo, _, _), exprs, _, _) =>
               deps should equalWithTracing(List(loadBlock))
-              fields should equal(Set(toField('a -> CTNode.empty("Person"))))
+              fields should equal(Set(toField('a -> getNode("Person"))))
               topo shouldBe empty
               exprs should equalWithTracing(Set.empty)
           }
@@ -819,8 +821,8 @@ class IrBuilderTest extends IrTestSuite {
               deps should equalWithTracing(List(matchBlock))
               map should equal(
                 Map(
-                  toField('name) -> ElementProperty(Var("a")(CTNode.empty), PropertyKey("name"))(CTString),
-                  toField('age) -> ElementProperty(Var("a")(CTNode.empty), PropertyKey("age"))(CTInteger)
+                  toField('name) -> ElementProperty(Var("a")(getNode), PropertyKey("name"))(CTString),
+                  toField('age) -> ElementProperty(Var("a")(getNode), PropertyKey("age"))(CTInteger)
                 ))
           }
 

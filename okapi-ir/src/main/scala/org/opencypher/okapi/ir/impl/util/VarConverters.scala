@@ -49,9 +49,11 @@ object VarConverters {
 
   implicit def toVar(s: Symbol): Var = Var(s.name)()
 
-  def toNodeVar(s: Symbol): Var = NodeVar(s.name)(CTNode.empty)
+  // TODO: move to ir.test
+  def toNodeVar(s: Symbol): Var = NodeVar(s.name)(CTNode.empty())
 
-  def toRelVar(s: Symbol): Var = RelationshipVar(s.name)(CTRelationship.empty)
+  // TODO: see above
+  def toRelVar(s: Symbol): Var = RelationshipVar(s.name)(CTRelationship.empty("foo"))
 
   implicit def toVar(t: (Symbol, CypherType)): Var = Var(t._1.name)(t._2)
 

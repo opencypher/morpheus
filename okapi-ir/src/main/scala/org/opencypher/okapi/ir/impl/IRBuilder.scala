@@ -205,12 +205,30 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
       case ast.Match(optional, pattern, _, astWhere) =>
         for {
           pattern <- convertPattern(pattern)
+          context1 <- get[R, IRBuilderContext]
+          typedPattern <- {
+            val schema = context1.workingGraph.schema
+
+            val updatedFields = pattern.fields.map { field =>
+              field.cypherType match {
+                case CTNode(labels, _, qgn) =>
+                  val resolvedLabels = if(labels.alternatives.isEmpty) AnyOf(schema.allCombinations.map(AllOf(_))) else labels
+                  IRField(field.name)(CTNode(resolvedLabels, schema.nodePropertyKeysForCombinations(resolvedLabels.unpack()), qgn))
+
+                case CTRelationship(types, _, qgn) =>
+                  val resolvedLabels = if(types.alternatives.isEmpty) AnyOf.alternatives(schema.relationshipTypes) else types
+                  IRField(field.name)(CTRelationship(resolvedLabels, schema.relationshipPropertyKeysForTypes(resolvedLabels.unpackRelTypes()), qgn))
+              }
+            }
+
+            pure[R, Pattern](pattern.updateFields(updatedFields, schema))
+          }
           given <- convertWhere(astWhere)
           context <- get[R, IRBuilderContext]
           blocks <- {
             val blockRegistry = context.blockRegistry
             val after = blockRegistry.lastAdded.toList
-            val block = MatchBlock(after, pattern, given, optional, context.workingGraph)
+            val block = MatchBlock(after, typedPattern, given, optional, context.workingGraph)
 
             val typedOutputs = typedMatchBlock.outputs(block)
             val updatedRegistry = blockRegistry.register(block)
@@ -336,7 +354,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
                       case CTNode(ls, props, qualifiedGraphName) => (ls, props, qualifiedGraphName)
                       case other => throw UnsupportedOperationException(s"SET label on something that is not a node: $other")
                     }
-                    val labelsAfterSet = existingLabels.addLabelToAlternatives(labels)
+                    val labelsAfterSet = existingLabels.addLabelsToAlternatives(labels)
                     val updatedSchema = existingLabels.alternatives.foldLeft(currentSchema)((schema, labelCombo) => schema.addLabelsToCombo(labels, labelCombo.combo))
                     updatedSchema -> rewrittenVarTypes.updated(variable, CTNode(labelsAfterSet, existingProperties, existingQgn))
                   case SetPropertyItem(propertyKey, variable, setValue) =>
@@ -348,11 +366,25 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
             val patternGraphSchema = schemaForOnGraphUnion ++ patternSchemaWithSetItems
 
+            val updatedFields = createPattern.fields.map { field =>
+              field.cypherType match {
+                case CTNode(labels, _, qgn) =>
+                  val resolvedLabels = if(labels.alternatives.isEmpty) AnyOf(patternGraphSchema.allCombinations.map(AllOf(_))) else labels
+                  IRField(field.name)(CTNode(resolvedLabels, patternGraphSchema.nodePropertyKeysForCombinations(resolvedLabels.unpack()), qgn))
+
+                case CTRelationship(types, _, qgn) =>
+                  val resolvedLabels = if(types.alternatives.isEmpty) AnyOf.alternatives(patternGraphSchema.relationshipTypes) else types
+                  IRField(field.name)(CTRelationship(resolvedLabels, patternGraphSchema.relationshipPropertyKeysForTypes(resolvedLabels.unpackRelTypes()), qgn))
+              }
+            }
+
+            val updatedPattern = createPattern.updateFields(updatedFields, patternGraphSchema)
+
             val patternGraph = IRPatternGraph(
               qgn,
               patternGraphSchema,
               cloneItemMap,
-              createPattern,
+              updatedPattern,
               setItems,
               onGraphs)
             val updatedContext = context.withWorkingGraph(patternGraph).registerSchema(qgn, patternGraphSchema)

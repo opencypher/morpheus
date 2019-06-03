@@ -26,7 +26,9 @@
  */
 package org.opencypher.okapi.ir.api.pattern
 
+import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
+import org.opencypher.okapi.impl.exception.IllegalStateException
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.Binds
 import org.opencypher.okapi.ir.api.expr.MapExpression
@@ -46,7 +48,7 @@ final case class Pattern(
   fields: Set[IRField],
   topology: ListMap[IRField, Connection],
   properties: Map[IRField, MapExpression] = Map.empty,
-  baseFields: Map[IRField, IRField]= Map.empty
+  baseFields: Map[IRField, IRField] = Map.empty
 ) extends Binds {
 
   lazy val nodes: Set[IRField] = getElement[CTNode]
@@ -80,6 +82,31 @@ final case class Pattern(
     val newBaseFields = baseFields ++ other.baseFields
 
     Pattern(fields ++ other.fields, newTopology, properties ++ other.properties, newBaseFields)
+  }
+
+  def updateFields(newFields: Set[IRField], schema: PropertyGraphSchema): Pattern = {
+    val updatedTopology = topology.foldLeft(ListMap.empty[IRField, Connection]) {
+      case (acc, (oldField, connection)) => {
+        val updatedField = newFields.find(_ == oldField).getOrElse(oldField)
+        val updatedConnection = connection.updateFields(newFields, schema)
+        acc.updated(updatedField, updatedConnection)
+      }
+    }
+
+    val updatedProperties = properties.foldLeft(Map.empty[IRField, MapExpression]) {
+      case (acc, (oldField, mapExpr)) =>
+        val updatedField = newFields.find(_ == oldField).getOrElse(oldField)
+        acc.updated(updatedField, mapExpr)
+    }
+
+    val updatedBaseFields = baseFields.foldLeft(Map.empty[IRField, IRField]) {
+      case (acc, (lhsField, rhsField)) =>
+        val updatedLhsField = newFields.find(_ == lhsField).getOrElse(lhsField)
+        val updatedRhsField = newFields.find(_ == rhsField).getOrElse(rhsField)
+        acc.updated(updatedLhsField, updatedRhsField)
+    }
+
+    Pattern(newFields, updatedTopology, updatedProperties, updatedBaseFields)
   }
 
   private def verifyFieldTypes(map1: Map[String, CypherType], map2: Map[String, CypherType]): Unit = {

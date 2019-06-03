@@ -27,11 +27,12 @@
 package org.opencypher.okapi.ir.impl.block
 
 import org.opencypher.okapi.api.graph.QualifiedGraphName
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
+import org.opencypher.okapi.api.types.{AnyOf, CTNode, CTRelationship, CypherType}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api.block.MatchBlock
 import org.opencypher.okapi.ir.impl.IrTestSuite
 import org.opencypher.okapi.ir.impl.refactor.instances._
+import org.opencypher.okapi.testing.support.CTElementCreationSupport._
 
 class TypedMatchBlockTest extends IrTestSuite {
 
@@ -42,9 +43,9 @@ class TypedMatchBlockTest extends IrTestSuite {
 
     typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(
       Set(
-        "n" -> CTNode(Set(Set("Person"), Set("Foo")), Map.empty[String, CypherType], Some(testQualifiedGraphName)),
-        "r" -> CTRelationship(Set("TYPE"), Map.empty, Some(testQualifiedGraphName)),
-        "m" -> CTNode(Set.empty[Set[String]], Map.empty[String, CypherType], Some(testQualifiedGraphName))
+        "n" -> CTNode.fromCombo(Set("Person", "Foo"), Map.empty[String, CypherType], Some(testQualifiedGraphName)),
+        "r" -> CTRelationship.fromAlternatives(Set("TYPE"), Map.empty, Some(testQualifiedGraphName)),
+        "m" -> CTNode(AnyOf.allLabels, Map.empty[String, CypherType], Some(testQualifiedGraphName))
       ))
   }
 
@@ -53,9 +54,9 @@ class TypedMatchBlockTest extends IrTestSuite {
 
     typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(
       Set(
-        "n" -> CTNode(Set(Set("Person"), Set("Foo"), Set("Three")), Map.empty[String, CypherType], Some(testQualifiedGraphName)),
-        "r" -> CTRelationship(Set("TYPE"), Map.empty, Some(testQualifiedGraphName)),
-        "m" -> CTNode(Set.empty[Set[String]], Map.empty[String, CypherType], Some(testQualifiedGraphName))
+        "n" -> CTNode.fromCombo(Set("Person", "Foo", "Three"), Map.empty[String, CypherType], Some(testQualifiedGraphName)),
+        "r" -> CTRelationship.fromAlternatives(Set("TYPE"), Map.empty, Some(testQualifiedGraphName)),
+        "m" -> CTNode(AnyOf.allLabels, Map.empty[String, CypherType], Some(testQualifiedGraphName))
       ))
   }
 
@@ -65,7 +66,7 @@ class TypedMatchBlockTest extends IrTestSuite {
 
     typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(
       Set(
-        "r" -> CTRelationship.empty("TYPE"),
+        "r" -> getRelationship("TYPE"),
       ))
   }
 

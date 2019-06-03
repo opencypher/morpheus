@@ -44,6 +44,7 @@ import org.opencypher.v9_0.expressions.{Expression, LogicalVariable, RelTypeName
 import org.opencypher.v9_0.{expressions => ast}
 
 import scala.annotation.tailrec
+import scala.util.Try
 
 final class PatternConverter(irBuilderContext: IRBuilderContext) {
 
@@ -99,21 +100,21 @@ final class PatternConverter(irBuilderContext: IRBuilderContext) {
           case _ => None -> None
         }
 
-        val allLabels: AnyOf = maybeKnownLabels match {
-          case Some(knownLabels) => knownLabels.addLabelToAlternatives(patternLabels)
-          case None => AnyOf.combo(patternLabels)
+        val allLabels: AnyOf = (maybeKnownLabels, maybeBaseNodeLabels) match {
+          case (Some(knownLabels), _) => knownLabels.addLabelsToAlternatives(patternLabels)
+          case (None, Some(baseLabels)) => baseLabels.addLabelsToAlternatives(patternLabels)
+          case _ if patternLabels.nonEmpty => AnyOf.combo(patternLabels)
+          case _ => AnyOf.allLabels
         }
 
-        val schema = irBuilderContext.queryLocalCatalog.schema(qgnOption.getOrElse(qualifiedGraphName))
-        val propertySchema = schema.nodePropertyKeysForCombinations(allLabels.unpack)
+        val qgn = qgnOption.orElse(Some(irBuilderContext.workingGraph.qualifiedGraphName))
 
         val nodeVar = vOpt match {
-          case Some(v) => Var(v.name)(CTNode(allLabels, propertySchema, qgnOption))
-          case None => FreshVariableNamer(np.position.offset, CTNode(allLabels, propertySchema, qgnOption))
+          case Some(v) => Var(v.name)(CTNode(allLabels, Map.empty[String, CypherType], qgn))
+          case None => FreshVariableNamer(np.position.offset, CTNode(allLabels, Map.empty[String, CypherType], qgn))
         }
 
         val baseNodeField = baseNodeVar.map(x => IRField(x.name)(knownTypes(x)))
-
         for {
           element <- pure(IRField(nodeVar.name)(nodeVar.cypherType))
           _ <- modify[Pattern](_.withElement(element, extractProperties(propertiesOpt)).withBaseField(element, baseNodeField))
@@ -121,8 +122,8 @@ final class PatternConverter(irBuilderContext: IRBuilderContext) {
 
       case rc@ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, rangeOpt, propertiesOpt, dir, _, baseRelVar), right) =>
 
-        val relVar = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types, baseRelVar, qualifiedGraphName)
         val convertedProperties = extractProperties(propertiesOpt)
+        val relVar = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types, baseRelVar, qualifiedGraphName)
 
         val baseRelField = baseRelVar.map(x => IRField(x.name)(knownTypes(x)))
 
@@ -200,33 +201,32 @@ final class PatternConverter(irBuilderContext: IRBuilderContext) {
     offset: Int,
     eOpt: Option[LogicalVariable],
     types: Seq[RelTypeName],
-    baseRelOpt: Option[LogicalVariable],
+    maybeBaseRel: Option[LogicalVariable],
     qualifiedGraphName: QualifiedGraphName
   ): Var = {
 
     val patternTypes = types.map(_.name).toSet
 
-    val baseRelCypherTypeOpt = baseRelOpt.map(knownTypes)
-    val baseRelTypes = baseRelCypherTypeOpt.map(_.toCTRelationship.labels).getOrElse(AnyOf.empty)
+    val maybeBaseRelCypherType = maybeBaseRel.map(knownTypes)
+    val baseRelTypes = maybeBaseRelCypherType.map(_.toCTRelationship.labels)
 
     // types defined in outside scope, passed in by IRBuilder
-    val (knownRelTypes, qgnOption) = eOpt.flatMap(expr => knownTypes.get(expr)).flatMap {
-      case CTRelationship(t, _, qgn) => Some(t -> qgn)
-      case _ => None
-    }.getOrElse(AnyOf.empty -> Some(qualifiedGraphName))
-
-    val relTypes = {
-      if (patternTypes.nonEmpty) patternTypes
-      else if (baseRelTypes.nonEmpty) baseRelTypes.unpackRelTypes()
-      else knownRelTypes.unpackRelTypes()
+    val (knownRelTypes: Option[AnyOf], qgnOption: Option[QualifiedGraphName]) = eOpt.flatMap(expr => knownTypes.get(expr)) match {
+      case Some(CTRelationship(t, _, qgn)) => Some(t) -> qgn
+      case _ => None -> None
     }
 
-    val schema = irBuilderContext.queryLocalCatalog.schema(qgnOption.getOrElse(qualifiedGraphName))
-    val propertySchema = schema.relationshipPropertyKeysForTypes(relTypes)
+    val qgn = qgnOption.orElse(Some(irBuilderContext.workingGraph.qualifiedGraphName))
+
+    val relTypes = {
+      if (patternTypes.nonEmpty) AnyOf.alternatives(patternTypes)
+      else if (baseRelTypes.isDefined) baseRelTypes.get
+      else knownRelTypes.getOrElse(AnyOf.allLabels)
+    }
 
     val rel = eOpt match {
-      case Some(v) => Var(v.name)(CTRelationship(AnyOf(Set(AllOf(relTypes))), propertySchema, qgnOption))
-      case None => FreshVariableNamer(offset, CTRelationship(AnyOf(Set(AllOf(relTypes))), propertySchema, qgnOption))
+      case Some(v) => Var(v.name)(CTRelationship(relTypes, Map.empty[String, CypherType], qgn))
+      case None => FreshVariableNamer(offset, CTRelationship(relTypes, Map.empty[String, CypherType], qgn))
     }
     rel
   }

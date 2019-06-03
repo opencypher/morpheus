@@ -39,6 +39,7 @@ import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
 import org.opencypher.v9_0.ast.semantics.SemanticState
 import org.opencypher.v9_0.{expressions => ast}
 import org.scalatest.Assertion
+import org.opencypher.okapi.testing.support.CTElementCreationSupport._
 
 import scala.language.implicitConversions
 
@@ -59,10 +60,9 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     .map { case (n, t) => s"LIST_$n" -> CTList(t) }
 
   private val maps = Seq(
-    "NODE" -> CTNode.empty("Node"),
-    "NODE_EMPTY" -> CTNode.empty,
-    "REL" -> CTRelationship.empty("REL"),
-    "REL_EMPTY" -> CTRelationship.empty,
+    "NODE" -> CTNode.fromCombo(Set("Person"), Map("name" -> CTString, "age" -> CTInteger)),// getNode("Node"),
+    "NODE_EMPTY" -> getNode(),
+    "REL" -> getRelationship("REL"),
     "MAP" -> CTMap(simple.toMap),
     "MAP_EMPTY" -> CTMap()
   )

@@ -83,7 +83,7 @@ package object impl {
             innerCurrentSchema.withOverwrittenNodePropertyKeys(combo, updatedPropertyKeys)
           }
         case CTRelationship(types, _, _) =>
-          val typesToUpdate = if (types.isEmpty) schema.relationshipTypes else types.unpackRelTypes()
+          val typesToUpdate = types.unpackRelTypes()
           typesToUpdate.foldLeft(schema) { case (innerCurrentSchema, relType) =>
             val updatedPropertyKeys = innerCurrentSchema.relationshipPropertyKeys(relType).updated(propertyKey, propertyType)
             innerCurrentSchema.withOverwrittenRelationshipPropertyKeys(relType, updatedPropertyKeys)
