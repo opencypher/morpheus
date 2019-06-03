@@ -26,153 +26,194 @@
  */
 package org.opencypher.okapi.ir.api.pattern
 
-import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.ir.api._
-import org.opencypher.okapi.ir.api.block.Binds
+import org.opencypher.okapi.api.graph.{Connection, PatternElement, RelationshipElement}
 import org.opencypher.okapi.ir.api.expr.MapExpression
-import org.opencypher.okapi.ir.impl.exception.PatternConversionException
+//
+//import org.opencypher.okapi.api.types._
+//import org.opencypher.okapi.ir.api._
+//import org.opencypher.okapi.ir.api.block.Binds
+//import org.opencypher.okapi.ir.api.expr.MapExpression
+//import org.opencypher.okapi.ir.impl.exception.PatternConversionException
+//
+//import scala.annotation.tailrec
+//import scala.collection.immutable.ListMap
+//
+//case object Pattern {
+//  def empty[E]: Pattern = Pattern(fields = Set.empty, topology = ListMap.empty)
+//
+//  def node[E](node: IRField): Pattern = Pattern(fields = Set(node), topology = ListMap.empty)
+//}
+//
+//final case class Pattern(
+//  fields: Set[IRField],
+//  topology: ListMap[IRField, Connection],
+//  properties: Map[IRField, MapExpression] = Map.empty,
+//  baseFields: Map[IRField, IRField]= Map.empty
+//) extends Binds {
+//
+//  lazy val nodes: Set[IRField] = getElement(CTNode)
+//  lazy val rels: Set[IRField] = getElement(CTRelationship)
+//
+//  private def getElement(t: CypherType) =
+//    fields.collect { case e if e.cypherType.subTypeOf(t) => e }
+//
+//  /**
+//    * Fuse patterns but fail if they disagree in the definitions of elements or connections
+//    *
+//    * @return A pattern that contains all elements and connections of their input
+//    */
+//  def ++(other: Pattern): Pattern = {
+//    val thisMap = fields.map(f => f.name -> f.cypherType).toMap
+//    val otherMap = other.fields.map(f => f.name -> f.cypherType).toMap
+//
+//    verifyFieldTypes(thisMap, otherMap)
+//
+//    val conflicts = topology.keySet.intersect(other.topology.keySet).filter(k => topology(k) != other.topology(k))
+//    if (conflicts.nonEmpty) throw PatternConversionException(
+//      s"Expected disjoint patterns but found conflicting connection for ${conflicts.head}:\n" +
+//        s"${topology(conflicts.head)} and ${other.topology(conflicts.head)}")
+//    val newTopology = topology ++ other.topology
+//
+//    // Base field conflicts are checked by frontend
+//    val newBaseFields = baseFields ++ other.baseFields
+//
+//    Pattern(fields ++ other.fields, newTopology, properties ++ other.properties, newBaseFields)
+//  }
+//
+//  private def verifyFieldTypes(map1: Map[String, CypherType], map2: Map[String, CypherType]): Unit = {
+//    (map1.keySet ++ map2.keySet).foreach { f =>
+//      map1.get(f) -> map2.get(f) match {
+//        case (Some(t1), Some(t2)) =>
+//          if (t1 != t2)
+//            throw PatternConversionException(s"Expected disjoint patterns but found conflicting elements $f")
+//        case _ =>
+//      }
+//    }
+//  }
+//
+//  def connectionsFor(node: IRField): Map[IRField, Connection] = {
+//    topology.filter {
+//      case (_, c) => c.endpoints.contains(node)
+//    }
+//  }
+//
+//  def isEmpty: Boolean = this == Pattern.empty
+//
+//  def withConnection(key: IRField, connection: Connection, propertiesOpt: Option[MapExpression] = None): Pattern = {
+//    val withProperties: Pattern = propertiesOpt match {
+//      case Some(props) => copy(properties = properties.updated(key, props))
+//      case None => this
+//    }
+//
+//    if (topology.get(key).contains(connection)) withProperties else withProperties.copy(topology = topology.updated(key, connection))
+//  }
+//
+//  def withElement(field: IRField, propertiesOpt: Option[MapExpression] = None): Pattern = {
+//    val withProperties: Pattern = propertiesOpt match {
+//      case Some(props) => copy(properties = properties.updated(field, props))
+//      case None => this
+//    }
+//
+//    if (fields(field)) withProperties else withProperties.copy(fields = fields + field)
+//  }
+//
+//  def withBaseField(field: IRField, baseOpt: Option[IRField]): Pattern = baseOpt match {
+//    case Some(base) if fields.contains(field) => copy(baseFields = baseFields.updated(field, base))
+//    case _ => this
+//  }
+//
+//  def components: Set[Pattern] = {
+//    val _fields = fields.foldLeft(Map.empty[IRField, Int]) { case (m, f) => m.updated(f, m.size) }
+//    val components = nodes.foldLeft(Map.empty[Int, Pattern]) {
+//      case (m, f) => m.updated(_fields(f), Pattern.node(f))
+//    }
+//    computeComponents(topology.toSeq, components, _fields.size, _fields)
+//  }
+//
+//  @tailrec
+//  private def computeComponents(
+//    input: Seq[(IRField, Connection)],
+//    components: Map[Int, Pattern],
+//    count: Int,
+//    fieldToComponentIndex: Map[IRField, Int]
+//  ): Set[Pattern] = input match {
+//    case Seq((field, connection), tail@_*) =>
+//      val endpoints = connection.endpoints.toSet
+//      val links = endpoints.flatMap(fieldToComponentIndex.get)
+//
+//      if (links.isEmpty) {
+//        // Connection forms a new connected component on its own
+//        val newCount = count + 1
+//        val newPattern = Pattern(
+//          fields = fields intersect endpoints,
+//          topology = ListMap(field -> connection)
+//        ).withElement(field)
+//        val newComponents = components.updated(count, newPattern)
+//        val newFields = endpoints.foldLeft(fieldToComponentIndex) { case (m, endpoint) => m.updated(endpoint, count) }
+//        computeComponents(tail, newComponents, newCount, newFields)
+//      } else if (links.size == 1) {
+//        // Connection should be added to a single, existing component
+//        val link = links.head
+//        val oldPattern = components(link) // This is not supposed to fail
+//        val newPattern = oldPattern
+//          .withConnection(field, connection)
+//          .withElement(field)
+//        val newComponents = components.updated(link, newPattern)
+//        computeComponents(tail, newComponents, count, fieldToComponentIndex)
+//      } else {
+//        // Connection bridges two connected components
+//        val fusedPattern = links.flatMap(components.get).reduce(_ ++ _)
+//        val newPattern = fusedPattern
+//          .withConnection(field, connection)
+//          .withElement(field)
+//        val newCount = count + 1
+//        val newComponents = links
+//          .foldLeft(components) { case (m, l) => m - l }
+//          .updated(newCount, newPattern)
+//        val newFields = fieldToComponentIndex.mapValues(l => if (links(l)) newCount else l)
+//        computeComponents(tail, newComponents, newCount, newFields)
+//      }
+//
+//    case Seq() =>
+//      components.values.toSet
+//  }
+//
+//}
 
-import scala.annotation.tailrec
-import scala.collection.immutable.ListMap
 
-case object Pattern {
-  def empty[E]: Pattern = Pattern(fields = Set.empty, topology = ListMap.empty)
-
-  def node[E](node: IRField): Pattern = Pattern(fields = Set(node), topology = ListMap.empty)
+object Pattern {
+  def empty = Pattern(Set.empty, Map.empty, Map.empty, Map.empty)
 }
 
-final case class Pattern(
-  fields: Set[IRField],
-  topology: ListMap[IRField, Connection],
-  properties: Map[IRField, MapExpression] = Map.empty,
-  baseFields: Map[IRField, IRField]= Map.empty
-) extends Binds {
+case class Pattern(
+  elements: Set[PatternElement],
+  properties: Map[String, MapExpression],
+  topology: Map[String, Connection],
+  baseElements: Map[String, String]
+) {
+  def withElement(element: PatternElement, maybeProperties: Option[MapExpression] = None): Pattern = {
+    val updatedProperties = maybeProperties match {
+      case Some(props) => properties.updated(element.name, props)
+      case None => properties
+    }
 
-  lazy val nodes: Set[IRField] = getElement(CTNode)
-  lazy val rels: Set[IRField] = getElement(CTRelationship)
+    val updatedElements = if(elements.contains(element)) elements else elements + element
 
-  private def getElement(t: CypherType) =
-    fields.collect { case e if e.cypherType.subTypeOf(t) => e }
-
-  /**
-    * Fuse patterns but fail if they disagree in the definitions of elements or connections
-    *
-    * @return A pattern that contains all elements and connections of their input
-    */
-  def ++(other: Pattern): Pattern = {
-    val thisMap = fields.map(f => f.name -> f.cypherType).toMap
-    val otherMap = other.fields.map(f => f.name -> f.cypherType).toMap
-
-    verifyFieldTypes(thisMap, otherMap)
-
-    val conflicts = topology.keySet.intersect(other.topology.keySet).filter(k => topology(k) != other.topology(k))
-    if (conflicts.nonEmpty) throw PatternConversionException(
-      s"Expected disjoint patterns but found conflicting connection for ${conflicts.head}:\n" +
-        s"${topology(conflicts.head)} and ${other.topology(conflicts.head)}")
-    val newTopology = topology ++ other.topology
-
-    // Base field conflicts are checked by frontend
-    val newBaseFields = baseFields ++ other.baseFields
-
-    Pattern(fields ++ other.fields, newTopology, properties ++ other.properties, newBaseFields)
+    copy(elements = updatedElements, properties = updatedProperties)
   }
 
-  private def verifyFieldTypes(map1: Map[String, CypherType], map2: Map[String, CypherType]): Unit = {
-    (map1.keySet ++ map2.keySet).foreach { f =>
-      map1.get(f) -> map2.get(f) match {
-        case (Some(t1), Some(t2)) =>
-          if (t1 != t2)
-            throw PatternConversionException(s"Expected disjoint patterns but found conflicting elements $f")
-        case _ =>
-      }
+  def withBaseElement(target: PatternElement, maybeBase: Option[PatternElement]): Pattern = {
+    val withAddedElements = withElement(target)
+
+    maybeBase match {
+      case Some(base) => withAddedElements.withElement(base).copy(baseElements = withAddedElements.baseElements.updated(target.name, base.name))
+      case None => withAddedElements
     }
   }
 
-  def connectionsFor(node: IRField): Map[IRField, Connection] = {
-    topology.filter {
-      case (_, c) => c.endpoints.contains(node)
-    }
+  def withConnection(relElement: RelationshipElement, connection: Connection): Pattern = {
+    val withElementAdded = withElement(relElement)
+    withElementAdded.copy(topology = topology.updated(relElement.name, connection))
   }
-
-  def isEmpty: Boolean = this == Pattern.empty
-
-  def withConnection(key: IRField, connection: Connection, propertiesOpt: Option[MapExpression] = None): Pattern = {
-    val withProperties: Pattern = propertiesOpt match {
-      case Some(props) => copy(properties = properties.updated(key, props))
-      case None => this
-    }
-
-    if (topology.get(key).contains(connection)) withProperties else withProperties.copy(topology = topology.updated(key, connection))
-  }
-
-  def withElement(field: IRField, propertiesOpt: Option[MapExpression] = None): Pattern = {
-    val withProperties: Pattern = propertiesOpt match {
-      case Some(props) => copy(properties = properties.updated(field, props))
-      case None => this
-    }
-
-    if (fields(field)) withProperties else withProperties.copy(fields = fields + field)
-  }
-
-  def withBaseField(field: IRField, baseOpt: Option[IRField]): Pattern = baseOpt match {
-    case Some(base) if fields.contains(field) => copy(baseFields = baseFields.updated(field, base))
-    case _ => this
-  }
-
-  def components: Set[Pattern] = {
-    val _fields = fields.foldLeft(Map.empty[IRField, Int]) { case (m, f) => m.updated(f, m.size) }
-    val components = nodes.foldLeft(Map.empty[Int, Pattern]) {
-      case (m, f) => m.updated(_fields(f), Pattern.node(f))
-    }
-    computeComponents(topology.toSeq, components, _fields.size, _fields)
-  }
-
-  @tailrec
-  private def computeComponents(
-    input: Seq[(IRField, Connection)],
-    components: Map[Int, Pattern],
-    count: Int,
-    fieldToComponentIndex: Map[IRField, Int]
-  ): Set[Pattern] = input match {
-    case Seq((field, connection), tail@_*) =>
-      val endpoints = connection.endpoints.toSet
-      val links = endpoints.flatMap(fieldToComponentIndex.get)
-
-      if (links.isEmpty) {
-        // Connection forms a new connected component on its own
-        val newCount = count + 1
-        val newPattern = Pattern(
-          fields = fields intersect endpoints,
-          topology = ListMap(field -> connection)
-        ).withElement(field)
-        val newComponents = components.updated(count, newPattern)
-        val newFields = endpoints.foldLeft(fieldToComponentIndex) { case (m, endpoint) => m.updated(endpoint, count) }
-        computeComponents(tail, newComponents, newCount, newFields)
-      } else if (links.size == 1) {
-        // Connection should be added to a single, existing component
-        val link = links.head
-        val oldPattern = components(link) // This is not supposed to fail
-        val newPattern = oldPattern
-          .withConnection(field, connection)
-          .withElement(field)
-        val newComponents = components.updated(link, newPattern)
-        computeComponents(tail, newComponents, count, fieldToComponentIndex)
-      } else {
-        // Connection bridges two connected components
-        val fusedPattern = links.flatMap(components.get).reduce(_ ++ _)
-        val newPattern = fusedPattern
-          .withConnection(field, connection)
-          .withElement(field)
-        val newCount = count + 1
-        val newComponents = links
-          .foldLeft(components) { case (m, l) => m - l }
-          .updated(newCount, newPattern)
-        val newFields = fieldToComponentIndex.mapValues(l => if (links(l)) newCount else l)
-        computeComponents(tail, newComponents, newCount, newFields)
-      }
-
-    case Seq() =>
-      components.values.toSet
-  }
-
 }
+
