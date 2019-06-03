@@ -102,6 +102,25 @@ subprojects {
             }
         }
     }
+
+    // copied from https://stackoverflow.com/a/38058671/568723
+    task depSize  {
+        description 'Lists all dependencies sorted by their size'
+        doLast {
+            final formatStr = "%,10.2f"
+            final conf = configurations.default
+            final size = conf.collect { it.length() / (1024 * 1024) }.sum()
+            final out = new StringBuffer()
+            out << 'Total dependencies size:'.padRight(45)
+            out << "${String.format(formatStr, size)} Mb\n\n"
+            conf.sort { -it.length() }
+                    .each {
+                        out << "${it.name}".padRight(45)
+                        out << "${String.format(formatStr, (it.length() / 1024))} kb\n"
+                    }
+            println(out)
+        }
+    }
 }
 
 apply from: 'build.publishing.gradle'
