@@ -1640,6 +1640,17 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
       ))
     }
 
+    it("head on empty list") {
+      val result = morpheus.cypher(
+        """
+          |WITH [] AS things
+          |Return head(things) as head
+        """.stripMargin)
+      result.records.toMaps should equal(Bag(
+        CypherMap("head" -> null)
+      ))
+    }
+
     it("tail") {
       val result = morpheus.cypher(
         """
@@ -1651,6 +1662,17 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
       ))
     }
 
+    it("tail on empty list") {
+      val result = morpheus.cypher(
+        """
+          |WITH [] AS things
+          |Return tail(things) as tail
+        """.stripMargin)
+      result.records.toMaps should equal(Bag(
+        CypherMap("tail" -> null)
+      ))
+    }
+
     it("last") {
       val result = morpheus.cypher(
         """
@@ -1659,6 +1681,17 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
         """.stripMargin)
       result.records.toMaps should equal(Bag(
         CypherMap("last" -> 3)
+      ))
+    }
+
+    it("last on empty list") {
+      val result = morpheus.cypher(
+        """
+          |WITH [] AS things
+          |Return last(things) as last
+        """.stripMargin)
+      result.records.toMaps should equal(Bag(
+        CypherMap("last" -> null)
       ))
     }
   }

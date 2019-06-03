@@ -45,6 +45,7 @@ object MorpheusFunctions {
   val NULL_LIT: Column = lit(null)
   val TRUE_LIT: Column = lit(true)
   val FALSE_LIT: Column = lit(false)
+  val ZERO_LIT: Column = lit(0)
   val ONE_LIT: Column = lit(1)
   val E_LIT: Column = lit(Math.E)
   val PI_LIT: Column = lit(Math.PI)
@@ -77,8 +78,8 @@ object MorpheusFunctions {
 
   def list_slice(list: Column, maybeFrom: Option[Column], maybeTo: Option[Column]): Column = {
     val start = maybeFrom.map(_ + ONE_LIT).getOrElse(ONE_LIT)
-    val length = (maybeTo.getOrElse(size(list)) - start) + ONE_LIT
-    new Column(Slice(list.expr, start.expr, length.expr))
+    val length = If((size(list) === ZERO_LIT).expr, NULL_LIT.expr, ((maybeTo.getOrElse(size(list)) - start) + ONE_LIT).expr)
+    new Column(Slice(list.expr, start.expr, length))
   }
 
   /**

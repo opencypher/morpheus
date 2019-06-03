@@ -66,6 +66,16 @@ class ExpressionTests extends MorpheusTestSuite with ScanGraphInit with Checkers
       ))
     }
 
+    it("slice on empty list") {
+      val result = morpheus.cypher(
+        """
+          |WITH [] AS things
+          |Return things[1..] as r
+        """.stripMargin)
+      result.records.toMaps should equal(Bag(
+        CypherMap("r" -> null)
+      ))
+    }
   }
 
   describe("CASE") {
