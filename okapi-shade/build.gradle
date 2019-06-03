@@ -64,11 +64,15 @@ shadowJar {
             exclude(dependency("$it:"))
         }
     }
+    exclude "META-INF/maven/org.apache*/**"
     exclude "META-INF/versions/**/*"
     exclude "META-INF/services/**/*"
     exclude "META-INF/NOTICE*"
     exclude "META-INF/LICENSE*"
+    exclude "META-INF/DEPENDENCIES*"
     exclude "utf8.json"
+
+    metaInf { from tasks.licenseFile } 
 }
 
 assemble.dependsOn shadowJar
