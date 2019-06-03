@@ -27,7 +27,6 @@
 package org.opencypher.okapi.api.graph
 
 import org.opencypher.okapi.api.graph.Pattern._
-import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
 
 sealed trait Direction
 case object Outgoing extends Direction
@@ -37,16 +36,19 @@ case object Both extends Direction
 case class Connection(
   source: Option[PatternElement],
   target: Option[PatternElement],
-  direction: Direction
+  direction: Direction,
+  lower: Int = 1,
+  upper: Int = 1
 )
 
-/**
-  * Represents an element within a pattern, e.g. a node or a relationship
-  *
-  * @param name the elements name
-  * @param cypherType the elements CypherType
-  */
-case class PatternElement(name: String, cypherType: CypherType)
+trait PatternElement {
+  def name: String
+  def labels: Set[String]
+}
+
+case class NodeElement(name: String, labels: Set[String]) extends PatternElement
+case class RelationshipElement(name: String, labels: Set[String]) extends PatternElement
+
 
 object Pattern {
   val DEFAULT_NODE_NAME = "node"
@@ -78,7 +80,7 @@ sealed trait Pattern {
     *
     * @return the patterns topology
     */
-  def topology: Map[PatternElement, Connection]
+  def topology: Map[String, Connection]
 
   //TODO: to support general patterns implement a pattern matching algorithm
   /**
@@ -132,34 +134,34 @@ sealed trait Pattern {
   def superTypeOf(other: Pattern): Boolean = other.subTypeOf(this)
 }
 
-case class NodePattern(nodeType: CTNode) extends Pattern {
-  val nodeElement = PatternElement(DEFAULT_NODE_NAME, nodeType)
+case class NodePattern(nodeLabels: Set[String]) extends Pattern {
+  val nodeElement = NodeElement(DEFAULT_NODE_NAME, nodeLabels)
 
   override def elements: Set[PatternElement] = Set(nodeElement)
-  override def topology: Map[PatternElement, Connection] = Map.empty
+  override def topology: Map[String, Connection] = Map.empty
 
   override def subTypeOf(other: Pattern): Boolean = other match {
-    case NodePattern(otherNodeType) => nodeType.withoutGraph.subTypeOf(otherNodeType.withoutGraph)
+    case NodePattern(otherNodeLabels) => nodeLabels.subsetOf(otherNodeLabels) || otherNodeLabels.isEmpty
     case _ => false
   }
 }
 
-case class RelationshipPattern(relType: CTRelationship) extends Pattern {
-  val relElement = PatternElement(DEFAULT_REL_NAME, relType)
+case class RelationshipPattern(relTypes: Set[String]) extends Pattern {
+  val relElement = RelationshipElement(DEFAULT_REL_NAME, relTypes)
 
   override def elements: Set[PatternElement] = Set(relElement)
-  override def topology: Map[PatternElement, Connection] = Map.empty
+  override def topology: Map[String, Connection] = Map.empty
 
   override def subTypeOf(other: Pattern): Boolean = other match {
-    case RelationshipPattern(otherRelType) => relType.withoutGraph.subTypeOf(otherRelType.withoutGraph)
+    case RelationshipPattern(otherRelTypes) => relTypes.subsetOf(otherRelTypes) || otherRelTypes.isEmpty
     case _ => false
   }
 }
 
-case class NodeRelPattern(nodeType: CTNode, relType: CTRelationship) extends Pattern {
+case class NodeRelPattern(nodeLabels: Set[String], relTypes: Set[String]) extends Pattern {
 
-  val nodeElement = PatternElement(DEFAULT_NODE_NAME, nodeType)
-  val relElement = PatternElement(DEFAULT_REL_NAME, relType)
+  val nodeElement = NodeElement(DEFAULT_NODE_NAME, nodeLabels)
+  val relElement = RelationshipElement(DEFAULT_REL_NAME, relTypes)
 
   override def elements: Set[PatternElement] = {
     Set(
@@ -168,21 +170,20 @@ case class NodeRelPattern(nodeType: CTNode, relType: CTRelationship) extends Pat
     )
   }
 
-  override def topology: Map[PatternElement, Connection] = Map(
-    relElement -> Connection(Some(nodeElement), None, Outgoing)
+  override def topology: Map[String, Connection] = Map(
+    relElement.name -> Connection(Some(nodeElement), None, Outgoing)
   )
 
   override def subTypeOf(other: Pattern): Boolean = other match {
-    case NodeRelPattern(otherNodeType, otherRelType) =>
-      nodeType.withoutGraph.subTypeOf(otherNodeType.withoutGraph) && relType.withoutGraph.subTypeOf(otherRelType.withoutGraph)
+    case NodeRelPattern(otherNodeLabels, otherRelTypes) => (nodeLabels.subsetOf(otherNodeLabels) || otherNodeLabels.isEmpty) && (relTypes.subsetOf(otherRelTypes) || otherRelTypes.isEmpty)
     case _ => false
   }
 }
 
-case class TripletPattern(sourceNodeType: CTNode, relType: CTRelationship, targetNodeType: CTNode) extends Pattern {
-  val sourceElement = PatternElement("source_" + DEFAULT_NODE_NAME, sourceNodeType)
-  val targetElement = PatternElement("target_" + DEFAULT_NODE_NAME, targetNodeType)
-  val relElement = PatternElement(DEFAULT_REL_NAME, relType)
+case class TripletPattern(sourceNodeLabels: Set[String], relTypes: Set[String], targetNodeLabels: Set[String]) extends Pattern {
+  val sourceElement = NodeElement("source_" + DEFAULT_NODE_NAME, sourceNodeLabels)
+  val targetElement = NodeElement("target_" + DEFAULT_NODE_NAME, targetNodeLabels)
+  val relElement = RelationshipElement(DEFAULT_REL_NAME, relTypes)
 
   override def elements: Set[PatternElement] = Set(
     sourceElement,
@@ -190,15 +191,15 @@ case class TripletPattern(sourceNodeType: CTNode, relType: CTRelationship, targe
     targetElement
   )
 
-  override def topology: Map[PatternElement, Connection] = Map(
+  override def topology: Map[String, Connection] = Map(
     relElement -> Connection(Some(sourceElement), Some(targetElement), Outgoing)
   )
 
   override def subTypeOf(other: Pattern): Boolean = other match {
     case tr: TripletPattern =>
-      sourceNodeType.withoutGraph.subTypeOf(tr.sourceNodeType.withoutGraph) &&
-      relType.withoutGraph.subTypeOf(tr.relType.withoutGraph) &&
-      targetNodeType.withoutGraph.subTypeOf(tr.targetNodeType.withoutGraph)
+      (sourceNodeLabels.subsetOf(tr.sourceNodeLabels) || tr.sourceNodeLabels.isEmpty) &&
+      (relTypes.subsetOf(tr.relTypes) || tr.relTypes.isEmpty) &&
+      (targetNodeLabels.subsetOf(tr.targetNodeLabels) || tr.targetNodeLabels.isEmpty)
     case _ => false
   }
 }

@@ -31,11 +31,10 @@ import cats.data.State
 import cats.data.State._
 import cats.instances.list._
 import cats.syntax.flatMap._
-import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.graph.{Pattern => _, _}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.impl.types.CypherTypeUtils._
-import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
 import org.opencypher.okapi.ir.api.util.FreshVariableNamer
@@ -83,7 +82,7 @@ final class PatternConverter(irBuilderContext: IRBuilderContext) {
     p: ast.PatternElement,
     knownTypes: Map[ast.Expression, CypherType],
     qualifiedGraphName: QualifiedGraphName
-  ): Result[IRField] =
+  ): Result[PatternElement] =
     p match {
 
       case np@ast.NodePattern(vOpt, labels: Seq[ast.LabelName], propertiesOpt, baseNodeVar) =>
@@ -101,79 +100,62 @@ final class PatternConverter(irBuilderContext: IRBuilderContext) {
 
         val allLabels = patternLabels ++ knownLabels ++ baseNodeLabels
 
-        val nodeVar = vOpt match {
-          case Some(v) => Var(v.name)(CTNode(allLabels, qgnOption))
-          case None => FreshVariableNamer(np.position.offset, CTNode(allLabels, qgnOption))
+        val elementName = vOpt.map(_.name).getOrElse(FreshVariableNamer(np.position.offset, CTNode).name)
+
+        val maybeBaseNodeElement = baseNodeVar.map { x =>
+          val labels = knownTypes(x) match {
+            case CTNode(labels, _ ) => labels
+            case _ => ???
+          }
+          NodeElement(x.name, labels)
         }
 
-        val baseNodeField = baseNodeVar.map(x => IRField(x.name)(knownTypes(x)))
-
         for {
-          element <- pure(IRField(nodeVar.name)(nodeVar.cypherType))
-          _ <- modify[Pattern](_.withElement(element, extractProperties(propertiesOpt)).withBaseField(element, baseNodeField))
+          element <- pure(NodeElement(elementName, allLabels))
+          _ <- modify[Pattern](_.withElement(element, extractProperties(propertiesOpt)).withBaseElement(element, maybeBaseNodeElement))
         } yield element
 
-      case rc@ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, rangeOpt, propertiesOpt, dir, _, baseRelVar), right) =>
+      case rc@ast.RelationshipChain(left, ast.RelationshipPattern(eOpt, types, rangeOpt, propertiesOpt, direction, _, baseRelVar), right) =>
 
-        val relVar = createRelationshipVar(knownTypes, rc.position.offset, eOpt, types, baseRelVar, qualifiedGraphName)
+        val relElement = createRelationshipElement(knownTypes, rc.position.offset, eOpt, types, baseRelVar, qualifiedGraphName)
         val convertedProperties = extractProperties(propertiesOpt)
 
-        val baseRelField = baseRelVar.map(x => IRField(x.name)(knownTypes(x)))
+        val maybeBaseRelElement = baseRelVar.map { x =>
+          val relTypes = knownTypes(x) match {
+            case CTRelationship(types, _ ) => types
+            case _ => ???
+          }
+          RelationshipElement(x.name, relTypes)
+        }
 
         for {
           source <- convertElement(left, knownTypes, qualifiedGraphName)
           target <- convertElement(right, knownTypes, qualifiedGraphName)
-          rel <- pure(IRField(relVar.name)(if (rangeOpt.isDefined) CTList(relVar.cypherType) else relVar.cypherType))
           _ <- modify[Pattern] { given =>
             val registered = given
-              .withElement(rel)
-              .withBaseField(rel, baseRelField)
+              .withElement(relElement, convertedProperties)
+              .withBaseElement(relElement, maybeBaseRelElement)
 
-            rangeOpt match {
+            val bounds = rangeOpt match {
               case Some(Some(range)) =>
                 val lower = range.lower.map(_.value.intValue()).getOrElse(1)
                 val upper = range.upper
                   .map(_.value.intValue())
                   .getOrElse(throw NotImplementedException("Support for unbounded var-length not yet implemented"))
-                val relType = relVar.cypherType.toCTRelationship
 
-                Endpoints.apply(source, target) match {
-                  case _: IdenticalEndpoints =>
-                    throw NotImplementedException("Support for cyclic var-length not yet implemented")
-
-                  case ends: DifferentEndpoints =>
-                    dir match {
-                      case OUTGOING =>
-                        registered.withConnection(rel, DirectedVarLengthRelationship(relType, ends, lower, Some(upper), OUTGOING), convertedProperties)
-
-                      case INCOMING =>
-                        registered.withConnection(rel, DirectedVarLengthRelationship(relType, ends.flip, lower, Some(upper), INCOMING), convertedProperties)
-
-                      case BOTH =>
-                        registered.withConnection(rel, UndirectedVarLengthRelationship(relType, ends.flip, lower, Some(upper)), convertedProperties)
-                    }
-                }
-
-              case None =>
-                Endpoints.apply(source, target) match {
-                  case ends: IdenticalEndpoints =>
-                    registered.withConnection(rel, CyclicRelationship(ends), convertedProperties)
-
-                  case ends: DifferentEndpoints =>
-                    dir match {
-                      case OUTGOING =>
-                        registered.withConnection(rel, DirectedRelationship(ends, OUTGOING), convertedProperties)
-
-                      case INCOMING =>
-                        registered.withConnection(rel, DirectedRelationship(ends.flip, INCOMING), convertedProperties)
-
-                      case BOTH =>
-                        registered.withConnection(rel, UndirectedRelationship(ends), convertedProperties)
-                    }
-                }
-
-              case _ => throw NotImplementedException(s"Support for pattern conversion of $rc not yet implemented")
+                lower -> upper
+              case None => 1 -> 1
             }
+
+            val (src, tgt, dir) = direction match {
+              case OUTGOING => (source, target, Outgoing)
+              case INCOMING => (target, source, Incoming)
+              case BOTH => (source, target, Both)
+            }
+
+            val connection = Connection(Some(src), Some(tgt), dir, bounds._1, bounds._2)
+
+            registered.withConnection(relElement, connection)
           }
         } yield target
 
@@ -189,14 +171,14 @@ final class PatternConverter(irBuilderContext: IRBuilderContext) {
     }
   }
 
-  private def createRelationshipVar(
+  private def createRelationshipElement(
     knownTypes: Map[Expression, CypherType],
     offset: Int,
     eOpt: Option[LogicalVariable],
     types: Seq[RelTypeName],
     baseRelOpt: Option[LogicalVariable],
     qualifiedGraphName: QualifiedGraphName
-  ): Var = {
+  ): RelationshipElement = {
 
     val patternTypes = types.map(_.name).toSet
 
@@ -215,11 +197,9 @@ final class PatternConverter(irBuilderContext: IRBuilderContext) {
       else knownRelTypes
     }
 
-    val rel = eOpt match {
-      case Some(v) => Var(v.name)(CTRelationship(relTypes, qgnOption))
-      case None => FreshVariableNamer(offset, CTRelationship(relTypes, qgnOption))
-    }
-    rel
+    val relName = eOpt.map(_.name).getOrElse(FreshVariableNamer(offset, CTRelationship).name)
+
+    RelationshipElement(relName , relTypes)
   }
 
   private def stomp[T](result: Result[T]): Result[Unit] = result >> pure(())
