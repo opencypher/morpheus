@@ -1704,7 +1704,11 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
           |       ({friends: 'Eve; Bob', delimiter:";"})
         """.stripMargin)
 
-      a[UnsupportedOperationException] shouldBe thrownBy(graph.cypher("""MATCH (n) RETURN split(n.friends, n.delimiter)""").records)
+      val result = graph.cypher("""MATCH (n) RETURN split(n.friends, n.delimiter) as split""")
+      result.records.toMaps should equal(Bag(
+        CypherMap("split" -> List("Eve", "Bob")),
+        CypherMap("split" -> List("Bob", "Eve"))
+      ))
     }
   }
 
