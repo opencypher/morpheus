@@ -86,6 +86,10 @@ subprojects {
         }
     }
 
+    task licenseFile {
+        outputs.file(project.parent.file('LICENSE.txt'))
+    }
+
     task dependencySearch(type: DependencyInsightReportTask) {
         description 'Searches all projects for a dependency'
         group 'help'

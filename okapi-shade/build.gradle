@@ -69,7 +69,10 @@ shadowJar {
     exclude "META-INF/services/**/*"
     exclude "META-INF/NOTICE*"
     exclude "META-INF/LICENSE*"
+    exclude "META-INF/DEPENDENCIES*"
     exclude "utf8.json"
+
+    metaInf { from tasks.licenseFile } 
 }
 
 assemble.dependsOn shadowJar
