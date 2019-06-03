@@ -69,7 +69,6 @@ object TestSparkSession {
     // Store Hive MetaStore (derby) in memory only
     conf.set("javax.jdo.option.ConnectionURL", s"jdbc:derby:memory:;databaseName=metastore_db;create=true")
     conf.set("javax.jdo.option.ConnectionDriverName", "org.apache.derby.jdbc.EmbeddedDriver")
-    conf.set("hive.metastore.warehouse.dir", s"${System.getProperty("java.io.tmpdir")}${File.separator}hive-warehouse-${System.nanoTime()}")
     //
     // If this is slow, you might be hitting: http://bugs.java.com/view_bug.do?bug_id=8077102
     //
