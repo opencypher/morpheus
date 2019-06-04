@@ -99,6 +99,8 @@ object MorpheusSession extends Serializable {
     conf.set("spark.sql.codegen.wholeStage", "true")
     conf.set("spark.sql.shuffle.partitions", "12")
     conf.set("spark.default.parallelism", "8")
+    // Required for left outer join without join expressions in OPTIONAL MATCH (leads to cartesian product)
+    conf.set("spark.sql.crossJoin.enabled", "true")
 
     //    setting for debug
     //    conf.set("spark.sql.shuffle.partitions", "1")
