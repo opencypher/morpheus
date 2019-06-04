@@ -28,63 +28,50 @@ package org.opencypher.okapi.ir.impl
 
 import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.ir.api.IRField
-import org.opencypher.okapi.ir.api.pattern.{DirectedRelationship, Pattern}
 import org.opencypher.okapi.testing.BaseTestSuite
 
-import scala.collection.immutable.ListMap
-
 class RichSchemaTest extends BaseTestSuite {
-    describe("fromFields") {
-      it("can convert fields in a pattern") {
-        val schema = PropertyGraphSchema.empty
-          .withNodePropertyKeys("Person")("name" -> CTString)
-          .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
-          .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
-          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
 
-        val actual = Pattern(
-          Set(
-            IRField("n")(CTNode("Person")),
-            IRField("r")(CTRelationship("BAR")),
-            IRField("m")(CTNode("Person"))
-          ),
-          ListMap(
-            IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode("Person")))
-          )
-        ).fields.map(f => schema.forElementType(f.cypherType)).reduce(_ ++ _)
+  describe("fromFields") {
+    it("can convert fields in a pattern") {
+      val schema = PropertyGraphSchema.empty
+        .withNodePropertyKeys("Person")("name" -> CTString)
+        .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
+        .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
+        .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
 
-        val expected = PropertyGraphSchema.empty
-          .withNodePropertyKeys("Person")("name" -> CTString)
-          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
+      val actual = Set(
+        CTNode("Person"),
+        CTRelationship("BAR"),
+        CTNode("Person")
+      ).map(f => schema.forElementType(f)).reduce(_ ++ _)
 
-        actual should be(expected)
-      }
+      val expected = PropertyGraphSchema.empty
+        .withNodePropertyKeys("Person")("name" -> CTString)
+        .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
 
-      it("can compute a schema when a field is unknown") {
-        val schema = PropertyGraphSchema.empty
-          .withNodePropertyKeys("Person")("name" -> CTString)
-          .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
-          .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
-          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
-
-        val actual = Pattern(
-          Set(
-            IRField("n")(CTNode("Person")),
-            IRField("r")(CTRelationship("BAR")),
-            IRField("m")(CTNode())
-          ),
-          ListMap(
-            IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode()))
-          )
-        ).fields.map(f => schema.forElementType(f.cypherType)).reduce(_ ++ _)
-
-        val expected = PropertyGraphSchema.empty
-          .withNodePropertyKeys("Person")("name" -> CTString)
-          .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
-          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
-
-        actual should be(expected)
-      }
+      actual should be(expected)
     }
+
+    it("can compute a schema when a field is unknown") {
+      val schema = PropertyGraphSchema.empty
+        .withNodePropertyKeys("Person")("name" -> CTString)
+        .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
+        .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
+        .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
+
+      val actual = Set(
+        CTNode("Person"),
+        CTRelationship("BAR"),
+        CTNode()
+      ).map(f => schema.forElementType(f)).reduce(_ ++ _)
+
+      val expected = PropertyGraphSchema.empty
+        .withNodePropertyKeys("Person")("name" -> CTString)
+        .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
+        .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
+
+      actual should be(expected)
+    }
+  }
 }

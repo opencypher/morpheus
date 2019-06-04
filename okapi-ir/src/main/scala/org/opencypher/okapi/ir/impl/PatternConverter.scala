@@ -144,6 +144,7 @@ final class PatternConverter(irBuilderContext: IRBuilderContext) {
                   .getOrElse(throw NotImplementedException("Support for unbounded var-length not yet implemented"))
 
                 lower -> upper
+              case Some(None) => throw NotImplementedException("Support for unbounded var-length not yet implemented")
               case None => 1 -> 1
             }
 

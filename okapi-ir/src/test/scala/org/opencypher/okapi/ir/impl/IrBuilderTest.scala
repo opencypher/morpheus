@@ -26,8 +26,8 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
-import org.opencypher.okapi.api.schema.{PropertyKeys, PropertyGraphSchema}
+import org.opencypher.okapi.api.graph._
+import org.opencypher.okapi.api.schema.{PropertyGraphSchema, PropertyKeys}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
@@ -53,10 +53,10 @@ class IrBuilderTest extends IrTestSuite {
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery().model.result match {
-        case GraphResultBlock(_, IRPatternGraph(qgn, _, _, news, _, _)) =>
-          news.fields.size should equal(1)
-          val a = news.fields.head
-          a.cypherType.graph should equal(Some(qgn))
+        case GraphResultBlock(_, IRPatternGraph(qgn, _, _, pattern, _, _)) =>
+          pattern.elements.size should equal(1)
+          val a = pattern.elements.head
+          a.labels shouldBe(empty)
         case _ => fail("no matching graph result found")
       }
     }
@@ -240,7 +240,7 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
-    it("computes a pattern graph schema correctly -  for copied nodes") {
+    it("computes a pattern graph schema correctly - for copied nodes") {
 
       val graphName = GraphName("input")
       val inputSchema = PropertyGraphSchema.empty
@@ -283,7 +283,7 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
-    it("computes a pattern graph schema correctly -  for copied nodes with additional Label") {
+    it("computes a pattern graph schema correctly - for copied nodes with additional Label") {
 
       val graphName = GraphName("input")
       val inputSchema = PropertyGraphSchema.empty
@@ -294,7 +294,7 @@ class IrBuilderTest extends IrTestSuite {
           |FROM GRAPH testNamespace.input
           |MATCH (a: A)
           |CONSTRUCT
-          |  CREATE (b COPY OF a:B)
+          |  CREATE (b COPY OF a :B)
           |RETURN GRAPH""".stripMargin
 
       query.asCypherQuery(graphName -> inputSchema).model.result match {
@@ -731,11 +731,13 @@ class IrBuilderTest extends IrTestSuite {
           }
 
           val matchBlock = model.findExactlyOne {
-            case MatchBlock(deps, Pattern(fields, topo, _, _), exprs, _, _) =>
+            case MatchBlock(deps, Fields(fields), Pattern(elements, _, topo, _), exprs, _, _) =>
               deps should equalWithTracing(List(loadBlock))
-              fields should equal(Set(toField('a -> CTNode("Person"))))
+              elements should equal(Set(NodeElement("a")(Set("Person"))))
               topo shouldBe empty
               exprs should equalWithTracing(Set.empty)
+
+              fields.keySet should equal(Set(toField('a -> CTNode("Person"))))
           }
 
           val projectBlock = model.findExactlyOne {
@@ -765,11 +767,18 @@ class IrBuilderTest extends IrTestSuite {
           }
 
           val matchBlock = model.findExactlyOne {
-            case NoWhereBlock(MatchBlock(deps, Pattern(fields, topo, _, _), _, _, _)) =>
+            case NoWhereBlock(MatchBlock(deps, Fields(fields), Pattern(elements, _, topo, _), _, _, _)) =>
               deps should equalWithTracing(List(loadBlock))
-              fields should equal(Set[IRField]('a -> CTNode, 'b -> CTNode, 'r -> CTRelationship))
-              val map = Map(toField('r) -> DirectedRelationship('a, 'b))
+              val aElement = NodeElement("a")(Set.empty)
+              val bElement = NodeElement("b")(Set.empty)
+              val rElement = RelationshipElement("r")(Set.empty)
+
+              elements should equal(Set(aElement,bElement,rElement))
+
+              val map = Map("r" -> Connection(Some(aElement), Some(bElement), Outgoing))
               topo should equal(map)
+
+              fields.keySet should equal(Set[IRField]('a -> CTNode, 'b -> CTNode, 'r -> CTRelationship))
           }
 
           val projectBlock = model.findExactlyOne {
@@ -807,11 +816,14 @@ class IrBuilderTest extends IrTestSuite {
           }
 
           val matchBlock = model.findExactlyOne {
-            case MatchBlock(deps, Pattern(fields, topo, _, _), exprs, _, _) =>
+            case MatchBlock(deps, Fields(fields), Pattern(elements, _, topo, _), exprs, _, _) =>
               deps should equalWithTracing(List(loadBlock))
-              fields should equal(Set(toField('a -> CTNode("Person"))))
               topo shouldBe empty
               exprs should equalWithTracing(Set.empty)
+
+              elements should equal(Set(NodeElement("a")(Set("Person"))))
+
+              fields.keySet should equal(Set(toField('a -> CTNode("Person"))))
           }
 
           val projectBlock1 = model.findExactlyOne {

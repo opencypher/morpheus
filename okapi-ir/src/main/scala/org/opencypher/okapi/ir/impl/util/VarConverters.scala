@@ -26,7 +26,6 @@
  */
 package org.opencypher.okapi.ir.impl.util
 
-import org.opencypher.okapi.api.graph.PatternElement
 import org.opencypher.okapi.api.types.CypherType
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr.{NodeVar, RelationshipVar, Var}
@@ -37,10 +36,6 @@ object VarConverters {
 
   implicit class RichIrField(val f: IRField) extends AnyVal {
     def toVar: Var = Var(f.name)(f.cypherType)
-  }
-
-  implicit class RichPatternElement(val e: PatternElement) extends AnyVal {
-    def toVar: Var = Var(e.name)(e.cypherType)
   }
 
   implicit def toVar(f: IRField): Var = f.toVar

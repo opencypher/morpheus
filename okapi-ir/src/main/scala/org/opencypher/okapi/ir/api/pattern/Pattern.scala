@@ -28,6 +28,7 @@ package org.opencypher.okapi.ir.api.pattern
 
 import org.opencypher.okapi.api.graph.{Connection, PatternElement, RelationshipElement}
 import org.opencypher.okapi.ir.api.expr.MapExpression
+import org.opencypher.okapi.ir.impl.exception.PatternConversionException
 //
 //import org.opencypher.okapi.api.types._
 //import org.opencypher.okapi.ir.api._
@@ -206,7 +207,7 @@ case class Pattern(
     val withAddedElements = withElement(target)
 
     maybeBase match {
-      case Some(base) => withAddedElements.withElement(base).copy(baseElements = withAddedElements.baseElements.updated(target.name, base.name))
+      case Some(base) => withAddedElements.copy(baseElements = withAddedElements.baseElements.updated(target.name, base.name))
       case None => withAddedElements
     }
   }
@@ -214,6 +215,37 @@ case class Pattern(
   def withConnection(relElement: RelationshipElement, connection: Connection): Pattern = {
     val withElementAdded = withElement(relElement)
     withElementAdded.copy(topology = topology.updated(relElement.name, connection))
+  }
+
+  def ++(other: Pattern): Pattern = {
+        val thisMap = elements.map(f => f.name -> f).toMap
+        val otherMap = other.elements.map(f => f.name -> f).toMap
+
+        verifyFieldTypes(thisMap, otherMap)
+
+        val conflicts = topology.keySet.intersect(other.topology.keySet).filter(k => topology(k) != other.topology(k))
+        if (conflicts.nonEmpty) throw PatternConversionException(
+          s"Expected disjoint patterns but found conflicting connection for ${conflicts.head}:\n" +
+            s"${topology(conflicts.head)} and ${other.topology(conflicts.head)}")
+        val newTopology = topology ++ other.topology
+
+        // Base field conflicts are checked by frontend
+        val newBaseElements = baseElements ++ other.baseElements
+
+        Pattern(elements ++ other.elements, properties ++ other.properties, newTopology, newBaseElements)
+      }
+
+  def containsElement(name: String): Boolean = elements.exists(_.name == name)
+
+  private def verifyFieldTypes(map1: Map[String, PatternElement], map2: Map[String, PatternElement]): Unit = {
+    (map1.keySet ++ map2.keySet).foreach { f =>
+      map1.get(f) -> map2.get(f) match {
+        case (Some(t1), Some(t2)) =>
+          if (t1 != t2)
+            throw PatternConversionException(s"Expected disjoint patterns but found conflicting elements $f")
+        case _ =>
+      }
+    }
   }
 }
 

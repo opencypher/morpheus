@@ -26,12 +26,13 @@
  */
 package org.opencypher.okapi.ir.impl
 
-import org.opencypher.okapi.api.graph.GraphName
+import org.opencypher.okapi.api.graph.{GraphName, NodeElement, RelationshipElement}
 import org.opencypher.okapi.api.schema.PropertyGraphSchema
+import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block._
-import org.opencypher.okapi.ir.api.expr.Expr
+import org.opencypher.okapi.ir.api.expr.{Expr, Var}
 import org.opencypher.okapi.ir.api.pattern.Pattern
 import org.opencypher.okapi.ir.impl.parse.CypherParser
 import org.opencypher.okapi.testing.BaseTestSuite
@@ -55,8 +56,16 @@ abstract class IrTestSuite extends BaseTestSuite {
     given: Set[Expr] = Set.empty) =
     ProjectBlock(after, fields, given, testGraph)
 
-  protected def matchBlock(pattern: Pattern): Block =
-    MatchBlock(List(leafBlock), pattern, Set.empty, false, testGraph)
+  protected def matchBlock(pattern: Pattern): Block = {
+    val fields = pattern.elements.collect {
+      case NodeElement(name, labels) => IRField(name)(CTNode(labels)) -> Var(name)(CTNode(labels))
+      case RelationshipElement(name, types) => IRField(name)(CTRelationship(types)) -> Var(name)(CTRelationship(types))
+    }.toMap
+
+    MatchBlock(List(leafBlock), Fields(fields), pattern, Set.empty, false, testGraph)
+  }
+
+
 
   def irFor(root: Block): SingleQuery = {
     val result = TableResultBlock(

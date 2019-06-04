@@ -41,14 +41,13 @@ case class Connection(
   upper: Int = 1
 )
 
-trait PatternElement {
+sealed trait PatternElement {
   def name: String
   def labels: Set[String]
 }
 
-case class NodeElement(name: String, labels: Set[String]) extends PatternElement
-case class RelationshipElement(name: String, labels: Set[String]) extends PatternElement
-
+case class NodeElement(name: String)(override val labels: Set[String]) extends PatternElement
+case class RelationshipElement(name: String)(override val labels: Set[String]) extends PatternElement
 
 object Pattern {
   val DEFAULT_NODE_NAME = "node"
@@ -135,7 +134,7 @@ sealed trait Pattern {
 }
 
 case class NodePattern(nodeLabels: Set[String]) extends Pattern {
-  val nodeElement = NodeElement(DEFAULT_NODE_NAME, nodeLabels)
+  val nodeElement = NodeElement(DEFAULT_NODE_NAME)(nodeLabels)
 
   override def elements: Set[PatternElement] = Set(nodeElement)
   override def topology: Map[String, Connection] = Map.empty
@@ -147,7 +146,7 @@ case class NodePattern(nodeLabels: Set[String]) extends Pattern {
 }
 
 case class RelationshipPattern(relTypes: Set[String]) extends Pattern {
-  val relElement = RelationshipElement(DEFAULT_REL_NAME, relTypes)
+  val relElement = RelationshipElement(DEFAULT_REL_NAME)(relTypes)
 
   override def elements: Set[PatternElement] = Set(relElement)
   override def topology: Map[String, Connection] = Map.empty
@@ -160,8 +159,8 @@ case class RelationshipPattern(relTypes: Set[String]) extends Pattern {
 
 case class NodeRelPattern(nodeLabels: Set[String], relTypes: Set[String]) extends Pattern {
 
-  val nodeElement = NodeElement(DEFAULT_NODE_NAME, nodeLabels)
-  val relElement = RelationshipElement(DEFAULT_REL_NAME, relTypes)
+  val nodeElement = NodeElement(DEFAULT_NODE_NAME)(nodeLabels)
+  val relElement = RelationshipElement(DEFAULT_REL_NAME)(relTypes)
 
   override def elements: Set[PatternElement] = {
     Set(
@@ -181,9 +180,9 @@ case class NodeRelPattern(nodeLabels: Set[String], relTypes: Set[String]) extend
 }
 
 case class TripletPattern(sourceNodeLabels: Set[String], relTypes: Set[String], targetNodeLabels: Set[String]) extends Pattern {
-  val sourceElement = NodeElement("source_" + DEFAULT_NODE_NAME, sourceNodeLabels)
-  val targetElement = NodeElement("target_" + DEFAULT_NODE_NAME, targetNodeLabels)
-  val relElement = RelationshipElement(DEFAULT_REL_NAME, relTypes)
+  val sourceElement = NodeElement("source_" + DEFAULT_NODE_NAME)(sourceNodeLabels)
+  val targetElement = NodeElement("target_" + DEFAULT_NODE_NAME)(targetNodeLabels)
+  val relElement = RelationshipElement(DEFAULT_REL_NAME)(relTypes)
 
   override def elements: Set[PatternElement] = Set(
     sourceElement,

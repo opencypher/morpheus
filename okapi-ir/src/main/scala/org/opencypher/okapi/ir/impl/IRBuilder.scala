@@ -29,7 +29,7 @@ package org.opencypher.okapi.ir.impl
 import cats.implicits._
 import org.atnos.eff._
 import org.atnos.eff.all._
-import org.opencypher.okapi.api.graph.QualifiedGraphName
+import org.opencypher.okapi.api.graph.{NodeElement, PatternElement, QualifiedGraphName, RelationshipElement}
 import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherString
@@ -42,7 +42,6 @@ import org.opencypher.okapi.ir.api.set.{SetItem, SetLabelItem, SetPropertyItem}
 import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.ir.impl.refactor.instances._
-import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
 import org.opencypher.v9_0.ast.QueryPart
 import org.opencypher.v9_0.util.InputPosition
 import org.opencypher.v9_0.{ast, expressions => exp}
@@ -132,7 +131,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
       case ast.SingleQuery(clauses) =>
         val plannedBlocks = for {
           context <- get[R, IRBuilderContext]
-          blocks <-  put[R, IRBuilderContext](context.resetRegistry) >> clauses.toList.traverse(convertClause[R])
+          blocks <- put[R, IRBuilderContext](context.resetRegistry) >> clauses.toList.traverse(convertClause[R])
         } yield blocks
         plannedBlocks >> convertRegistry
 
@@ -205,12 +204,14 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
       case ast.Match(optional, pattern, _, astWhere) =>
         for {
           pattern <- convertPattern(pattern)
+          afterPatternContext <- get[R, IRBuilderContext]
+          patternFieldsToVars <- typePattern(pattern, afterPatternContext.workingGraph.qualifiedGraphName, afterPatternContext.workingGraph.schema)
           given <- convertWhere(astWhere)
           context <- get[R, IRBuilderContext]
           blocks <- {
             val blockRegistry = context.blockRegistry
             val after = blockRegistry.lastAdded.toList
-            val block = MatchBlock(after, pattern, given, optional, context.workingGraph)
+            val block = MatchBlock(after, Fields(patternFieldsToVars), pattern, given, optional, context.workingGraph)
 
             val typedOutputs = typedMatchBlock.outputs(block)
             val updatedRegistry = blockRegistry.register(block)
@@ -297,12 +298,14 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
             val explicitCloneItemMap = explicitCloneItems.toMap
 
             // Items from other graphs that are cloned by default
-            val implicitCloneItems = createPattern.fields.filterNot { f =>
-              f.cypherType.graph.get == qgn || explicitCloneItemMap.keys.exists(_.name == f.name)
+            val implicitCloneItems = createPattern.elements.filterNot { f =>
+              !context.knownTypes.contains(exp.Variable(f.name)(InputPosition.NONE)) || explicitCloneItemMap.keys.exists(_.name == f.name)
             }
+
             val implicitCloneItemMap = implicitCloneItems.map { f =>
               // Convert field to clone item
-              IRField(f.name)(f.cypherType.withGraph(qgn)) -> f.toVar
+              val cypherType = context.knownTypes(exp.Variable(f.name)(InputPosition.NONE))
+              IRField(f.name)(cypherType.withGraph(qgn)) -> Var(f.name)(cypherType)
             }.toMap
             val cloneItemMap = implicitCloneItemMap ++ explicitCloneItemMap
 
@@ -313,18 +316,16 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
             // we can currently only clone relationships that are also part of a new pattern
             cloneItemMap.keys.foreach { cloneFieldAlias =>
               cloneFieldAlias.cypherType match {
-                case _: CTRelationship if !createPattern.fields.contains(cloneFieldAlias) =>
+                case _: CTRelationship if !createPattern.containsElement(cloneFieldAlias.name) =>
                   throw UnsupportedOperationException(s"Can only clone relationship ${cloneFieldAlias.name} if it is also part of a CREATE pattern")
                 case _ => ()
               }
             }
 
-            val fieldsInNewPattern = createPattern
-              .fields
-              .filterNot(cloneItemMap.contains)
+            val fieldsInNewPattern = createPattern.elements.filterNot(el => cloneItemMap.keySet.exists(_.name == el.name))
 
             val patternSchema = fieldsInNewPattern.foldLeft(cloneSchema) { case (acc, next) =>
-              val newFieldSchema = schemaForNewField(next, createPattern, context)
+              val newFieldSchema = schemaForNewElement(next, createPattern, context)
               acc ++ newFieldSchema
             }
 
@@ -356,9 +357,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
               setItems,
               onGraphs)
             val updatedContext = context.withWorkingGraph(patternGraph).registerSchema(qgn, patternGraphSchema)
-            put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block]](List.empty)
+            put[R, IRBuilderContext](updatedContext) >> pure[R, (List[Block], Pattern, PropertyGraphSchema)]((List.empty, createPattern, patternGraphSchema))
           }
-        } yield refs
+          _ <- typePattern[R](refs._2, qgn, refs._3)
+        } yield refs._1
 
       case ast.ReturnGraph(None) =>
         for {
@@ -542,14 +544,56 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
   ): Eff[R, Pattern] = {
     for {
       context <- get[R, IRBuilderContext]
-      result <- {
-        val pattern = context.convertPattern(p, qgn)
-        val patternTypes = pattern.fields.foldLeft(context.knownTypes) {
-          case (acc, f) => acc.updated(exp.Variable(f.name)(InputPosition.NONE), f.cypherType)
-        }
-        put[R, IRBuilderContext](context.copy(knownTypes = patternTypes)) >> pure[R, Pattern](pattern)
-      }
+      result <- pure[R, Pattern](context.convertPattern(p, qgn))
     } yield result
+  }
+
+  private def typePattern[R: _hasContext](
+    pattern: Pattern,
+    graphName: QualifiedGraphName,
+    schema: PropertyGraphSchema
+  ): Eff[R, Map[IRField, Expr]] = {
+    for {
+      context <- get[R, IRBuilderContext]
+      fieldsToVars <- {
+        val schema = context.workingGraph.schema
+
+        val knownVarTypes = context.knownTypes.collect {
+          case (v: exp.Variable, ct) => v.name -> ct
+        }
+
+        val elementTypes = pattern.elements.foldLeft(Map.empty[String, CypherType]) {
+          case (acc, e: PatternElement) if knownVarTypes.keySet.contains(e.name) =>
+            val knownCypherType = knownVarTypes(e.name)
+
+            e -> knownCypherType match {
+              case (_: NodeElement, _: CTNode) =>
+              case (_: RelationshipElement, _: CTRelationship) =>
+              case _ => throw IllegalArgumentException(s"Pattern variable ${e.name} to have type $knownCypherType", e)
+            }
+
+            acc.updated(e.name, knownCypherType)
+
+          case (acc, n: NodeElement) =>
+            val cypherType = CTNode(n.labels, Some(graphName))
+            acc.updated(n.name, cypherType)
+
+          case (acc, r: RelationshipElement) =>
+            val cypherType = CTRelationship(r.labels, Some(graphName))
+            acc.updated(r.name, cypherType)
+        }
+
+        val fieldToVar = elementTypes.map {
+          case (name, ct) => IRField(name)(ct) -> Var(name)(ct)
+        }
+
+        val updatedKnownTypes = elementTypes.foldLeft(context.knownTypes) {
+          case (knownTypes, (name, ct)) => knownTypes.updated(exp.Variable(name)(InputPosition.NONE), ct)
+        }
+
+        put[R, IRBuilderContext](context.copy(knownTypes = updatedKnownTypes)) >> pure[R, Map[IRField, Var]](fieldToVar)
+      }
+    } yield fieldsToVars
   }
 
   private def convertExpr[R: _mayFail : _hasContext](e: Option[exp.Expression]): Eff[R, Option[Expr]] =
@@ -604,21 +648,24 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
     }
   }
 
-  private def schemaForNewField(field: IRField, pattern: Pattern, context: IRBuilderContext): PropertyGraphSchema = {
-    val baseFieldSchema = pattern.baseFields.get(field).map { baseNode =>
-      schemaForElementType(context, baseNode.cypherType)
-    }.getOrElse(PropertyGraphSchema.empty)
+  private def schemaForNewElement(element: PatternElement, pattern: Pattern, context: IRBuilderContext): PropertyGraphSchema = {
+    val baseFieldSchema = if(pattern.baseElements.contains(element.name)) {
+      val ct = context.knownTypes(exp.Variable(pattern.baseElements(element.name))(InputPosition.NONE))
+      schemaForElementType(context, ct)
+    } else {
+      PropertyGraphSchema.empty
+    }
 
-    val newPropertyKeys: Map[String, CypherType] = pattern.properties.get(field)
+    val newPropertyKeys: Map[String, CypherType] = pattern.properties.get(element.name)
       .map(_.items.map(p => p._1 -> p._2.cypherType))
       .getOrElse(Map.empty)
 
-    field.cypherType match {
-      case CTNode(newLabels, _) =>
+    element match {
+      case n: NodeElement =>
         val oldLabelCombosToNewLabelCombos = if (baseFieldSchema.labels.nonEmpty)
-          baseFieldSchema.allCombinations.map(oldLabels => oldLabels -> (oldLabels ++ newLabels))
+          baseFieldSchema.allCombinations.map(oldLabels => oldLabels -> (oldLabels ++ n.labels))
         else
-          Set(Set.empty[String] -> newLabels)
+          Set(Set.empty[String] -> n.labels)
 
         val updatedPropertyKeys = oldLabelCombosToNewLabelCombos.map {
           case (oldLabelCombo, newLabelCombo) => newLabelCombo -> (baseFieldSchema.nodePropertyKeys(oldLabelCombo) ++ newPropertyKeys)
@@ -629,7 +676,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
         }
 
       // if there is only one relationship type we need to merge all existing types and update them
-      case CTRelationship(newTypes, _) if newTypes.size == 1 =>
+      case r: RelationshipElement if r.labels.size == 1 =>
         val possiblePropertyKeys = baseFieldSchema
           .relTypePropertyMap
           .values
@@ -642,35 +689,31 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
         val updatedPropertyKeys = joinedPropertyKeys ++ newPropertyKeys
 
-        PropertyGraphSchema.empty.withRelationshipPropertyKeys(newTypes.head, updatedPropertyKeys)
+        PropertyGraphSchema.empty.withRelationshipPropertyKeys(r.labels.head, updatedPropertyKeys)
 
-      case CTRelationship(newTypes, _) =>
-        val actualTypes = if (newTypes.nonEmpty) newTypes else baseFieldSchema.relationshipTypes
+      case r: RelationshipElement =>
+        val actualTypes = if (r.labels.nonEmpty) r.labels else baseFieldSchema.relationshipTypes
 
         actualTypes.foldLeft(PropertyGraphSchema.empty) {
           case (acc, relType) => acc.withRelationshipPropertyKeys(relType, baseFieldSchema.relationshipPropertyKeys(relType) ++ newPropertyKeys)
         }
-
-      case other => throw IllegalArgumentException("CTNode or CTRelationship", other)
     }
   }
 
   private def convertSetItem[R: _hasContext](p: ast.SetItem): Eff[R, SetItem] = {
     p match {
-      case ast.SetPropertyItem(exp.LogicalProperty(map: exp.Variable, exp.PropertyKeyName(propertyName)), setValue: exp.Expression) =>
+      case ast.SetPropertyItem(exp.LogicalProperty(v: exp.Variable, exp.PropertyKeyName(propertyName)), setValue: exp.Expression) =>
         for {
-          variable <- convertExpr[R](map)
           convertedSetExpr <- convertExpr[R](setValue)
           result <- {
-            val setItem = SetPropertyItem(propertyName, variable.asInstanceOf[Var], convertedSetExpr)
+            val setItem = SetPropertyItem(propertyName, v.name, convertedSetExpr)
             pure[R, SetItem](setItem)
           }
         } yield result
-      case ast.SetLabelItem(expr, labels) =>
+      case ast.SetLabelItem(v: exp.Variable, labels) =>
         for {
-          variable <- convertExpr[R](expr)
           result <- {
-            val setLabel: SetItem = SetLabelItem(variable.asInstanceOf[Var], labels.map(_.name).toSet)
+            val setLabel: SetItem = SetLabelItem(v.name, labels.map(_.name).toSet)
             pure[R, SetItem](setLabel)
           }
         } yield result
@@ -678,3 +721,4 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
   }
 
 }
+

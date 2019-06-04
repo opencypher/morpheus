@@ -26,8 +26,8 @@
  */
 package org.opencypher.okapi.ir.impl
 
+import org.opencypher.okapi.api.graph.{Pattern => _, _}
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship, CypherType}
-import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api.IRField
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
@@ -42,11 +42,18 @@ import scala.language.implicitConversions
 
 class PatternConverterTest extends IrTestSuite {
 
+  val x = NodeElement("x")(Set.empty)
+  val y = NodeElement("y")(Set.empty)
+  val z = NodeElement("z")(Set.empty)
+  val foo = NodeElement("foo")(Set.empty)
+  val r1 = RelationshipElement("r1")(Set.empty)
+  val r2 = RelationshipElement("r2")(Set.empty)
+
   test("simple node pattern") {
     val pattern = parse("(x)")
 
     convert(pattern) should equal(
-      Pattern.empty.withElement('x -> CTNode)
+      Pattern.empty.withElement(NodeElement("x")(Set.empty))
     )
   }
 
@@ -57,21 +64,21 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern).properties should equal(
       Map(
-        a -> MapExpression(Map("name" -> StringLit("Hans"))),
-        rel -> MapExpression(Map("since" -> IntegerLit(2007)))
+        a.name -> MapExpression(Map("name" -> StringLit("Hans"))),
+        rel.name -> MapExpression(Map("since" -> IntegerLit(2007)))
       )
     )
   }
 
   test("simple rel pattern") {
-    val pattern = parse("(x)-[r]->(b)")
+    val pattern = parse("(x)-[r1]->(y)")
 
     convert(pattern) should equal(
       Pattern.empty
-        .withElement('x -> CTNode)
-        .withElement('b -> CTNode)
-        .withElement('r -> CTRelationship)
-        .withConnection('r, DirectedRelationship('x, 'b))
+        .withElement(x)
+        .withElement(y)
+        .withElement(r1)
+        .withConnection(r1, Connection(Some(x), Some(y), Outgoing))
     )
   }
 
@@ -80,88 +87,92 @@ class PatternConverterTest extends IrTestSuite {
 
     convert(pattern) should equal(
       Pattern.empty
-        .withElement('x -> CTNode)
-        .withElement('y -> CTNode)
-        .withElement('z -> CTNode)
-        .withElement('r1 -> CTRelationship)
-        .withElement('r2 -> CTRelationship)
-        .withConnection('r1, DirectedRelationship('x, 'y))
-        .withConnection('r2, DirectedRelationship('y, 'z))
+        .withElement(x)
+        .withElement(y)
+        .withElement(z)
+        .withElement(r1)
+        .withElement(r2)
+        .withConnection(r1, Connection(Some(x), Some(y), Outgoing))
+        .withConnection(r2, Connection(Some(y), Some(z), Outgoing))
     )
   }
 
   test("disconnected pattern") {
-    val pattern = parse("(x), (y)-[r]->(z), (foo)")
+    val pattern = parse("(x), (y)-[r1]->(z), (foo)")
+
 
     convert(pattern) should equal(
       Pattern.empty
-        .withElement('x -> CTNode)
-        .withElement('y -> CTNode)
-        .withElement('z -> CTNode)
-        .withElement('foo -> CTNode)
-        .withElement('r -> CTRelationship)
-        .withConnection('r, DirectedRelationship('y, 'z))
+        .withElement(x)
+        .withElement(y)
+        .withElement(z)
+        .withElement(foo)
+        .withElement(r1)
+        .withConnection(r1, Connection(Some(y), Some(z), Outgoing))
     )
   }
 
   test("get predicates from undirected pattern") {
-    val pattern = parse("(x)-[r]-(y)")
+    val pattern = parse("(x)-[r1]-(y)")
+
 
     convert(pattern) should equal(
       Pattern.empty
-        .withElement('x -> CTNode)
-        .withElement('y -> CTNode)
-        .withElement('r -> CTRelationship)
-        .withConnection('r, UndirectedRelationship('y, 'x))
+        .withElement(x)
+        .withElement(y)
+        .withElement(r1)
+        .withConnection(r1, Connection(Some(x), Some(y), Both))
     )
   }
 
   test("get labels") {
     val pattern = parse("(x:Person), (y:Dog:Person)")
 
+    val xPerson = NodeElement("x")(Set("Person"))
+    val yPersonDog = NodeElement("y")(Set("Person", "Dog"))
+
     convert(pattern) should equal(
       Pattern.empty
-        .withElement('x -> CTNode("Person"))
-        .withElement('y -> CTNode("Person", "Dog"))
+        .withElement(xPerson)
+        .withElement(yPersonDog)
     )
   }
 
   test("get rel type") {
     val pattern = parse("(x)-[r:KNOWS | LOVES]->(y)")
 
+    val rKnowsLoves = RelationshipElement("r")(Set("KNOWS", "LOVES"))
+
     convert(pattern) should equal(
       Pattern.empty
-        .withElement('x -> CTNode)
-        .withElement('y -> CTNode)
-        .withElement('r -> CTRelationship("KNOWS", "LOVES"))
-        .withConnection('r, DirectedRelationship('x, 'y))
+        .withElement(x)
+        .withElement(y)
+        .withElement(rKnowsLoves)
+        .withConnection(rKnowsLoves, Connection(Some(x), Some(y), Outgoing))
     )
   }
 
-  test("reads type from knownTypes") {
-    val pattern = parse("(x)-[r]->(y:Person)-[newR:IN]->(z)")
+  it("ignores known types") {
+    val pattern = parse("(x)-[r1]->(y:Person)-[newR:IN]->(z)")
 
     val knownTypes: Map[ast.Expression, CypherType] = Map(
       ast.Variable("x")(NONE) -> CTNode("Person"),
       ast.Variable("z")(NONE) -> CTNode("Customer"),
-      ast.Variable("r")(NONE) -> CTRelationship("FOO")
+      ast.Variable("r1")(NONE) -> CTRelationship("FOO")
     )
 
-    val x: IRField = 'x -> CTNode("Person")
-    val y: IRField = 'y -> CTNode("Person")
-    val z: IRField = 'z -> CTNode("Customer")
-    val r: IRField = 'r -> CTRelationship("FOO")
-    val newR: IRField = 'newR -> CTRelationship("IN")
+    val yPerson = NodeElement("y")(Set("Person"))
+    val newR = RelationshipElement("newR")(Set("IN"))
 
     convert(pattern, knownTypes) should equal(
       Pattern.empty
         .withElement(x)
-        .withElement(y)
+        .withElement(yPerson)
         .withElement(z)
-        .withElement(r)
+        .withElement(r1)
         .withElement(newR)
-        .withConnection(r, DirectedRelationship(x, y))
-        .withConnection(newR, DirectedRelationship(y, z))
+        .withConnection(r1, Connection(Some(x), Some(yPerson), Outgoing))
+        .withConnection(newR, Connection(Some(yPerson), Some(z), Outgoing))
     )
   }
 
@@ -173,14 +184,14 @@ class PatternConverterTest extends IrTestSuite {
         ast.Variable("y")(NONE) -> CTNode("Person")
       )
 
-      val x: IRField = 'x -> CTNode("Person")
-      val y: IRField = 'y -> CTNode("Person")
+      val xPerson = NodeElement("x")( Set("Person"))
+      val yPerson = NodeElement("y")( Set("Person"))
 
       convert(pattern, knownTypes) should equal(
         Pattern.empty
-          .withElement(x)
-          .withElement(y)
-          .withBaseField(x, Some(y))
+          .withElement(xPerson)
+          .withElement(yPerson)
+          .withBaseElement(xPerson, Some(yPerson))
       )
     }
 
@@ -191,69 +202,66 @@ class PatternConverterTest extends IrTestSuite {
         ast.Variable("x")(NONE) -> CTNode("Person")
       )
 
-      val x: IRField = 'x -> CTNode("Person")
-      val y: IRField = 'y -> CTNode("Person", "Employee")
+      val xPerson = NodeElement("x")( Set("Person"))
+      val yPersonEmployee = NodeElement("y")( Set("Person", "Employee"))
 
       convert(pattern, knownTypes) should equal(
         Pattern.empty
-          .withElement(x)
-          .withElement(y)
-          .withBaseField(y, Some(x))
+          .withElement(xPerson)
+          .withElement(yPersonEmployee)
+          .withBaseElement(yPersonEmployee, Some(xPerson))
       )
     }
 
     it("can convert base relationships") {
-      val pattern = parse("(x)-[r]->(y), (x)-[r2 COPY OF r]->(y)")
+      val pattern = parse("(x)-[r1]->(y), (x)-[r2 COPY OF r1]->(y)")
 
       val knownTypes: Map[ast.Expression, CypherType] = Map(
         ast.Variable("x")(NONE) -> CTNode("Person"),
         ast.Variable("y")(NONE) -> CTNode("Customer"),
-        ast.Variable("r")(NONE) -> CTRelationship("FOO")
+        ast.Variable("r1")(NONE) -> CTRelationship("FOO")
       )
 
-      val x: IRField = 'x -> CTNode("Person")
-      val y: IRField = 'y -> CTNode("Person")
-      val r: IRField = 'r -> CTRelationship("FOO")
-      val r2: IRField = 'r2 -> CTRelationship("FOO")
+      val r1Foo = RelationshipElement("r1")( Set("FOO"))
+      val r2Foo = RelationshipElement("r2")( Set("FOO"))
 
       convert(pattern, knownTypes) should equal(
         Pattern.empty
           .withElement(x)
           .withElement(y)
-          .withElement(r)
-          .withElement(r2)
-          .withConnection(r, DirectedRelationship(x, y))
-          .withConnection(r2, DirectedRelationship(x, y))
-          .withBaseField(r2, Some(r))
+          .withElement(r1Foo)
+          .withElement(r2Foo)
+          .withConnection(r1Foo, Connection(Some(x), Some(y), Outgoing))
+          .withConnection(r2Foo, Connection(Some(x), Some(y), Outgoing))
+          .withBaseElement(r2Foo, Some(r1Foo))
       )
     }
 
     it("can convert base relationships with new type") {
-      val pattern = parse("(x)-[r]->(y), (x)-[r2 COPY OF r:BAR]->(y)")
+      val pattern = parse("(x)-[r1]->(y), (x)-[r2 COPY OF r1:BAR]->(y)")
 
       val knownTypes: Map[ast.Expression, CypherType] = Map(
         ast.Variable("x")(NONE) -> CTNode("Person"),
         ast.Variable("y")(NONE) -> CTNode("Customer"),
-        ast.Variable("r")(NONE) -> CTRelationship("FOO")
+        ast.Variable("r1")(NONE) -> CTRelationship("FOO")
       )
 
-      val x: IRField = 'x -> CTNode("Person")
-      val y: IRField = 'y -> CTNode("Person")
-      val r: IRField = 'r -> CTRelationship("FOO")
-      val r2: IRField = 'r2 -> CTRelationship("BAR")
+      val r1Foo = RelationshipElement("r1")(Set("FOO"))
+      val r2FooBar = RelationshipElement("r2")(Set("FOO", "BAR"))
 
       convert(pattern, knownTypes) should equal(
         Pattern.empty
           .withElement(x)
           .withElement(y)
-          .withElement(r)
-          .withElement(r2)
-          .withConnection(r, DirectedRelationship(x, y))
-          .withConnection(r2, DirectedRelationship(x, y))
-          .withBaseField(r2, Some(r))
+          .withElement(r1Foo)
+          .withElement(r2FooBar)
+          .withConnection(r1Foo, Connection(Some(x), Some(y), Outgoing))
+          .withConnection(r2FooBar, Connection(Some(x), Some(y), Outgoing))
+          .withBaseElement(r2FooBar, Some(r1Foo))
       )
     }
   }
+
   val converter = new PatternConverter(IRBuilderHelper.emptyIRBuilderContext)
 
   def convert(p: ast.Pattern, knownTypes: Map[ast.Expression, CypherType] = Map.empty): Pattern =
