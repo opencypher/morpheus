@@ -1625,7 +1625,7 @@ class ExpressionTests extends MorpheusTestSuite with ScanGraphInit with Checkers
   }
   describe("map projection") {
     it("simple map-projection") {
-      val graph = ScanGraphFactory.initGraph("""CREATE ({prop: 1})""")
+      val graph = ScanGraphFactory.initGraph("""CREATE ({prop: 1, name: "Morpheus"})""")
       val result = graph.cypher(
         """
           |MATCH (n)
@@ -1634,7 +1634,43 @@ class ExpressionTests extends MorpheusTestSuite with ScanGraphInit with Checkers
       result.records.toMaps shouldEqual Bag(
         CypherMap("map" -> Map("prop" -> 1))
       )
-  }
+    }
+
+    it("map-projection with additional properties") {
+      val graph = ScanGraphFactory.initGraph("""CREATE ({prop: 1, name: "Morpheus"})""")
+      val result = graph.cypher(
+        """
+          |MATCH (n)
+          |RETURN n  {.prop, age: 21} AS map
+        """.stripMargin)
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("map" -> Map("prop" -> 1, "age" -> 21))
+      )
+    }
+
+    it("map-projection copying all properties") {
+      val graph = ScanGraphFactory.initGraph("""CREATE (:Person{prop: [1,2], name: "Morpheus"})""")
+      val result = graph.cypher(
+        """
+          |MATCH (n:Person)
+          |RETURN n  {.*} AS map
+        """.stripMargin)
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("map" -> Map("prop" -> List(1,2), "name" -> "Morpheus"))
+      )
+    }
+
+    it("map-projection copying all properties and overwriting properties") {
+      val graph = ScanGraphFactory.initGraph("""CREATE (:Person{age: 1, name: "Morpheus"})""")
+      val result = graph.cypher(
+        """
+          |MATCH (n:Person)
+          |RETURN n  {.*, age: n.age+1} AS map
+        """.stripMargin)
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("map" -> Map("age" -> 2, "name" -> "Morpheus"))
+      )
+    }
   }
 }
 

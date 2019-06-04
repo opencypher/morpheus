@@ -404,6 +404,21 @@ object SparkSQLExprMapper {
           case other => throw IllegalArgumentException("an expression of type CTMap", other)
         }
 
+        case MapProjection(mapOwner, items, includeAllProps) =>
+          val convertedItems = items.map(_._2.asSparkSQLExpr)
+          val itemKeys = items.map(_._1)
+          val intersectedMapItems = if (includeAllProps) {
+            val entityProps = header.propertiesFor(mapOwner)
+              .filterNot(p => itemKeys.contains(p.key.name))
+            val intersectKeys = itemKeys ++ entityProps.map(_.key.name)
+            val intersectValues = convertedItems ++ entityProps.map(_.asSparkSQLExpr)
+            intersectKeys zip intersectValues
+          }
+          else itemKeys zip convertedItems
+
+          val aliasedColumns = intersectedMapItems.map { case (key, value) => value.as(key) }
+          create_struct(aliasedColumns)
+
         // Aggregators
         case Count(_, distinct) =>
           if (distinct) countDistinct(child0)

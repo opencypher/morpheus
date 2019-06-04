@@ -515,9 +515,9 @@ final case class MapExpression(items: Map[String, Expr]) extends Expr {
   override def cypherType: CypherType = CTMap(items.map { case (key, value) => key -> value.cypherType })
 }
 
-final case class MapProjection(mapOwner: Expr, items: Seq[Expr], includeAllProps: Boolean) extends Expr {
+final case class MapProjection(mapOwner: Var, items: Seq[(String, Expr)], includeAllProps: Boolean) extends Expr {
   def cypherType: CypherType = CTMap
-  def withoutType: String = if(includeAllProps) s"{all properties from $mapOwner}" else s"{${items.map(_.withoutType)}}"
+  def withoutType: String =  s"{${items.map(x => x._1 + ":"+ x._2.withoutType)}}"
 }
 
 // Arithmetic expressions
