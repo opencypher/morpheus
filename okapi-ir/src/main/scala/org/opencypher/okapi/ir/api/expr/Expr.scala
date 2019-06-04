@@ -632,6 +632,20 @@ sealed trait UnaryFunctionExpr extends FunctionExpr {
   def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = signature(inputCypherTypes.head)
 }
 
+final case class Head(expr: Expr) extends UnaryFunctionExpr{
+  override def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case CTList(inner) => Some(inner)
+    case _ => None
+  }
+}
+
+final case class Last(expr: Expr) extends UnaryFunctionExpr{
+  override def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case CTList(inner) => Some(inner)
+    case _ => None
+  }
+}
+
 final case class Id(expr: Expr) extends UnaryFunctionExpr {
   override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
 
@@ -836,6 +850,14 @@ final case class Properties(expr: Expr)(override val cypherType: CypherType) ext
   }
 }
 
+final case class Reverse(expr: Expr) extends UnaryFunctionExpr{
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case l : CTList => Some(l)
+    case CTString => Some(CTString)
+    case _ => None
+  }
+}
+
 // NAry Function expressions
 
 final case class Range(from: Expr, to: Expr, o: Option[Expr]) extends FunctionExpr {
@@ -871,6 +893,16 @@ final case class Substring(original: Expr, start: Expr, length: Option[Expr]) ex
     case Seq(CTString, CTInteger, CTInteger) => Some(CTString)
     case _ => None
   }
+}
+
+final case class Split(original: Expr, delimiter: Expr) extends FunctionExpr {
+  def exprs: List[Expr] = List(original, delimiter)
+  def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes match {
+    case Seq(CTString, CTString) => Some(CTList(CTString))
+    case _ => None
+  }
+
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
 }
 
 // Bit operators
@@ -1087,19 +1119,28 @@ final case class ListLit(v: List[Expr]) extends Lit[List[Expr]] {
   override def cypherType: CypherType = CTList(v.foldLeft(CTVoid: CypherType)(_ | _.cypherType))
 }
 
-sealed abstract class ListSlice(maybeFrom: Option[Expr], maybeTo: Option[Expr]) extends Expr {
-
-  override val cypherType: CypherType = list.cypherType
+sealed abstract class ListSlice(maybeFrom: Option[Expr], maybeTo: Option[Expr]) extends TypeValidatedExpr {
   def list: Expr
   override def withoutType: String = s"${list.withoutType}[${maybeFrom.map(_.withoutType).getOrElse("")}..${maybeTo.map(_.withoutType).getOrElse("")}]"
 
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
+  def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes.head match {
+    case CTList(_) if inputCypherTypes.tail.forall(_.couldBeSameTypeAs(CTInteger)) => Some(list.cypherType)
+    case _ => None
+  }
 }
-//todo: validateCyphertype
-final case class ListSliceFromTo(list: Expr, from: Expr, to: Expr) extends ListSlice(Some(from), Some(to))
 
-final case class ListSliceFrom(list: Expr, from: Expr) extends ListSlice(Some(from), None)
+final case class ListSliceFromTo(list: Expr, from: Expr, to: Expr) extends ListSlice(Some(from), Some(to)) {
+  def exprs = List(list, from, to)
+}
 
-final case class ListSliceTo(list: Expr, to: Expr) extends ListSlice(None, Some(to))
+final case class ListSliceFrom(list: Expr, from: Expr) extends ListSlice(Some(from), None) {
+  override def exprs: List[Expr] = List(list, from)
+}
+
+final case class ListSliceTo(list: Expr, to: Expr) extends ListSlice(None, Some(to)) {
+  override def exprs: List[Expr] = List(list, to)
+}
 
 final case class ListComprehension(variable: Expr, innerPredicate: Option[Expr], extractExpression: Option[Expr], expr : Expr) extends Expr {
   override def withoutType: String = {
@@ -1112,6 +1153,56 @@ final case class ListComprehension(variable: Expr, innerPredicate: Option[Expr],
     case None => expr.cypherType
   }
 }
+
+final case class ListReduction(accumulator: Expr, variable: Expr, reduceExpr: Expr, initExpr: Expr, list: Expr) extends TypeValidatedExpr {
+  override def withoutType: String = {
+    s"reduce(${accumulator.withoutType} = ${initExpr.withoutType}, ${variable.withoutType} IN ${list.withoutType} | ${reduceExpr.withoutType})"
+  }
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
+  def exprs: List[Expr] = List(initExpr, reduceExpr, list) //only exprs which need to be type-checked
+  def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes match {
+    case Seq(initType: CypherType, reduceStepType: CypherType, CTList(_)) if initType.couldBeSameTypeAs(reduceStepType) => Some(initType)
+    case _ => None
+  }
+}
+
+sealed abstract class IterablePredicateExpr(variable: LambdaVar, predicate: Expr, list: Expr) extends TypeValidatedExpr {
+  override def propagationType: Option[PropagationType] = Some(NullOrAnyNullable)
+
+  def exprs: List[Expr] = List(variable, predicate, list)
+  def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes match {
+    case Seq(_, CTBoolean, CTList(_)) => Some(CTBoolean)
+    case _ => None
+  }
+  override def withoutType: String = s"($variable IN $list WHERE $predicate)"
+}
+
+final case class ListFilter(variable: LambdaVar, predicate: Expr, list: Expr) extends TypeValidatedExpr {
+  override  def withoutType: String = s"filter($variable IN $list WHERE $predicate)"
+  def exprs: List[Expr] = List(variable, predicate, list)
+
+  def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes match {
+    case Seq(_, CTBoolean, l: CTList) => Some(l)
+    case _ => None
+  }
+}
+
+final case class ListAny(variable: LambdaVar, predicate: Expr, list: Expr) extends IterablePredicateExpr(variable, predicate, list) {
+  override  def withoutType: String = s"any(${super.withoutType})"
+}
+
+final case class ListNone(variable: LambdaVar, predicate: Expr, list: Expr) extends IterablePredicateExpr(variable, predicate, list) {
+  override  def withoutType: String = s"none(${super.withoutType})"
+}
+
+final case class ListAll(variable: LambdaVar, predicate: Expr, list: Expr) extends IterablePredicateExpr(variable, predicate, list) {
+  override  def withoutType: String = s"all(${super.withoutType})"
+}
+
+final case class ListSingle(variable: LambdaVar, predicate: Expr, list: Expr) extends IterablePredicateExpr(variable, predicate, list) {
+  override  def withoutType: String = s"single(${super.withoutType})"
+}
+
 
 final case class ContainerIndex(container: Expr, index: Expr)(val cypherType: CypherType) extends Expr {
 

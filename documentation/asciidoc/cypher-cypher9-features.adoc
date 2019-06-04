@@ -111,13 +111,13 @@ Here follows a comprehensive reference of Cypher9 features and their implementat
 | exp()            | {yes}
 | floor()          | {yes}
 | haversin()       | {yes}
-| head()           | {no}
+| head()           | {yes}
 | id()             | {yes}
 | in()             | {yes}
 | keys()           | {yes}
 | lTrim()          | {yes}
 | labels()         | {yes}
-| last()           | {no}
+| last()           | {yes}
 | left()           | {yes}
 | length()         | {yes}
 | log()            | {yes}
@@ -134,17 +134,17 @@ Here follows a comprehensive reference of Cypher9 features and their implementat
 | range()          | {yes}
 | relationships()  | {no}
 | replace()        | {yes}
-| reverse()        | {no}
+| reverse()        | {yes}
 | right()          | {yes}
 | round()          | {yes}
 | sign()           | {yes}
 | sin()            | {yes}
 | size()           | {yes}
-| split()          | {no}
+| split()          | {yes}
 | sqrt()           | {yes}
 | startNode()      | {yes}
 | substring()      | {yes}
-| tail()           | {no}
+| tail()           | {yes}
 | tan()            | {yes}
 | timestamp()      | {yes}
 | toBoolean()      | {yes}
@@ -180,19 +180,19 @@ Here follows a comprehensive reference of Cypher9 features and their implementat
 |===
 | name                   | status  | name | status
 | CASE                   | {yes}
-| all                    | {no}
+| all                    | {yes}
 | allShortestPaths       | {no}
-| any                    | {no}
+| any                    | {yes}
 | extract                | {never}
-| filter                 | {no}
-| list comprehension     | {no}
+| filter                 | {never}
+| list comprehension     | {yes}
 | map projections        | {no}
-| none                   | {no}
+| none                   | {yes}
 | parameters             | {yes}
 | pattern comprehensions | {no}
-| reduce                 | {no}
+| reduce                 | {yes}
 | shortestPath           | {no}
-| single                 | {no}
+| single                 | {yes}
 |===
 
 
@@ -209,7 +209,7 @@ Here follows a comprehensive reference of Cypher9 features and their implementat
 | >=                    | {yes}
 | =~                    | {yes}
 | pass:[+ (arithmetic)] | {yes}
-| pass:[+ (list)]       | {no}
+| pass:[+ (list)]       | {yes}
 | pass:[+ (string)]     | {yes}
 | /                     | {yes}
 | pass:[*]              | {yes}

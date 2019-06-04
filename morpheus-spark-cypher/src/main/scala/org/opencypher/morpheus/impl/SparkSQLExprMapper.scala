@@ -26,10 +26,11 @@
  */
 package org.opencypher.morpheus.impl
 
-import org.apache.spark.sql.catalyst.expressions.{ArrayFilter, ArrayTransform, CaseWhen, ExprId, LambdaFunction, NamedLambdaVariable}
+import org.apache.spark.sql.catalyst.expressions.{ArrayAggregate, ArrayExists, ArrayFilter, ArrayTransform, CaseWhen, ExprId, LambdaFunction, Literal, NamedLambdaVariable, StringSplit}
 import org.apache.spark.sql.functions.{array_contains => _, translate => _, _}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame}
+import org.apache.spark.unsafe.types.UTF8String
 import org.opencypher.morpheus.impl.MorpheusFunctions._
 import org.opencypher.morpheus.impl.convert.SparkConversions._
 import org.opencypher.morpheus.impl.expressions.AddPrefix._
@@ -162,6 +163,10 @@ object SparkSQLExprMapper {
           case _ => NULL_LIT
         }
 
+        //list-access
+        case _: Head => element_at(child0, 1)
+        case _: Last => element_at(child0, -1)
+
         // Arithmetic
         case Add(lhs, rhs) =>
           val lhsCT = lhs.cypherType.material
@@ -257,14 +262,14 @@ object SparkSQLExprMapper {
         case _: Trim => trim(child0)
         case _: LTrim => ltrim(child0)
         case _: RTrim => rtrim(child0)
+        case _: Reverse => reverse(child0)
         case _: ToUpper => upper(child0)
         case _: ToLower => lower(child0)
 
         case _: Range => sequence(child0, child1, convertedChildren.lift(2).getOrElse(ONE_LIT))
-
         case _: Replace => translate(child0, child1, child2)
-
         case _: Substring => child0.substr(child1 + ONE_LIT, convertedChildren.lift(2).getOrElse(length(child0) - child1))
+        case _: Split => new Column(StringSplit(child0.expr, child1.expr))
 
         // Mathematical functions
         case E => E_LIT
@@ -350,6 +355,45 @@ object SparkSQLExprMapper {
             case None => filteredExpr
           }
           new Column(result)
+
+        case ListReduction(acc, v, _, _, _) =>
+          val convertedChildrenExpr = convertedChildren.map(_.expr)
+          val (initVar, accVar) = convertedChildrenExpr.slice(0, 2) match {
+            case Seq(i: NamedLambdaVariable, a: NamedLambdaVariable) => i -> a
+            case err => throw IllegalStateException(s"($v,$acc) should be converted into a NamedLambdaVariables instead of $err")
+          }
+          val reduceFunc = LambdaFunction(convertedChildrenExpr(2), Seq(initVar, accVar))
+          val finishFunc = LambdaFunction(accVar, Seq(accVar))
+
+          val reduceExpr = ArrayAggregate(convertedChildrenExpr(4), convertedChildrenExpr(3), reduceFunc, finishFunc)
+          new Column(reduceExpr)
+
+        case predExpr: IterablePredicateExpr =>
+          val convertedChildrenExpr = convertedChildren.map(_.expr)
+          val lambdaVar = child0.expr match {
+            case v: NamedLambdaVariable => v
+            case err => throw IllegalStateException(s"${predExpr.exprs.head} should be converted into a NamedLambdaVariable instead of $err")
+          }
+          val filterFunc = LambdaFunction(convertedChildrenExpr(1), Seq(lambdaVar))
+          predExpr match {
+            case _: ListAll =>
+              val lengthBefore = size(convertedChildren(2))
+              val filterExpr = ArrayFilter(convertedChildrenExpr(2), filterFunc)
+              val lengthAfter = size(new Column(filterExpr))
+              lengthBefore === lengthAfter
+            case _: ListAny =>
+              val resExpr = ArrayExists(convertedChildrenExpr(2), filterFunc)
+              new Column(resExpr)
+            case _: ListNone =>
+              val resExpr = ArrayExists(convertedChildrenExpr(2), filterFunc)
+              val resCol = new Column(resExpr)
+              not(resCol)
+            case _: ListSingle =>
+              val filterExpr = ArrayFilter(convertedChildrenExpr(2), filterFunc)
+              val lengthAfter = size(new Column(filterExpr))
+              ONE_LIT === lengthAfter
+          }
+
 
         case MapExpression(items) => expr.cypherType.material match {
           case CTMap(_) =>

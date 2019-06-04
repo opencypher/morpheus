@@ -34,7 +34,7 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.parse.{functions => f}
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter.Signature
 import org.opencypher.okapi.ir.impl.typer.{InvalidArgument, InvalidContainerAccess, MissingParameter, UnTypedExpr, WrongNumberOfArguments}
-import org.opencypher.v9_0.expressions.{ExtractScope, LogicalVariable, RegexMatch, functions}
+import org.opencypher.v9_0.expressions.{ExtractScope, LogicalVariable, ReduceScope, functions}
 import org.opencypher.v9_0.{expressions => ast}
 import SignatureTyping._
 
@@ -60,6 +60,17 @@ final class ExpressionConverter(context: IRBuilderContext) {
       case l: IntegerLit => l.v
       case _ => throw IllegalArgumentException("a literal value", expr)
     }
+  }
+
+  private def convertFilterScope(variable: LogicalVariable, innerPredicate: ast.Expression, list: Expr)(implicit lambdaVars: Map[String, CypherType]) : (LambdaVar, Expr) = {
+      val listInnerType = list.cypherType match {
+        case CTList(inner) => inner
+        case err => throw IllegalArgumentException("a list to step over", err, "Wrong list comprehension type")
+      }
+      val lambdaVar = LambdaVar(variable.name) (listInnerType) //todo: use normal convert + match instead?
+      val updatedLambdaVars = lambdaVars + (variable.name -> listInnerType)
+
+      lambdaVar -> convert(innerPredicate)(updatedLambdaVars)
   }
 
   def convert(e: ast.Expression) (implicit lambdaVars: Map[String, CypherType]): Expr = {
@@ -182,9 +193,11 @@ final class ExpressionConverter(context: IRBuilderContext) {
             }
           case functions.Range => Range(child0, child1, convertedChildren.lift(2))
           case functions.Substring => Substring(child0, child1, convertedChildren.lift(2))
+          case functions.Split => Split(child0, child1)
           case functions.Left => Substring(child0, IntegerLit(0), convertedChildren.lift(1))
           case functions.Right => Substring(child0, Subtract(Multiply(IntegerLit(-1), child1), IntegerLit(1)), None)
           case functions.Replace => Replace(child0, child1, child2)
+          case functions.Reverse => Reverse(child0)
           case functions.Trim => Trim(child0)
           case functions.LTrim => LTrim(child0)
           case functions.RTrim => RTrim(child0)
@@ -201,6 +214,10 @@ final class ExpressionConverter(context: IRBuilderContext) {
               case _ => throw InvalidArgument(funcInv, funcInv.args(0))
             }
             Properties(child0)(outType)
+          //List-access functions
+          case functions.Last => Last(child0)
+          case functions.Head => Head(child0)
+          case functions.Tail => ListSliceFrom(child0, IntegerLit(1))
 
           // Logarithmic functions
           case functions.Sqrt => Sqrt(child0)
@@ -289,6 +306,27 @@ final class ExpressionConverter(context: IRBuilderContext) {
         ListComprehension(convert(variable)(updatedLambdaVars), innerPredicate.map(convert(_)(updatedLambdaVars)),
           extractExpression.map(convert(_)(updatedLambdaVars)), listExpr)
 
+      case ast.ReduceExpression(ReduceScope(accumulator, variable, reduceExpression), _, list) =>
+        val initExpr = child1
+        val introduceLambdaVars = Map(accumulator.name -> initExpr.cypherType, variable.name -> initExpr.cypherType)
+        val updatedLambdaVars = lambdaVars ++ introduceLambdaVars
+        ListReduction(convert(accumulator)(updatedLambdaVars), convert(variable)(updatedLambdaVars),
+          convert(reduceExpression)(updatedLambdaVars), initExpr, convert(list)(updatedLambdaVars))
+
+      case predExpr: ast.IterablePredicateExpression => predExpr.scope.innerPredicate match {
+        case Some(innerPredicate) => val (lambdaVar, predicate) = convertFilterScope(predExpr.scope.variable, innerPredicate, child0)
+          predExpr match {
+            case _: ast.AnyIterablePredicate => ListAny(lambdaVar, predicate, child0)
+            case _: ast.AllIterablePredicate => ListAll(lambdaVar, predicate, child0)
+            case _: ast.NoneIterablePredicate => ListNone(lambdaVar, predicate, child0)
+            case _: ast.SingleIterablePredicate => ListSingle(lambdaVar, predicate, child0)
+          }
+        case None =>
+          predExpr match {
+            case _ => throw IllegalArgumentException("requires a predicate") //same behaviour as neo4j
+          }
+      }
+
       case ast.ContainerIndex(container, index) =>
         val convertedContainer = convert(container)
         val elementType = convertedContainer.cypherType.material match {
@@ -307,7 +345,8 @@ final class ExpressionConverter(context: IRBuilderContext) {
 
       case ast.Null() => NullLit
 
-      case RegexMatch(lhs, rhs) => expr.RegexMatch(convert(lhs), convert(rhs))
+      case ast.RegexMatch(lhs, rhs) => RegexMatch(convert(lhs), convert(rhs))
+
 
       case _ =>
         throw NotImplementedException(s"Not yet able to convert expression: $e")
