@@ -26,8 +26,7 @@
  */
 package org.opencypher.okapi.api.io.conversion
 
-import org.opencypher.okapi.api.graph.{PatternElement, IdKey, Pattern}
-import org.opencypher.okapi.api.types.CTRelationship
+import org.opencypher.okapi.api.graph.{IdKey, Pattern, PatternElement, RelationshipElement}
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 object ElementMapping {
@@ -74,7 +73,7 @@ case class ElementMapping(
     }
 
     pattern.elements.foreach {
-      case e@PatternElement(_, CTRelationship(types, _)) if types.size != 1 =>
+      case e@RelationshipElement(_, types) if types.size != 1 =>
         throw IllegalArgumentException(
           s"A single implied type for element $e",
           types

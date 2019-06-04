@@ -192,7 +192,7 @@ case class TripletPattern(sourceNodeLabels: Set[String], relTypes: Set[String], 
   )
 
   override def topology: Map[String, Connection] = Map(
-    relElement -> Connection(Some(sourceElement), Some(targetElement), Outgoing)
+    relElement.name -> Connection(Some(sourceElement), Some(targetElement), Outgoing)
   )
 
   override def subTypeOf(other: Pattern): Boolean = other match {

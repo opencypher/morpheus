@@ -109,6 +109,6 @@ trait PropertyGraph {
     * @return patterns that the graph can provide
     */
   def patterns: Set[Pattern] =
-    schema.labelCombinations.combos.map(c => NodePattern(CTNode(c))) ++
-    schema.relationshipTypes.map(r => RelationshipPattern(CTRelationship(r)))
+    schema.labelCombinations.combos.map(c => NodePattern(c)) ++
+    schema.relationshipTypes.map(r => RelationshipPattern(Set(r)))
 }
