@@ -43,12 +43,8 @@ object CustomDataFrameInputExample extends App {
 
   // 1) Create Morpheus session and retrieve Spark session
   // tag::create-session[]
-  val spark: SparkSession = SparkSession
-    .builder()
-    .master("local[*]")
-    .getOrCreate()
-
-  implicit val morpheus: MorpheusSession = MorpheusSession.create(spark)
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
+  val spark = morpheus.sparkSession
   // end::create-session[]
 
   // 2) Generate some DataFrames that we'd like to interpret as a property graph.

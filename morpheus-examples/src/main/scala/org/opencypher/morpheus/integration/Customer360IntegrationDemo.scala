@@ -32,7 +32,7 @@ import org.apache.spark.sql.SparkSession
 import org.apache.spark.sql.types.{LongType, StringType, StructField, StructType}
 import org.opencypher.morpheus.api.io.neo4j.sync.Neo4jGraphMerge
 import org.opencypher.morpheus.api.{GraphSources, MorpheusSession}
-import org.opencypher.morpheus.util.{App, HiveUtils}
+import org.opencypher.morpheus.util.App
 import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
@@ -53,7 +53,7 @@ object Customer360IntegrationDemo extends App {
 
   implicit val resourceFolder: String = "/customer-interactions"
 
-  implicit val session: MorpheusSession = MorpheusSession.local(HiveUtils.hiveExampleSettings: _*)
+  implicit val session: MorpheusSession = MorpheusSession.local()
 
   implicit val spark: SparkSession = session.sparkSession
 

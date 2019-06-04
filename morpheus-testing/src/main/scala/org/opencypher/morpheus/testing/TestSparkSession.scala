@@ -41,40 +41,17 @@
   */
 package org.opencypher.morpheus.testing
 
-import java.io.File
 import java.util.UUID
 
-import org.apache.spark.SparkConf
 import org.apache.spark.sql.SparkSession
+import org.opencypher.morpheus.api.MorpheusSession
 
 object TestSparkSession {
 
   lazy val instance: SparkSession = {
-    val conf = new SparkConf(true)
-
-    conf.set("spark.sql.codegen.wholeStage", "true")
-    conf.set("spark.sql.shuffle.partitions", "5")
-    // Required for left outer join without join expressions in OPTIONAL MATCH (leads to cartesian product)
-    conf.set("spark.sql.crossJoin.enabled", "true")
-
-    //    setting for debug
-    //    conf.set("spark.sql.shuffle.partitions", "1")
-    //    conf.set("spark.default.parallelism", "1")
-    //    performance
-    //    conf.set("spark.sql.inMemoryColumnarStorage.compressed", "false")
-    //    conf.set("spark.submit.deployMode", "client")
-
-    // Writes spark-warehouse folder to local temp folder
-    conf.set("spark.sql.warehouse.dir", s"${System.getProperty("java.io.tmpdir")}${File.separator}spark-warehouse-${System.nanoTime()}")
-    // Store Hive MetaStore (derby) in memory only
-    conf.set("javax.jdo.option.ConnectionURL", s"jdbc:derby:memory:;databaseName=metastore_db;create=true")
-    conf.set("javax.jdo.option.ConnectionDriverName", "org.apache.derby.jdbc.EmbeddedDriver")
-    //
-    // If this is slow, you might be hitting: http://bugs.java.com/view_bug.do?bug_id=8077102
-    //
     val session = SparkSession
       .builder()
-      .config(conf)
+      .config(MorpheusSession.localSparkConf)
       .master("local[*]")
       .appName(s"morpheus-tests-${UUID.randomUUID()}")
       .enableHiveSupport()

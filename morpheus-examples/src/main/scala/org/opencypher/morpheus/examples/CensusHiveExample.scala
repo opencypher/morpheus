@@ -30,7 +30,6 @@ package org.opencypher.morpheus.examples
 import org.apache.spark.sql.SparkSession
 import org.opencypher.morpheus.api.io.sql.SqlDataSourceConfig.Hive
 import org.opencypher.morpheus.api.{GraphSources, MorpheusSession}
-import org.opencypher.morpheus.util.HiveUtils._
 import org.opencypher.morpheus.util.{App, CensusDB}
 import org.opencypher.okapi.api.graph.Namespace
 
@@ -40,7 +39,7 @@ object CensusHiveExample extends App {
 
   // tag::create-session[]
   // Create a Spark and a Morpheus session
-  implicit val morpheus: MorpheusSession = MorpheusSession.local(hiveExampleSettings: _*)
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
   implicit val sparkSession: SparkSession = morpheus.sparkSession
   // end::create-session[]
 
