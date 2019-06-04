@@ -394,7 +394,6 @@ object SparkSQLExprMapper {
               ONE_LIT === lengthAfter
           }
 
-
         case MapExpression(items) => expr.cypherType.material match {
           case CTMap(_) =>
             val innerColumns = items.map {
@@ -405,19 +404,24 @@ object SparkSQLExprMapper {
         }
 
         case MapProjection(mapOwner, items, includeAllProps) =>
-          val convertedItems = items.map(_._2.asSparkSQLExpr)
+          val convertedItems = items.map { case (key, value) => value.asSparkSQLExpr.as(key) }
           val itemKeys = items.map(_._1)
           val intersectedMapItems = if (includeAllProps) {
-            val entityProps = header.propertiesFor(mapOwner)
-              .filterNot(p => itemKeys.contains(p.key.name))
-            val intersectKeys = itemKeys ++ entityProps.map(_.key.name)
-            val intersectValues = convertedItems ++ entityProps.map(_.asSparkSQLExpr)
-            intersectKeys zip intersectValues
+            mapOwner.cypherType.material match {
+              case x if x.subTypeOf(CTElement) =>
+                val uniqueEntityProps = header.propertiesFor(mapOwner)
+                  .filterNot(p => itemKeys.contains(p.key.name))
+                val propertyColumns = uniqueEntityProps.map(p => p.asSparkSQLExpr.as(p.key.name))
+                convertedItems ++ propertyColumns
+              case CTMap(inner) =>
+                val uniqueMapKeys = inner.keys.filterNot(key => itemKeys.contains(key))
+                val uniqueMapColumns = uniqueMapKeys.map(key => child0.getField(key).as(key))
+                convertedItems ++ uniqueMapColumns
+            }
           }
-          else itemKeys zip convertedItems
+          else convertedItems
 
-          val aliasedColumns = intersectedMapItems.map { case (key, value) => value.as(key) }
-          create_struct(aliasedColumns)
+          create_struct(intersectedMapItems)
 
         // Aggregators
         case Count(_, distinct) =>

@@ -1623,6 +1623,7 @@ class ExpressionTests extends MorpheusTestSuite with ScanGraphInit with Checkers
       )
     }
   }
+
   describe("map projection") {
     it("simple map-projection") {
       val graph = ScanGraphFactory.initGraph("""CREATE ({prop: 1, name: "Morpheus"})""")
@@ -1665,6 +1666,17 @@ class ExpressionTests extends MorpheusTestSuite with ScanGraphInit with Checkers
       val result = graph.cypher(
         """
           |MATCH (n:Person)
+          |RETURN n  {.*, age: n.age+1} AS map
+        """.stripMargin)
+      result.records.toMaps shouldEqual Bag(
+        CypherMap("map" -> Map("age" -> 2, "name" -> "Morpheus"))
+      )
+    }
+
+    it("map-projection based on a map") {
+      val result = morpheus.cypher(
+        """
+          |WITH {age: 1, name: "Morpheus"} as n
           |RETURN n  {.*, age: n.age+1} AS map
         """.stripMargin)
       result.records.toMaps shouldEqual Bag(
