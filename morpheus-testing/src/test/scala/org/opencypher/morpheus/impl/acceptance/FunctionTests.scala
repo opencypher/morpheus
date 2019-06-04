@@ -1733,8 +1733,8 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
     it("split with variable delimiter") {
       val graph = ScanGraphFactory.initGraph(
         """
-          |CREATE ({friends: 'Bob, Eve', delimiter:","}),
-          |       ({friends: 'Eve; Bob', delimiter:";"})
+          |CREATE ({friends: 'Bob,Eve', delimiter:","}),
+          |       ({friends: 'Eve;Bob', delimiter:";"})
         """.stripMargin)
 
       val result = graph.cypher("""MATCH (n) RETURN split(n.friends, n.delimiter) as split""")
