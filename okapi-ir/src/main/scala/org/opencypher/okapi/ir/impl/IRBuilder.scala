@@ -37,14 +37,14 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalSta
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.pattern.Pattern
+import org.opencypher.okapi.ir.api.pattern.{Connection, Pattern}
 import org.opencypher.okapi.ir.api.set.{SetItem, SetLabelItem, SetPropertyItem}
-import org.opencypher.okapi.ir.api.util.CompilationStage
+import org.opencypher.okapi.ir.api.util.{CompilationStage, FreshVariableNamer}
 import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.ir.impl.refactor.instances._
 import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
 import org.opencypher.v9_0.ast.QueryPart
-import org.opencypher.v9_0.util.InputPosition
+import org.opencypher.v9_0.util.{FreshIdNameGenerator, InputPosition}
 import org.opencypher.v9_0.{ast, expressions => exp}
 
 
@@ -308,6 +308,21 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
             // Fields inside of CONSTRUCT could have been matched on other graphs than just the workingGraph
             val cloneSchema = schemaForElementTypes(context, cloneItemMap.values.map(_.cypherType).toSet)
+
+            //Make sure cloned relationship are in no pattern with unnamed nodes
+            cloneItemMap.values.foreach {
+              case r@RelationshipVar(relName) =>
+                val illegalRelPattern = createPatterns.filter(pattern =>
+                  pattern.topology.exists {
+                    case (IRField(fieldName), c: Connection) if fieldName == relName =>
+                      c.endpoints.exists(node => FreshVariableNamer.notNamed(node.name))
+                    case _ => false
+                  }
+                )
+                if (illegalRelPattern.nonEmpty)
+                  throw UnsupportedOperationException(s"Cloned relationships are not allowed in the same pattern as anonymous nodes. \n Found in ${illegalRelPattern.head}")
+              case _ => ()
+            }
 
             // Make sure that there are no dangling relationships
             // we can currently only clone relationships that are also part of a new pattern

@@ -681,7 +681,7 @@ class IrBuilderTest extends IrTestSuite {
       }
     }
 
-    it("allows cloning relationships with newly constructed start and end nodes") {
+    it("fails cloning relationships with newly constructed start and end nodes") {
       val query =
         """
           |MATCH (:FOO)-[r:REL]->()
@@ -691,33 +691,55 @@ class IrBuilderTest extends IrTestSuite {
           |RETURN GRAPH
         """.stripMargin
 
-      query.asCypherQuery().model.result match {
-        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(PropertyGraphSchema.empty
-            .withNodePropertyKeys("A")()
-            .withNodePropertyKeys()()
-            .withRelationshipPropertyKeys("REL")())
-        case _ => fail("no matching graph result found")
-      }
+       an[UnsupportedOperationException] shouldBe thrownBy(query.asCypherQuery().model.result)
     }
 
-    it("allows implicit cloning of relationships with newly constructed start and end nodes") {
+    it("fails  cloning of relationships with newly constructed end nodes") {
       val query =
         """
-          |MATCH (:FOO)-[r:REL]->()
+          |MATCH (a:FOO)-[r:REL]->()
           |CONSTRUCT
-          |  CREATE (:A)-[r]->()
+          |  CREATE (a)-[r]->()
           |RETURN GRAPH
         """.stripMargin
 
-      query.asCypherQuery().model.result match {
-        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(PropertyGraphSchema.empty
-            .withNodePropertyKeys("A")()
-            .withNodePropertyKeys()()
-            .withRelationshipPropertyKeys("REL")())
-        case _ => fail("no matching graph result found")
-      }
+      an[UnsupportedOperationException] shouldBe thrownBy(query.asCypherQuery().model.result)
+    }
+
+    it("fails  cloning of relationships with newly constructed start nodes") {
+      val query =
+        """
+          |MATCH (:FOO)-[r:REL]->(b)
+          |CONSTRUCT
+          |  CREATE (:A)-[r]->(b)
+          |RETURN GRAPH
+        """.stripMargin
+
+      an[UnsupportedOperationException] shouldBe thrownBy(query.asCypherQuery().model.result)
+    }
+
+    it("succeeds pattern with cloned relationship and new unnamed relationship") {
+      val query =
+        """
+          |MATCH (a)-[r:REL]->(b)
+          |CONSTRUCT
+          |  CREATE (a)-[r]->(b)-[:TYPE]->()
+          |RETURN GRAPH
+        """.stripMargin
+
+      query.asCypherQuery().model.result
+    }
+
+    //as the relationship-var does not contain any info about src and trg
+    //maybe solve via push-down of match patterns in IR ?
+    ignore("fails cloning rel and cloning false src") {
+      val query =
+        """|MATCH (a)-[e]->(b)
+           |CONSTRUCT
+           |  CREATE (b)-[e]->(a)
+           |RETURN GRAPH""".stripMargin
+
+      an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery().model.result)
     }
   }
 
