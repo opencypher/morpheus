@@ -403,14 +403,13 @@ object SparkSQLExprMapper {
           case other => throw IllegalArgumentException("an expression of type CTMap", other)
         }
 
-        case MapProjection(mapOwner, items, includeAllProps) =>
+        case MapProjection(mapOwner, items, includeAllProps) => {
           val convertedItems = items.map { case (key, value) => value.asSparkSQLExpr.as(key) }
-          val itemKeys = items.map(_._1)
+          val itemKeys = items.map { case (propKey, _) => propKey }
           val intersectedMapItems = if (includeAllProps) {
             mapOwner.cypherType.material match {
               case x if x.subTypeOf(CTElement) =>
-                val uniqueEntityProps = header.propertiesFor(mapOwner)
-                  .filterNot(p => itemKeys.contains(p.key.name))
+                val uniqueEntityProps = header.propertiesFor(mapOwner).filterNot(p => itemKeys.contains(p.key.name))
                 val propertyColumns = uniqueEntityProps.map(p => p.asSparkSQLExpr.as(p.key.name))
                 convertedItems ++ propertyColumns
               case CTMap(inner) =>
@@ -422,6 +421,7 @@ object SparkSQLExprMapper {
           else convertedItems
 
           create_struct(intersectedMapItems)
+        }
 
         // Aggregators
         case Count(_, distinct) =>
