@@ -126,6 +126,7 @@ object CensusDB {
   def createHiveData(sqlDataSourceConfig: SqlDataSourceConfig)(implicit sparkSession: SparkSession): Unit = {
 
     // Create the database
+    sparkSession.sql(s"DROP DATABASE IF EXISTS CENSUS CASCADE").count
     sparkSession.sql(s"CREATE DATABASE CENSUS").count
 
     // Populate the data

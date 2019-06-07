@@ -27,10 +27,7 @@
 // tag::full-example[]
 package org.opencypher.morpheus.examples
 
-import java.io.File
-
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
 import org.opencypher.morpheus.api.io.sql.SqlDataSourceConfig.Hive
 import org.opencypher.morpheus.api.{GraphSources, MorpheusSession}
 import org.opencypher.morpheus.util.{App, CensusDB}
@@ -42,7 +39,7 @@ object CensusHiveExample extends App {
 
   // tag::create-session[]
   // Create a Spark and a Morpheus session
-  implicit val morpheus: MorpheusSession = MorpheusSession.local(hiveExampleSettings: _*)
+  implicit val morpheus: MorpheusSession = MorpheusSession.local()
   implicit val sparkSession: SparkSession = morpheus.sparkSession
   // end::create-session[]
 
@@ -80,29 +77,5 @@ object CensusHiveExample extends App {
     .records
     .show
   // end::query-graph[]
-
-  // Set up temporary spark and hive directories for this example
-  private def hiveExampleSettings: Seq[(String, String)] = {
-    val sparkWarehouseDir = new File(s"spark-warehouse_${System.currentTimeMillis}").getAbsolutePath
-    Seq(
-      // ------------------------------------------------------------------------
-      // Create a new unique local spark warehouse dir for every run - idempotent
-      // ------------------------------------------------------------------------
-      ("spark.sql.warehouse.dir", sparkWarehouseDir),
-      // -----------------------------------------------------------------------------------------------------------
-      // Create an in-memory Hive Metastore (only Derby supported for this mode)
-      // This is to avoid creating a local HIVE "metastore_db" on disk which needs to be cleaned up before each run,
-      // e.g. avoids database and table already exists exceptions on re-runs - not to be used for production.
-      // -----------------------------------------------------------------------------------------------------------
-      ("javax.jdo.option.ConnectionURL", s"jdbc:derby:memory:;databaseName=metastore_db;create=true"),
-      ("javax.jdo.option.ConnectionDriverName", "org.apache.derby.jdbc.EmbeddedDriver"),
-      // ------------------------------------------------------------------------------------------------------------
-      // An alternative way of enabling Spark Hive Support (e.g. you could use enableHiveSupport on the SparkSession)
-      // ------------------------------------------------------------------------------------------------------------
-      ("hive.metastore.warehouse.dir", s"warehouse_${System.currentTimeMillis}"),
-      (CATALOG_IMPLEMENTATION.key, "hive") // Enable hive
-    )
-  }
-
 }
 // end::full-example[]

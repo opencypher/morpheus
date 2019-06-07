@@ -26,6 +26,7 @@
  */
 package org.opencypher.morpheus.api
 
+import java.io.File
 import java.util.UUID
 
 import org.apache.spark.SparkConf
@@ -93,19 +94,29 @@ object MorpheusSession extends Serializable {
     */
   def create(implicit sparkSession: SparkSession): MorpheusSession = new MorpheusSession(sparkSession)
 
-  /**
-    * Creates a new [[MorpheusSession]] that wraps a local Spark session with Morpheus default parameters.
-    */
-  def local(settings: (String, String)*): MorpheusSession = {
+  val localSparkConf: SparkConf = {
     val conf = new SparkConf(true)
     conf.set("spark.sql.codegen.wholeStage", "true")
     conf.set("spark.sql.shuffle.partitions", "12")
     conf.set("spark.default.parallelism", "8")
-    conf.setAll(settings)
+    // Required for left outer join without join expressions in OPTIONAL MATCH (leads to cartesian product)
+    conf.set("spark.sql.crossJoin.enabled", "true")
 
+    // Store Hive tables in local temp folder
+    conf.set("spark.sql.warehouse.dir", s"${System.getProperty("java.io.tmpdir")}${File.separator}spark-warehouse-${System.nanoTime()}")
+    // Configure Hive to run with in-memory Derby (skips writing metastore_db)
+    conf.set("javax.jdo.option.ConnectionURL", "jdbc:derby:memory:metastore_db;create=true")
+    conf.set("javax.jdo.option.ConnectionDriverName", "org.apache.derby.jdbc.EmbeddedDriver")
+    conf
+  }
+
+  /**
+    * Creates a new [[MorpheusSession]] that wraps a local Spark session with Morpheus default parameters.
+    */
+  def local(): MorpheusSession = {
     val session = SparkSession
       .builder()
-      .config(conf)
+      .config(localSparkConf)
       .master("local[*]")
       .appName(s"morpheus-local-${UUID.randomUUID()}")
       .enableHiveSupport()

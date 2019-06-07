@@ -30,12 +30,11 @@ import java.io.File
 import java.nio.file.Files
 
 import org.apache.spark.sql.SparkSession
-import org.apache.spark.sql.internal.StaticSQLConf.CATALOG_IMPLEMENTATION
 import org.opencypher.morpheus.api.io.sql.SqlDataSourceConfig.Hive
 import org.opencypher.morpheus.api.{GraphSources, MorpheusSession}
 import org.opencypher.morpheus.testing.utils.FileSystemUtils._
 import org.opencypher.morpheus.util.LdbcUtil._
-import org.opencypher.morpheus.util.{App, HiveUtils, LdbcUtil}
+import org.opencypher.morpheus.util.{App, LdbcUtil}
 import org.opencypher.okapi.api.graph.Namespace
 
 /**
@@ -55,7 +54,7 @@ object LdbcHiveExample extends App {
   val datasourceName = "warehouse"
   val database = "LDBC"
 
-  implicit val session: MorpheusSession = MorpheusSession.local(HiveUtils.hiveExampleSettings: _*)
+  implicit val session: MorpheusSession = MorpheusSession.local()
   implicit val spark: SparkSession = session.sparkSession
 
   val csvFiles = new File(resource("csv/").getFile).list()

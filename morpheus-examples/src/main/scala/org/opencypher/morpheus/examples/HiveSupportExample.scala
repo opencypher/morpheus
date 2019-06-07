@@ -29,12 +29,12 @@ package org.opencypher.morpheus.examples
 
 import org.opencypher.morpheus.api.io.util.HiveTableName
 import org.opencypher.morpheus.api.{GraphSources, MorpheusSession}
-import org.opencypher.morpheus.util.{App, HiveUtils}
+import org.opencypher.morpheus.util.App
 import org.opencypher.okapi.api.graph.{GraphName, Node}
 
 object HiveSupportExample extends App {
 
-  implicit val session: MorpheusSession = MorpheusSession.local(HiveUtils.hiveExampleSettings: _*)
+  implicit val session: MorpheusSession = MorpheusSession.local()
 
   val hiveDatabaseName = "socialNetwork"
   session.sparkSession.sql(s"DROP DATABASE IF EXISTS $hiveDatabaseName CASCADE")
