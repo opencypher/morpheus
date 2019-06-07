@@ -31,12 +31,12 @@ import org.opencypher.okapi.api.value.CypherValue.CypherInteger
 import org.opencypher.okapi.impl.exception.{IllegalArgumentException, NotImplementedException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr._
+import org.opencypher.okapi.ir.impl.SignatureTyping._
 import org.opencypher.okapi.ir.impl.parse.{functions => f}
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter.Signature
 import org.opencypher.okapi.ir.impl.typer.{InvalidArgument, InvalidContainerAccess, MissingParameter, UnTypedExpr, WrongNumberOfArguments}
-import org.opencypher.v9_0.expressions.{ExtractScope, LogicalVariable, ReduceScope, functions}
+import org.opencypher.v9_0.expressions.{ExtractScope, functions}
 import org.opencypher.v9_0.{expressions => ast}
-import SignatureTyping._
 
 import scala.language.implicitConversions
 
@@ -62,7 +62,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
     }
   }
 
-  private def convertFilterScope(variable: LogicalVariable, innerPredicate: ast.Expression, list: Expr)(implicit lambdaVars: Map[String, CypherType]) : (LambdaVar, Expr) = {
+  private def convertFilterScope(variable: ast.LogicalVariable, innerPredicate: ast.Expression, list: Expr)(implicit lambdaVars: Map[String, CypherType]) : (LambdaVar, Expr) = {
       val listInnerType = list.cypherType match {
         case CTList(inner) => inner
         case err => throw IllegalArgumentException("a list to step over", err, "Wrong list comprehension type")
@@ -306,7 +306,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
         ListComprehension(convert(variable)(updatedLambdaVars), innerPredicate.map(convert(_)(updatedLambdaVars)),
           extractExpression.map(convert(_)(updatedLambdaVars)), listExpr)
 
-      case ast.ReduceExpression(ReduceScope(accumulator, variable, reduceExpression), _, list) =>
+      case ast.ReduceExpression(ast.ReduceScope(accumulator, variable, reduceExpression), _, list) =>
         val initExpr = child1
         val introduceLambdaVars = Map(accumulator.name -> initExpr.cypherType, variable.name -> initExpr.cypherType)
         val updatedLambdaVars = lambdaVars ++ introduceLambdaVars
@@ -326,6 +326,14 @@ final class ExpressionConverter(context: IRBuilderContext) {
             case _ => throw IllegalArgumentException("requires a predicate") //same behaviour as neo4j
           }
       }
+
+      case ast.DesugaredMapProjection(_, items, includeAllProps) =>
+        val convertedItems = items.map(x => x.key.name -> convert(x.exp))
+        val mapOwner = child0 match {
+          case v: Var => v
+          case err => throw IllegalArgumentException("a Var Expr", err)
+        }
+        MapProjection(mapOwner, convertedItems, includeAllProps)
 
       case ast.ContainerIndex(container, index) =>
         val convertedContainer = convert(container)
