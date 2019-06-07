@@ -102,13 +102,6 @@ object MorpheusSession extends Serializable {
     // Required for left outer join without join expressions in OPTIONAL MATCH (leads to cartesian product)
     conf.set("spark.sql.crossJoin.enabled", "true")
 
-    //    setting for debug
-    //    conf.set("spark.sql.shuffle.partitions", "1")
-    //    conf.set("spark.default.parallelism", "1")
-    //    performance
-    //    conf.set("spark.sql.inMemoryColumnarStorage.compressed", "false")
-    //    conf.set("spark.submit.deployMode", "client")
-
     // Store Hive tables in local temp folder
     conf.set("spark.sql.warehouse.dir", s"${System.getProperty("java.io.tmpdir")}${File.separator}spark-warehouse-${System.nanoTime()}")
     // Configure Hive to run with in-memory Derby (skips writing metastore_db)

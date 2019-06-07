@@ -49,9 +49,19 @@ import org.opencypher.morpheus.api.MorpheusSession
 object TestSparkSession {
 
   lazy val instance: SparkSession = {
+
+    val conf = MorpheusSession.localSparkConf
+
+//    //    settings for debug
+//    conf.set("spark.sql.shuffle.partitions", "1")
+//    conf.set("spark.default.parallelism", "1")
+//    //    performance
+//    conf.set("spark.sql.inMemoryColumnarStorage.compressed", "false")
+//    conf.set("spark.submit.deployMode", "client")
+
     val session = SparkSession
       .builder()
-      .config(MorpheusSession.localSparkConf)
+      .config(conf)
       .master("local[*]")
       .appName(s"morpheus-tests-${UUID.randomUUID()}")
       .enableHiveSupport()
