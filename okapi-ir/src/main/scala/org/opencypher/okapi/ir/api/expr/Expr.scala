@@ -1027,89 +1027,92 @@ case object Timestamp extends NullaryFunctionExpr {
 }
 
 // Aggregators
-
-sealed trait Aggregator extends Expr {
-  def inner: Option[Expr]
-
+sealed trait Aggregator extends TypeValidatedExpr {
   override def nullInNullOut: Boolean = false
+  override def propagationType : Option[PropagationType] = Some(AnyNullable)
 }
 
+sealed trait NullaryAggregator extends Aggregator{
+  def exprs: List[Expr] = List()
+  def signature: Option[CypherType]
+  def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = signature
+}
 
-sealed trait TypedAggregator extends Aggregator with TypeValidatedExpr {
-  def expr : Expr
+sealed trait UnaryAggregator extends Aggregator{
+  def expr: Expr
   def exprs: List[Expr] = List(expr)
 
-  override def propagationType : Option[PropagationType] = Some(AnyNullable)
-
-  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
-      case CTDuration => Some(CTDuration)
-      case x if CTNumber.superTypeOf(x) => Some(x)
-      case _ => None
-  }
-
+  def signature(inputCypherType: CypherType): Option[CypherType]
   def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = signature(inputCypherTypes.head)
 }
 
-final case class Avg(expr: Expr) extends TypedAggregator {
 
-  override val inner: Option[Expr] = Some(expr)
+sealed trait NumericAggregator extends UnaryAggregator{
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case x if CTNumber.superTypeOf(x) => Some(x)
+    case _ => None
+  }
+}
 
+sealed trait NumericAndDurationsAggregator extends UnaryAggregator{
+  def signature(inputCypherType: CypherType): Option[CypherType] = inputCypherType match {
+    case CTDuration => Some(CTDuration)
+    case x if CTNumber.superTypeOf(x) => Some(x)
+    case _ => None
+  }
+}
+
+final case class Avg(expr: Expr) extends NumericAndDurationsAggregator {
   override def toString = s"avg($expr)"
   override def withoutType: String = s"avg(${expr.withoutType})"
-
 }
 
-case object CountStar extends Aggregator {
-
-  override val inner: Option[Expr] = None
-  override val cypherType: CypherType = CTInteger
+case object CountStar extends NullaryAggregator {
   override def withoutType: String = toString
   override def toString = "count(*)"
-
+  override def signature: Option[CypherType] = Some(CTInteger)
 }
 
-final case class Count(expr: Expr, distinct: Boolean) extends Aggregator {
-
-  override val inner: Option[Expr] = Some(expr)
-  override val cypherType: CypherType = CTInteger
+final case class Count(expr: Expr, distinct: Boolean) extends UnaryAggregator {
   override def toString = s"count($expr)"
   override def withoutType: String = s"count(${expr.withoutType})"
 
+  def signature(inputCypherType: CypherType): Option[CypherType] = Some(CTInteger)
 }
 
-final case class Max(expr: Expr) extends Aggregator {
-
-  override val inner: Option[Expr] = Some(expr)
-  override val cypherType: CypherType = expr.cypherType
+final case class Max(expr: Expr) extends UnaryAggregator {
   override def toString = s"max($expr)"
   override def withoutType: String = s"max(${expr.withoutType})"
+  def signature(inputCypherType: CypherType): Option[CypherType] = Some(inputCypherType)
 }
 
-final case class Min(expr: Expr) extends Aggregator {
-
-  override val inner: Option[Expr] = Some(expr)
-  override val cypherType: CypherType = expr.cypherType
+final case class Min(expr: Expr) extends UnaryAggregator {
   override def toString = s"min($expr)"
   override def withoutType: String = s"min(${expr.withoutType})"
-
+  def signature(inputCypherType: CypherType): Option[CypherType] = Some(inputCypherType)
 }
 
-final case class Sum(expr: Expr) extends TypedAggregator {
+final case class StDev(expr: Expr) extends NumericAggregator {
+  override def toString = s"stDev($expr)"
+  override def withoutType: String = s"stDev(${expr.withoutType})"
+}
 
-  override val inner: Option[Expr] = Some(expr)
+final case class StDevP(expr: Expr) extends NumericAggregator {
+  override def toString = s"stDev($expr)"
+  override def withoutType: String = s"stDev(${expr.withoutType})"
+}
 
+
+final case class Sum(expr: Expr) extends NumericAndDurationsAggregator {
   override def toString = s"sum($expr)"
   override def withoutType: String = s"sum(${expr.withoutType})"
-
 }
 
-final case class Collect(expr: Expr, distinct: Boolean) extends Aggregator {
-
-  override val inner: Option[Expr] = Some(expr)
-  override val cypherType: CypherType = CTList(expr.cypherType)
+final case class Collect(expr: Expr, distinct: Boolean) extends UnaryAggregator {
   override def toString = s"collect($expr)"
   override def withoutType: String = s"collect(${expr.withoutType})"
 
+  def signature(inputCypherType: CypherType): Option[CypherType] = Some(CTList(inputCypherType))
 }
 
 // Literal expressions

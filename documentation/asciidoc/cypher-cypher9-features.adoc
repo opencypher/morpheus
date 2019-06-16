@@ -168,8 +168,8 @@ Here follows a comprehensive reference of Cypher9 features and their implementat
 | min()     | {yes}
 | percentileCont() | {no}
 | percentileDisc() | {no}
-| stdDev()  | {no}
-| stdDevP() | {no}
+| stdDev()  | {yes}
+| stdDevP() | {yes}
 | sum()     | {yes}
 |===
 

@@ -127,7 +127,7 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
     }
 
     it("avg on durations") {
-      val result = morpheus.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT20H')] AS d RETURN AVG(d) as res")
+      val result = morpheus.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT20H')] AS d RETURN AVG(d) AS res")
 
       result.records.toMaps should equal(Bag(
         CypherMap("res" -> Duration(days = 1, hours = 16))
@@ -220,7 +220,7 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
     it("count() with grouping in RETURN clause") {
       val graph = initGraph("CREATE ({name: 'foo'}), ({name: 'foo'}), (), (), (), ({name: 'baz'})")
 
-      val result = graph.cypher("MATCH (n) RETURN n.name as name, count(*) AS amount")
+      val result = graph.cypher("MATCH (n) RETURN n.name AS name, count(*) AS amount")
 
       result.records.toMaps should equal(Bag(
         CypherMap("name" -> "foo", "amount" -> 2),
@@ -232,7 +232,7 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
     it("count() with grouping in WITH clause") {
       val graph = initGraph("CREATE ({name: 'foo'}), ({name: 'foo'}), (), (), (), ({name: 'baz'})")
 
-      val result = graph.cypher("MATCH (n) WITH n.name as name, count(*) AS amount RETURN name, amount")
+      val result = graph.cypher("MATCH (n) WITH n.name AS name, count(*) AS amount RETURN name, amount")
 
       result.records.toMaps should equal(Bag(
         CypherMap("name" -> "foo", "amount" -> 2),
@@ -268,7 +268,7 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
           |MATCH (a:Start)-->(b)
           |
           |RETURN a.id,
-          |       count(distinct b.val) as val
+          |       count(distinct b.val) AS val
         """.stripMargin)
 
       result.records.toMaps should equal(Bag(
@@ -350,7 +350,7 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
     }
 
     it("min on dates") {
-      val result = morpheus.graphs.empty.cypher("UNWIND [date('2018-01-01'), date('2019-01-01')] AS d RETURN MIN(d) as res")
+      val result = morpheus.graphs.empty.cypher("UNWIND [date('2018-01-01'), date('2019-01-01')] AS d RETURN MIN(d) AS res")
 
       result.records.toMaps should equal(Bag(
         CypherMap("res" -> java.time.LocalDate.parse("2018-01-01"))
@@ -358,7 +358,7 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
     }
 
     it("min on datetimes") {
-      val result = morpheus.graphs.empty.cypher("UNWIND [localdatetime('2010-10-10T12:00'), localdatetime('2010-10-10T12:01')] AS d RETURN MIN(d) as res")
+      val result = morpheus.graphs.empty.cypher("UNWIND [localdatetime('2010-10-10T12:00'), localdatetime('2010-10-10T12:01')] AS d RETURN MIN(d) AS res")
 
       result.records.toMaps should equal(Bag(
         CypherMap("res" -> java.time.LocalDateTime.parse("2010-10-10T12:00"))
@@ -366,7 +366,7 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
     }
 
     it("min on durations") {
-      val result = morpheus.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT200H')] AS d RETURN MIN(d) as res")
+      val result = morpheus.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT200H')] AS d RETURN MIN(d) AS res")
 
       result.records.toMaps should equal(Bag(
         CypherMap("res" -> Duration(days = 1, hours = 12))
@@ -374,7 +374,7 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
     }
 
     it("min on combination of temporal types") {
-      val result = morpheus.graphs.empty.cypher("UNWIND [date('2018-01-01'), localdatetime('2010-10-10T12:01')] AS d RETURN MIN(d) as res")
+      val result = morpheus.graphs.empty.cypher("UNWIND [date('2018-01-01'), localdatetime('2010-10-10T12:01')] AS d RETURN MIN(d) AS res")
 
       result.records.toMaps should equal(Bag(
         CypherMap("res" -> java.time.LocalDateTime.parse("2010-10-10T12:01"))
@@ -455,7 +455,7 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
     }
 
     it("max on dates") {
-      val result = morpheus.graphs.empty.cypher("UNWIND [date('2018-01-01'), date('2019-01-01')] AS d RETURN MAX(d) as res")
+      val result = morpheus.graphs.empty.cypher("UNWIND [date('2018-01-01'), date('2019-01-01')] AS d RETURN MAX(d) AS res")
 
       result.records.toMaps should equal(Bag(
         CypherMap("res" -> java.time.LocalDate.parse("2019-01-01"))
@@ -463,7 +463,7 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
     }
 
     it("max on datetimes") {
-      val result = morpheus.graphs.empty.cypher("UNWIND [localdatetime('2010-10-10T12:00'), localdatetime('2010-10-10T12:01')] AS d RETURN MAX(d) as res")
+      val result = morpheus.graphs.empty.cypher("UNWIND [localdatetime('2010-10-10T12:00'), localdatetime('2010-10-10T12:01')] AS d RETURN MAX(d) AS res")
 
       result.records.toMaps should equal(Bag(
         CypherMap("res" -> java.time.LocalDateTime.parse("2010-10-10T12:01"))
@@ -471,7 +471,7 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
     }
 
     it("max on durations") {
-      val result = morpheus.graphs.empty.cypher("UNWIND [duration('P10DT12H'), duration('P1DT24H')] AS d RETURN MAX(d) as res")
+      val result = morpheus.graphs.empty.cypher("UNWIND [duration('P10DT12H'), duration('P1DT24H')] AS d RETURN MAX(d) AS res")
 
       result.records.toMaps should equal(Bag(
         CypherMap("res" -> Duration(days = 10, hours = 12))
@@ -479,7 +479,7 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
     }
 
     it("max on combination of temporal types") {
-      val result = morpheus.graphs.empty.cypher("UNWIND [date('2018-01-01'), localdatetime('2010-10-10T12:01')] AS d RETURN MAX(d) as res")
+      val result = morpheus.graphs.empty.cypher("UNWIND [date('2018-01-01'), localdatetime('2010-10-10T12:01')] AS d RETURN MAX(d) AS res")
 
       result.records.toMaps should equal(Bag(
         CypherMap("res" -> java.time.LocalDateTime.parse("2018-01-01T00:00"))
@@ -582,10 +582,64 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
     }
 
     it("sum on durations") {
-      val result = morpheus.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT24H')] AS d RETURN SUM(d) as res")
+      val result = morpheus.graphs.empty.cypher("UNWIND [duration('P1DT12H'), duration('P1DT24H')] AS d RETURN SUM(d) AS res")
 
       result.records.toMaps should equal(Bag(
         CypherMap("res" -> Duration(days = 3, hours = 12))
+      ))
+    }
+  }
+
+  describe("stDev") {
+    it("stDev on floats") {
+      val result = morpheus.graphs.empty.cypher("UNWIND [98.17, 112.3, 102.6, 94.3, 108.1] AS numbers RETURN round(stDev(numbers)*1000)/1000.0 AS res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> 7.274)
+      ))
+    }
+
+    it("stDev on nullable list of floats") {
+      val result = morpheus.graphs.empty.cypher("UNWIND [98.17, null, 102.6, 94.3, 108.1] AS numbers RETURN round(stDev(numbers)*1000)/1000.0 AS res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> 5.936)
+      ))
+    }
+
+    it("stDev on null") {
+      val result = morpheus.graphs.empty.cypher("RETURN  stDev(null) AS res")
+
+      // TODO: Spark returns null for stDev(null) instead of 0
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> null)
+      ))
+    }
+  }
+
+  describe("stDevP") {
+    it("stDevP on floats") {
+      val result = morpheus.graphs.empty.cypher("UNWIND [98.17, 112.3, 102.6, 94.3, 108.1] AS numbers RETURN round(stDevP(numbers)*1000)/1000.0 AS res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> 6.506)
+      ))
+    }
+
+    it("stDevP on nullable list of floats") {
+      val result = morpheus.graphs.empty.cypher("UNWIND [98.17, null, 102.6, 94.3, 108.1] AS numbers RETURN round(stDevP(numbers)*1000)/1000.0 AS res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> 5.140)
+      ))
+    }
+
+    it("stDevP on null") {
+      val result = morpheus.graphs.empty.cypher("RETURN  stDevP(null) AS res")
+
+      // TODO: Spark returns null for stDevP(null) instead of 0
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> null)
       ))
     }
   }
@@ -665,7 +719,7 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
           |MATCH (a:Start)-->(b)
           |
           |RETURN a.id,
-          |       collect(distinct b.val) as val
+          |       collect(distinct b.val) AS val
         """.stripMargin)
 
       result.records.toMaps should equal(Bag(
@@ -751,7 +805,7 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
           | MIN(n.val) AS min,
           | MAX(n.val) AS max,
           | SUM(n.val) AS sum,
-          | COLLECT(n.val) as col""".stripMargin)
+          | COLLECT(n.val) AS col""".stripMargin)
 
       result.records.toMaps should equal(Bag(
         CypherMap(
@@ -772,7 +826,7 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
           | MIN(n.val) AS min,
           | MAX(n.val) AS max,
           | SUM(n.val) AS sum,
-          | COLLECT(n.val) as col
+          | COLLECT(n.val) AS col
           |RETURN key, avg, cnt, min, max, sum, col""".stripMargin)
 
       result.records.toMaps should equal(Bag(
