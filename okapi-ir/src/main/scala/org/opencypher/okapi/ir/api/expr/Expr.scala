@@ -1092,6 +1092,30 @@ final case class Min(expr: Expr) extends UnaryAggregator {
   def signature(inputCypherType: CypherType): Option[CypherType] = Some(inputCypherType)
 }
 
+final case class PercentileCont(expr: Expr, percentile: Expr) extends Aggregator {
+  override def toString = s"percentileCont($expr, $percentile)"
+  override def withoutType: String = s"percentileCont(${expr.withoutType}, ${percentile.withoutType})"
+
+  def exprs: List[Expr] = List(expr, percentile)
+
+  def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes match  {
+    case Seq(x, CTFloat) if x.subTypeOf(CTNumber) => Some(CTFloat)
+    case _ => None
+  }
+}
+
+final case class PercentileDisc(expr: Expr, percentile: Expr) extends Aggregator {
+  override def toString = s"percentileDisc($expr, $percentile)"
+  override def withoutType: String = s"percentileDisc(${expr.withoutType}, ${percentile.withoutType})"
+
+  def exprs: List[Expr] = List(expr, percentile)
+
+  def signature(inputCypherTypes: Seq[CypherType]): Option[CypherType] = inputCypherTypes match  {
+    case Seq(x, CTFloat) if x.subTypeOf(CTNumber) => Some(x)
+    case _ => None
+  }
+}
+
 final case class StDev(expr: Expr) extends NumericAggregator {
   override def toString = s"stDev($expr)"
   override def withoutType: String = s"stDev(${expr.withoutType})"

@@ -165,6 +165,8 @@ final class ExpressionConverter(context: IRBuilderContext) {
           case functions.Avg => Avg(child0)
           case functions.Max => Max(child0)
           case functions.Min => Min(child0)
+          case functions.PercentileCont => PercentileCont(child0, child1)
+          case functions.PercentileDisc => PercentileDisc(child0, child1)
           case functions.StdDev => StDev(child0)
           case functions.StdDevP => StDevP(child0)
           case functions.Sum => Sum(child0)
