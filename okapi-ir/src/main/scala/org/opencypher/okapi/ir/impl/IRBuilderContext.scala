@@ -51,7 +51,8 @@ final case class IRBuilderContext(
   queryLocalCatalog: QueryLocalCatalog, // copy of Session catalog plus constructed graph schemas
   // TODO: Unify instantiateView and queryCatalog into one abstraction that resolves graphs/views
   instantiateView: ViewInvocation => PropertyGraph,
-  knownTypes: Map[ast.Expression, CypherType] = Map.empty) {
+  knownTypes: Map[ast.Expression, CypherType] = Map.empty,
+  knownPatterns: Seq[Pattern] = Seq.empty) {
   self =>
 
   private lazy val exprConverter = new ExpressionConverter(self)
@@ -78,6 +79,10 @@ final case class IRBuilderContext(
   def withWorkingGraph(graph: IRGraph): IRBuilderContext =
     copy(workingGraph = graph)
 
+  def resetKnownPatterns: IRBuilderContext = {
+    copy(knownPatterns = Seq.empty)
+  }
+
   def registerGraph(qgn: QualifiedGraphName, graph: PropertyGraph): IRBuilderContext =
     copy(queryLocalCatalog = queryLocalCatalog.withGraph(qgn, graph))
 
@@ -87,6 +92,10 @@ final case class IRBuilderContext(
   def resetRegistry: IRBuilderContext = {
     val sourceBlock = SourceBlock(workingGraph)
     copy(blockRegistry = BlockRegistry.empty.register(sourceBlock))
+  }
+
+  def registerPattern(pattern: Pattern): IRBuilderContext = {
+    copy(knownPatterns = knownPatterns :+ pattern)
   }
 }
 
