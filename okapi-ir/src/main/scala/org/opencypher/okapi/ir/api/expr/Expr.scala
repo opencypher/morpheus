@@ -818,6 +818,7 @@ final case class Explode(expr: Expr) extends Expr {
     case CTUnion(options) =>
       options.map {
         case CTList(inner) => inner
+        case CTNull => CTNull
         case _ => throw IllegalArgumentException("input cypher type to resolve to a list", expr.cypherType)
       }.reduceLeft(_ | _)
 
