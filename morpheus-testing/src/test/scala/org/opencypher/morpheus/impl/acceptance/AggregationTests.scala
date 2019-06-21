@@ -644,6 +644,91 @@ class AggregationTests extends MorpheusTestSuite with ScanGraphInit {
     }
   }
 
+  describe("percentileCont") {
+    it("percentileContil on integers"){
+      val result = morpheus.graphs.empty.cypher("UNWIND [1,2] AS values RETURN percentileCont(values, 0.5) AS res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> 1.5)
+      ))
+    }
+
+    it("percentileContil with 1.0 as percentile"){
+      val result = morpheus.graphs.empty.cypher("UNWIND [2,10,5,6] AS values RETURN percentileCont(values, 1.0) AS res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> 10.0)
+      ))
+    }
+
+    it("percentileContil with 0.0 as percentile"){
+      val result = morpheus.graphs.empty.cypher("UNWIND [2,10,5,6] AS values RETURN percentileCont(values, 0.0) AS res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> 2.0)
+      ))
+    }
+
+    it("percentileContil on floats with null"){
+      val result = morpheus.graphs.empty.cypher("UNWIND [10.0,null,2.0,6.0] AS values RETURN round(percentileCont(values, 0.62) * 1000) / 1000.0 AS res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> 6.96)
+      ))
+    }
+
+    it("percentileContil on floats"){
+      val result = morpheus.graphs.empty.cypher("UNWIND [10.0,5.0,2.0,6.0] AS values RETURN percentileCont(values, 0.6) AS res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> 5.8)
+      ))
+    }
+  }
+
+  describe("percentileDisc") {
+    it("percentileDisc on integers"){
+      val result = morpheus.graphs.empty.cypher("UNWIND [10,5,2,6] AS values RETURN percentileDisc(values, 0.5) AS res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> 5)
+      ))
+    }
+
+    it("percentileDisc with 1.0 as percentile"){
+      val result = morpheus.graphs.empty.cypher("UNWIND [10.0,5.0,2.0,6.0] AS values RETURN percentileDisc(values, 1.0) AS res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> 10.0)
+      ))
+    }
+
+    it("percentileDisc with 0.0 as percentile"){
+      val result = morpheus.graphs.empty.cypher("UNWIND [10.0,5.0,2.0,6.0] AS values RETURN percentileDisc(values, 0.0) AS res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> 2.0)
+      ))
+    }
+
+    it("percentileDisc on floats with null"){
+      val result = morpheus.graphs.empty.cypher("UNWIND [10.0,null,2.0,6.0] AS values RETURN percentileDisc(values, 0.6) AS res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> 6.0)
+      ))
+    }
+
+    it("percentileDisc on floats"){
+      val graph = initGraph("CREATE ({age: 10.0}), ({age: 2.0}), ({age: 5.0}), ({age: 6.0})")
+      val result = graph.cypher("MATCH (n) RETURN percentileDisc(n.age, 0.5) AS res")
+
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> 5.0)
+      ))
+    }
+  }
+
   describe("COLLECT") {
 
     it("collect(prop) with integers in WITH") {

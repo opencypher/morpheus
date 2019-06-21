@@ -166,8 +166,8 @@ Here follows a comprehensive reference of Cypher9 features and their implementat
 | count()   | {yes}
 | max()     | {yes}
 | min()     | {yes}
-| percentileCont() | {no}
-| percentileDisc() | {no}
+| percentileCont() | {yes}
+| percentileDisc() | {yes}
 | stdDev()  | {yes}
 | stdDevP() | {yes}
 | sum()     | {yes}
