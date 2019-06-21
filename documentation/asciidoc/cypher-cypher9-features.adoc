@@ -224,6 +224,6 @@ Here follows a comprehensive reference of Cypher9 features and their implementat
 | NOT                   | {yes}
 | OR                    | {yes}
 | STARTS WITH           | {yes}
-| XOR                   | {no}
+| XOR                   | {yes}
 |===
 
