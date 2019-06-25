@@ -112,6 +112,7 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
   val g2 = GraphName("testGraph2")
   val g3 = GraphName("folder1.testGraph3")
   val g4 = GraphName("folder1.folder2.testGraph4")
+  val g5 = GraphName("testGraph5")
   lazy val testCreateGraphStatements: Map[GraphName, String] = Map(
     g1 ->
       s"""
@@ -129,7 +130,13 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
     """.stripMargin,
     g2 -> "CREATE (d { name: 'D', type: 'NO_LABEL' })",
     g3 -> "CREATE (a:A)",
-    g4 -> "CREATE (a:A)"
+    g4 -> "CREATE (a:A)",
+    g5 ->
+      """
+        |CREATE (a:USER {name: "Bob"})-[:REVIEWS{rating: 0.0}]->(b:BUSINESS),
+        |       (a)-[:REVIEWS{rating: 3.0}]->(b),
+        |       (a)-[:REVIEWS{rating: 5.0}]->(b)
+      """.stripMargin
   )
 
   def pgds()(implicit ctx: TestContext): PropertyGraphDataSource = ctx.pgds
@@ -250,6 +257,12 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
         registerPgds(ns)
         session.catalog.source(ns).graph(g3).nodes("n").size shouldBe 1
         session.catalog.source(ns).graph(g3).relationships("r").size shouldBe 0
+      },
+
+      Scenario("API: PropertyGraphDataSource: unique IDs for graph #4", g5) { implicit ctx: TestContext =>
+        registerPgds(ns)
+        val result = session.catalog.graph(QualifiedGraphName(ns, g5)).cypher("MATCH (a)-[r]->(b) RETURN DISTINCT id(r)").records
+        result.size should equal(3)
       },
 
       Scenario("API: Cypher query directly on graph #1", g1) { implicit ctx: TestContext =>

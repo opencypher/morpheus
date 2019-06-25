@@ -28,6 +28,7 @@ package org.opencypher.morpheus.api.io.sql
 
 import java.net.URI
 
+import org.apache.spark.sql.functions.monotonically_increasing_id
 import org.apache.spark.sql.types.{DataType, DecimalType, IntegerType, LongType}
 import org.apache.spark.sql.{Column, DataFrame, DataFrameReader, functions}
 import org.opencypher.graphddl._
@@ -219,8 +220,9 @@ case class SqlPropertyGraphDataSource(
     evm: EdgeToViewMapping,
     df: DataFrame
   ): (Map[String, String], Seq[Column]) = {
-
-    val relIdColumn = generateIdColumn(df, evm.key, df.columns.map(_.decodeSpecialCharacters).toList, relSourceIdKey, schema)
+    val genIdColumns = df.columns.filterNot(col => evm.propertyMappings.contains(col))
+      .map(_.decodeSpecialCharacters)
+    val relIdColumn = generateIdColumn(df, evm.key, genIdColumns.toList, relSourceIdKey, schema, relId = true)
     val relSourceIdColumn = generateIdColumn(df, evm.startNode.nodeViewKey, evm.startNode.joinPredicates.map(_.edgeColumn), sourceStartNodeKey, schema)
     val relTargetIdColumn = generateIdColumn(df, evm.endNode.nodeViewKey, evm.endNode.joinPredicates.map(_.edgeColumn), sourceEndNodeKey, schema)
     val relProperties = generatePropertyColumns(evm, df, ddlGraph, schema, Some("relationship"))
@@ -349,7 +351,8 @@ case class SqlPropertyGraphDataSource(
     elementViewKey: ElementViewKey,
     idColumnNames: List[String],
     newIdColumn: String,
-    schema: PropertyGraphSchema
+    schema: PropertyGraphSchema,
+    relId: Boolean = false
   ): Column = {
     val idColumns = idColumnNames.map(_.toLowerCase.encodeSpecialCharacters).map(dataFrame.col)
     idGenerationStrategy match {
@@ -365,7 +368,12 @@ case class SqlPropertyGraphDataSource(
             .sortBy(s => s.mkString)
             .zipWithIndex.toMap
         val elementTypeToIntegerId = typeToId(elementViewKey.elementType.toList.sorted)
-        val columnsToSerialize = functions.lit(elementTypeToIntegerId) :: idColumns
+        val columnsToSerialize = if (relId) {
+          functions.lit(elementTypeToIntegerId) :: monotonically_increasing_id() :: idColumns
+        }
+        else {
+          functions.lit(elementTypeToIntegerId) :: idColumns
+        }
         MorpheusFunctions.serialize(columnsToSerialize: _*).as(newIdColumn)
     }
   }

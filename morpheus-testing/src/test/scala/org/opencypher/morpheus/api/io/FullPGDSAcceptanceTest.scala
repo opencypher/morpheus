@@ -212,7 +212,13 @@ class FullPGDSAcceptanceTest extends MorpheusTestSuite
         .withRelationshipType(Set("A", "B"), Set("S"), Set("A", "B"))
         .withRelationshipType(Set("A", "C"), Set("T"), Set("A", "B")),
       g3 -> GraphType.empty.withElementType("A").withNodeType("A"),
-      g4 -> GraphType.empty.withElementType("A").withNodeType("A")
+      g4 -> GraphType.empty.withElementType("A").withNodeType("A"),
+      g5 -> GraphType.empty.withElementType("USER", "name" -> CTString)
+        .withElementType("BUSINESS")
+        .withElementType("REVIEWS", "rating" -> CTFloat)
+        .withNodeType("USER")
+        .withNodeType("BUSINESS")
+        .withRelationshipType(Set("USER"), Set("REVIEWS"), Set("BUSINESS"))
     )
 
     def writeTable(df: DataFrame, tableName: String): Unit
