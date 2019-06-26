@@ -215,7 +215,7 @@ class FullPGDSAcceptanceTest extends MorpheusTestSuite
       g4 -> GraphType.empty.withElementType("A").withNodeType("A"),
       g5 -> GraphType.empty.withElementType("USER", "name" -> CTString)
         .withElementType("BUSINESS")
-        .withElementType("REVIEWS", "rating" -> CTFloat)
+        .withElementType("REVIEWS", "rating" -> CTFloat.nullable)
         .withNodeType("USER")
         .withNodeType("BUSINESS")
         .withRelationshipType(Set("USER"), Set("REVIEWS"), Set("BUSINESS"))

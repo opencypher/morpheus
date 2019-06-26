@@ -135,7 +135,9 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
       """
         |CREATE (a:USER {name: "Bob"})-[:REVIEWS{rating: 0.0}]->(b:BUSINESS),
         |       (a)-[:REVIEWS{rating: 3.0}]->(b),
-        |       (a)-[:REVIEWS{rating: 5.0}]->(b)
+        |       (a)-[:REVIEWS{rating: 5.0}]->(b),
+        |       (a)-[:REVIEWS]->(b),
+        |       (a)-[:REVIEWS]->(b)
       """.stripMargin
   )
 
@@ -262,7 +264,7 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
       Scenario("API: PropertyGraphDataSource: unique IDs for graph #4", g5) { implicit ctx: TestContext =>
         registerPgds(ns)
         val result = session.catalog.graph(QualifiedGraphName(ns, g5)).cypher("MATCH (a)-[r]->(b) RETURN DISTINCT id(r)").records
-        result.size should equal(3)
+        result.size should equal(5)
       },
 
       Scenario("API: Cypher query directly on graph #1", g1) { implicit ctx: TestContext =>
