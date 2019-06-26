@@ -261,7 +261,7 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
         session.catalog.source(ns).graph(g3).relationships("r").size shouldBe 0
       },
 
-      Scenario("API: PropertyGraphDataSource: unique IDs for graph #4", g5) { implicit ctx: TestContext =>
+      Scenario("API: PropertyGraphDataSource: unique IDs for graph #5", g5) { implicit ctx: TestContext =>
         registerPgds(ns)
         val result = session.catalog.graph(QualifiedGraphName(ns, g5)).cypher("MATCH (a)-[r]->(b) RETURN DISTINCT id(r)").records
         result.size should equal(5)
