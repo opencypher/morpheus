@@ -39,12 +39,12 @@ import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern.{Connection, Pattern}
 import org.opencypher.okapi.ir.api.set.{SetItem, SetLabelItem, SetPropertyItem}
-import org.opencypher.okapi.ir.api.util.{CompilationStage, FreshVariableNamer}
+import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.exception.ParsingException
 import org.opencypher.okapi.ir.impl.refactor.instances._
 import org.opencypher.okapi.ir.impl.util.VarConverters.RichIrField
 import org.opencypher.v9_0.ast.QueryPart
-import org.opencypher.v9_0.util.{FreshIdNameGenerator, InputPosition}
+import org.opencypher.v9_0.util.InputPosition
 import org.opencypher.v9_0.{ast, expressions => exp}
 
 
@@ -317,9 +317,10 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
                   pattern.topology.foreach {
                     case (relField@IRField(fieldName), con: Connection) if fieldName == relName =>
                       val expectedConnection = context.knownPatterns.map(_.topology).flatMap(_.get(relField)).headOption
-                        .getOrElse(throw UnsupportedOperationException(s"Cloned relationship '$fieldName' needs a match pattern to resolve the src and target nodes (maybe out of scope due f.i. WITH-Clauses)."))
+                        .getOrElse(throw IllegalArgumentException(s"Cloned relationship '$fieldName' needs its source and target nodes from the MATCH  pattern (could be out of scope after a WITH)."))
                       if (expectedConnection != con)
-                        throw UnsupportedOperationException(s"Cloned relationships are are only allowed with the corresponding source and target node. \n Found $con \n expected $expectedConnection")
+                        throw IllegalArgumentException(s"Cloned relationships are are only allowed with the corresponding source and target node", con
+                          , s"Following pattern was expected: \n $expectedConnection")
                     case _ => ()
                   }
                 }
@@ -373,7 +374,11 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
               createPattern,
               setItems,
               onGraphs)
-            val updatedContext = context.resetKnownPatterns.withWorkingGraph(patternGraph).registerSchema(qgn, patternGraphSchema)
+
+            val updatedContext = context.resetKnownPatterns
+              .withWorkingGraph(patternGraph)
+              .registerSchema(qgn, patternGraphSchema)
+              .resetKnownTypes
             put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block]](List.empty)
           }
         } yield refs

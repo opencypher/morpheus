@@ -27,7 +27,7 @@
 package org.opencypher.okapi.ir.impl
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
-import org.opencypher.okapi.api.schema.{PropertyKeys, PropertyGraphSchema}
+import org.opencypher.okapi.api.schema.{PropertyGraphSchema, PropertyKeys}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
 import org.opencypher.okapi.impl.exception.UnsupportedOperationException
@@ -691,7 +691,7 @@ class IrBuilderTest extends IrTestSuite {
           |RETURN GRAPH
         """.stripMargin
 
-       an[UnsupportedOperationException] shouldBe thrownBy(query.asCypherQuery().model.result)
+       an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery().model.result)
     }
 
     it("fails  cloning of relationships with newly constructed end nodes") {
@@ -703,7 +703,7 @@ class IrBuilderTest extends IrTestSuite {
           |RETURN GRAPH
         """.stripMargin
 
-      an[UnsupportedOperationException] shouldBe thrownBy(query.asCypherQuery().model.result)
+      an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery().model.result)
     }
 
     it("fails  cloning of relationships with newly constructed start nodes") {
@@ -715,7 +715,7 @@ class IrBuilderTest extends IrTestSuite {
           |RETURN GRAPH
         """.stripMargin
 
-      an[UnsupportedOperationException] shouldBe thrownBy(query.asCypherQuery().model.result)
+      an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery().model.result)
     }
 
     it("succeeds pattern with cloned relationship and new unnamed relationship #1") {
@@ -749,18 +749,27 @@ class IrBuilderTest extends IrTestSuite {
            |  CREATE (b)-[e]->(b)
            |RETURN GRAPH""".stripMargin
 
-      an[UnsupportedOperationException] shouldBe thrownBy(query.asCypherQuery().model.result)
+      an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery().model.result)
     }
 
-    it("fails cloning rel with false src and target nodes") {
+    it("fails cloning rel with false src and target nodes #1") {
       val query =
         """|MATCH (a)-[e]->(b)
            |CONSTRUCT
            |  CREATE (b)-[e]->(a)
            |RETURN GRAPH""".stripMargin
 
-      an[UnsupportedOperationException] shouldBe thrownBy(query.asCypherQuery().model.result)
+      an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery().model.result)
+    }
 
+    it("fails cloning rel with false src and target nodes #2") {
+      val query =
+        """|MATCH (a)-[e]->(b)
+           |WITH e, b AS a, a AS b
+           |CONSTRUCT
+           |  CREATE (a)-[e]->(b)
+           |RETURN GRAPH""".stripMargin
+      an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery().model.result)
     }
   }
 
@@ -776,16 +785,20 @@ class IrBuilderTest extends IrTestSuite {
       an[UnsupportedOperationException] shouldBe thrownBy(query.asCypherQuery().model.result)
     }
 
-    it("CONSTRUCT clears pattern scope") {
+    it("CONSTRUCT clears scope for following CONSTRUCT") {
       val query =
-        """|MATCH (a)-[e]->(b)
+        """|MATCH (a:L1)-[e]->(b:L2)
            |CONSTRUCT
            |  CREATE (a)-[:TYP]->()
            |CONSTRUCT
-           |  CREATE (a)-[e]->(b)
+           |  CREATE (b)-[e]->(a)
            |RETURN GRAPH""".stripMargin
-
-      an[UnsupportedOperationException] shouldBe thrownBy(query.asCypherQuery().model.result)
+      query.asCypherQuery().model.result match {
+        case GraphResultBlock(_, IRPatternGraph(_, _, clones, creates, _, _)) =>
+          clones.isEmpty shouldBe true
+          creates.fields.size shouldBe 3
+        case _=> fail("no matching graph result found")
+      }
     }
 
     it("UNWIND propagates pattern scope") {

@@ -83,6 +83,10 @@ final case class IRBuilderContext(
     copy(knownPatterns = Seq.empty)
   }
 
+  def resetKnownTypes: IRBuilderContext = {
+    copy(knownTypes = Map.empty)
+  }
+
   def registerGraph(qgn: QualifiedGraphName, graph: PropertyGraph): IRBuilderContext =
     copy(queryLocalCatalog = queryLocalCatalog.withGraph(qgn, graph))
 
