@@ -30,11 +30,11 @@ import org.apache.spark.sql.catalyst.expressions.{ArrayAggregate, ArrayExists, A
 import org.apache.spark.sql.functions.{array_contains => _, translate => _, _}
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Column, DataFrame}
-import org.apache.spark.unsafe.types.UTF8String
 import org.opencypher.morpheus.impl.MorpheusFunctions._
 import org.opencypher.morpheus.impl.convert.SparkConversions._
 import org.opencypher.morpheus.impl.expressions.AddPrefix._
 import org.opencypher.morpheus.impl.expressions.EncodeLong._
+import org.opencypher.morpheus.impl.expressions.PercentileUdafs
 import org.opencypher.morpheus.impl.temporal.TemporalConversions._
 import org.opencypher.morpheus.impl.temporal.{TemporalUdafs, TemporalUdfs}
 import org.opencypher.okapi.api.types._
@@ -403,7 +403,7 @@ object SparkSQLExprMapper {
           case other => throw IllegalArgumentException("an expression of type CTMap", other)
         }
 
-        case MapProjection(mapOwner, items, includeAllProps) => {
+        case MapProjection(mapOwner, items, includeAllProps) =>
           val convertedItems = items.map { case (key, value) => value.asSparkSQLExpr.as(key) }
           val itemKeys = items.map { case (propKey, _) => propKey }
           val intersectedMapItems = if (includeAllProps) {
@@ -418,10 +418,10 @@ object SparkSQLExprMapper {
                 convertedItems ++ uniqueMapColumns
             }
           }
-          else convertedItems
-
+          else {
+            convertedItems
+          }
           create_struct(intersectedMapItems)
-        }
 
         // Aggregators
         case Count(_, distinct) =>
@@ -448,6 +448,20 @@ object SparkSQLExprMapper {
             case CTDuration => TemporalUdafs.durationMin(child0)
             case _ => min(child0)
           }
+        case _: PercentileCont =>
+          val percentile = child1.expr match {
+            case Literal(v, DoubleType) => v.asInstanceOf[Double]
+            case _ => throw IllegalArgumentException("Literal as percentage for percentileCont()", child1.expr)
+          }
+          PercentileUdafs.percentileCont(percentile)(child0)
+        case _:PercentileDisc =>
+          val percentile = child1.expr match {
+            case Literal(v, DoubleType) => v.asInstanceOf[Double]
+            case _ => throw IllegalArgumentException("Literal as percentage for percentileDisc()", child1.expr)
+          }
+          PercentileUdafs.percentileDisc(percentile, child0.expr.dataType)(child0)
+        case _: StDev => stddev(child0)
+        case _: StDevP => stddev_pop(child0)
         case _: Sum =>
           expr.cypherType match {
             case CTDuration => TemporalUdafs.durationSum(child0)

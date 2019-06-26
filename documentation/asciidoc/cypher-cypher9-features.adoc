@@ -70,7 +70,7 @@ Here follows a comprehensive reference of Cypher9 features and their implementat
 | REMOVE          | {no}
 | RETURN          | {yes}
 | SET             | {no}
-| UNION           | {no}
+| UNION           | {yes}
 | UNWIND          | {yes}
 | WITH            | {yes}
 |===
@@ -123,8 +123,6 @@ Here follows a comprehensive reference of Cypher9 features and their implementat
 | log()            | {yes}
 | log10()          | {yes}
 | nodes()          | {no}
-| percentileCont() | {no}
-| percentileDisc() | {no}
 | pi()             | {yes}
 | point()          | {no}
 | properties()     | {yes}
@@ -168,8 +166,10 @@ Here follows a comprehensive reference of Cypher9 features and their implementat
 | count()   | {yes}
 | max()     | {yes}
 | min()     | {yes}
-| stdDev()  | {no}
-| stdDevP() | {no}
+| percentileCont() | {yes}
+| percentileDisc() | {yes}
+| stdDev()  | {yes}
+| stdDevP() | {yes}
 | sum()     | {yes}
 |===
 
