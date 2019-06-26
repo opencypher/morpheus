@@ -842,6 +842,24 @@ class ExpressionTests extends MorpheusTestSuite with ScanGraphInit with Checkers
     }
   }
 
+  describe("XOR") {
+    it("can project xors") {
+      val graph = initGraph(
+        """
+          | CREATE ({v1: true, v2: true, res: false}), ({v1: true, v2: false, res: true}),
+          |        ({v1: false, v2: true, res: true}), ({v1: false, v2: false, res: false})
+        """.stripMargin)
+      val result = graph.cypher(
+        """
+          | MATCH (n)
+          | WHERE n.v1 XOR n.v2 = n.res
+          | RETURN n
+        """.stripMargin)
+
+      result.records.toMaps.size shouldEqual 4
+    }
+  }
+
   describe("ContainerIndex") {
     it("Can extract the nth element from a list with literal index") {
       val graph = initGraph(

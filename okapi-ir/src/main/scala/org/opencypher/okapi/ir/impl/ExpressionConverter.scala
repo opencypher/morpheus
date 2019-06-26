@@ -136,6 +136,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
       // Predicates
       case _: ast.Ands => Ands(convertedChildren: _*)
       case _: ast.Ors => Ors(convertedChildren: _*)
+      case _: ast.Xor => Ors(Ands(child0, Not(child1)), Ands(Not(child0), child1))
       case ast.HasLabels(_, labels) => Ands(labels.map(l => HasLabel(child0, Label(l.name))).toSet)
       case _: ast.Not => Not(child0)
       case ast.Equals(f: ast.FunctionInvocation, s: ast.StringLiteral) if f.function == functions.Type =>

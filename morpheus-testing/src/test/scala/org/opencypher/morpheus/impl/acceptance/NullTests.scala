@@ -112,6 +112,9 @@ class NullTests extends MorpheusTestSuite with ScanGraphInit with TestNameFixtur
     it("calling: max(null)")(returnsNull())
     it("calling: min(null)")(returnsNull())
     it("calling: sum(null)")(returnsNull())
+    it("calling: true XOR null")(returnsNull())
+    it("calling: null XOR true")(returnsNull())
+    it("calling: null XOR null")(returnsNull())
   }
 
   describe("null input produces value") {
