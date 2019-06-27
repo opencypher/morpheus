@@ -214,7 +214,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
             val typedOutputs = typedMatchBlock.outputs(block)
             val updatedRegistry = blockRegistry.register(block)
-            val updatedContext = context.withBlocks(updatedRegistry).withFields(typedOutputs).registerPattern(pattern)
+            val updatedContext = context.withBlocks(updatedRegistry).withFields(typedOutputs).registerConnections(pattern.topology)
             put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block]](List(block))
           }
         } yield blocks
@@ -230,7 +230,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
               registerProjectBlock(context, fieldExprs, given, context.workingGraph, distinct = distinct)
             val appendList = (list: List[Block]) => pure[R, List[Block]](projectRef +: list)
             val orderAndSliceBlock = registerOrderAndSliceBlock(orderBy, skip, limit)
-            val updatedContext = context.resetKnownPatterns.withBlocks(projectReg)
+            val updatedContext = context.updateKnownConnections(fieldExprs).withBlocks(projectReg)
             put[R, IRBuilderContext](updatedContext) >> orderAndSliceBlock flatMap appendList
           }
         } yield refs
@@ -249,7 +249,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
             val after = updatedRegistry1.lastAdded.toList
             val aggregationBlock = AggregationBlock(after, Aggregations(agg.toSet), group.map(_._1).toSet, context.workingGraph)
             val updatedRegistry2 = updatedRegistry1.register(aggregationBlock)
-            val updatedContext = context.resetKnownPatterns.withBlocks(updatedRegistry2)
+            val updatedContext = context.updateKnownConnections(fieldExprs).withBlocks(updatedRegistry2)
             put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block]](List(projectBlock, aggregationBlock))
           }
         } yield blocks
@@ -316,11 +316,11 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
                 createPatterns.foreach { pattern => {
                   pattern.topology.foreach {
                     case (relField@IRField(fieldName), con: Connection) if fieldName == relName =>
-                      val expectedConnection = context.knownPatterns.map(_.topology).flatMap(_.get(relField)).headOption
-                        .getOrElse(throw IllegalArgumentException(s"Cloned relationship '$fieldName' needs its source and target nodes from the MATCH  pattern (could be out of scope after a WITH)."))
+                      val expectedConnection = context.knownConnections.getOrElse(relField, throw IllegalArgumentException("correct source and target nodes", con,
+                          s"Cloned relationship '$fieldName' needs its source and target nodes from the MATCH  pattern (could be out of scope after a WITH)."))
                       if (expectedConnection != con)
-                        throw IllegalArgumentException(s"Cloned relationships are are only allowed with the corresponding source and target node", con
-                          , s"Following pattern was expected: \n $expectedConnection")
+                        throw IllegalArgumentException(s"Following pattern was expected: \n $expectedConnection", con,
+                          s"Cloned relationships are are only allowed with the corresponding source and target node")
                     case _ => ()
                   }
                 }
@@ -375,7 +375,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
               setItems,
               onGraphs)
 
-            val updatedContext = context.resetKnownPatterns
+            val updatedContext = context.resetKnownConnections
               .withWorkingGraph(patternGraph)
               .registerSchema(qgn, patternGraphSchema)
               .resetKnownTypes
@@ -390,7 +390,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
             val after = context.blockRegistry.lastAdded.toList
             val returns = GraphResultBlock(after, context.workingGraph)
             val updatedRegistry = context.blockRegistry.register(returns)
-            put[R, IRBuilderContext](context.resetKnownPatterns.withBlocks(updatedRegistry)) >> pure[R, List[Block]](List(returns))
+            put[R, IRBuilderContext](context.resetKnownConnections.withBlocks(updatedRegistry)) >> pure[R, List[Block]](List(returns))
           }
         } yield refs
 
@@ -399,7 +399,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           fieldExprs <- items.toList.traverse(convertReturnItem[R])
           context <- get[R, IRBuilderContext]
           blocks1 <- {
-            val updatedContext = context.resetKnownPatterns
+            val updatedContext = context.resetKnownConnections
             val (projectRef, projectReg) =
               registerProjectBlock(updatedContext, fieldExprs, distinct = distinct, source = context.workingGraph)
             val appendList = (list: List[Block]) => pure[R, List[Block]](projectRef +: list)
@@ -412,7 +412,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
             val orderedFields = OrderedFields(rItems)
             val resultBlock = TableResultBlock(List(blocks1.last), orderedFields, context.workingGraph)
             val updatedRegistry = context2.blockRegistry.register(resultBlock)
-            val updatedContext = context.resetKnownPatterns.withBlocks(updatedRegistry)
+            val updatedContext = context.resetKnownConnections.withBlocks(updatedRegistry)
             put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block]](blocks1 :+ resultBlock)
           }
         } yield blocks2

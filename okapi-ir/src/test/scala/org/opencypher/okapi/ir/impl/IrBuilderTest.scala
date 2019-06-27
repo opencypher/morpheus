@@ -30,7 +30,7 @@ import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
 import org.opencypher.okapi.api.schema.{PropertyGraphSchema, PropertyKeys}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.impl.exception.{UnsupportedOperationException, IllegalArgumentException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr._
@@ -782,7 +782,30 @@ class IrBuilderTest extends IrTestSuite {
            |  CREATE (a)-[e]->(b)
            |RETURN GRAPH""".stripMargin
 
-      an[UnsupportedOperationException] shouldBe thrownBy(query.asCypherQuery().model.result)
+      an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery().model.result)
+    }
+
+    it("WITH using all pattern-elements") {
+      val query =
+        """|MATCH (a)-[e]->(b)
+           |WITH b, a, e
+           |CONSTRUCT
+           |  CREATE (a)-[e]->(b)
+           |RETURN GRAPH""".stripMargin
+
+      query.asCypherQuery().model.result
+    }
+
+    it("WITH using all pattern-elements and alias") {
+      val query =
+        """|MATCH (a)-[e]->(b)
+           |WITH b as x, a as y, e as r
+           |CONSTRUCT
+           |  CREATE (y)-[r]->(x)
+           |RETURN GRAPH""".stripMargin
+
+      query.asCypherQuery().model.result
+
     }
 
     it("CONSTRUCT clears scope for following CONSTRUCT") {
@@ -831,7 +854,7 @@ class IrBuilderTest extends IrTestSuite {
            |  CREATE (a)-[e]->(x)
            |RETURN GRAPH""".stripMargin
 
-      an[UnsupportedOperationException] shouldBe thrownBy(query.asCypherQuery(graphNameA -> inputSchemaA, graphNameB -> inputSchemaB).model.result)
+      an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery(graphNameA -> inputSchemaA, graphNameB -> inputSchemaB).model.result)
     }
   }
 

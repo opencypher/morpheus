@@ -34,12 +34,14 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.graph.QGNGenerator
 import org.opencypher.okapi.ir.api.block.SourceBlock
 import org.opencypher.okapi.ir.api.expr.{Expr, Var}
-import org.opencypher.okapi.ir.api.pattern.Pattern
+import org.opencypher.okapi.ir.api.pattern._
 import org.opencypher.okapi.ir.api.{IRCatalogGraph, IRField, IRGraph}
 import org.opencypher.v9_0.ast.ViewInvocation
 import org.opencypher.v9_0.ast.semantics.SemanticState
 import org.opencypher.v9_0.util.InputPosition
 import org.opencypher.v9_0.{expressions => ast}
+
+import scala.collection.immutable.ListMap
 
 final case class IRBuilderContext(
   qgnGenerator: QGNGenerator,
@@ -52,7 +54,8 @@ final case class IRBuilderContext(
   // TODO: Unify instantiateView and queryCatalog into one abstraction that resolves graphs/views
   instantiateView: ViewInvocation => PropertyGraph,
   knownTypes: Map[ast.Expression, CypherType] = Map.empty,
-  knownPatterns: Seq[Pattern] = Seq.empty) {
+  knownConnections: ListMap[IRField, Connection] = ListMap.empty
+) {
   self =>
 
   private lazy val exprConverter = new ExpressionConverter(self)
@@ -79,8 +82,47 @@ final case class IRBuilderContext(
   def withWorkingGraph(graph: IRGraph): IRBuilderContext =
     copy(workingGraph = graph)
 
-  def resetKnownPatterns: IRBuilderContext = {
-    copy(knownPatterns = Seq.empty)
+  def updateKnownConnections(fields: List[(IRField, Expr)]): IRBuilderContext = {
+    val remainingConnections = knownConnections.flatMap {
+      case (relField: IRField, con: Connection) =>
+        val patternFields = Seq(relField, con.source, con.target)
+        val patternFieldMatches = patternFields.map(knownPatternField => {
+          knownPatternField -> fields.find {
+            case (_, expr: Var) => expr.name == knownPatternField.name
+            case _ => false
+          }
+        })
+
+        val renamedFields = patternFieldMatches.map {
+          case (patternField: IRField, Some((newField, expr: Var))) =>
+            if (newField.name == expr.name) {
+              patternField
+            }
+            else {
+              IRField(newField.name)(patternField.cypherType)
+            }
+          case _ => None
+        }
+        renamedFields match {
+          case (rel: IRField) :: (src: IRField) :: (target: IRField) :: Nil =>
+            val renamedEndPoints = Endpoints.two(src -> target)
+            val renamedCon: Connection = con match {
+              case r: DirectedRelationship => DirectedRelationship(renamedEndPoints, r.semanticDirection)
+              case r: DirectedVarLengthRelationship => r.copy(endpoints = renamedEndPoints)
+              case _: UndirectedRelationship | _: CyclicRelationship => UndirectedRelationship(renamedEndPoints)
+              case r: UndirectedVarLengthRelationship => r.copy(endpoints = renamedEndPoints)
+            }
+            Some(rel -> renamedCon)
+          case _ => None
+        }
+      case _ => None
+    }
+
+    copy(knownConnections = remainingConnections)
+  }
+
+  def resetKnownConnections: IRBuilderContext = {
+    copy(knownConnections = ListMap.empty)
   }
 
   def resetKnownTypes: IRBuilderContext = {
@@ -98,8 +140,8 @@ final case class IRBuilderContext(
     copy(blockRegistry = BlockRegistry.empty.register(sourceBlock))
   }
 
-  def registerPattern(pattern: Pattern): IRBuilderContext = {
-    copy(knownPatterns = knownPatterns :+ pattern)
+  def registerConnections(connections: ListMap[IRField, Connection]): IRBuilderContext = {
+    copy(knownConnections = knownConnections ++ connections)
   }
 }
 
