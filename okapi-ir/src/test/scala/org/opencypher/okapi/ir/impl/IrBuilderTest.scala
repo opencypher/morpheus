@@ -661,7 +661,7 @@ class IrBuilderTest extends IrTestSuite {
       intercept[UnsupportedOperationException](query.asCypherQuery().model)
     }
 
-    it("allows cloning relationships with aliased newly constructed start and end nodes") {
+    it("fails cloning relationships with aliased and newly constructed start and end nodes") {
       val query =
         """
           |MATCH (:FOO)-[r:REL]->()
@@ -671,14 +671,33 @@ class IrBuilderTest extends IrTestSuite {
           |RETURN GRAPH
         """.stripMargin
 
-      query.asCypherQuery().model.result match {
-        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(PropertyGraphSchema.empty
-            .withNodePropertyKeys("A")()
-            .withNodePropertyKeys()()
-            .withRelationshipPropertyKeys("REL")())
-        case _ => fail("no matching graph result found")
-      }
+      an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery().model.result)
+    }
+
+    it("succeeds cloning relationships with alias #1") {
+      val query =
+        """
+          |MATCH (a)-[r:REL]->(b)
+          |CONSTRUCT
+          | CLONE r AS newR
+          | CREATE (a)-[newR]->(b)
+          |RETURN GRAPH
+        """.stripMargin
+
+      query.asCypherQuery().model.result
+    }
+
+    it("succeeds cloning relationships with alias #2") {
+      val query =
+        """
+          |MATCH (a)-[r:REL]->(b)
+          |CONSTRUCT
+          | CLONE r AS newR, b AS newB
+          | CREATE (a)-[newR]->(newB)
+          |RETURN GRAPH
+        """.stripMargin
+
+      query.asCypherQuery().model.result
     }
 
     it("fails cloning relationships with newly constructed start and end nodes") {

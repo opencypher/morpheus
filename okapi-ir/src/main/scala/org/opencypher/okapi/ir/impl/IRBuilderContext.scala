@@ -86,36 +86,42 @@ final case class IRBuilderContext(
     val remainingConnections = knownConnections.flatMap {
       case (relField: IRField, con: Connection) =>
         val patternFields = Seq(relField, con.source, con.target)
-        val patternFieldMatches = patternFields.map(knownPatternField => {
-          knownPatternField -> fields.find {
+        val renamedFields = patternFields.flatMap(knownPatternField => {
+          fields.find {
             case (_, expr: Var) => expr.name == knownPatternField.name
             case _ => false
-          }
+          }.map { case (field, _) => field }
         })
 
-        val renamedFields = patternFieldMatches.map {
-          case (patternField: IRField, Some((newField, expr: Var))) =>
-            if (newField.name == expr.name) {
-              patternField
-            }
-            else {
-              IRField(newField.name)(patternField.cypherType)
-            }
-          case _ => None
-        }
         renamedFields match {
           case (rel: IRField) :: (src: IRField) :: (target: IRField) :: Nil =>
             val renamedEndPoints = Endpoints.two(src -> target)
-            val renamedCon: Connection = con match {
-              case r: DirectedRelationship => DirectedRelationship(renamedEndPoints, r.semanticDirection)
-              case r: DirectedVarLengthRelationship => r.copy(endpoints = renamedEndPoints)
-              case _: UndirectedRelationship | _: CyclicRelationship => UndirectedRelationship(renamedEndPoints)
-              case r: UndirectedVarLengthRelationship => r.copy(endpoints = renamedEndPoints)
-            }
+            val renamedCon: Connection = ConnectionCopier.copy(con, renamedEndPoints)
             Some(rel -> renamedCon)
           case _ => None
         }
-      case _ => None
+    }
+
+    copy(knownConnections = remainingConnections)
+  }
+
+  def renameKnownConnections(fields: Map[IRField, Expr]): IRBuilderContext = {
+    val remainingConnections = knownConnections.map {
+      case (relField: IRField, con: Connection) =>
+        val patternFields = Seq(relField, con.source, con.target)
+        val renamedFields = patternFields.map(knownPatternField => {
+          fields.flatMap {
+            case (aliasField, expr: Var) if expr.name == knownPatternField.name => Some(aliasField)
+            case _ => None
+          }.headOption.getOrElse(knownPatternField)
+        })
+
+        renamedFields match {
+          case (rel: IRField) :: (src: IRField) :: (target: IRField) :: Nil =>
+            val renamedEndPoints = Endpoints.two(src -> target)
+            val renamedCon: Connection = ConnectionCopier.copy(con, renamedEndPoints)
+            rel -> renamedCon
+        }
     }
 
     copy(knownConnections = remainingConnections)

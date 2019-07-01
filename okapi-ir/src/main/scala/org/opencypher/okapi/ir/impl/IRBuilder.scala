@@ -297,6 +297,12 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
             // Single nodes/rels constructed by CLONE (MERGE)
             val explicitCloneItemMap = explicitCloneItems.toMap
 
+            val aliasedCloneItems = explicitCloneItemMap.filter {
+              case (field, expr: Var) => field.name != expr.name
+              case _ => false
+            }
+            val cloneContext = context.renameKnownConnections(aliasedCloneItems)
+
             // Items from other graphs that are cloned by default
             val implicitCloneItems = createPattern.fields.filterNot { f =>
               f.cypherType.graph.get == qgn || explicitCloneItemMap.keys.exists(_.name == f.name)
@@ -311,22 +317,20 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
             val cloneSchema = schemaForElementTypes(context, cloneItemMap.values.map(_.cypherType).toSet)
 
             //Make sure cloned relationships have the correct source and target nodes
-            cloneItemMap.values.foreach {
-              case RelationshipVar(relName) =>
-                createPatterns.foreach { pattern => {
-                  pattern.topology.foreach {
-                    case (relField@IRField(fieldName), con: Connection) if fieldName == relName =>
-                      val expectedConnection = context.knownConnections.getOrElse(relField, throw IllegalArgumentException("correct source and target nodes", con,
-                          s"Cloned relationship '$fieldName' needs its source and target nodes from the MATCH  pattern (could be out of scope after a WITH)."))
-                      if (expectedConnection != con)
-                        throw IllegalArgumentException(s"Following pattern was expected: \n $expectedConnection", con,
-                          s"Cloned relationships are are only allowed with the corresponding source and target node")
-                    case _ => ()
-                  }
-                }
+            cloneItemMap.foreach {
+              case (IRField(constructRelName), _: RelationshipVar) =>
+                createPatterns.flatMap(_.topology).foreach {
+                  case (relField@IRField(patternFieldName), con: Connection) if patternFieldName == constructRelName =>
+                    val expectedConnection = cloneContext.knownConnections.getOrElse(relField, throw IllegalArgumentException("correct source and target nodes", con,
+                      s"Cloned relationship '$patternFieldName' needs its source and target nodes from the MATCH  pattern (could be out of scope after a WITH)."))
+                    if (expectedConnection != con)
+                      throw IllegalArgumentException(s"Following pattern was expected: \n $expectedConnection", con,
+                        s"Cloned relationships are are only allowed with the corresponding source and target node")
+                  case _ => ()
                 }
               case _ => ()
             }
+
 
             // Make sure that there are no dangling relationships
             // we can currently only clone relationships that are also part of a new pattern

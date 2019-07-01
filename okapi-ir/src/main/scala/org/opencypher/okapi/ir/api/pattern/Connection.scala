@@ -162,3 +162,12 @@ final case class UndirectedVarLengthRelationship(edgeType: CTRelationship, endpo
     case _ => false
   }
 }
+
+case object ConnectionCopier {
+  def copy(con: Connection, endpoints: DifferentEndpoints) : Connection = con match {
+    case r: DirectedRelationship => DirectedRelationship(endpoints, r.semanticDirection)
+    case r: DirectedVarLengthRelationship => r.copy(endpoints = endpoints)
+    case _: UndirectedRelationship | _: CyclicRelationship => UndirectedRelationship(endpoints)
+    case r: UndirectedVarLengthRelationship => r.copy(endpoints = endpoints)
+  }
+}
