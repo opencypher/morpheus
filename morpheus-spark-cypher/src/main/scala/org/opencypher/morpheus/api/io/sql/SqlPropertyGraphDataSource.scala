@@ -28,6 +28,7 @@ package org.opencypher.morpheus.api.io.sql
 
 import java.net.URI
 
+import org.apache.spark.sql.functions.{monotonically_increasing_id, lit}
 import org.apache.spark.sql.types.{DataType, DecimalType, IntegerType, LongType}
 import org.apache.spark.sql.{Column, DataFrame, DataFrameReader, functions}
 import org.opencypher.graphddl._
@@ -351,7 +352,12 @@ case class SqlPropertyGraphDataSource(
     newIdColumn: String,
     schema: PropertyGraphSchema
   ): Column = {
-    val idColumns = idColumnNames.map(_.toLowerCase.encodeSpecialCharacters).map(dataFrame.col)
+    val idColumns = if(idColumnNames.nonEmpty) {
+      idColumnNames.map(_.toLowerCase.encodeSpecialCharacters).map(dataFrame.col)
+    }
+    else {
+      List(monotonically_increasing_id(), lit(dataFrame.hashCode()))
+    }
     idGenerationStrategy match {
       case HashedId =>
         val viewLiteral = functions.lit(elementViewKey.viewId.parts.mkString("."))
