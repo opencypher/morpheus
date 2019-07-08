@@ -421,7 +421,7 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
       .toDF("book_id", "book_title")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$bookView")
     sparkSession
-      .createDataFrame(Seq((0L, 1L, 42.23)))
+      .createDataFrame(Seq((0L, 1L, 13.37)))
       .toDF("person", "book", "rating")
       .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$readsView1")
     sparkSession
@@ -444,8 +444,15 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
       .cypher("MATCH ()-[r]->() RETURN type(r) AS type, r.rating as rating")
       .records.toMaps should equal(
       Bag(
-        CypherMap("type" -> "READS", "rating" -> 42.23),
+        CypherMap("type" -> "READS", "rating" -> 13.37),
         CypherMap("type" -> "READS", "rating" -> 13.37)
+      ))
+
+    ds.graph(fooGraphName)
+      .cypher("MATCH ()-[r]->() WITH type(r) AS type, id(r) AS id RETURN count(distinct id) AS distinct_ids")
+      .records.toMaps should equal(
+      Bag(
+        CypherMap("distinct_ids" -> 2)
       ))
   }
 

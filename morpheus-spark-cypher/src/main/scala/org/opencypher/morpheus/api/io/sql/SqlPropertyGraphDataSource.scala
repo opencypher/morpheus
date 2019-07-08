@@ -28,6 +28,7 @@ package org.opencypher.morpheus.api.io.sql
 
 import java.net.URI
 
+import org.apache.spark.sql.functions.{monotonically_increasing_id, lit}
 import org.apache.spark.sql.types.{DataType, DecimalType, IntegerType, LongType}
 import org.apache.spark.sql.{Column, DataFrame, DataFrameReader, functions}
 import org.opencypher.graphddl._
@@ -220,7 +221,7 @@ case class SqlPropertyGraphDataSource(
     df: DataFrame
   ): (Map[String, String], Seq[Column]) = {
 
-    val relIdColumn = generateIdColumn(df, evm.key, df.columns.map(_.decodeSpecialCharacters).toList, relSourceIdKey, schema)
+    val relIdColumn = generateIdColumn(df, evm.key, df.columns.find(_ == SourceIdKey.name).toList, relSourceIdKey, schema)
     val relSourceIdColumn = generateIdColumn(df, evm.startNode.nodeViewKey, evm.startNode.joinPredicates.map(_.edgeColumn), sourceStartNodeKey, schema)
     val relTargetIdColumn = generateIdColumn(df, evm.endNode.nodeViewKey, evm.endNode.joinPredicates.map(_.edgeColumn), sourceEndNodeKey, schema)
     val relProperties = generatePropertyColumns(evm, df, ddlGraph, schema, Some("relationship"))
@@ -351,7 +352,12 @@ case class SqlPropertyGraphDataSource(
     newIdColumn: String,
     schema: PropertyGraphSchema
   ): Column = {
-    val idColumns = idColumnNames.map(_.toLowerCase.encodeSpecialCharacters).map(dataFrame.col)
+    val idColumns = if(idColumnNames.nonEmpty) {
+      idColumnNames.map(_.toLowerCase.encodeSpecialCharacters).map(dataFrame.col)
+    }
+    else {
+      List(monotonically_increasing_id(), lit(dataFrame.hashCode()))
+    }
     idGenerationStrategy match {
       case HashedId =>
         val viewLiteral = functions.lit(elementViewKey.viewId.parts.mkString("."))
