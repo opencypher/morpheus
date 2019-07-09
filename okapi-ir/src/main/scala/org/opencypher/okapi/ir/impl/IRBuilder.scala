@@ -37,7 +37,7 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalSta
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block.{SortItem, _}
 import org.opencypher.okapi.ir.api.expr._
-import org.opencypher.okapi.ir.api.pattern.Pattern
+import org.opencypher.okapi.ir.api.pattern.{Connection, Pattern}
 import org.opencypher.okapi.ir.api.set.{SetItem, SetLabelItem, SetPropertyItem}
 import org.opencypher.okapi.ir.api.util.CompilationStage
 import org.opencypher.okapi.ir.impl.exception.ParsingException
@@ -214,7 +214,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
             val typedOutputs = typedMatchBlock.outputs(block)
             val updatedRegistry = blockRegistry.register(block)
-            val updatedContext = context.withBlocks(updatedRegistry).withFields(typedOutputs)
+            val updatedContext = context.withBlocks(updatedRegistry).withFields(typedOutputs).registerConnections(pattern.topology)
             put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block]](List(block))
           }
         } yield blocks
@@ -230,7 +230,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
               registerProjectBlock(context, fieldExprs, given, context.workingGraph, distinct = distinct)
             val appendList = (list: List[Block]) => pure[R, List[Block]](projectRef +: list)
             val orderAndSliceBlock = registerOrderAndSliceBlock(orderBy, skip, limit)
-            put[R, IRBuilderContext](context.copy(blockRegistry = projectReg)) >> orderAndSliceBlock flatMap appendList
+            val updatedContext = context.updateKnownConnections(fieldExprs).withBlocks(projectReg)
+            put[R, IRBuilderContext](updatedContext) >> orderAndSliceBlock flatMap appendList
           }
         } yield refs
 
@@ -248,8 +249,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
             val after = updatedRegistry1.lastAdded.toList
             val aggregationBlock = AggregationBlock(after, Aggregations(agg.toSet), group.map(_._1).toSet, context.workingGraph)
             val updatedRegistry2 = updatedRegistry1.register(aggregationBlock)
-
-            put[R, IRBuilderContext](context.copy(blockRegistry = updatedRegistry2)) >> pure[R, List[Block]](List(projectBlock, aggregationBlock))
+            val updatedContext = context.updateKnownConnections(fieldExprs).withBlocks(updatedRegistry2)
+            put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block]](List(projectBlock, aggregationBlock))
           }
         } yield blocks
 
@@ -262,8 +263,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
             val binds: UnwoundList = UnwoundList(list, item)
             val block = UnwindBlock(context.blockRegistry.lastAdded.toList, binds, context.workingGraph)
             val updatedRegistry = context.blockRegistry.register(block)
-
-            put[R, IRBuilderContext](context.copy(blockRegistry = updatedRegistry)) >> pure[R, List[Block]](List(block))
+            val updatedContext = context.withBlocks(updatedRegistry)
+            put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block]](List(block))
           }
         } yield block
 
@@ -296,6 +297,12 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
             // Single nodes/rels constructed by CLONE (MERGE)
             val explicitCloneItemMap = explicitCloneItems.toMap
 
+            val aliasedCloneItems = explicitCloneItemMap.filter {
+              case (field, expr: Var) => field.name != expr.name
+              case _ => false
+            }
+            val cloneContext = context.renameKnownConnections(aliasedCloneItems)
+
             // Items from other graphs that are cloned by default
             val implicitCloneItems = createPattern.fields.filterNot { f =>
               f.cypherType.graph.get == qgn || explicitCloneItemMap.keys.exists(_.name == f.name)
@@ -308,6 +315,22 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
 
             // Fields inside of CONSTRUCT could have been matched on other graphs than just the workingGraph
             val cloneSchema = schemaForElementTypes(context, cloneItemMap.values.map(_.cypherType).toSet)
+
+            //Make sure cloned relationships have the correct source and target nodes
+            cloneItemMap.foreach {
+              case (IRField(constructRelName), _: RelationshipVar) =>
+                createPatterns.flatMap(_.topology).foreach {
+                  case (relField@IRField(patternFieldName), con: Connection) if patternFieldName == constructRelName =>
+                    val expectedConnection = cloneContext.knownConnections.getOrElse(relField, throw IllegalArgumentException("correct source and target nodes", con,
+                      s"Cloned relationship '$patternFieldName' needs its source and target nodes from the MATCH  pattern (could be out of scope after a WITH)."))
+                    if (expectedConnection != con)
+                      throw IllegalArgumentException(s"Following pattern was expected: \n $expectedConnection", con,
+                        s"Cloned relationships are are only allowed with the corresponding source and target node")
+                  case _ => ()
+                }
+              case _ => ()
+            }
+
 
             // Make sure that there are no dangling relationships
             // we can currently only clone relationships that are also part of a new pattern
@@ -355,7 +378,11 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
               createPattern,
               setItems,
               onGraphs)
-            val updatedContext = context.withWorkingGraph(patternGraph).registerSchema(qgn, patternGraphSchema)
+
+            val updatedContext = context.resetKnownConnections
+              .withWorkingGraph(patternGraph)
+              .registerSchema(qgn, patternGraphSchema)
+              .resetKnownTypes
             put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block]](List.empty)
           }
         } yield refs
@@ -367,7 +394,7 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
             val after = context.blockRegistry.lastAdded.toList
             val returns = GraphResultBlock(after, context.workingGraph)
             val updatedRegistry = context.blockRegistry.register(returns)
-            put[R, IRBuilderContext](context.copy(blockRegistry = updatedRegistry)) >> pure[R, List[Block]](List(returns))
+            put[R, IRBuilderContext](context.resetKnownConnections.withBlocks(updatedRegistry)) >> pure[R, List[Block]](List(returns))
           }
         } yield refs
 
@@ -376,11 +403,12 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
           fieldExprs <- items.toList.traverse(convertReturnItem[R])
           context <- get[R, IRBuilderContext]
           blocks1 <- {
+            val updatedContext = context.resetKnownConnections
             val (projectRef, projectReg) =
-              registerProjectBlock(context, fieldExprs, distinct = distinct, source = context.workingGraph)
+              registerProjectBlock(updatedContext, fieldExprs, distinct = distinct, source = context.workingGraph)
             val appendList = (list: List[Block]) => pure[R, List[Block]](projectRef +: list)
             val orderAndSliceBlock = registerOrderAndSliceBlock(orderBy, skip, limit)
-            put[R, IRBuilderContext](context.copy(blockRegistry = projectReg)) >> orderAndSliceBlock flatMap appendList
+            put[R, IRBuilderContext](updatedContext.withBlocks(projectReg)) >> orderAndSliceBlock flatMap appendList
           }
           context2 <- get[R, IRBuilderContext]
           blocks2 <- {
@@ -388,7 +416,8 @@ object IRBuilder extends CompilationStage[ast.Statement, CypherStatement, IRBuil
             val orderedFields = OrderedFields(rItems)
             val resultBlock = TableResultBlock(List(blocks1.last), orderedFields, context.workingGraph)
             val updatedRegistry = context2.blockRegistry.register(resultBlock)
-            put[R, IRBuilderContext](context.copy(blockRegistry = updatedRegistry)) >> pure[R, List[Block]](blocks1 :+ resultBlock)
+            val updatedContext = context.resetKnownConnections.withBlocks(updatedRegistry)
+            put[R, IRBuilderContext](updatedContext) >> pure[R, List[Block]](blocks1 :+ resultBlock)
           }
         } yield blocks2
 

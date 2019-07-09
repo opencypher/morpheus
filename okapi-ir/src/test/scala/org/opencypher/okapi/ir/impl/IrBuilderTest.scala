@@ -27,10 +27,10 @@
 package org.opencypher.okapi.ir.impl
 
 import org.opencypher.okapi.api.graph.{GraphName, Namespace, QualifiedGraphName}
-import org.opencypher.okapi.api.schema.{PropertyKeys, PropertyGraphSchema}
+import org.opencypher.okapi.api.schema.{PropertyGraphSchema, PropertyKeys}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue._
-import org.opencypher.okapi.impl.exception.UnsupportedOperationException
+import org.opencypher.okapi.impl.exception.{UnsupportedOperationException, IllegalArgumentException}
 import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr._
@@ -661,7 +661,7 @@ class IrBuilderTest extends IrTestSuite {
       intercept[UnsupportedOperationException](query.asCypherQuery().model)
     }
 
-    it("allows cloning relationships with aliased newly constructed start and end nodes") {
+    it("fails cloning relationships with aliased and newly constructed start and end nodes") {
       val query =
         """
           |MATCH (:FOO)-[r:REL]->()
@@ -671,17 +671,36 @@ class IrBuilderTest extends IrTestSuite {
           |RETURN GRAPH
         """.stripMargin
 
-      query.asCypherQuery().model.result match {
-        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(PropertyGraphSchema.empty
-            .withNodePropertyKeys("A")()
-            .withNodePropertyKeys()()
-            .withRelationshipPropertyKeys("REL")())
-        case _ => fail("no matching graph result found")
-      }
+      an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery().model.result)
     }
 
-    it("allows cloning relationships with newly constructed start and end nodes") {
+    it("succeeds cloning relationships with alias #1") {
+      val query =
+        """
+          |MATCH (a)-[r:REL]->(b)
+          |CONSTRUCT
+          | CLONE r AS newR
+          | CREATE (a)-[newR]->(b)
+          |RETURN GRAPH
+        """.stripMargin
+
+      query.asCypherQuery().model.result
+    }
+
+    it("succeeds cloning relationships with alias #2") {
+      val query =
+        """
+          |MATCH (a)-[r:REL]->(b)
+          |CONSTRUCT
+          | CLONE r AS newR, b AS newB
+          | CREATE (a)-[newR]->(newB)
+          |RETURN GRAPH
+        """.stripMargin
+
+      query.asCypherQuery().model.result
+    }
+
+    it("fails cloning relationships with newly constructed start and end nodes") {
       val query =
         """
           |MATCH (:FOO)-[r:REL]->()
@@ -691,33 +710,170 @@ class IrBuilderTest extends IrTestSuite {
           |RETURN GRAPH
         """.stripMargin
 
-      query.asCypherQuery().model.result match {
-        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(PropertyGraphSchema.empty
-            .withNodePropertyKeys("A")()
-            .withNodePropertyKeys()()
-            .withRelationshipPropertyKeys("REL")())
-        case _ => fail("no matching graph result found")
-      }
+       an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery().model.result)
     }
 
-    it("allows implicit cloning of relationships with newly constructed start and end nodes") {
+    it("fails  cloning of relationships with newly constructed end nodes") {
       val query =
         """
-          |MATCH (:FOO)-[r:REL]->()
+          |MATCH (a:FOO)-[r:REL]->()
           |CONSTRUCT
-          |  CREATE (:A)-[r]->()
+          |  CREATE (a)-[r]->()
           |RETURN GRAPH
         """.stripMargin
 
+      an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery().model.result)
+    }
+
+    it("fails  cloning of relationships with newly constructed start nodes") {
+      val query =
+        """
+          |MATCH (:FOO)-[r:REL]->(b)
+          |CONSTRUCT
+          |  CREATE (:A)-[r]->(b)
+          |RETURN GRAPH
+        """.stripMargin
+
+      an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery().model.result)
+    }
+
+    it("succeeds pattern with cloned relationship and new unnamed relationship #1") {
+      val query =
+        """
+          |MATCH (a)-[r:REL]->(b)
+          |CONSTRUCT
+          |  CREATE (a)-[r]->(b)-[:TYPE]->()
+          |RETURN GRAPH
+        """.stripMargin
+
+      query.asCypherQuery().model.result
+    }
+
+    it("succeeds pattern with cloned relationship and new unnamed relationship #2") {
+      val query =
+        """
+          |MATCH (a)-[r:REL]->(b)-->(c)
+          |CONSTRUCT
+          |  CREATE (a)-[r]->(b)-[:TYPE]->()
+          |RETURN GRAPH
+        """.stripMargin
+
+      query.asCypherQuery().model.result
+    }
+
+    it("fails cloning rel and cloning false src node") {
+      val query =
+        """|MATCH (a)-[e]->(b)
+           |CONSTRUCT
+           |  CREATE (b)-[e]->(b)
+           |RETURN GRAPH""".stripMargin
+
+      an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery().model.result)
+    }
+
+    it("fails cloning rel with false src and target nodes #1") {
+      val query =
+        """|MATCH (a)-[e]->(b)
+           |CONSTRUCT
+           |  CREATE (b)-[e]->(a)
+           |RETURN GRAPH""".stripMargin
+
+      an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery().model.result)
+    }
+
+    it("fails cloning rel with false src and target nodes #2") {
+      val query =
+        """|MATCH (a)-[e]->(b)
+           |WITH e, b AS a, a AS b
+           |CONSTRUCT
+           |  CREATE (a)-[e]->(b)
+           |RETURN GRAPH""".stripMargin
+      an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery().model.result)
+    }
+  }
+
+  describe("known-patterns Scope") {
+    it("WITH clears patterns scope") {
+      val query =
+        """|MATCH (a)-[e]->(b)
+           |WITH e
+           |CONSTRUCT
+           |  CREATE (a)-[e]->(b)
+           |RETURN GRAPH""".stripMargin
+
+      an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery().model.result)
+    }
+
+    it("WITH using all pattern-elements") {
+      val query =
+        """|MATCH (a)-[e]->(b)
+           |WITH b, a, e
+           |CONSTRUCT
+           |  CREATE (a)-[e]->(b)
+           |RETURN GRAPH""".stripMargin
+
+      query.asCypherQuery().model.result
+    }
+
+    it("WITH using all pattern-elements and alias") {
+      val query =
+        """|MATCH (a)-[e]->(b)
+           |WITH b as x, a as y, e as r
+           |CONSTRUCT
+           |  CREATE (y)-[r]->(x)
+           |RETURN GRAPH""".stripMargin
+
+      query.asCypherQuery().model.result
+
+    }
+
+    it("CONSTRUCT clears scope for following CONSTRUCT") {
+      val query =
+        """|MATCH (a:L1)-[e]->(b:L2)
+           |CONSTRUCT
+           |  CREATE (a)-[:TYP]->()
+           |CONSTRUCT
+           |  CREATE (b)-[e]->(a)
+           |RETURN GRAPH""".stripMargin
       query.asCypherQuery().model.result match {
-        case GraphResultBlock(_, IRPatternGraph(_, schema, _, _, _, _)) =>
-          schema should equal(PropertyGraphSchema.empty
-            .withNodePropertyKeys("A")()
-            .withNodePropertyKeys()()
-            .withRelationshipPropertyKeys("REL")())
-        case _ => fail("no matching graph result found")
+        case GraphResultBlock(_, IRPatternGraph(_, _, clones, creates, _, _)) =>
+          clones.isEmpty shouldBe true
+          creates.fields.size shouldBe 3
+        case _=> fail("no matching graph result found")
       }
+    }
+
+    it("UNWIND propagates pattern scope") {
+      val query =
+        """|MATCH (a)-[e]->(b)
+           |UNWIND a.list AS i
+           |CONSTRUCT
+           |  CREATE (a)-[e]->(b)
+           |RETURN GRAPH""".stripMargin
+
+      query.asCypherQuery().model.result
+    }
+
+    it("FROM propagates pattern scope") {
+      val graphNameA = GraphName("input1")
+      val inputSchemaA = PropertyGraphSchema.empty
+        .withNodePropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
+
+      val graphNameB = GraphName("input2")
+      val inputSchemaB = PropertyGraphSchema.empty
+        .withNodePropertyKeys("A")("category" -> CTString, "ports" -> CTInteger)
+
+
+      val query =
+        """|FROM input1
+           |MATCH (a)-[e]->(b)
+           |FROM input2
+           |MATCH (x)
+           |CONSTRUCT
+           |  CREATE (a)-[e]->(x)
+           |RETURN GRAPH""".stripMargin
+
+      an[IllegalArgumentException] shouldBe thrownBy(query.asCypherQuery(graphNameA -> inputSchemaA, graphNameB -> inputSchemaB).model.result)
     }
   }
 

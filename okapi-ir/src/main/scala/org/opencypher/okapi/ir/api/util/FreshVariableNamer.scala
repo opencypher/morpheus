@@ -31,8 +31,12 @@ import org.opencypher.okapi.ir.api.expr.Var
 
 object FreshVariableNamer {
   val PREFIX = "  "
+  val NAME = "FRESH_VAR"
+
+  def notNamed(x: String): Boolean = x.startsWith(PREFIX + NAME)
+  def isNamed(x: String): Boolean = !notNamed(x)
 
   def apply(seed: String, t: CypherType): Var = Var(s"$PREFIX$seed")(t)
 
-  def apply(id: Int, t: CypherType): Var = apply(s"FRESH_VAR$id", t)
+  def apply(id: Int, t: CypherType): Var = apply(s"$NAME$id", t)
 }
