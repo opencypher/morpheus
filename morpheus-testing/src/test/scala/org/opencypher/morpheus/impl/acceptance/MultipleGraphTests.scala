@@ -982,4 +982,43 @@ class MultipleGraphTests extends MorpheusTestSuite with ScanGraphInit {
 
     an[SchemaException] should be thrownBy morpheus.cypher("CONSTRUCT ON g1, g2 RETURN GRAPH")
   }
+
+  it("should implicit clone a relationship #1") {
+    val query =
+      """|MATCH (a)-[r:HAS_SIMILAR_NAME]->(b)
+         |CONSTRUCT
+         |  CREATE (a)-[r]->(b)
+         |RETURN GRAPH""".stripMargin
+    val result = testGraphRels.cypher(query)
+    result.graph.cypher("MATCH ()-[r]->() RETURN type(r) as type").records.iterator.toBag should equal(Bag(
+      CypherMap("type" -> "HAS_SIMILAR_NAME")
+    ))
+  }
+
+  it("should implicit clone a relationship #2") {
+    val query =
+      """|MATCH (a)-[r:HAS_SIMILAR_NAME]->(b)
+         |WITH a,r,b
+         |CONSTRUCT
+         |  CREATE (a)-[r]->(b)
+         |RETURN GRAPH""".stripMargin
+    val result = testGraphRels.cypher(query)
+    result.graph.cypher("MATCH ()-[r]->() RETURN type(r) as type").records.iterator.toBag should equal(Bag(
+      CypherMap("type" -> "HAS_SIMILAR_NAME")
+    ))
+  }
+
+  it("should implicit clone a relationship #3") {
+    val query =
+      """|MATCH (a)-[r:HAS_SIMILAR_NAME]->(b)
+         |WITH a,r,b
+         |CONSTRUCT
+         |  CLONE a AS x, b AS y
+         |  CREATE (x)-[r]->(y)
+         |RETURN GRAPH""".stripMargin
+    val result = testGraphRels.cypher(query)
+    result.graph.cypher("MATCH ()-[r]->() RETURN type(r) as type").records.iterator.toBag should equal(Bag(
+      CypherMap("type" -> "HAS_SIMILAR_NAME")
+    ))
+  }
 }
