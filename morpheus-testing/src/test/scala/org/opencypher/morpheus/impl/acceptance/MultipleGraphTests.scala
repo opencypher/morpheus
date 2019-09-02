@@ -69,7 +69,7 @@ class MultipleGraphTests extends MorpheusTestSuite with ScanGraphInit {
       """|FROM GRAPH $graphParam
          |RETURN GRAPH""".stripMargin
 
-    val result = testGraph1.cypher(query, CypherMap("graphParam" -> "g1"))
+    val result = morpheus.cypher(query, CypherMap("graphParam" -> "g1"))
 
     result.graph.nodes("n").size shouldBe 2
   }
