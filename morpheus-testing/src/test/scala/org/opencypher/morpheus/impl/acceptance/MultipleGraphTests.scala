@@ -34,6 +34,7 @@ import org.opencypher.morpheus.schema.MorpheusSchema._
 import org.opencypher.morpheus.testing.MorpheusTestSuite
 import org.opencypher.okapi.api.schema.{PropertyGraphSchema, PropertyKeys}
 import org.opencypher.okapi.api.types.{CTInteger, CTString}
+import org.opencypher.okapi.api.value.CypherValue
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
@@ -57,6 +58,21 @@ class MultipleGraphTests extends MorpheusTestSuite with ScanGraphInit {
        |CREATE (max:Person {name: 'Max'})
        |CREATE (max)-[:HAS_SIMILAR_NAME]->(mats)
     """.stripMargin)
+
+  it("can read graph via parameter") {
+    val graph = initGraph(
+      """|CREATE (:A {v: 1})
+         |CREATE (:B {v: 100})""".stripMargin)
+    morpheus.catalog.store("g1", graph)
+
+    val query =
+      """|FROM GRAPH $graphParam
+         |RETURN GRAPH""".stripMargin
+
+    val result = morpheus.cypher(query, CypherMap("graphParam" -> "g1"))
+
+    result.graph.nodes("n").size shouldBe 2
+  }
 
   it("creates multiple copies of the same node") {
     val g = morpheus.cypher(
