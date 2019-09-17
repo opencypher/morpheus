@@ -74,6 +74,8 @@ class MultipleGraphTests extends MorpheusTestSuite with ScanGraphInit {
     result.graph.nodes("n").size shouldBe 2
   }
 
+  // a comment
+
   it("creates multiple copies of the same node") {
     val g = morpheus.cypher(
       """
