@@ -15,13 +15,6 @@ import org.opencypher.morpheus.impl.table.SparkTable.DataFrameTable
 
 object MorpheusExternSession {
   def create(implicit spark: SparkSession): MorpheusExternSession = new MorpheusExternSession(spark)
-
-  implicit class CypherSessionOps(val cypherSession: CypherSession) extends AnyVal {
-    def withCypher10: MorpheusExternSession = cypherSession match {
-      case ms: MorpheusExternSession => ms
-      case other => ???
-    }
-  }
 }
 
 case class SparkCypherResult(relationalTable: RelationalCypherRecords[DataFrameTable]) extends CypherResult {
