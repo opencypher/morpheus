@@ -3,13 +3,13 @@ package org.opencypher.morpheus.adapters
 import org.apache.spark.cypher.adapters.MappingAdapter._
 import org.apache.spark.graph.api.{NodeFrame, PropertyGraph, PropertyGraphType, RelationshipFrame}
 import org.apache.spark.sql.DataFrame
-import org.opencypher.morpheus.MorpheusSession
+import org.opencypher.morpheus.MorpheusExternSession
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.spark.api.io.CAPSEntityTable
+import org.opencypher.morpheus.api.io.MorpheusElementTable
 
 case class RelationalGraphAdapter(
-  cypherSession: MorpheusSession,
+  cypherSession: MorpheusExternSession,
   nodeFrames: Seq[NodeFrame],
   relationshipFrames: Seq[RelationshipFrame]) extends PropertyGraph {
 
@@ -19,8 +19,8 @@ case class RelationalGraphAdapter(
     if (nodeFrames.isEmpty) {
       cypherSession.graphs.empty
     } else {
-      val nodeTables = nodeFrames.map { nodeDataFrame => CAPSEntityTable(nodeDataFrame.toNodeMapping, nodeDataFrame.df) }
-      val relTables = relationshipFrames.map { relDataFrame => CAPSEntityTable(relDataFrame.toRelationshipMapping, relDataFrame.df) }
+      val nodeTables = nodeFrames.map { nodeDataFrame => MorpheusElementTable(nodeDataFrame.toNodeMapping, nodeDataFrame.df) }
+      val relTables = relationshipFrames.map { relDataFrame => MorpheusElementTable(relDataFrame.toRelationshipMapping, relDataFrame.df) }
       cypherSession.graphs.create(nodeTables.head, nodeTables.tail ++ relTables: _*)
     }
   }
@@ -65,7 +65,7 @@ case class RelationalGraphAdapter(
     df.select(selectColumns: _*)
   }
 
-  override def nodeFrame(labelSet: Set[String]): NodeFrame = _nodeFrame(labelSet)
+  override def nodeFrame(labelSet: Array[String]): NodeFrame = _nodeFrame(labelSet.toSet)
 
   override def relationshipFrame(relationshipType: String): RelationshipFrame = _relationshipFrame(relationshipType)
 

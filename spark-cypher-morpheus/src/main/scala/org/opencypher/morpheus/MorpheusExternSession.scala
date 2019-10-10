@@ -7,18 +7,18 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
-import org.opencypher.spark.api.CAPSSession
-import org.opencypher.spark.api.io.CAPSEntityTableFactory
-import org.opencypher.spark.impl.CAPSRecordsFactory
-import org.opencypher.spark.impl.graph.CAPSGraphFactory
-import org.opencypher.spark.impl.table.SparkTable.DataFrameTable
+import org.opencypher.morpheus.api.MorpheusSession
+import org.opencypher.morpheus.api.io.MorpheusElementTableFactory
+import org.opencypher.morpheus.impl.MorpheusRecordsFactory
+import org.opencypher.morpheus.impl.graph.MorpheusGraphFactory
+import org.opencypher.morpheus.impl.table.SparkTable.DataFrameTable
 
-object MorpheusSession {
-  def create(implicit spark: SparkSession): MorpheusSession = new MorpheusSession(spark)
+object MorpheusExternSession {
+  def create(implicit spark: SparkSession): MorpheusExternSession = new MorpheusExternSession(spark)
 
   implicit class CypherSessionOps(val cypherSession: CypherSession) extends AnyVal {
-    def withCypher10: MorpheusSession = cypherSession match {
-      case ms: MorpheusSession => ms
+    def withCypher10: MorpheusExternSession = cypherSession match {
+      case ms: MorpheusExternSession => ms
       case other => ???
     }
   }
@@ -28,24 +28,24 @@ case class SparkCypherResult(relationalTable: RelationalCypherRecords[DataFrameT
   override val df: DataFrame = relationalTable.table.df
 }
 
-private[morpheus] class MorpheusSession(override val sparkSession: SparkSession) extends RelationalCypherSession[DataFrameTable] with CypherSession {
+private[morpheus] class MorpheusExternSession(override val sparkSession: SparkSession) extends RelationalCypherSession[DataFrameTable] with CypherSession {
 
-  implicit val caps: CAPSSession = new CAPSSession(sparkSession)
+  implicit val morpheus: MorpheusSession = new MorpheusSession(sparkSession)
 
-  override type Records = caps.Records
+  override type Records = morpheus.Records
 
-  override val records: CAPSRecordsFactory = caps.records
+  override val records: MorpheusRecordsFactory = morpheus.records
 
-  override val graphs: CAPSGraphFactory = caps.graphs
+  override val graphs: MorpheusGraphFactory = morpheus.graphs
 
-  override val entityTables: CAPSEntityTableFactory.type = caps.entityTables
+  override val elementTables: MorpheusElementTableFactory.type = morpheus.elementTables
 
   // org.apache.spark.graph.api.CypherSession
 
   override def cypher(
     graph: PropertyGraph,
     query: String
-  ): CypherResult = cypher(graph, query, Map.empty)
+  ): CypherResult = cypher(graph, query, Map.empty[String, Any])
 
   override def cypher(
     graph: PropertyGraph,
@@ -58,8 +58,8 @@ private[morpheus] class MorpheusSession(override val sparkSession: SparkSession)
   }
 
   override def createGraph(
-    nodes: Seq[NodeFrame],
-    relationships: Seq[RelationshipFrame]
+    nodes: Array[NodeFrame],
+    relationships: Array[RelationshipFrame]
   ): PropertyGraph = {
     require(nodes.groupBy(_.labelSet).forall(_._2.size == 1),
       "There can be at most one NodeFrame per label set")

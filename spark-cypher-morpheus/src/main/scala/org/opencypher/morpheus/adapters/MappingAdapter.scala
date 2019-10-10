@@ -1,12 +1,12 @@
 package org.opencypher.morpheus.adapters
 
 import org.apache.spark.graph.api.{NodeFrame, RelationshipFrame}
-import org.opencypher.okapi.api.io.conversion.{EntityMapping, NodeMappingBuilder, RelationshipMappingBuilder}
+import org.opencypher.okapi.api.io.conversion.{ElementMapping, NodeMappingBuilder, RelationshipMappingBuilder}
 
 object MappingAdapter {
 
   implicit class RichNodeDataFrame(val nodeDf: NodeFrame) extends AnyVal {
-    def toNodeMapping: EntityMapping = NodeMappingBuilder
+    def toNodeMapping: ElementMapping = NodeMappingBuilder
       .on(nodeDf.idColumn)
       .withImpliedLabels(nodeDf.labelSet.toSeq: _*)
       .withPropertyKeyMappings(nodeDf.properties.toSeq:_*)
@@ -14,7 +14,7 @@ object MappingAdapter {
   }
 
   implicit class RichRelationshipDataFrame(val relDf: RelationshipFrame) extends AnyVal {
-    def toRelationshipMapping: EntityMapping = RelationshipMappingBuilder
+    def toRelationshipMapping: ElementMapping = RelationshipMappingBuilder
       .on(relDf.idColumn)
       .withSourceStartNodeKey(relDf.sourceIdColumn)
       .withSourceEndNodeKey(relDf.targetIdColumn)

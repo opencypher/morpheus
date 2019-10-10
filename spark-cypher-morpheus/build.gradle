@@ -3,7 +3,7 @@ import com.github.jengelman.gradle.plugins.shadow.tasks.ShadowJar
 description = 'Spark Cypher Morpheus'
 
 dependencies {
-    compile project(':spark-cypher')
+    compile project(':morpheus-spark-cypher')
     compile group: 'org.apache.spark', name: "spark-cypher".scala(), version: "3.0.0-SNAPSHOT"
     
     
