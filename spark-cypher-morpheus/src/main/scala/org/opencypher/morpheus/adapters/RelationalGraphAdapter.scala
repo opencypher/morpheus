@@ -19,8 +19,8 @@ case class RelationalGraphAdapter(
     if (nodeFrames.isEmpty) {
       cypherSession.graphs.empty
     } else {
-      val nodeTables = nodeFrames.map { nodeDataFrame => MorpheusElementTable(nodeDataFrame.toNodeMapping, nodeDataFrame.df) }
-      val relTables = relationshipFrames.map { relDataFrame => MorpheusElementTable(relDataFrame.toRelationshipMapping, relDataFrame.df) }
+      val nodeTables = nodeFrames.map { nodeDataFrame => MorpheusElementTable.create(nodeDataFrame.toNodeMapping, nodeDataFrame.df) }
+      val relTables = relationshipFrames.map { relDataFrame => MorpheusElementTable.create(relDataFrame.toRelationshipMapping, relDataFrame.df) }
       cypherSession.graphs.create(nodeTables.head, nodeTables.tail ++ relTables: _*)
     }
   }
