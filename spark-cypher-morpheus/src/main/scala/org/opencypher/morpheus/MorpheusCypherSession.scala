@@ -13,15 +13,15 @@ import org.opencypher.morpheus.impl.MorpheusRecordsFactory
 import org.opencypher.morpheus.impl.graph.MorpheusGraphFactory
 import org.opencypher.morpheus.impl.table.SparkTable.DataFrameTable
 
-object MorpheusExternSession {
-  def create(implicit spark: SparkSession): MorpheusExternSession = new MorpheusExternSession(spark)
+object MorpheusCypherSession {
+  def create(implicit spark: SparkSession): MorpheusCypherSession = new MorpheusCypherSession(spark)
 }
 
 case class SparkCypherResult(relationalTable: RelationalCypherRecords[DataFrameTable]) extends CypherResult {
   override val df: DataFrame = relationalTable.table.df
 }
 
-private[morpheus] class MorpheusExternSession(override val sparkSession: SparkSession) extends RelationalCypherSession[DataFrameTable] with CypherSession {
+private[morpheus] class MorpheusCypherSession(override val sparkSession: SparkSession) extends RelationalCypherSession[DataFrameTable] with CypherSession {
 
   implicit val morpheus: MorpheusSession = new MorpheusSession(sparkSession)
 

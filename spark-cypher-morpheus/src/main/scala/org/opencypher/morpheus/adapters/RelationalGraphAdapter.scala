@@ -3,13 +3,13 @@ package org.opencypher.morpheus.adapters
 import org.apache.spark.cypher.adapters.MappingAdapter._
 import org.apache.spark.graph.api.{NodeFrame, PropertyGraph, PropertyGraphType, RelationshipFrame}
 import org.apache.spark.sql.DataFrame
-import org.opencypher.morpheus.MorpheusExternSession
+import org.opencypher.morpheus.MorpheusCypherSession
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.morpheus.api.io.MorpheusElementTable
 
 case class RelationalGraphAdapter(
-  cypherSession: MorpheusExternSession,
+  cypherSession: MorpheusCypherSession,
   nodeFrames: Seq[NodeFrame],
   relationshipFrames: Seq[RelationshipFrame]) extends PropertyGraph {
 
