@@ -194,6 +194,7 @@ object SparkSQLExprMapper {
 
         case _: Multiply => child0 * child1
         case div: Divide => (child0 / child1).cast(div.cypherType.getSparkType)
+        case _: Modulo => child0 % child1
 
         // Id functions
         case _: Id => child0

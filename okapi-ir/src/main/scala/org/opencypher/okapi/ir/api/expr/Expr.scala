@@ -611,6 +611,20 @@ final case class Divide(lhs: Expr, rhs: Expr) extends ArithmeticExpr {
   }
 }
 
+final case class Modulo(lhs: Expr, rhs: Expr) extends ArithmeticExpr {
+
+  override val op = "%"
+
+  override def signature(lhsType: CypherType, rhsType: CypherType): Option[CypherType] = lhsType -> rhsType match {
+    case (CTVoid, _) | (_, CTVoid) => Some(CTNull)
+    case (CTInteger, CTInteger) => Some(CTInteger)
+    case (CTFloat, CTFloat) => Some(CTFloat)
+    case (CTInteger, CTFloat) => Some(CTFloat)
+    case (CTFloat, CTInteger) => Some(CTFloat)
+    case _ => None
+  }
+}
+
 // Functions
 sealed trait FunctionExpr extends TypeValidatedExpr {
   override final def toString = s"$name(${exprs.mkString(", ")})"

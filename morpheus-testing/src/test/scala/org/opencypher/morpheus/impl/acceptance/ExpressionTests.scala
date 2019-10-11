@@ -41,6 +41,7 @@ import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 import org.scalacheck.Prop
 import org.scalatestplus.scalacheck.Checkers
+import org.opencypher.morpheus.impl.MorpheusConverters._
 
 class ExpressionTests extends MorpheusTestSuite with ScanGraphInit with Checkers {
 
@@ -569,6 +570,45 @@ class ExpressionTests extends MorpheusTestSuite with ScanGraphInit with Checkers
 
   }
 
+  describe("modulo") {
+    it("computes modulo on an integer") {
+      // When
+      val result = morpheus.cypher("RETURN 3 % 2 as res")
+
+      // Then
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> 1)
+      ))
+    }
+
+    it("computes modulo on an integer property") {
+      // Given
+      val given = initGraph("CREATE (:Node {val: 3})")
+
+      // When
+      val result = given.cypher("MATCH (n:Node) RETURN n.val % 2 AS res")
+
+      // Then
+      result.records.toMaps should equal(Bag(
+        CypherMap("res" -> 1)
+      ))
+    }
+
+    it("computes modulo on float properties") {
+      // Given
+      val given = initGraph("CREATE (:Node {val1: 3.2, val2: 3.1 })")
+
+      // When
+      val result = given.cypher("MATCH (n:Node) RETURN n.val1 % n.val2 AS res")
+
+      // Then
+      val cypherMaps = result.records.asMorpheus.toCypherMaps.collect()
+
+      cypherMaps.length should be(1)
+
+      cypherMaps.head("res").cast[Double] should be(0.1 +- 0.01)
+    }
+  }
 
   it("equality") {
     // Given
