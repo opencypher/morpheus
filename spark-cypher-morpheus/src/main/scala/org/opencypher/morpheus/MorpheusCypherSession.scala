@@ -61,14 +61,6 @@ private[morpheus] class MorpheusCypherSession(override val sparkSession: SparkSe
     RelationalGraphAdapter(this, nodes, relationships)
   }
 
-  override def load(path: String): PropertyGraph = ???
-
-  override def save(
-    graph: PropertyGraph,
-    path: String,
-    saveMode: SaveMode
-  ): Unit = ???
-
   private def toRelationalGraph(graph: PropertyGraph): RelationalCypherGraph[DataFrameTable] = {
     graph match {
       case adapter: RelationalGraphAdapter => adapter.graph
@@ -78,6 +70,8 @@ private[morpheus] class MorpheusCypherSession(override val sparkSession: SparkSe
       )
     }
   }
+
+  override def read: PropertyGraphReader = ???
 }
 
 

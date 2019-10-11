@@ -4,12 +4,20 @@ description = 'Spark Cypher Morpheus'
 
 dependencies {
     compile project(':morpheus-spark-cypher')
-    compile group: 'org.apache.spark', name: "spark-cypher".scala(), version: "3.0.0-SNAPSHOT"
-    
-    
-//    compileOnly group: 'org.apache.spark', name: "spark-core".scala(), version: ver.spark
-//    compileOnly group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark
-//    compileOnly group: 'org.apache.spark', name: "spark-catalyst".scala(), version: ver.spark
+
+    // Morpheus Setting
+    compile(group: 'org.apache.spark', name: "spark-cypher".scala(), version: "3.0.0-SNAPSHOT") {
+        exclude group: 'org.apache.spark', module: 'spark-core'.scala()
+        exclude group: 'org.apache.spark', module: 'spark-sql'.scala()
+        exclude group: 'org.apache.spark', module: 'spark-catalyst'.scala()
+    }
+
+    compile group: 'org.apache.spark', name: "spark-core".scala(), version: ver.spark
+    compile group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark
+    compile group: 'org.apache.spark', name: "spark-catalyst".scala(), version: ver.spark
+
+    // Spark Cypher (SPIP setting)
+//    compile(group: 'org.apache.spark', name: "spark-cypher".scala(), version: "3.0.0-SNAPSHOT")
 }
 
 task allJar(type: ShadowJar) {

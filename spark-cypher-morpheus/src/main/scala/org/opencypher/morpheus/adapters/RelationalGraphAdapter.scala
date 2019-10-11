@@ -1,12 +1,12 @@
 package org.opencypher.morpheus.adapters
 
-import org.apache.spark.cypher.adapters.MappingAdapter._
-import org.apache.spark.graph.api.{NodeFrame, PropertyGraph, PropertyGraphType, RelationshipFrame}
+import org.apache.spark.graph.api.{NodeFrame, PropertyGraph, PropertyGraphType, PropertyGraphWriter, RelationshipFrame}
 import org.apache.spark.sql.DataFrame
 import org.opencypher.morpheus.MorpheusCypherSession
+import org.opencypher.morpheus.adapters.MappingAdapter._
+import org.opencypher.morpheus.api.io.MorpheusElementTable
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
 import org.opencypher.okapi.ir.api.expr.Var
-import org.opencypher.morpheus.api.io.MorpheusElementTable
 
 case class RelationalGraphAdapter(
   cypherSession: MorpheusCypherSession,
@@ -69,4 +69,5 @@ case class RelationalGraphAdapter(
 
   override def relationshipFrame(relationshipType: String): RelationshipFrame = _relationshipFrame(relationshipType)
 
+  override def write: PropertyGraphWriter = ???
 }

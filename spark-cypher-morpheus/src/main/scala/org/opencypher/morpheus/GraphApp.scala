@@ -1,9 +1,8 @@
 package org.opencypher.morpheus
 
+import org.apache.spark.cypher.SparkCypherSession
 import org.apache.spark.graph.api.{NodeFrame, RelationshipFrame}
 import org.apache.spark.sql.{DataFrame, SparkSession}
-import org.opencypher.morpheus.api.{GraphSources, MorpheusSession}
-import org.opencypher.okapi.api.graph.Namespace
 
 object GraphApp extends App {
   implicit val spark: SparkSession = SparkSession.builder().master("local[*]").getOrCreate()
@@ -12,18 +11,30 @@ object GraphApp extends App {
   //  implicit val cypherSession = SparkCypherSession.create
   implicit val cypherSession: MorpheusCypherSession = MorpheusCypherSession.create
 
+  // --------
   // SPIP API
+  // --------
+
   val nodeData: DataFrame = spark.createDataFrame(Seq(0 -> "Alice", 1 -> "Bob")).toDF("id", "name")
-  val nodeFrame: NodeFrame = NodeFrame.create(df = nodeData, idColumn = "id", labelSet = Set("Person"))
+  val nodeFrame: NodeFrame = cypherSession.buildNodeFrame(nodeData)
+    .idColumn("id")
+    .labelSet(Array("Person"))
+    .properties(Map("name" -> "name"))
+    .build()
 
   val graph = cypherSession.createGraph(Array(nodeFrame), Array.empty[RelationshipFrame])
   val result = graph.cypher("MATCH (n) RETURN n")
   result.df.show()
 
-  // Okapi API
+  // ------------
+  // Morpheus API
+  // ------------
 
   // MorpheusSession needs to be in implicit scope for PGDSs etc.
-  implicit val caps: MorpheusSession = cypherSession.morpheus
+
+  import org.opencypher.morpheus.api.GraphSources
+  import org.opencypher.okapi.api.graph.Namespace
+  implicit val morpheus = cypherSession.morpheus
 
   cypherSession.registerSource(Namespace("fs"), GraphSources.fs(getClass.getResource("/csv").getFile).csv)
   cypherSession.cypher(s"FROM GRAPH fs.products MATCH (n) RETURN n").show
