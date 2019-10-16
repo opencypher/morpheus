@@ -103,6 +103,7 @@ class NullTests extends MorpheusTestSuite with ScanGraphInit with TestNameFixtur
     it("calling: null - null")(returnsNull())
     it("calling: null * null")(returnsNull())
     it("calling: null / null")(returnsNull())
+    it("calling: null % null")(returnsNull())
     it("calling: null.foo")(returnsNull())
     it("calling: range(null, null)")(returnsNull())
     it("calling: replace(null, null, null)")(returnsNull())

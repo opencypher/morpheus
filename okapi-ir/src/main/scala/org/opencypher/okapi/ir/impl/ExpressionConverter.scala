@@ -158,6 +158,7 @@ final class ExpressionConverter(context: IRBuilderContext) {
       case _: ast.Subtract => Subtract(child0, child1)
       case _: ast.Multiply => Multiply(child0, child1)
       case _: ast.Divide => Divide(child0, child1)
+      case _: ast.Modulo => Modulo(child0, child1)
 
       case funcInv: ast.FunctionInvocation => funcInv.function match {
           case functions.Id => Id(child0)
