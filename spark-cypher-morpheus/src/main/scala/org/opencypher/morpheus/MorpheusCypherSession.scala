@@ -1,24 +1,24 @@
 package org.opencypher.morpheus
 
 import org.apache.spark.graph.api._
-import org.apache.spark.sql.{DataFrame, SaveMode, SparkSession}
+import org.apache.spark.sql.{Dataset, Row, SparkSession}
 import org.opencypher.morpheus.adapters.RelationalGraphAdapter
-import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.opencypher.okapi.impl.exception.IllegalArgumentException
-import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
-import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 import org.opencypher.morpheus.api.MorpheusSession
 import org.opencypher.morpheus.api.io.MorpheusElementTableFactory
 import org.opencypher.morpheus.impl.MorpheusRecordsFactory
 import org.opencypher.morpheus.impl.graph.MorpheusGraphFactory
 import org.opencypher.morpheus.impl.table.SparkTable.DataFrameTable
+import org.opencypher.okapi.api.value.CypherValue.CypherMap
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
+import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherSession}
+import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
 
 object MorpheusCypherSession {
   def create(implicit spark: SparkSession): MorpheusCypherSession = new MorpheusCypherSession(spark)
 }
 
 case class SparkCypherResult(relationalTable: RelationalCypherRecords[DataFrameTable]) extends CypherResult {
-  override val df: DataFrame = relationalTable.table.df
+  override val ds: Dataset[Row] = relationalTable.table.df
 }
 
 private[morpheus] class MorpheusCypherSession(override val sparkSession: SparkSession) extends RelationalCypherSession[DataFrameTable] with CypherSession {
@@ -51,12 +51,12 @@ private[morpheus] class MorpheusCypherSession(override val sparkSession: SparkSe
   }
 
   override def createGraph(
-    nodes: Array[NodeFrame],
-    relationships: Array[RelationshipFrame]
+    nodes: Array[NodeDataset],
+    relationships: Array[RelationshipDataset]
   ): PropertyGraph = {
-    require(nodes.groupBy(_.labelSet).forall(_._2.size == 1),
+    require(nodes.groupBy(_.labelSet).forall(_._2.length == 1),
       "There can be at most one NodeFrame per label set")
-    require(relationships.groupBy(_.relationshipType).forall(_._2.size == 1),
+    require(relationships.groupBy(_.relationshipType).forall(_._2.length == 1),
       "There can be at most one RelationshipFrame per relationship type")
     RelationalGraphAdapter(this, nodes, relationships)
   }

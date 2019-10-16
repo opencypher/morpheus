@@ -1,7 +1,6 @@
 package org.opencypher.morpheus
 
-import org.apache.spark.cypher.SparkCypherSession
-import org.apache.spark.graph.api.{NodeFrame, RelationshipFrame}
+import org.apache.spark.graph.api.{NodeDataset, RelationshipDataset}
 import org.apache.spark.sql.{DataFrame, SparkSession}
 
 object GraphApp extends App {
@@ -16,15 +15,15 @@ object GraphApp extends App {
   // --------
 
   val nodeData: DataFrame = spark.createDataFrame(Seq(0 -> "Alice", 1 -> "Bob")).toDF("id", "name")
-  val nodeFrame: NodeFrame = cypherSession.buildNodeFrame(nodeData)
+  val nodeFrame: NodeDataset = NodeDataset.builder(nodeData)
     .idColumn("id")
     .labelSet(Array("Person"))
     .properties(Map("name" -> "name"))
     .build()
 
-  val graph = cypherSession.createGraph(Array(nodeFrame), Array.empty[RelationshipFrame])
+  val graph = cypherSession.createGraph(Array(nodeFrame), Array.empty[RelationshipDataset])
   val result = graph.cypher("MATCH (n) RETURN n")
-  result.df.show()
+  result.ds.show()
 
   // ------------
   // Morpheus API
