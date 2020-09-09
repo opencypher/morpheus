@@ -1,6 +1,14 @@
 [![Maven Central](https://img.shields.io/badge/Maven_Central-0.4.2-blue.svg?label=Maven%20Central)](https://search.maven.org/#artifactdetails%7Corg.opencypher%7Cmorpheus-spark-cypher%7C0.4.2%7Cjar)
 # Morpheus: Cypher for Apache Spark
 
+---
+**NOTE**
+
+This project is no longer actively maintained.
+If you want to know more, please reach out by creating an issue.
+
+---
+
 Morpheus extends [Apache Spark™](https://spark.apache.org) with [Cypher](https://neo4j.com/docs/developer-manual/current/cypher/), the industry's most widely used [property graph](https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc) query language defined and maintained by the [openCypher](http://www.opencypher.org) project.
 It allows for the **integration** of many **data sources** and supports **multiple graph** querying.
 It enables you to use your Spark cluster to run **analytical graph queries**.
@@ -49,19 +57,6 @@ Morpheus is under rapid development and we are planning to offer support for:
 - a large subset of the Cypher language
 - new Cypher Multiple Graph features
 - injection of custom graph data sources
-
-## Spark Project Improvement Proposal
-
-Currently Morpheus is a third-party add-on to the Spark ecosystem. We, however, believe that property graphs and graph processing
-has the potential to be come a vital part of data analytics. We are thus working, in cooperation with 
-*Databricks*, on making Morpheus a core part of Spark. 
-The first step on this road is the specification of a __PropertyGraph API__, similar to __SQL__ and __Dataframes__, along with porting
-Cypher 9 features of Morpheus to the core Spark project in a so called __Spark Project Improvement Proposal__ (SPIP).
-
-We are currently in the second phase of this process, after having successfully [passed the vote for inclusion](http://apache-spark-developers-list.1001551.n3.nabble.com/VOTE-RESULT-SPIP-DataFrame-based-Property-Graphs-Cypher-Queries-and-Algorithms-td26401.html) into Apache Spark 3.0.
-The SPIP describing the motivation and goals is published here
-[SPARK-25994](https://issues.apache.org/jira/browse/SPARK-25994). 
-Additionally [SPARK-26028](https://issues.apache.org/jira/browse/SPARK-26028) proposes an API design and implementation strategies. 
 
 ## Supported Spark and Scala versions
 
