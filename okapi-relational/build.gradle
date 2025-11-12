@@ -3,9 +3,9 @@ apply plugin: 'com.github.johnrengelman.shadow'
 description = 'Okapi Relational - Relational Algebra for Cypher'
 
 dependencies {
-    compile project(':okapi-logical')
+    api project(':okapi-logical')
 
-    testCompile project(':okapi-testing')
+    testImplementation project(':okapi-testing')
 }
 
 shadowJar {

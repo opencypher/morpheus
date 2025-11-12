@@ -3,18 +3,18 @@ apply plugin: 'ch.kk7.spawn'
 description = 'Cypher for Apache Spark - Test Utilities'
 
 dependencies {
-    compile project(':morpheus-spark-cypher')
-    compile project(':okapi-testing')
-    compile project(':okapi-neo4j-io-testing')
+    api project(':morpheus-spark-cypher')
+    api project(':okapi-testing')
+    api project(':okapi-neo4j-io-testing')
 
-    compile group: 'org.apache.spark', name: "spark-core".scala(), version: ver.spark
-    compile group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark
-    compile group: 'org.apache.spark', name: "spark-hive".scala(), version: ver.spark
-    compile group: 'org.apache.hadoop', name: 'hadoop-minicluster', version: ver.hadoop
+    api group: 'org.apache.spark', name: "spark-core".scala(), version: ver.spark
+    api group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark
+    api group: 'org.apache.spark', name: "spark-hive".scala(), version: ver.spark
+    api group: 'org.apache.hadoop', name: 'hadoop-minicluster', version: ver.hadoop
 
-    testCompile project(':okapi-api').sourceSets.test.output
-    testCompile group: 'com.h2database', name: 'h2', version: ver.h2
-    testCompile group: 'org.spire-math', name: 'claimant'.scala(), version: ver.claimant
+    testImplementation project(':okapi-api').sourceSets.test.output
+    testImplementation group: 'com.h2database', name: 'h2', version: ver.h2
+    testImplementation group: 'org.spire-math', name: 'claimant'.scala(), version: ver.claimant
 
 }
 

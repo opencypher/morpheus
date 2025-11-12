@@ -1,21 +1,21 @@
 description = 'Okapi - openCypher API'
 
 dependencies {
-    compile project(':okapi-trees')
+    api project(':okapi-trees')
 
-    compile(group: 'org.opencypher', name: 'front-end-9.0', version: ver.cypher.frontend) {
+    api(group: 'org.opencypher', name: 'front-end-9.0', version: ver.cypher.frontend) {
         exclude group: 'org.scalacheck', module: 'scalacheck'.scala()
     }
 
-    compile group: 'org.typelevel', name: "cats-core".scala(), version: ver.cats
-    compile(group: 'com.lihaoyi', name: "upickle".scala(), version: ver.upickle) {
+    api group: 'org.typelevel', name: "cats-core".scala(), version: ver.cats
+    api(group: 'com.lihaoyi', name: "upickle".scala(), version: ver.upickle) {
         exclude group: 'com.lihaoyi', module: 'utest'.scala()
         exclude group: 'com.lihaoyi', module: 'acyclic'.scala()
     }
-    compile group: 'com.lihaoyi', name: "fastparse".scala(), version: ver.fastparse
+    api group: 'com.lihaoyi', name: "fastparse".scala(), version: ver.fastparse
 
-    testCompile group: "org.typelevel", name: "discipline".scala(), version: ver.discipline
-    testCompile group: "org.typelevel", name: "cats-laws".scala(), version: ver.cats
-    testCompile group: 'org.mockito', name: 'mockito-all', version: ver.mockito
-    testCompile group: 'junit', name: 'junit', version: ver.junit.main
+    testImplementation group: "org.typelevel", name: "discipline".scala(), version: ver.discipline
+    testImplementation group: "org.typelevel", name: "cats-laws".scala(), version: ver.cats
+    testImplementation group: 'org.mockito', name: 'mockito-all', version: ver.mockito
+    testImplementation group: 'junit', name: 'junit', version: ver.junit.main
 }

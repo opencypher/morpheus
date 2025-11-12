@@ -1,4 +1,5 @@
 plugins {
+    id 'java-library'
     id 'com.github.hierynomus.license' version '0.15.0' apply false
     id 'com.github.johnrengelman.shadow' version '4.0.3' apply false
     id 'com.github.alisiikh.scalastyle' version '3.5.0' apply false
@@ -18,6 +19,7 @@ apply from: 'build.licenses.gradle'
 
 subprojects {
     apply plugin: 'scala'
+    apply plugin: 'java-library'
 
     repositories {
         mavenCentral()
@@ -25,19 +27,19 @@ subprojects {
     }
 
     dependencies {
-        compile group: 'org.scala-lang', name: 'scala-library', version: ver.scala.full
+        api group: 'org.scala-lang', name: 'scala-library', version: ver.scala.full
 
         // Seems we need to lock these down, otherwise we get runtime errors on reflection
-        compile group: 'org.scala-lang', name: 'scala-reflect', version: ver.scala.full
-        compile group: 'org.scala-lang', name: 'scala-compiler', version: ver.scala.full
+        api group: 'org.scala-lang', name: 'scala-reflect', version: ver.scala.full
+        api group: 'org.scala-lang', name: 'scala-compiler', version: ver.scala.full
 
-        compile group: 'org.apache.logging.log4j', name: 'log4j-api', version: ver.log4j.main
-        compile group: 'org.apache.logging.log4j', name: "log4j-api-scala".scala(), version: ver.log4j.scala
+        api group: 'org.apache.logging.log4j', name: 'log4j-api', version: ver.log4j.main
+        api group: 'org.apache.logging.log4j', name: "log4j-api-scala".scala(), version: ver.log4j.scala
 
-        testCompile group: 'org.apache.logging.log4j', name: 'log4j-core', version: ver.log4j.main
-        testCompile group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
-        testCompile group: 'org.scalacheck', name: "scalacheck".scala(), version: ver.scalacheck
-        testCompile group: 'org.junit.platform', name: 'junit-platform-runner', version: ver.junit.runner
+        testImplementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: ver.log4j.main
+        testImplementation group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
+        testImplementation group: 'org.scalacheck', name: "scalacheck".scala(), version: ver.scalacheck
+        testRuntimeOnly group: 'org.junit.platform', name: 'junit-platform-runner', version: ver.junit.runner
     }
 
     test {

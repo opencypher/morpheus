@@ -1,13 +1,13 @@
 description = 'Collection of examples for Cypher for Apache Spark'
 
 dependencies {
-    compile project(':morpheus-spark-cypher')
-    compile project(':morpheus-testing')
+    api project(':morpheus-spark-cypher')
+    api project(':morpheus-testing')
 
-    compile group: 'org.apache.logging.log4j', name: 'log4j-core',           version: ver.log4j.main
-    compile group: 'org.apache.spark',         name: "spark-graphx".scala(), version: ver.spark
-    compile group: 'io.netty',                 name: 'netty-all',            version: ver.netty
-    compile group: 'com.h2database',           name: 'h2',                   version: ver.h2
+    api group: 'org.apache.logging.log4j', name: 'log4j-core',           version: ver.log4j.main
+    api group: 'org.apache.spark',         name: "spark-graphx".scala(), version: ver.spark
+    api group: 'io.netty',                 name: 'netty-all',            version: ver.netty
+    api group: 'com.h2database',           name: 'h2',                   version: ver.h2
 }
 
 tasks.test.dependsOn(":okapi-neo4j-io-testing:neo4jStart")

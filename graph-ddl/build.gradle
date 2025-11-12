@@ -1,10 +1,10 @@
 description = 'Graph DDL'
 
 dependencies {
-    compile project(':okapi-trees')
-    compile project(':okapi-api')
+    api project(':okapi-trees')
+    api project(':okapi-api')
 
-    compile group: 'com.lihaoyi', name: "fastparse".scala(), version: ver.fastparse
+    api group: 'com.lihaoyi', name: "fastparse".scala(), version: ver.fastparse
 
-    testCompile project(':okapi-testing')
+    testImplementation project(':okapi-testing')
 }
