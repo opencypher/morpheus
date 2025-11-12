@@ -5,13 +5,13 @@ description = 'Micro benchmarks for Cypher for Apache Spark'
 dependencies {
     api project(':morpheus-spark-cypher')
 
-    api(group: 'org.apache.spark', name: "spark-core".scala(), version: ver.spark) {
+    implementation(group: 'org.apache.spark', name: "spark-core".scala(), version: ver.spark) {
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     }
-    api(group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark) {
+    implementation(group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark) {
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     }
-    api(group: 'org.apache.spark', name: "spark-catalyst".scala(), version: ver.spark) {
+    implementation(group: 'org.apache.spark', name: "spark-catalyst".scala(), version: ver.spark) {
         exclude group: 'org.slf4j', module: 'slf4j-log4j12'
     }
 }

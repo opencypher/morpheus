@@ -4,10 +4,19 @@ dependencies {
     api project(':morpheus-spark-cypher')
     api project(':morpheus-testing')
 
-    api group: 'org.apache.logging.log4j', name: 'log4j-core',           version: ver.log4j.main
-    api group: 'org.apache.spark',         name: "spark-graphx".scala(), version: ver.spark
-    api group: 'io.netty',                 name: 'netty-all',            version: ver.netty
-    api group: 'com.h2database',           name: 'h2',                   version: ver.h2
+    implementation group: 'org.apache.logging.log4j', name: 'log4j-core',           version: ver.log4j.main
+    implementation group: 'org.apache.spark',         name: "spark-graphx".scala(), version: ver.spark
+    implementation group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark
+    implementation(group: 'org.apache.spark', name: "spark-catalyst".scala(), version: ver.spark) {
+        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
+    }
+    implementation group: 'io.netty',                 name: 'netty-all',            version: ver.netty
+    implementation group: 'com.h2database',           name: 'h2',                   version: ver.h2
+    implementation(group: 'com.lihaoyi', name: "upickle".scala(), version: ver.upickle) {
+        exclude group: 'com.lihaoyi', module: 'utest'.scala()
+        exclude group: 'com.lihaoyi', module: 'acyclic'.scala()
+    }
+    implementation group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: ver.neo4j.driver
 }
 
 tasks.test.dependsOn(":okapi-neo4j-io-testing:neo4jStart")
