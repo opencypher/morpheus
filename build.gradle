@@ -27,7 +27,7 @@ subprojects {
     }
 
     dependencies {
-        api group: 'org.scala-lang', name: 'scala-library', version: ver.scala.full
+        implementation group: 'org.scala-lang', name: 'scala-library', version: ver.scala.full
 
         // Seems we need to lock these down, otherwise we get runtime errors on reflection
         api group: 'org.scala-lang', name: 'scala-reflect', version: ver.scala.full
