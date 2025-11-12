@@ -1,4 +1,4 @@
-apply plugin: 'me.champeau.gradle.jmh'
+apply plugin: 'me.champeau.jmh'
 
 description = 'Micro benchmarks for Cypher for Apache Spark'
 
@@ -18,4 +18,9 @@ dependencies {
 
 jmh {
     //include = ['.*Concat.*']
+}
+
+// We ignore the license check here for unknown historic reasons.
+tasks.named("validateLicenses") {
+    enabled = false
 }

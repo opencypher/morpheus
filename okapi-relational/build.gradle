@@ -12,10 +12,8 @@ dependencies {
 }
 
 shadowJar {
-    classifier = 'all'
-
+    archiveClassifier = 'all'
     from project.sourceSets.main.output
-    configurations = [project.configurations.runtime]
 
     dependencies {
         exclude(dependency('org.scala-lang:'))

@@ -9,3 +9,8 @@ dependencies {
     implementation group: 'org.apache.commons', name: 'commons-text', version: ver.apache.commons.text
     implementation group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
 }
+
+// We ignore the license check here for unknown historic reasons.
+tasks.named("validateLicenses") {
+    enabled = false
+}

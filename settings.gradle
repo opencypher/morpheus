@@ -1,3 +1,13 @@
+pluginManagement {
+    repositories {
+        gradlePluginPortal()
+        maven {
+            name = 'Local-hosted plugins'
+            url 'dependencies/plugins/repository'
+        }
+    }
+}
+
 rootProject.name = 'okapi'
 include(':okapi-api')
 include(':okapi-testing')

@@ -22,24 +22,12 @@ publishing {
             artifact sourceJar
             artifact docJar
             pom pomConfig
-            pom.withXml {
-                def dependenciesNode = asNode().dependencies[0]
-                project.configurations.compile.allDependencies.findAll {
-                    excludedDependencyGroups.contains(it.group)
-                }.each { dep ->
-                    def dependencyNode = dependenciesNode.appendNode('dependency')
-                    dependencyNode.appendNode('groupId', dep.group)
-                    dependencyNode.appendNode('artifactId', dep.name)
-                    dependencyNode.appendNode('version', dep.version)
-                    dependencyNode.appendNode('scope', 'compile')
-                }
-            }
         }
     }
 }
 
 shadowJar {
-    classifier = ''
+    archiveClassifier = ''
     from generatePomFileForFullPublication {
         rename('pom-default.xml',"META-INF/maven/${project.group}/${project.name}/pom.xml")
     }

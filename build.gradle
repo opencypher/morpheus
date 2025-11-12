@@ -1,9 +1,9 @@
 plugins {
     id 'java-library'
-    id 'com.github.hierynomus.license' version '0.15.0' apply false
-    id 'com.github.johnrengelman.shadow' version '4.0.3' apply false
+    id 'com.github.hierynomus.license' version '0.16.2-37dde1f' apply false
+    id 'com.github.johnrengelman.shadow' version '7.1.2' apply false
     id 'com.github.alisiikh.scalastyle' version '3.5.0' apply false
-    id 'me.champeau.gradle.jmh' version '0.4.8' apply false
+    id 'me.champeau.jmh' version '0.7.3' apply false
     id "ch.kk7.spawn" version "1.0.20180924200750" apply false
 }
 

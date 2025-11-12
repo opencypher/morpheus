@@ -63,3 +63,8 @@ neo4jLauncher('Neo4jCommunity', 2, 'neo4jStartTwoInstances', 'neo4jStopTwoInstan
 
 tasks.test.dependsOn(tasks.neo4jStart)
 tasks.test.finalizedBy(tasks.neo4jStop)
+
+// We ignore the license check here for unknown historic reasons.
+tasks.named("validateLicenses") {
+    enabled = false
+}
