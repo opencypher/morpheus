@@ -6,4 +6,5 @@ dependencies {
 
     api group: 'org.opencypher', name: 'tck',             version: ver.cypher.tck
     api group: 'org.opencypher', name: 'tck-api'.scala(), version: ver.cypher.tck
+    implementation group: 'org.apache.commons', name: 'commons-text', version: ver.apache.commons.text
 }

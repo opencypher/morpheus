@@ -39,6 +39,7 @@ ext {
 
             junit     : [main  : '4.12',
                          runner: '1.0.2'],
+            apache: [commons: [text: '1.14.0']]
     ]
 
 }

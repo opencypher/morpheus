@@ -27,7 +27,7 @@
 package org.opencypher.okapi.tck.test
 
 
-import org.apache.commons.lang3.StringEscapeUtils
+import org.apache.commons.text.StringEscapeUtils
 import org.opencypher.okapi.impl.exception.NotImplementedException
 import org.opencypher.okapi.tck.test.TckToCypherConverter.tckValueToCypherValue
 import org.opencypher.okapi.api.value.CypherValue.{CypherList => OKAPICypherList, CypherMap => OKAPICypherMap, CypherNull => OKAPICypherNull, CypherString => OKAPICypherString, CypherValue => OKAPICypherValue}
