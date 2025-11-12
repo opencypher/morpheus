@@ -10,7 +10,7 @@ ext {
             jvm       : '1.8',
 
             scala     : [major: '2.12',
-                         full : '2.12.8'],
+                         full : '2.12.20'],
 
             cypher    : [frontend: '9.0.20190305',
                          tck     : '1.0.0-M14'],
