@@ -31,7 +31,7 @@ subprojects {
 
         // Seems we need to lock these down, otherwise we get runtime errors on reflection
         api group: 'org.scala-lang', name: 'scala-reflect', version: ver.scala.full
-        api group: 'org.scala-lang', name: 'scala-compiler', version: ver.scala.full
+        compileOnly group: 'org.scala-lang', name: 'scala-compiler', version: ver.scala.full
 
         api group: 'org.apache.logging.log4j', name: 'log4j-api', version: ver.log4j.main
         api group: 'org.apache.logging.log4j', name: "log4j-api-scala".scala(), version: ver.log4j.scala
