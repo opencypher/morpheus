@@ -1,7 +1,10 @@
 description = 'Okapi Logical - Logical representation of Cypher queries'
 
 dependencies {
-    compile project(':okapi-ir')
+    api project(':okapi-ir')
 
-    testCompile project(':okapi-testing')
+    implementation group: 'org.opencypher', name: 'expressions-9.0',  version: ver.cypher.frontend
+
+    testImplementation project(':okapi-testing')
+    testImplementation group: 'org.opencypher', name: 'front-end-9.0',  version: ver.cypher.frontend
 }

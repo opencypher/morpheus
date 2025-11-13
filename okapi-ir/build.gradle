@@ -1,12 +1,16 @@
 description = 'Okapi IR - Declarative representation of Cypher queries'
 
 dependencies {
-    compile project(':okapi-api')
+    api project(':okapi-api')
 
-    compile group: 'org.atnos', name: "eff".scala(), version: ver.eff
+    implementation group: 'org.opencypher', name: 'expressions-9.0',  version: ver.cypher.frontend
+    implementation group: 'org.opencypher', name: 'ast-9.0',  version: ver.cypher.frontend
+    implementation group: 'org.opencypher', name: 'rewriting-9.0',  version: ver.cypher.frontend
+    implementation group: 'org.opencypher', name: 'front-end-9.0',  version: ver.cypher.frontend
+    implementation group: 'org.atnos', name: "eff".scala(), version: ver.eff
 
-    testCompile project(':okapi-testing')
+    testImplementation project(':okapi-testing')
 
-    testCompile group: 'org.opencypher', name: 'ast-9.0',  version: ver.cypher.frontend, classifier: 'tests'
-    testCompile group: 'org.opencypher', name: 'util-9.0', version: ver.cypher.frontend, classifier: 'tests'
+    testImplementation group: 'org.opencypher', name: 'util-9.0', version: ver.cypher.frontend, classifier: 'tests'
+    testImplementation group: 'org.opencypher', name: 'ast-9.0',  version: ver.cypher.frontend, classifier: 'tests'
 }

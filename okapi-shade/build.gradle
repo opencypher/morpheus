@@ -3,7 +3,7 @@ apply plugin: 'com.github.johnrengelman.shadow'
 description = 'Okapi Shade contains the full Okapi stack and its relocated dependencies'
 
 dependencies {
-    compile project(':okapi-relational')
+    api project(':okapi-relational')
 }
 
 ext.excludedDependencyGroups = [

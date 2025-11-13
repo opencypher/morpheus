@@ -136,8 +136,10 @@ object SqlGraphSources {
       SqlPropertyGraphDataSource(graphDdl, sqlDataSourceConfigs, idGenerationStrategy)
   }
 
-  def apply(graphDdlPath: String)(implicit morpheus: MorpheusSession): SqlGraphSourceFactory =
-    SqlGraphSources(GraphDdl(using(Source.fromFile(graphDdlPath, "UTF-8"))(_.mkString)))
+  def apply(graphDdlPath: String)(implicit morpheus: MorpheusSession): SqlGraphSourceFactory = {
+    val content = using(Source.fromFile(graphDdlPath, "UTF-8"))(_.mkString)
+    SqlGraphSources(GraphDdl(content))
+  }
 
   def apply(graphDdl: GraphDdl)(implicit morpheus: MorpheusSession): SqlGraphSourceFactory =
     SqlGraphSourceFactory(graphDdl = graphDdl, idGenerationStrategy = SerializedId)
