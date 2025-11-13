@@ -68,6 +68,14 @@ subprojects { proj ->
 
         // Dependency license reporting
         downloadLicenses {
+            report {
+                json.enabled = true
+                json.destination = file(getLayout().getBuildDirectory().dir('reports/license'))
+                xml.enabled = false
+                xml.destination = file(getLayout().getBuildDirectory().dir('reports/license'))
+                html.enabled = false
+                html.destination = file(getLayout().getBuildDirectory().dir('reports/license'))
+            }
             dependencyConfiguration = 'runtimeClasspath'
             aliases = allowList.collectEntries { lic ->
                 def actual = license(lic.name, lic.url)
