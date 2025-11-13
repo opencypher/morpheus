@@ -23,8 +23,8 @@ dependencies {
 
 def neo4jLauncher(String launcher, int instances, String starter, String stopper, String status) {
     task(starter, type: SpawnTask) {
-        description "Launches $launcher (x$instances) in a separate JVM"
-        group "services"
+        description = "Launches $launcher (x$instances) in a separate JVM"
+       group = 'services'
 
         dependsOn project.sourceSets.services.runtimeClasspath
 
@@ -39,14 +39,14 @@ def neo4jLauncher(String launcher, int instances, String starter, String stopper
     }
 
     task(stopper, type: KillTask) {
-        description "Stops $launcher"
-        group "services"
+        description = "Stops $launcher"
+       group = 'services'
         kills tasks[starter]
     }
 
     task(status) {
-        description "Prints status on $launcher"
-        group "services"
+        description = "Prints status on $launcher"
+       group = 'services'
         doLast {
             def res = [pid: 'unknown', status: 'unknown']
             if (tasks[starter].pidFile.exists()) {
