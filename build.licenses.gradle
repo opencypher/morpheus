@@ -48,7 +48,7 @@ def allowList = [
         ]]
 ]
 
-// Adapted from https://github.com/neo4j/graph-data-science/blob/2.13/gradle/licensing.gradle
+// Adapted from https://github.com/neo4j/graph-data-science/blob/0684425ee000d2d5a13049ff1bf097075825cbe3/gradle/licensing.gradle
 subprojects { proj ->
     plugins.withType(JavaLibraryPlugin) {
         proj.apply plugin: 'com.github.hierynomus.license'
@@ -63,7 +63,6 @@ subprojects { proj ->
             // exclude 'test/resources/**'
             // exclude 'main/resources/**'
             include '**/*.java'
-            include '**/*.scala'
         }
         tasks.check.dependsOn tasks.license
 
@@ -91,8 +90,8 @@ subprojects { proj ->
 
         // Dependency license validation
         tasks.register("validateLicenses") {
-            group 'license'
-            description 'Checks dependency licenses against an allowlist'
+           group = 'license'
+            description = 'Checks dependency licenses against an allowlist'
             dependsOn tasks.downloadLicenses
             doLast {
                 def allowListedNames = allowList.collect { it.name }
@@ -106,7 +105,7 @@ subprojects { proj ->
 
         // Compound dependency licenses files
         tasks.register("generateLicensesFiles") {
-            description 'Generates dependency license report files'
+            description = 'Generates dependency license report files'
             dependsOn tasks.downloadLicenses, tasks.validateLicenses
             ext.licensesFile = file("$tasks.downloadLicenses.jsonDestination/LICENSES.txt")
             ext.noticeFile = file("$tasks.downloadLicenses.jsonDestination/NOTICE.txt")

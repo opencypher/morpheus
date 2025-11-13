@@ -1,4 +1,4 @@
-apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'com.gradleup.shadow'
 
 description = 'Okapi Shade contains the full Okapi stack and its relocated dependencies'
 
@@ -18,7 +18,7 @@ pub.each { k, v ->
 publishing {
     publications {
         full(MavenPublication) { pub ->
-            project.shadow.component(pub)
+            artifact shadowJar
             artifact sourceJar
             artifact docJar
             pom pomConfig
