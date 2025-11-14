@@ -1,9 +1,10 @@
 plugins {
     id 'java-library'
-    id 'com.github.hierynomus.license' version '0.15.0' apply false
-    id 'com.github.johnrengelman.shadow' version '4.0.3' apply false
+    id 'scala'
+    id 'com.github.hierynomus.license' version '0.16.3-63da64d' apply false
+    id 'com.gradleup.shadow' version '9.2.2' apply false
     id 'com.github.alisiikh.scalastyle' version '3.5.0' apply false
-    id 'me.champeau.gradle.jmh' version '0.4.8' apply false
+    id 'me.champeau.jmh' version '0.7.3' apply false
     id "ch.kk7.spawn" version "1.0.20180924200750" apply false
 }
 
@@ -11,6 +12,15 @@ apply from: 'build.params.gradle'
 apply plugin: 'base'
 
 allprojects {
+    java {
+        sourceCompatibility = ver.jvm
+        targetCompatibility = ver.jvm
+    }
+
+    scala {
+        scalaVersion = ver.scala.full
+    }
+
     group = 'org.opencypher'
     version = ver.self
 }
@@ -49,7 +59,6 @@ subprojects {
     }
 
     ext.scalacParameters = [
-            "-target:jvm-$ver.jvm".toString(),
             '-unchecked',
             '-deprecation',
             '-feature',
@@ -69,18 +78,18 @@ subprojects {
     }
 
     task sourceJar(type: Jar) {
-        classifier = 'sources'
+        archiveClassifier = 'sources'
         from(sourceSets.main.allSource)
     }
 
     task docJar(type: Jar) {
         dependsOn tasks.scaladoc
-        classifier = 'javadoc'
+        archiveClassifier = 'javadoc'
         from(tasks.scaladoc.destinationDir)
     }
 
     task testJar(type: Jar) {
-        classifier = 'tests'
+        archiveClassifier = 'tests'
         from(sourceSets.test.output)
     }
 
@@ -95,14 +104,14 @@ subprojects {
     }
 
     task dependencySearch(type: DependencyInsightReportTask) {
-        description 'Searches all projects for a dependency'
-        group 'help'
+        description = 'Searches all projects for a dependency'
+        group = 'help'
     }
 
     task runApp {
         dependsOn tasks.classes
-        group 'run'
-        description 'Run a custom Scala app (use -PmainClass=com.my.package.App)'
+        group = 'run'
+        description = 'Run a custom Scala app (use -PmainClass=com.my.package.App)'
         doLast {
             javaexec {
                 classpath = sourceSets.main.runtimeClasspath
@@ -113,7 +122,7 @@ subprojects {
 
     // copied from https://stackoverflow.com/a/38058671/568723
     task depSize  {
-        description 'Lists all dependencies sorted by their size'
+        description = 'Lists all dependencies sorted by their size'
         doLast {
             final formatStr = "%,10.2f"
             final conf = configurations.default
