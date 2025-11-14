@@ -66,6 +66,16 @@ subprojects { proj ->
         }
         tasks.check.dependsOn tasks.license
 
+        // Define a resolvable configuration for license reporting
+        configurations {
+            licenseReportRuntimeClasspath {
+                extendsFrom configurations.runtimeClasspath
+                canBeResolved = true
+                canBeConsumed = false
+                description = 'Resolvable configuration for license reporting.'
+            }
+        }
+
         // Dependency license reporting
         downloadLicenses {
             report {
@@ -76,7 +86,7 @@ subprojects { proj ->
                 html.enabled = false
                 html.destination = file(getLayout().getBuildDirectory().dir('reports/license'))
             }
-            dependencyConfiguration = 'runtimeClasspath'
+            dependencyConfiguration = 'resolvableRuntimeClasspath'
             aliases = allowList.collectEntries { lic ->
                 def actual = license(lic.name, lic.url)
                 def alternatives = lic.aliases.collect { it.url ? license(it.name, it.url) : it.name }

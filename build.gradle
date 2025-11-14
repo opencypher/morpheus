@@ -11,6 +11,16 @@ plugins {
 apply from: 'build.params.gradle'
 apply plugin: 'base'
 
+configurations {
+    resolvableRuntimeClasspath {
+        extendsFrom configurations.runtimeClasspath
+        canBeResolved = true
+        canBeConsumed = false
+        description = 'Resolvable runtime classpath configuration.'
+    }
+}
+
+
 allprojects {
     java {
         sourceCompatibility = ver.jvm

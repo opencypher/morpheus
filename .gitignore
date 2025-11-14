@@ -28,3 +28,8 @@ gradle-app.setting
 # Demo data sets
 yelp_json
 yelp_graph
+
+# Ignore Gradle build output directory
+build
+
+gradle.properties
