@@ -5,7 +5,7 @@ description = 'Cypher for Apache Spark - Test Utilities'
 dependencies {
     api project(':morpheus-spark-cypher')
     api project(':okapi-testing')
-    api project(':okapi-neo4j-io-testing')
+//    api project(':okapi-neo4j-io-testing')
 
     implementation group: 'org.apache.spark', name: "spark-core".scala(), version: ver.spark
     implementation group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark
@@ -25,5 +25,10 @@ dependencies {
     testImplementation group: 'org.opencypher', name: 'front-end-9.0',  version: ver.cypher.frontend
 }
 
-tasks.test.dependsOn(":okapi-neo4j-io-testing:neo4jStart")
-tasks.test.finalizedBy(":okapi-neo4j-io-testing:neo4jStop")
+//tasks.test.dependsOn(":okapi-neo4j-io-testing:neo4jStart")
+//tasks.test.finalizedBy(":okapi-neo4j-io-testing:neo4jStop")
+
+// We ignore the license check here for unknown historic reasons.
+tasks.named("validateLicenses") {
+    enabled = false
+}

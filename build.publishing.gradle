@@ -87,8 +87,8 @@ subprojects {
     if (project.name != "okapi-shade") {
         // Convenience for quick publish to maven local
         task devPublish {
-            group 'publishing'
-            description ' Publishes main jars to the local Maven repository.'
+            group = 'publishing'
+            description = ' Publishes main jars to the local Maven repository.'
             dependsOn tasks.publishDevPublicationToMavenLocal
         }
     }

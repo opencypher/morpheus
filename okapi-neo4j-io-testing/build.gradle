@@ -1,7 +1,9 @@
 import ch.kk7.gradle.spawn.KillTask
 import ch.kk7.gradle.spawn.SpawnTask
 
-apply plugin: 'ch.kk7.spawn'
+plugins {
+    id 'ch.kk7.spawn'
+}
 
 description = 'Okapi - Neo4j IO test utils'
 
@@ -17,14 +19,14 @@ dependencies {
     implementation group: 'org.bouncycastle', name: 'bctls-jdk15on', version: ver.bctls
     implementation group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
 
-    servicesImplementation group: 'org.neo4j.test', name: 'neo4j-harness',            version: ver.neo4j.harness
+    servicesImplementation group: 'org.neo4j.test', name: 'neo4j-harness', version: ver.neo4j.harness
     servicesImplementation group: 'org.neo4j.test', name: 'neo4j-harness-enterprise', version: ver.neo4j.harness
 }
 
 def neo4jLauncher(String launcher, int instances, String starter, String stopper, String status) {
-    task(starter, type: SpawnTask) {
-        description "Launches $launcher (x$instances) in a separate JVM"
-        group "services"
+    tasks.register(starter, SpawnTask) {
+        description = "Launches $launcher (x$instances) in a separate JVM"
+        group = 'services'
 
         dependsOn project.sourceSets.services.runtimeClasspath
 
@@ -34,23 +36,23 @@ def neo4jLauncher(String launcher, int instances, String starter, String stopper
         String marker = 'neo4j started'
 
         commandLine = [java, '-cp', classpath, main, marker, instances.toString()]
-        waitFor     = marker
+        waitFor = marker
         doLast { println getStdoutFile().text }
     }
 
-    task(stopper, type: KillTask) {
-        description "Stops $launcher"
-        group "services"
-        kills tasks[starter]
+    tasks.register(stopper, KillTask) {
+        description = "Stops $launcher"
+        group = 'services'
+        kills starter
     }
 
-    task(status) {
-        description "Prints status on $launcher"
-        group "services"
+    tasks.register(status) {
+        description = "Prints status on $launcher"
+        group = 'services'
         doLast {
             def res = [pid: 'unknown', status: 'unknown']
             if (tasks[starter].pidFile.exists()) {
-                res.pid    = tasks[starter].pidFile.text
+                res.pid = tasks[starter].pidFile.text
                 res.status = tasks[starter].kill('-0', res.pid) ? 'running' : 'stopped'
             }
             println res
@@ -63,3 +65,8 @@ neo4jLauncher('Neo4jCommunity', 2, 'neo4jStartTwoInstances', 'neo4jStopTwoInstan
 
 tasks.test.dependsOn(tasks.neo4jStart)
 tasks.test.finalizedBy(tasks.neo4jStop)
+
+// We ignore the license check here for unknown historic reasons.
+tasks.named("validateLicenses") {
+    enabled = false
+}

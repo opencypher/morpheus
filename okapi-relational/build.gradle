@@ -1,4 +1,4 @@
-apply plugin: 'com.github.johnrengelman.shadow'
+apply plugin: 'com.gradleup.shadow'
 
 description = 'Okapi Relational - Relational Algebra for Cypher'
 
@@ -12,10 +12,8 @@ dependencies {
 }
 
 shadowJar {
-    classifier = 'all'
-
+    archiveClassifier = 'all'
     from project.sourceSets.main.output
-    configurations = [project.configurations.runtime]
 
     dependencies {
         exclude(dependency('org.scala-lang:'))
