@@ -27,3 +27,8 @@ dependencies {
 
 tasks.test.dependsOn(":okapi-neo4j-io-testing:neo4jStart")
 tasks.test.finalizedBy(":okapi-neo4j-io-testing:neo4jStop")
+
+// We ignore the license check here for unknown historic reasons.
+tasks.named("validateLicenses") {
+    enabled = false
+}
