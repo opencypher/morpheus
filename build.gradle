@@ -1,23 +1,34 @@
 plugins {
-    id 'java-library'
-    id 'scala'
-    id 'com.github.hierynomus.license' version '0.16.3-63da64d' apply false
-    id 'com.gradleup.shadow' version '9.2.2' apply false
-    id 'com.github.alisiikh.scalastyle' version '3.5.0' apply false
-    id 'me.champeau.jmh' version '0.7.3' apply false
+    id 'buildlogic.scala-application-conventions'
+
+    alias(libs.plugins.champeau.jmh).apply(false)
+    alias(libs.plugins.licencs).apply(false)
+    alias(libs.plugins.scalastyle).apply(false)
+    alias(libs.plugins.shadowjar).apply(false)
+    alias(libs.plugins.spawn).apply(false)
 }
 
 apply from: 'build.params.gradle'
 apply plugin: 'base'
 
+configurations {
+    resolvableRuntimeClasspath {
+        extendsFrom configurations.runtimeClasspath
+        canBeResolved = true
+        canBeConsumed = false
+        description = 'Resolvable runtime classpath configuration.'
+    }
+}
+
+
 allprojects {
     java {
-        sourceCompatibility = ver.jvm
-        targetCompatibility = ver.jvm
+        sourceCompatibility = 21
+        targetCompatibility = 21
     }
 
     scala {
-        scalaVersion = ver.scala.full
+        scalaVersion = libs.scala.library.get().version
     }
 
     group = 'org.opencypher'
@@ -36,14 +47,14 @@ subprojects {
     }
 
     dependencies {
-        implementation group: 'org.scala-lang', name: 'scala-library', version: ver.scala.full
+        implementation libs.scala.library
 
         // Seems we need to lock these down, otherwise we get runtime errors on reflection
-        implementation group: 'org.scala-lang', name: 'scala-reflect', version: ver.scala.full
-        implementation group: 'org.scala-lang', name: 'scala-compiler', version: ver.scala.full
+        implementation libs.scala.compiler
+        implementation libs.scala.reflect
 
-        implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: ver.log4j.main
-        implementation group: 'org.apache.logging.log4j', name: "log4j-api-scala".scala(), version: ver.log4j.scala
+        implementation libs.log4j.api
+        implementation libs.log4j.api.scala
 
         testImplementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: ver.log4j.main
         testImplementation group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
@@ -54,6 +65,12 @@ subprojects {
         testImplementation group: 'org.junit.platform', name: 'junit-platform-launcher', version: ver.junit.platform
         testRuntimeOnly group: 'org.junit.platform', name: 'junit-platform-engine', version: ver.junit.platform
         testRuntimeOnly group: 'org.scalatestplus', name: "junit-5-13".scala(), version: "${ver.scalatest}.0"
+        testImplementation libs.log4j.core
+        testImplementation libs.scalatest
+        testImplementation libs.scalacheck
+        testImplementation libs.junit
+        testImplementation libs.mockito
+        testRuntimeOnly libs.junit.runner
     }
 
     test {
@@ -106,47 +123,72 @@ subprojects {
             '-Ywarn-adapted-args'
     ]
 
-    tasks.withType(ScalaCompile) {
+    tasks.withType(Test).configureEach {
+        // JVM args required by spark (see org.apache.spark.launcher.JavaModuleOptions)
+        jvmArgs(
+                '-XX:+IgnoreUnrecognizedVMOptions',
+                '--add-exports=java.base/sun.nio.ch=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED',
+                '--add-opens=java.base/java.io=ALL-UNNAMED',
+                '--add-opens=java.base/java.net=ALL-UNNAMED',
+                '--add-opens=java.base/java.nio=ALL-UNNAMED',
+                '--add-opens=java.base/java.util=ALL-UNNAMED',
+                '--add-opens=java.base/java.util.concurrent=ALL-UNNAMED',
+                '--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED',
+                '--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED',
+                '--add-opens=java.base/sun.nio.ch=ALL-UNNAMED',
+                '--add-opens=java.base/sun.nio.cs=ALL-UNNAMED',
+                '--add-opens=java.base/sun.security.action=ALL-UNNAMED',
+                '--add-opens=java.base/sun.util.calendar=ALL-UNNAMED',
+                '--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED',
+                '-Djdk.reflect.useDirectMethodHandle=false'
+        )
+    }
+
+    tasks.withType(ScalaCompile).configureEach {
         options.encoding = 'UTF-8'
         scalaCompileOptions.additionalParameters = scalacParameters
     }
 
-    tasks.withType(ScalaDoc) {
+    tasks.withType(ScalaDoc).configureEach {
         scalaDocOptions.additionalParameters = scalacParameters
     }
 
-    task sourceJar(type: Jar) {
+    tasks.register('sourceJar', Jar) {
         archiveClassifier = 'sources'
         from(sourceSets.main.allSource)
     }
 
-    task docJar(type: Jar) {
+    tasks.register('docJar', Jar) {
         dependsOn tasks.scaladoc
         archiveClassifier = 'javadoc'
         from(tasks.scaladoc.destinationDir)
     }
 
-    task testJar(type: Jar) {
+    tasks.register('testJar', Jar) {
         archiveClassifier = 'tests'
         from(sourceSets.test.output)
     }
 
-    tasks.withType(Jar) {
+    tasks.withType(Jar).configureEach {
         from(tasks.generateLicensesFiles) {
             into("META-INF/")
         }
     }
 
-    task licenseFile {
+    tasks.register('licenseFile') {
         outputs.file(project.parent.file('LICENSE.txt'))
     }
 
-    task dependencySearch(type: DependencyInsightReportTask) {
+    tasks.register('dependencySearch', DependencyInsightReportTask) {
         description = 'Searches all projects for a dependency'
         group = 'help'
     }
 
-    task runApp {
+    tasks.register('runApp') {
         dependsOn tasks.classes
         group = 'run'
         description = 'Run a custom Scala app (use -PmainClass=com.my.package.App)'
@@ -158,12 +200,20 @@ subprojects {
         }
     }
 
+    configurations {
+        resolvableDefault {
+            extendsFrom configurations.default
+            canBeResolved = true
+            canBeConsumed = false
+            description = 'Resolvable default configuration.'
+        }
+    }
     // copied from https://stackoverflow.com/a/38058671/568723
-    task depSize  {
+    tasks.register('depSize')  {
         description = 'Lists all dependencies sorted by their size'
         doLast {
             final formatStr = "%,10.2f"
-            final conf = configurations.default
+            final conf = configurations.resolvableDefault
             final size = conf.collect { it.length() / (1024 * 1024) }.sum()
             final out = new StringBuffer()
             out << 'Total dependencies size:'.padRight(45)

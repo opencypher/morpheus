@@ -17,21 +17,24 @@ if (project.hasProperty('testOkapiShade')) {
     }
 }
 
+configurations.implementation {
+    exclude group: 'com.lihaoyi', module: 'utest_2.12'
+    exclude group: 'com.lihaoyi', module: 'acyclic_2.12'
+
+}
+
 dependencies {
     api project(':okapi-relational')
     api project(':okapi-neo4j-io')
     api project(':graph-ddl')
 
-    implementation(group: 'com.lihaoyi', name: "upickle".scala(), version: ver.upickle) {
-        exclude group: 'com.lihaoyi', module: 'utest'.scala()
-        exclude group: 'com.lihaoyi', module: 'acyclic'.scala()
-    }
-    implementation group: 'org.typelevel', name: "cats-core".scala(), version: ver.cats
-    implementation group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: ver.neo4j.driver
+    implementation libs.upickle
+    implementation libs.typelevel.cats.core
+    implementation libs.neo4j.java.driver
 
-    compileOnly group: 'org.apache.spark', name: "spark-core".scala(), version: ver.spark
-    compileOnly group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark
-    compileOnly group: 'org.apache.spark', name: "spark-catalyst".scala(), version: ver.spark
+    compileOnly libs.spark.catalyst
+    compileOnly libs.spark.core
+    compileOnly libs.spark.sql
 }
 
 shadowJar {

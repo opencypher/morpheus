@@ -5,8 +5,8 @@ description = 'Okapi Relational - Relational Algebra for Cypher'
 dependencies {
     api project(':okapi-logical')
 
-    implementation group: 'org.opencypher', name: 'front-end-9.0',  version: ver.cypher.frontend
-    implementation group: 'org.typelevel', name: "cats-core".scala(), version: ver.cats
+    implementation libs.opencypher.frontend
+    implementation libs.typelevel.cats.core
 
     testImplementation project(':okapi-testing')
 }

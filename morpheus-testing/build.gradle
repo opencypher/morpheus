@@ -1,28 +1,31 @@
 description = 'Cypher for Apache Spark - Test Utilities'
 
+//configurations.named('testImplementation').configure {
+//    exclude group: 'com.lihaoyi', module: 'utest_2.12'
+//    exclude group: 'com.lihaoyi', module: 'acyclic_2.12'
+//}
+
+
 dependencies {
     api project(':morpheus-spark-cypher')
     api project(':okapi-testing')
     api project(':okapi-neo4j-io-testing')
 
-    implementation group: 'org.apache.spark', name: "spark-core".scala(), version: ver.spark
-    implementation group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark
-    implementation group: 'org.apache.spark', name: "spark-hive".scala(), version: ver.spark
-    implementation group: 'org.apache.hadoop', name: 'hadoop-minicluster', version: ver.hadoop
+    implementation libs.spark.core
+    implementation libs.spark.sql
+    implementation libs.spark.hive
+    implementation libs.hadoop.minicluster
 
-    implementation group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
-    implementation group: 'org.mockito', name: 'mockito-core', version: ver.mockito
+    implementation libs.scalatest
+    implementation libs.mockito
     implementation group: 'org.scalatestplus', name: "mockito-5-18".scala(), version: "${ver.scalatest}.0"
 
     testImplementation project(':okapi-api').sourceSets.test.output
-    testImplementation group: 'com.h2database', name: 'h2', version: ver.h2
-    testImplementation group: 'org.typelevel', name: 'claimant'.scala(), version: ver.claimant
-    testImplementation(group: 'com.lihaoyi', name: "upickle".scala(), version: ver.upickle) {
-        exclude group: 'com.lihaoyi', module: 'utest'.scala()
-        exclude group: 'com.lihaoyi', module: 'acyclic'.scala()
-    }
-    testImplementation group: 'org.opencypher', name: 'front-end-9.0',  version: ver.cypher.frontend
-    testImplementation group: 'org.testcontainers', name: 'testcontainers-neo4j', version: ver.testcontainers
+    testImplementation libs.h2
+    testImplementation libs.spire.math
+    testImplementation libs.upickle
+    testImplementation libs.opencypher.frontend
+    testImplementation libs.testcontainers.neo4j
 }
 
 // We ignore the license check here for unknown historic reasons.

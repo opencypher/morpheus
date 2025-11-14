@@ -11,7 +11,7 @@ task aggregatedScalaDoc(type: ScalaDoc) {
     ext.fromProjects = [
             project(':okapi-api'),
             project(':morpheus-spark-cypher'),
-            project(':morpheus-examples'),
+//            project(':morpheus-examples'),
     ]
 
     classpath = project.sourceSets.main.compileClasspath

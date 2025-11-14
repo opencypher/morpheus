@@ -58,8 +58,3 @@ def overrideMapFromProps(String[] path, Map map) {
         }
     }
 }
-
-// Allow "scalatest".scala() to add the scala version to module names
-String.metaClass.scala = { ->
-    delegate + "_$ver.scala.major"
-}
