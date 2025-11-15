@@ -47,6 +47,10 @@ subprojects {
     }
 
     test {
+        jvmArgs(
+                '--add-exports', 'java.base/sun.nio.ch=ALL-UNNAMED',
+                '--add-opens', 'java.base/java.lang.invoke=ALL-UNNAMED'
+        )
         useJUnitPlatform {
             includeEngines 'scalatest'
             testLogging {

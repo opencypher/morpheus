@@ -45,6 +45,7 @@ object CustomDataFrameInputExample extends App {
   // tag::create-session[]
   val spark: SparkSession = SparkSession
     .builder()
+    .config("spark.sql.legacy.allowUntypedScalaUDF", "true") // TODO Fix
     .master("local[*]")
     .getOrCreate()
 
