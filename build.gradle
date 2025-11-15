@@ -49,7 +49,7 @@ subprojects {
     }
 
     ext.scalacParameters = [
-            "-target:jvm-$ver.jvm".toString(),
+            "-release:$ver.jvm".toString(),
             '-unchecked',
             '-deprecation',
             '-feature',
