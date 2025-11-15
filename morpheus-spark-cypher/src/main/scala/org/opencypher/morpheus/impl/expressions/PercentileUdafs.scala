@@ -32,12 +32,14 @@ import org.apache.spark.sql.expressions.{MutableAggregationBuffer, UserDefinedAg
 import org.apache.spark.sql.types._
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
+import scala.annotation.nowarn
 import scala.collection.mutable
 
 
 // As abs(percentile_rank() - given_percentage) inside min() is not allowed
 object PercentileUdafs extends Logging {
 
+  @nowarn
   abstract class PercentileAggregation(percentile: Double) extends UserDefinedAggregateFunction {
     def inputSchema: StructType = StructType(Array(StructField("value", DoubleType)))
     def bufferSchema: StructType = StructType(Array(StructField("array_buffer", ArrayType(DoubleType, containsNull = false))))
@@ -92,6 +94,8 @@ object PercentileUdafs extends Logging {
     }
   }
 
-  def percentileDisc(percentile: Double, numberType: DataType) = new PercentileDisc(percentile, numberType: DataType)
+  def percentileDisc(percentile: Double, numberType: DataType) = {
+    new PercentileDisc(percentile, numberType: DataType)
+  }
   def percentileCont(percentile: Double) = new PercentileCont(percentile)
 }

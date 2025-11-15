@@ -270,7 +270,7 @@ object SparkSQLExprMapper {
         case _: Range => sequence(child0, child1, convertedChildren.lift(2).getOrElse(ONE_LIT))
         case _: Replace => translate(child0, child1, child2)
         case _: Substring => child0.substr(child1 + ONE_LIT, convertedChildren.lift(2).getOrElse(length(child0) - child1))
-        case _: Split => new Column(StringSplit(child0.expr, child1.expr))
+        case _: Split => new Column(StringSplit(child0.expr, child1.expr, lit(-1).expr))
 
         // Mathematical functions
         case E => E_LIT
@@ -305,8 +305,8 @@ object SparkSQLExprMapper {
         // Bit operations
         case _: BitwiseAnd => child0.bitwiseAND(child1)
         case _: BitwiseOr => child0.bitwiseOR(child1)
-        case ShiftLeft(_, IntegerLit(shiftBits)) => shiftLeft(child0, shiftBits.toInt)
-        case ShiftRightUnsigned(_, IntegerLit(shiftBits)) => shiftRightUnsigned(child0, shiftBits.toInt)
+        case ShiftLeft(_, IntegerLit(shiftBits)) => shiftleft(child0, shiftBits.toInt)
+        case ShiftRightUnsigned(_, IntegerLit(shiftBits)) => shiftrightunsigned(child0, shiftBits.toInt)
 
         // Pattern Predicate
         case ep: ExistsPatternExpr => ep.targetField.asSparkSQLExpr

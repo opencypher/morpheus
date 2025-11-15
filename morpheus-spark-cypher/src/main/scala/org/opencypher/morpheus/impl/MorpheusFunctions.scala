@@ -38,6 +38,7 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
+import scala.annotation.nowarn
 import scala.reflect.runtime.universe.TypeTag
 
 object MorpheusFunctions {
@@ -50,6 +51,7 @@ object MorpheusFunctions {
   val E_LIT: Column = lit(Math.E)
   val PI_LIT: Column = lit(Math.PI)
   // See: https://issues.apache.org/jira/browse/SPARK-20193
+  @nowarn
   val EMPTY_STRUCT: Column = udf(() => new GenericRowWithSchema(Array(), StructType(Nil)), StructType(Nil))()
 
   implicit class RichColumn(column: Column) {
