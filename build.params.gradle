@@ -28,8 +28,8 @@ ext {
             netty     : '4.2.7.Final',
             h2        : '2.4.240',
 
-            log4j     : [main : '2.11.0',
-                         scala: '11.0'],
+            log4j     : [main : '2.25.2',
+                         scala: '13.1.0'],
 
             scalatest : '3.0.6',
             scalacheck: '1.14.0',
