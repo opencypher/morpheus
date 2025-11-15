@@ -54,6 +54,10 @@ subprojects {
                 events("passed", "skipped", "failed", "standard_error")
             }
         }
+
+        def testTempDir = file("$buildDir/tmp/test")
+        testTempDir.mkdirs()
+        systemProperty 'java.io.tmpdir', testTempDir.absolutePath
     }
 
     ext.scalacParameters = [
