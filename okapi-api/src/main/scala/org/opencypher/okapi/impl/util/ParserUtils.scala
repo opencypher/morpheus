@@ -26,20 +26,30 @@
  */
 package org.opencypher.okapi.impl.util
 
-import fastparse.NoWhitespace._
 import fastparse._
 
 object ParserUtils {
-  def newline[_: P]: P[Unit] = P("\n" | "\r\n" | "\r" | "\f")
-  def invisible[_: P]: P[Unit] = P(" " | "\t" | newline)
-  def comment[_: P]: P[Unit] = P("--" ~ (!newline ~ AnyChar).rep ~ (newline | &(End)))
-  implicit val whitespace: P[_] => P[Unit] = { implicit ctx: ParsingRun[_] => (comment | invisible).rep }
+  implicit val whitespace: Whitespace = SqlWhitespace
+  def keyword[$: P](k: String): P[Unit] = P(IgnoreCase(k))
+  def digit[$: P]: P[Unit] = P(CharIn("0-9"))
+  def integer[$: P]: P[Int] = P(digit.repX(1).!.map(_.toInt))
+  def character[$: P]: P[Unit] = P(CharIn("a-zA-Z"))
+  def identifier[$: P]: P[Unit] = P(character ~~ P(character | digit | "_").repX)
+  def escapedIdentifier[$: P]: P[String] = P(identifier.! | ("`" ~~ CharsWhile(_ != '`').! ~~ "`"))
+  def label[$: P]: P[String] = P(":" ~ (identifier.! | escapedIdentifier))
+}
 
-  def keyword[_: P](k: String): P[Unit] = P(IgnoreCase(k))
-  def digit[_: P]: P[Unit] = P(CharIn("0-9"))
-  def integer[_: P]: P[Int] = P(digit.repX(1).!.map(_.toInt))
-  def character[_: P]: P[Unit] = P(CharIn("a-zA-Z"))
-  def identifier[_: P]: P[Unit] = P(character ~~ P(character | digit | "_").repX)
-  def escapedIdentifier[_: P]: P[String] = P(identifier.! | ("`" ~~ CharsWhile(_ != '`').! ~~ "`"))
-  def label[_: P]: P[String] = P(":" ~ (identifier.! | escapedIdentifier))
+object SqlWhitespace extends Whitespace {
+  def newline[$: P]: P[Unit] = P("\n" | "\r\n" | "\r" | "\f")
+  def invisible[$: P]: P[Unit] = P(" " | "\t" | newline)
+  def comment[$: P]: P[Unit] = {
+    import NoWhitespace.noWhitespaceImplicit
+    P("--" ~ (!newline ~ AnyChar).rep ~ (newline | &(End)))
+  }
+
+  override def apply(ctx: ParsingRun[_]): P[Unit] = {
+    import NoWhitespace.noWhitespaceImplicit
+    implicit val ctx0 = ctx
+    (comment | invisible).rep
+  }
 }
