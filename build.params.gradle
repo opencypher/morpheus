@@ -7,7 +7,7 @@ ext {
     ver = [
             self      : '0.4.3-SNAPSHOT',
 
-            jvm       : '1.8',
+            jvm       : '17',
 
             scala     : [major: '2.12',
                          full : '2.12.20'],
