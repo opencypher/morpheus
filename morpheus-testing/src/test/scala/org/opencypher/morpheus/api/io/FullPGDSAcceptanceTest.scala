@@ -26,11 +26,11 @@
   */
 package org.opencypher.morpheus.api.io
 
-import java.nio.file.Paths
+import org.apache.commons.io.FileUtils
 
+import java.nio.file.{Files, Paths}
 import org.apache.hadoop.fs.Path
 import org.apache.spark.sql.{DataFrame, SaveMode, functions}
-import org.junit.rules.TemporaryFolder
 import org.opencypher.graphddl
 import org.opencypher.graphddl.{Graph, GraphType, NodeToViewMapping, NodeViewKey}
 import org.opencypher.morpheus.api.FSGraphSources.FSGraphSourceFactory
@@ -317,21 +317,20 @@ class FullPGDSAcceptanceTest extends MorpheusTestSuite
 
     override def toString: String = s"LocalFS-PGDS-${fileFormat.name.toUpperCase}-FORMAT-$filesPerTable-FILE(S)-PER-TABLE"
 
-    protected var tempDir: TemporaryFolder = _
+    protected var tempDir: java.nio.file.Path = _
 
-    def basePath: String = s"file://${Paths.get(tempDir.getRoot.getAbsolutePath)}"
+    def basePath: String = s"file://${tempDir.getRoot.toAbsolutePath}"
 
     def graphSourceFactory: FSGraphSourceFactory = GraphSources.fs(basePath, filesPerTable = Some(filesPerTable))
 
     override def initializeContext(graphNames: List[GraphName]): TestContext = {
-      tempDir = new TemporaryFolder()
-      tempDir.create()
+      tempDir = Files.createTempDirectory(getClass.getSimpleName)
       super.initializeContext(graphNames)
     }
 
     override def releaseContext(implicit ctx: TestContext): Unit = {
       super.releaseContext
-      tempDir.delete()
+      FileUtils.deleteDirectory(tempDir.toFile)
     }
   }
 

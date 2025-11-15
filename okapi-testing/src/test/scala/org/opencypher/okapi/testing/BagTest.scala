@@ -27,7 +27,6 @@
 package org.opencypher.okapi.testing
 
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
-import org.scalatest.{FunSpec, Matchers}
 
 class BagTest extends BaseTestSuite {
 

@@ -14,7 +14,7 @@ dependencies {
     }
     implementation group: 'com.lihaoyi', name: "fastparse".scala(), version: ver.fastparse
 
-    testImplementation group: "org.typelevel", name: "discipline".scala(), version: ver.discipline
+    testImplementation group: "org.typelevel", name: "discipline-core".scala(), version: ver.discipline.core
+    testImplementation group: "org.typelevel", name: "discipline-scalatest".scala(), version: ver.discipline.scalatest
     testImplementation group: "org.typelevel", name: "cats-laws".scala(), version: ver.cats
-    testImplementation group: 'junit', name: 'junit', version: ver.junit.main
 }

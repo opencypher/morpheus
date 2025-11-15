@@ -8,6 +8,7 @@ dependencies {
     implementation group: 'org.bouncycastle', name: 'bctls-jdk18on', version: ver.bctls
     implementation group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
     implementation group: 'org.testcontainers', name: 'testcontainers-neo4j', version: ver.testcontainers
+    implementation group: 'org.scalatestplus', name: "mockito-5-18".scala(), version: "${ver.scalatest}.0"
 }
 
 // We ignore the license check here for unknown historic reasons.

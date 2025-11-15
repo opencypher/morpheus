@@ -28,16 +28,14 @@ package org.opencypher.morpheus.examples
 
 import java.io.{ByteArrayOutputStream, PrintStream}
 import java.net.URI
-
-import org.junit.runner.RunWith
 import org.opencypher.okapi.testing.Bag._
-import org.scalatest.{BeforeAndAfterAll, FunSpec, Matchers}
-import org.scalatestplus.junit.JUnitRunner
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.BeforeAndAfterAll
+import org.scalatest.matchers.should.Matchers
 
 import scala.io.Source
 
-@RunWith(classOf[JUnitRunner])
-abstract class ExampleTest extends FunSpec with Matchers with BeforeAndAfterAll {
+abstract class ExampleTest extends AnyFunSpec with Matchers with BeforeAndAfterAll {
 
   private val oldStdOut = System.out
 

@@ -22,7 +22,7 @@ ext {
             fastparse : '3.1.1',
             upickle   : '4.4.1',
             cats      : '2.13.0',
-            discipline: '0.11.0',
+            discipline: [core: '1.7.0', scalatest: '2.3.0'],
             eff       : '7.0.6',
             bctls     : '1.82',
             netty     : '4.2.7.Final',
@@ -33,11 +33,10 @@ ext {
 
             scalatest : '3.2.19',
             scalacheck: '1.19.0',
-            mockito   : '1.10.19',
-            claimant  : '0.0.2',
+            mockito   : '5.18.0',
+            claimant  : '0.2.0',
 
-            junit     : [main  : '4.12',
-                         runner: '1.0.2'],
+            junit     : [platform: '1.13.1'],
             apache: [commons: [text: '1.14.0']],
             testcontainers: '2.0.2'
     ]

@@ -38,18 +38,25 @@ subprojects {
         testImplementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: ver.log4j.main
         testImplementation group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
         testImplementation group: 'org.scalacheck', name: "scalacheck".scala(), version: ver.scalacheck
-        testImplementation group: 'junit', name: 'junit', version: ver.junit.main
-        testImplementation group: 'org.mockito', name: 'mockito-all', version: ver.mockito
-        testRuntimeOnly group: 'org.junit.platform', name: 'junit-platform-runner', version: ver.junit.runner
+        testImplementation group: 'org.mockito', name: 'mockito-core', version: ver.mockito
+        testImplementation group: 'org.scalatestplus', name: "mockito-5-18".scala(), version: "${ver.scalatest}.0"
+        testImplementation group: 'org.scalatestplus', name: "scalacheck-1-18".scala(), version: "${ver.scalatest}.0"
+        testImplementation group: 'org.junit.platform', name: 'junit-platform-launcher', version: ver.junit.platform
+        testRuntimeOnly group: 'org.junit.platform', name: 'junit-platform-engine', version: ver.junit.platform
+        testRuntimeOnly group: 'org.scalatestplus', name: "junit-5-13".scala(), version: "${ver.scalatest}.0"
     }
 
     test {
         maxHeapSize = "2g"
-        useJUnit()
+        useJUnitPlatform {
+            includeEngines 'scalatest'
+            testLogging {
+                events("passed", "skipped", "failed", "standard_error")
+            }
+        }
     }
 
     ext.scalacParameters = [
-            "-release:$ver.jvm".toString(),
             '-unchecked',
             '-deprecation',
             '-feature',
