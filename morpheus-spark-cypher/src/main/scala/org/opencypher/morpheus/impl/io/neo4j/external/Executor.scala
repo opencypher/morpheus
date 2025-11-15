@@ -27,6 +27,7 @@
 package org.opencypher.morpheus.impl.io.neo4j.external
 
 import org.apache.spark.sql.catalyst.expressions.GenericRowWithSchema
+import org.apache.spark.sql.catalyst.util.DateTimeConstants
 import org.apache.spark.sql.types._
 import org.apache.spark.sql.{Row, types}
 import org.apache.spark.unsafe.types.CalendarInterval
@@ -106,7 +107,7 @@ private object Executor {
       case d: DateValue => java.sql.Date.valueOf(d.asLocalDate())
       case d: DurationValue =>
         val iso = d.asIsoDuration()
-        new CalendarInterval(iso.months().toInt, iso.nanoseconds() / 1000 + iso.days() * CalendarInterval.MICROS_PER_DAY)
+        new CalendarInterval(iso.months().toInt, iso.days().toInt, iso.nanoseconds() / 1000)
       case other => other.asObject()
     }
   }

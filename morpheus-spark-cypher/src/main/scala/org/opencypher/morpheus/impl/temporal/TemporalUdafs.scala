@@ -28,31 +28,35 @@ package org.opencypher.morpheus.impl.temporal
 
 import org.apache.logging.log4j.scala.Logging
 import org.apache.spark.sql.Row
+import org.apache.spark.sql.catalyst.util.IntervalUtils
 import org.apache.spark.sql.expressions.{MutableAggregationBuffer, UserDefinedAggregateFunction}
 import org.apache.spark.sql.types.{CalendarIntervalType, DataType, LongType, StructField, StructType}
 import org.apache.spark.unsafe.types.CalendarInterval
 import org.opencypher.okapi.impl.temporal.TemporalConstants
 import org.opencypher.morpheus.impl.temporal.TemporalConversions._
 
+import scala.annotation.nowarn
+
 object TemporalUdafs extends Logging {
 
+  @nowarn
   abstract class SimpleDurationAggregation(aggrName: String) extends UserDefinedAggregateFunction {
     override def inputSchema: StructType = StructType(Array(StructField("duration", CalendarIntervalType)))
     override def bufferSchema: StructType = StructType(Array(StructField(aggrName, CalendarIntervalType)))
     override def dataType: DataType = CalendarIntervalType
     override def deterministic: Boolean = true
     override def initialize(buffer: MutableAggregationBuffer): Unit = {
-      buffer(0) = new CalendarInterval(0, 0L)
+      buffer(0) = new CalendarInterval(0, 0, 0L)
     }
     override def evaluate(buffer: Row): Any = buffer.getAs[CalendarInterval](0)
   }
 
   class DurationSum extends SimpleDurationAggregation("sum") {
     override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
-      buffer(0) = buffer.getAs[CalendarInterval](0).add(input.getAs[CalendarInterval](0))
+      buffer(0) = IntervalUtils.add(buffer.getAs[CalendarInterval](0), input.getAs[CalendarInterval](0))
     }
     override def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
-      buffer1(0) = buffer2.getAs[CalendarInterval](0).add(buffer1.getAs[CalendarInterval](0))
+      buffer1(0) = IntervalUtils.add(buffer2.getAs[CalendarInterval](0), buffer1.getAs[CalendarInterval](0))
     }
   }
 
@@ -71,7 +75,7 @@ object TemporalUdafs extends Logging {
 
   class DurationMin extends SimpleDurationAggregation("min") {
     override def initialize(buffer: MutableAggregationBuffer): Unit = {
-      buffer(0) = new CalendarInterval(Integer.MAX_VALUE, Long.MaxValue)
+      buffer(0) = new CalendarInterval(Int.MaxValue, Int.MaxValue, Long.MaxValue)
     }
     override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
       val currMinInterval = buffer.getAs[CalendarInterval](0)
@@ -85,27 +89,28 @@ object TemporalUdafs extends Logging {
     }
   }
 
+  @nowarn
   class DurationAvg extends UserDefinedAggregateFunction {
     override def inputSchema: StructType = StructType(Array(StructField("duration", CalendarIntervalType)))
     override def bufferSchema: StructType = StructType(Array(StructField("sum", CalendarIntervalType), StructField("cnt", LongType)))
     override def dataType: DataType = CalendarIntervalType
     override def deterministic: Boolean = true
     override def initialize(buffer: MutableAggregationBuffer): Unit = {
-      buffer(0) = new CalendarInterval(0, 0L)
+      buffer(0) = new CalendarInterval(0, 0, 0L)
       buffer(1) = 0L
     }
     override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
-      buffer(0) = buffer.getAs[CalendarInterval](0).add(input.getAs[CalendarInterval](0))
+      buffer(0) = IntervalUtils.add(buffer.getAs[CalendarInterval](0), input.getAs[CalendarInterval](0))
       buffer(1) = buffer.getLong(1) + 1
     }
     override def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
-      buffer1(0) = buffer2.getAs[CalendarInterval](0).add(buffer1.getAs[CalendarInterval](0))
+      buffer1(0) = IntervalUtils.add(buffer2.getAs[CalendarInterval](0), buffer1.getAs[CalendarInterval](0))
       buffer1(1) = buffer1.getLong(1) + buffer2.getLong(1)
     }
     override def evaluate(buffer: Row): Any = {
       val sumInterval = buffer.getAs[CalendarInterval](0)
       val cnt = buffer.getLong(1)
-      new CalendarInterval((sumInterval.months / cnt).toInt, sumInterval.microseconds / cnt)
+      IntervalUtils.divide(sumInterval, cnt)
     }
   }
 

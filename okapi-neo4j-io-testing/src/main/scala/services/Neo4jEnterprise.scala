@@ -24,11 +24,10 @@
  * described as "implementation extensions to Cypher" or as "proposed changes to
  * Cypher that are not yet approved by the openCypher community".
  */
-package org.opencypher.testing.services
+package services
 
-import org.neo4j.harness.{TestServerBuilder, TestServerBuilders}
+import org.neo4j.harness.{EnterpriseTestServerBuilders, TestServerBuilder}
 
-
-object Neo4jCommunity extends Neo4jLauncher {
-  override def builder: TestServerBuilder = TestServerBuilders.newInProcessBuilder()
+object Neo4jEnterprise extends Neo4jLauncher {
+  override def builder: TestServerBuilder = EnterpriseTestServerBuilders.newInProcessBuilder()
 }

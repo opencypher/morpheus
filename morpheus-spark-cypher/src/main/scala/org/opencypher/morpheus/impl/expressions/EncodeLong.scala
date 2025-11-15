@@ -48,6 +48,8 @@ case class EncodeLong(child: Expression) extends UnaryExpression with NullIntole
 
   override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode =
     defineCodeGen(ctx, ev, c => s"(byte[])(${EncodeLong.getClass.getName.dropRight(1)}.encodeLong($c))")
+
+  override protected def withNewChildInternal(newChild: Expression): Expression = copy(newChild)
 }
 
 object EncodeLong {

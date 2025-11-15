@@ -4,7 +4,6 @@ plugins {
     id 'com.github.johnrengelman.shadow' version '7.1.2' apply false
     id 'com.github.alisiikh.scalastyle' version '3.5.0' apply false
     id 'me.champeau.jmh' version '0.7.3' apply false
-    id "ch.kk7.spawn" version "1.0.20180924200750" apply false
 }
 
 apply from: 'build.params.gradle'
@@ -39,17 +38,50 @@ subprojects {
         testImplementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: ver.log4j.main
         testImplementation group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
         testImplementation group: 'org.scalacheck', name: "scalacheck".scala(), version: ver.scalacheck
-        testImplementation group: 'junit', name: 'junit', version: ver.junit.main
-        testImplementation group: 'org.mockito', name: 'mockito-all', version: ver.mockito
-        testRuntimeOnly group: 'org.junit.platform', name: 'junit-platform-runner', version: ver.junit.runner
+        testImplementation group: 'org.mockito', name: 'mockito-core', version: ver.mockito
+        testImplementation group: 'org.scalatestplus', name: "mockito-5-18".scala(), version: "${ver.scalatest}.0"
+        testImplementation group: 'org.scalatestplus', name: "scalacheck-1-18".scala(), version: "${ver.scalatest}.0"
+        testImplementation group: 'org.junit.platform', name: 'junit-platform-launcher', version: ver.junit.platform
+        testRuntimeOnly group: 'org.junit.platform', name: 'junit-platform-engine', version: ver.junit.platform
+        testRuntimeOnly group: 'org.scalatestplus', name: "junit-5-13".scala(), version: "${ver.scalatest}.0"
     }
 
     test {
-        useJUnit()
+        // JVM args required by spark (see org.apache.spark.launcher.JavaModuleOptions)
+        jvmArgs(
+                '-XX:+IgnoreUnrecognizedVMOptions',
+                '--add-exports=java.base/sun.nio.ch=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED',
+                '--add-opens=java.base/java.io=ALL-UNNAMED',
+                '--add-opens=java.base/java.net=ALL-UNNAMED',
+                '--add-opens=java.base/java.nio=ALL-UNNAMED',
+                '--add-opens=java.base/java.util=ALL-UNNAMED',
+                '--add-opens=java.base/java.util.concurrent=ALL-UNNAMED',
+                '--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED',
+                '--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED',
+                '--add-opens=java.base/sun.nio.ch=ALL-UNNAMED',
+                '--add-opens=java.base/sun.nio.cs=ALL-UNNAMED',
+                '--add-opens=java.base/sun.security.action=ALL-UNNAMED',
+                '--add-opens=java.base/sun.util.calendar=ALL-UNNAMED',
+                '--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED',
+                '-Djdk.reflect.useDirectMethodHandle=false'
+        )
+        useJUnitPlatform {
+            includeEngines 'scalatest'
+            testLogging {
+                events("passed", "skipped", "failed", "standard_error")
+            }
+        }
+
+        def testTempDir = file("$buildDir/tmp/test")
+        testTempDir.mkdirs()
+        systemProperty 'java.io.tmpdir', testTempDir.absolutePath
     }
 
     ext.scalacParameters = [
-            "-target:jvm-$ver.jvm".toString(),
             '-unchecked',
             '-deprecation',
             '-feature',

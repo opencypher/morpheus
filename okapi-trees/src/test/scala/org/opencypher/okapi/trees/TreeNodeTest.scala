@@ -27,12 +27,10 @@
 package org.opencypher.okapi.trees
 
 import cats.data.NonEmptyList
-import org.junit.runner.RunWith
-import org.scalatestplus.junit.JUnitRunner
-import org.scalatest.{FunSpec, Matchers}
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-@RunWith(classOf[JUnitRunner])
-class TreeNodeTest extends FunSpec with Matchers {
+class TreeNodeTest extends AnyFunSpec with Matchers {
 
   val calculation = Add(Number(5), Add(Number(4), Number(3)))
 

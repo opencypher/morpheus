@@ -85,6 +85,7 @@ case class Serialize(children: Seq[Expression]) extends Expression {
           |byte[] ${ev.value} = $out.toByteArray();""".stripMargin)
   }
 
+  override protected def withNewChildrenInternal(newChildren: scala.IndexedSeq[Expression]): Expression = copy(newChildren.toIndexedSeq)
 }
 
 object Serialize {

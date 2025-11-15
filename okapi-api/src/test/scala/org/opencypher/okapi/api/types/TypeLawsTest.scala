@@ -30,11 +30,12 @@ import cats.Monoid
 import cats.kernel.Eq
 import org.opencypher.okapi.api.graph.QualifiedGraphName
 import org.scalacheck.{Arbitrary, Gen}
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
-import org.scalatest.{FunSuite, Matchers}
-import org.typelevel.discipline.scalatest.Discipline
+import org.typelevel.discipline.scalatest.FunSpecDiscipline
 
-class TypeLawsTest extends FunSuite with Matchers with ScalaCheckDrivenPropertyChecks with Discipline {
+class TypeLawsTest extends AnyFunSpec with Matchers with ScalaCheckDrivenPropertyChecks with FunSpecDiscipline {
 
   def pickOne[T](gens: List[Gen[T]]): Gen[T] = for {
     i <- Gen.choose(0, gens.size - 1)
