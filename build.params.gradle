@@ -20,7 +20,7 @@ ext {
             spark     : '2.4.3',
             hadoop    : '2.7.0',
             fastparse : '3.1.1',
-            upickle   : '0.7.1',
+            upickle   : '4.4.1',
             cats      : '1.6.0',
             discipline: '0.11.0',
             eff       : '5.0.0',
