@@ -25,7 +25,7 @@ ext {
             discipline: '0.11.0',
             eff       : '7.0.6',
             bctls     : '1.82',
-            netty     : '4.1.24.Final',
+            netty     : '4.2.7.Final',
             h2        : '1.4.196',
 
             log4j     : [main : '2.11.0',
