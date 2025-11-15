@@ -44,9 +44,6 @@ object Neo4jWorkflowExample extends App {
   implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // Connect to a Neo4j instance and populate it with social network data
-  // To run a test instance you may use
-  //  ./gradlew :okapi-neo4j-io-testing:neo4jStart
-  //  ./gradlew :okapi-neo4j-io-testing:neo4jStop
   val neo4j = connectNeo4j(personNetwork)
 
   // Register Property Graph Data Sources (PGDS)

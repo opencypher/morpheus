@@ -75,9 +75,6 @@ object Customer360Example extends App {
   morpheus.registerSource(Namespace("c360"), sqlPgds)
 
   // Connect to a Neo4j instance
-  // To run a test instance you may use
-  //  ./gradlew :okapi-neo4j-io-testing:neo4jStart
-  //  ./gradlew :okapi-neo4j-io-testing:neo4jStop
   val neo4j = connectNeo4j("")
 
   // Register a Neo4j PGDS in the session's catalog

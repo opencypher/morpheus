@@ -26,28 +26,35 @@
  */
 package org.opencypher.okapi.neo4j.io.testing
 
+import org.neo4j.harness.{EnterpriseTestServerBuilders, ServerControls}
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils.Neo4jContext
 import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
+
+import scala.util.Try
 
 trait Neo4jServerFixture extends BaseTestFixture {
   self: BaseTestSuite =>
 
   def dataFixture: String
 
-  def neo4jHost: String = "bolt://localhost:7687"
-
+  var serverControls: ServerControls = _
   var neo4jContext: Neo4jContext = _
 
   def neo4jConfig: Neo4jConfig = neo4jContext.config
 
   abstract override def beforeAll(): Unit = {
     super.beforeAll()
-    neo4jContext = Neo4jTestUtils.connectNeo4j(dataFixture, neo4jHost)
+    serverControls = EnterpriseTestServerBuilders.newInProcessBuilder()
+      .withConfig("dbms.connector.bolt.listen_address", s"127.0.0.1:0")
+      .withConfig("dbms.connector.http.listen_address", s"127.0.0.1:0")
+      .newServer()
+    neo4jContext = Neo4jTestUtils.connectNeo4j(dataFixture, serverControls.boltURI().toString)
   }
 
   abstract override def afterAll(): Unit = {
-    neo4jContext.close()
+    Try(neo4jContext.close())
+    serverControls.close()
     super.afterAll()
   }
 }
