@@ -17,7 +17,7 @@ log4j-main = "2.25.2"
 log4j-scala = "13.1.0"
 mockito = "1.10.19"
 neo4j-driver = "1.7.2"
-netty = "4.1.24.Final"
+netty = "4.2.7.Final"
 # @pin - let's prevent automatic updates for the moment
 scala-full = "2.12.20"
 # @pin - let's prevent automatic updates for the moment
