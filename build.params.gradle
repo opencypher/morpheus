@@ -17,8 +17,8 @@ ext {
 
             neo4j     : [driver : '1.7.2'],
 
-            spark     : '2.4.3',
-            hadoop    : '2.7.0',
+            spark     : '3.5.7',
+            hadoop    : '3.4.2',
             fastparse : '3.1.1',
             upickle   : '4.4.1',
             cats      : '2.13.0',
