@@ -35,7 +35,7 @@ import org.scalatest.matchers.should.Matchers
 
 import scala.io.Source
 
-abstract class ExampleTest extends AnyFunSpec with Matchers with BeforeAndAfterAll {
+abstract class ExampleTestBase extends AnyFunSpec with Matchers with BeforeAndAfterAll {
 
   private val oldStdOut = System.out
 

@@ -26,9 +26,9 @@
  */
 package org.opencypher.morpheus.snippets
 
-import org.opencypher.morpheus.examples.ExampleTest
+import org.opencypher.morpheus.examples.ExampleTestBase
 
-class SqlPGDSTest extends ExampleTest  {
+class SqlPGDSTest extends ExampleTestBase  {
 
   it("should produce the correct output") {
     validate(

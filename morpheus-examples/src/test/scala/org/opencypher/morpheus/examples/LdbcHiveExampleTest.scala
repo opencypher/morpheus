@@ -26,7 +26,7 @@
  */
 package org.opencypher.morpheus.examples
 
-class LdbcHiveExampleTest extends ExampleTest {
+class LdbcHiveExampleTest extends ExampleTestBase {
   it("runs LdbcHiveExampleTest") {
     validate(
       LdbcHiveExample.main(Array.empty),
