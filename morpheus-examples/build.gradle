@@ -17,10 +17,8 @@ dependencies {
         exclude group: 'com.lihaoyi', module: 'acyclic'.scala()
     }
     implementation group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: ver.neo4j.driver
+    testImplementation group: 'org.testcontainers', name: 'testcontainers-neo4j', version: ver.testcontainers
 }
-
-tasks.test.dependsOn(":okapi-neo4j-io-testing:neo4jStart")
-tasks.test.finalizedBy(":okapi-neo4j-io-testing:neo4jStop")
 
 // We ignore the license check here for unknown historic reasons.
 tasks.named("validateLicenses") {

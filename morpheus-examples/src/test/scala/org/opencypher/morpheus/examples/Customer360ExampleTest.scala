@@ -26,10 +26,14 @@
  */
 package org.opencypher.morpheus.examples
 
-class Customer360ExampleTest extends ExampleTest {
+import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
+
+class Customer360ExampleTest extends ExampleTest with Neo4jServerFixture {
+  override def dataFixture: String = ""
+
   it("should produce the correct output") {
     validateBag(
-      Customer360Example.main(Array.empty),
+      Customer360Example.main(Array("--bolt-url", boltUrl)),
       getClass.getResource("/example_outputs/Customer360Example.out").toURI
     )
   }

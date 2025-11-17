@@ -35,14 +35,13 @@ import org.opencypher.okapi.api.graph.Namespace
 import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
 
 object Neo4jReadWriteExample extends App {
+  val boltUrl = namedArg("--bolt-url").getOrElse("bolt://localhost:7687")
+
   // Create Morpheus session
   implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // Connect to a Neo4j instance and populate it with social network data
-  // To run a test instance you may use
-  //  ./gradlew :okapi-neo4j-io-testing:neo4jStart
-  //  ./gradlew :okapi-neo4j-io-testing:neo4jStop
-  val neo4j = connectNeo4j()
+  val neo4j = connectNeo4j("", boltUrl)
 
   // Register Property Graph Data Sources (PGDS)
   private val neo4jPgds: Neo4jPropertyGraphDataSource = GraphSources.cypher.neo4j(neo4j.config)

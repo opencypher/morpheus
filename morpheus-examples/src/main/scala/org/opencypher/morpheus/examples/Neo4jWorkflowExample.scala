@@ -40,14 +40,13 @@ import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
   * Writes updates back to the Neo4j database with Cypher queries.
   */
 object Neo4jWorkflowExample extends App {
+  val boltUrl = namedArg("--bolt-url").getOrElse("bolt://localhost:7687")
+
   // Create Morpheus session
   implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // Connect to a Neo4j instance and populate it with social network data
-  // To run a test instance you may use
-  //  ./gradlew :okapi-neo4j-io-testing:neo4jStart
-  //  ./gradlew :okapi-neo4j-io-testing:neo4jStop
-  val neo4j = connectNeo4j(personNetwork)
+  val neo4j = connectNeo4j(personNetwork, boltUrl)
 
   // Register Property Graph Data Sources (PGDS)
   morpheus.registerSource(Namespace("socialNetwork"), GraphSources.cypher.neo4j(neo4j.config))

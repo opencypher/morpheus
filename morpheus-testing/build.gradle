@@ -1,5 +1,3 @@
-apply plugin: 'ch.kk7.spawn'
-
 description = 'Cypher for Apache Spark - Test Utilities'
 
 dependencies {
@@ -23,10 +21,8 @@ dependencies {
         exclude group: 'com.lihaoyi', module: 'acyclic'.scala()
     }
     testImplementation group: 'org.opencypher', name: 'front-end-9.0',  version: ver.cypher.frontend
+    testImplementation group: 'org.testcontainers', name: 'testcontainers-neo4j', version: ver.testcontainers
 }
-
-tasks.test.dependsOn(":okapi-neo4j-io-testing:neo4jStart")
-tasks.test.finalizedBy(":okapi-neo4j-io-testing:neo4jStop")
 
 // We ignore the license check here for unknown historic reasons.
 tasks.named("validateLicenses") {

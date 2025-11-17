@@ -42,4 +42,8 @@ abstract class App extends scala.App {
   def resourceExists(name: String)(implicit folder: String = ""): Boolean =
     resource(name) != null
 
+  def namedArg(name: String): Option[String] = {
+    val index = args.indexOf(name)
+    if (index >= 0) Some(args(index + 1)) else None
+  }
 }

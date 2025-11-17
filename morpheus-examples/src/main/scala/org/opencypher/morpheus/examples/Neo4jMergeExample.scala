@@ -40,6 +40,8 @@ import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
   * This merge requires node and relationship keys to identify same elements in the merge graph and the Neo4j database.
   */
 object Neo4jMergeExample extends App {
+  val boltUrl = namedArg("--bolt-url").getOrElse("bolt://localhost:7687")
+
   // Create Morpheus session
   implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
@@ -54,7 +56,8 @@ object Neo4jMergeExample extends App {
        |CREATE (c:Person { name: 'Carol', age: 15})
        |CREATE (a)-[:FRIEND_OF { id: 0, since: '23/01/1987' }]->(b)
        |CREATE (b)-[:FRIEND_OF { id: 1, since: '12/12/2009' }]->(c)
-    """.stripMargin
+    """.stripMargin,
+    boltUrl
   )
 
   // Define the node and relationship keys

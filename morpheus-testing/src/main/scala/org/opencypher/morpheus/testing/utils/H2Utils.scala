@@ -51,7 +51,12 @@ object H2Utils {
       case _ =>
         DriverManager.getConnection(cfg.url)
     }
-    try { code(conn) } finally { conn.close() }
+    try { code(conn) }
+    catch {
+      case throwable: Throwable =>
+        throwable.printStackTrace()
+        throw throwable
+    } finally { conn.close() }
   }
 
   implicit class DataFrameWriterOps(write: DataFrameWriter[Row]) {
