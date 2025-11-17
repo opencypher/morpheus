@@ -47,7 +47,11 @@ subprojects {
     }
 
     test {
-        maxHeapSize = "2g"
+        maxHeapSize = '2g'
+
+        // Suggestion from https://docs.gradle.org/current/userguide/performance.html#a_run_tests_in_parallel
+        maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+
         // JVM args required by spark (see org.apache.spark.launcher.JavaModuleOptions)
         jvmArgs(
                 '-XX:+IgnoreUnrecognizedVMOptions',
