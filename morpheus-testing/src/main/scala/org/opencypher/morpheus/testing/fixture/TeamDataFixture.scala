@@ -65,7 +65,7 @@ trait TeamDataFixture extends TestDataFixture {
   val rHasPropertyRecommends: Expr = ElementProperty(r, PropertyKey("recommends"))(CTBoolean)
   val rHasPropertySince: Expr = ElementProperty(r, PropertyKey("since"))(CTInteger)
 
-  override lazy val dataFixture =
+  override def dataFixture =
     """
        CREATE (a:Person:German {name: "Stefan", luckyNumber: 42, languages: ['German', 'English', 'Klingon']})
        CREATE (b:Person:Swede  {name: "Mats", luckyNumber: 23})

@@ -55,6 +55,7 @@ import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
   * One may observe that the Cypher queries shown here may also be executed directly in Neo4j, with the same results.
   */
 object Customer360Example extends App {
+  val boltUrl = namedArg("--bolt-url").getOrElse("bolt://localhost:7687")
 
   // Create Morpheus session
   implicit val morpheus: MorpheusSession = MorpheusSession.local()
@@ -75,10 +76,7 @@ object Customer360Example extends App {
   morpheus.registerSource(Namespace("c360"), sqlPgds)
 
   // Connect to a Neo4j instance
-  // To run a test instance you may use
-  //  ./gradlew :okapi-neo4j-io-testing:neo4jStart
-  //  ./gradlew :okapi-neo4j-io-testing:neo4jStop
-  val neo4j = connectNeo4j("")
+  val neo4j = connectNeo4j("", boltUrl)
 
   // Register a Neo4j PGDS in the session's catalog
   // This enables reading graphs from a Neo4j database into Morpheus

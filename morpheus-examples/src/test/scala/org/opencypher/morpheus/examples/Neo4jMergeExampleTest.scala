@@ -26,10 +26,14 @@
  */
 package org.opencypher.morpheus.examples
 
-class Neo4jMergeExampleTest extends ExampleTest {
+import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
+
+class Neo4jMergeExampleTest extends ExampleTest with Neo4jServerFixture {
+
+  override def dataFixture: String = ""
 
   it("should produce the correct output") {
-    validate(Neo4jMergeExample.main(Array.empty),
+    validate(Neo4jMergeExample.main(Array("--bolt-url", boltUrl)),
       getClass.getResource("/example_outputs/Neo4jMergeExample.out").toURI)
   }
 }

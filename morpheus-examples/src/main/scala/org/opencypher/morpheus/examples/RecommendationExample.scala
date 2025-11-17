@@ -39,16 +39,15 @@ import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
   * the local file system.
   */
 object RecommendationExample extends App {
+  val boltUrl1 = namedArg("--bolt-url-1").getOrElse("bolt://localhost:7687")
+  val boltUrl2 = namedArg("--bolt-url-2").getOrElse("bolt://localhost:7688")
 
   // Create Morpheus session
   implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // Connect to two Neo4j instances and populate them with social network data
-  // To run two test instances you may use
-  //  ./gradlew :okapi-neo4j-io-testing:neo4jStartTwoInstances
-  //  ./gradlew :okapi-neo4j-io-testing:neo4jStopTwoInstances
-  val neo4jServerUS = connectNeo4j(socialNetworkUS, "bolt://localhost:7687")
-  val neo4jServerEU = connectNeo4j(socialNetworkEU, "bolt://localhost:7688")
+  val neo4jServerUS = connectNeo4j(socialNetworkUS, boltUrl1)
+  val neo4jServerEU = connectNeo4j(socialNetworkEU, boltUrl2)
 
   // Register Property Graph Data Sources (PGDS)
 

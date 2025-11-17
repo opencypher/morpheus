@@ -28,26 +28,37 @@ package org.opencypher.okapi.neo4j.io.testing
 
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
 import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils.Neo4jContext
-import org.opencypher.okapi.testing.{BaseTestFixture, BaseTestSuite}
+import org.scalatest.{BeforeAndAfterAll, Suite}
+import org.testcontainers.neo4j.Neo4jContainer
 
-trait Neo4jServerFixture extends BaseTestFixture {
-  self: BaseTestSuite =>
+trait Neo4jServerFixture extends BeforeAndAfterAll {
+  self: Suite =>
 
   def dataFixture: String
 
-  def neo4jHost: String = "bolt://localhost:7687"
-
   var neo4jContext: Neo4jContext = _
+  var neo4jContainer: Neo4jContainer = _
 
+  def boltUrl: String = neo4jContainer.getBoltUrl
   def neo4jConfig: Neo4jConfig = neo4jContext.config
 
   abstract override def beforeAll(): Unit = {
     super.beforeAll()
-    neo4jContext = Neo4jTestUtils.connectNeo4j(dataFixture, neo4jHost)
+    // Temporary solution to remove obsolete spawn gradle plugin.
+    // If we want to keep this it is probably a good idea to make it a fixture
+    // that expose the neo4j logs on failures in some way.
+    neo4jContainer = new Neo4jContainer("neo4j:3.4.10-enterprise")
+    neo4jContainer = neo4jContainer.withExposedPorts(7687)
+    neo4jContainer.start()
+
+    neo4jContext = Neo4jTestUtils.connectNeo4j(dataFixture, neo4jContainer.getBoltUrl)
   }
 
   abstract override def afterAll(): Unit = {
-    neo4jContext.close()
-    super.afterAll()
+    try if (neo4jContext != null) neo4jContext.close()
+    finally {
+      try if (neo4jContainer != null) neo4jContainer.stop()
+      finally super.afterAll()
+    }
   }
 }
