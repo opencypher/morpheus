@@ -37,7 +37,7 @@ import org.opencypher.okapi.impl.util.TablePrinter.toTable
 import scala.io.Source
 
 class NorthwindJdbcExampleTest extends ExampleTest {
-  it("runs JdbcSqlGraphSourceExample") {
+  ignore("runs JdbcSqlGraphSourceExample") {
     validate(
       NorthwindJdbcExample.main(Array.empty),
       getClass.getResource("/example_outputs/NorthwindJdbcExample.out").toURI

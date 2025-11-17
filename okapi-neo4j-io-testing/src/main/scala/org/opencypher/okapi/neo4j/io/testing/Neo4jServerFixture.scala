@@ -31,8 +31,6 @@ import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils.Neo4jContext
 import org.scalatest.{BeforeAndAfterAll, Suite}
 import org.testcontainers.neo4j.Neo4jContainer
 
-import java.time.Duration
-
 trait Neo4jServerFixture extends BeforeAndAfterAll {
   self: Suite =>
 
