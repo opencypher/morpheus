@@ -31,6 +31,8 @@ import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils.Neo4jContext
 import org.scalatest.{BeforeAndAfterAll, Suite}
 import org.testcontainers.neo4j.Neo4jContainer
 
+import java.time.Duration
+
 trait Neo4jServerFixture extends BeforeAndAfterAll {
   self: Suite =>
 
@@ -49,6 +51,7 @@ trait Neo4jServerFixture extends BeforeAndAfterAll {
     // that expose the neo4j logs on failures in some way.
     neo4jContainer = new Neo4jContainer("neo4j:3.4.10-enterprise")
     neo4jContainer = neo4jContainer.withExposedPorts(7687)
+    neo4jContainer = neo4jContainer.withStartupTimeout(Duration.ofMinutes(5))
     neo4jContainer.start()
 
     neo4jContext = Neo4jTestUtils.connectNeo4j(dataFixture, neo4jContainer.getBoltUrl)
