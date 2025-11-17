@@ -50,8 +50,8 @@ trait Neo4jServerFixture extends BeforeAndAfterAll {
     // If we want to keep this it is probably a good idea to make it a fixture
     // that expose the neo4j logs on failures in some way.
     neo4jContainer = new Neo4jContainer("neo4j:3.4.10-enterprise")
-    neo4jContainer = neo4jContainer.withExposedPorts(7687)
-    neo4jContainer = neo4jContainer.withStartupTimeout(Duration.ofMinutes(5))
+      .withAdminPassword("password")
+      .acceptLicense()
     neo4jContainer.start()
 
     neo4jContext = Neo4jTestUtils.connectNeo4j(dataFixture, neo4jContainer.getBoltUrl)
