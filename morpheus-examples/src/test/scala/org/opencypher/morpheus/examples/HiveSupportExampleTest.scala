@@ -26,7 +26,7 @@
  */
 package org.opencypher.morpheus.examples
 
-class HiveSupportExampleTest extends ExampleTest {
+class HiveSupportExampleTest extends ExampleTestBase {
 
   it("should produce the correct output") {
     validate(HiveSupportExample.main(Array.empty),

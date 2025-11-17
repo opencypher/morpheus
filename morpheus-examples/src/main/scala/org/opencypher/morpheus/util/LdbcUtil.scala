@@ -27,10 +27,11 @@
 package org.opencypher.morpheus.util
 
 import java.util.Calendar
-
 import org.apache.spark.sql.types.{StringType, StructField, TimestampType}
 import org.apache.spark.sql.{DataFrame, SparkSession}
+import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
+import scala.annotation.switch
 import scala.util.Properties
 
 object LdbcUtil {
@@ -166,6 +167,7 @@ object LdbcUtil {
       case "BOOLEAN" => "BOOLEAN"
       case "FLOAT" => "FLOAT"
       case "DOUBLE" => "FLOAT"
+      case "DATE" => "DATE"
       // TODO: map correctly as soon as we support timestamp
       case "TIMESTAMP" => "STRING"
     }

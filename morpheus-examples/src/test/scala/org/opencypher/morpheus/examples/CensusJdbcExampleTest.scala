@@ -26,7 +26,7 @@
  */
 package org.opencypher.morpheus.examples
 
-class CensusJdbcExampleTest extends ExampleTest {
+class CensusJdbcExampleTest extends ExampleTestBase {
   it("runs CensusJdbcExample") {
     validate(
       CensusJdbcExample.main(Array.empty),

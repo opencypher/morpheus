@@ -28,11 +28,12 @@ package org.opencypher.morpheus.api.io.sql
 
 import org.opencypher.morpheus.api.io.FileFormat
 import org.opencypher.morpheus.api.io.sql.SqlDataSourceConfig.{File, Hive, Jdbc}
-import org.scalatest.Matchers
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
 import scala.io.Source
 
-class SqlDataSourceConfigTest extends org.scalatest.FunSpec with Matchers {
+class SqlDataSourceConfigTest extends AnyFunSpec with Matchers {
 
   private def roundTrip(cfg: SqlDataSourceConfig): SqlDataSourceConfig =
     SqlDataSourceConfig.fromJson(SqlDataSourceConfig.toJson(cfg))

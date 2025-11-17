@@ -26,7 +26,7 @@
  */
 package org.opencypher.morpheus.examples
 
-class CypherSQLRoundtripExampleTest extends ExampleTest {
+class CypherSQLRoundtripExampleTest extends ExampleTestBase {
   it("should produce the correct output") {
     validate(
       CypherSQLRoundtripExample.main(Array.empty),

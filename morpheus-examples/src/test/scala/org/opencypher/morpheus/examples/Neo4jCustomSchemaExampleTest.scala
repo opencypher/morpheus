@@ -28,7 +28,7 @@ package org.opencypher.morpheus.examples
 
 import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
 
-class Neo4jCustomSchemaExampleTest extends ExampleTest with Neo4jServerFixture {
+class Neo4jCustomSchemaExampleTest extends ExampleTestBase with Neo4jServerFixture {
 
   override def dataFixture: String = ""
 

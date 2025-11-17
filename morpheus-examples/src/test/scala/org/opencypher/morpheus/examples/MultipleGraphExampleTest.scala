@@ -26,7 +26,7 @@
  */
 package org.opencypher.morpheus.examples
 
-class MultipleGraphExampleTest extends ExampleTest {
+class MultipleGraphExampleTest extends ExampleTestBase {
 
   it("should produce the correct output") {
     validate(MultipleGraphExample.main(Array.empty),

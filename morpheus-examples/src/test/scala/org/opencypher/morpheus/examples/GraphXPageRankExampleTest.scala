@@ -26,7 +26,7 @@
  */
 package org.opencypher.morpheus.examples
 
-class GraphXPageRankExampleTest extends ExampleTest {
+class GraphXPageRankExampleTest extends ExampleTestBase {
   it("should produce the correct output") {
     validate(GraphXPageRankExample.main(Array.empty),
       getClass.getResource("/example_outputs/GraphXPageRankExample.out").toURI)

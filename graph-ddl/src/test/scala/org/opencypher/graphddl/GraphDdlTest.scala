@@ -26,16 +26,14 @@
  */
 package org.opencypher.graphddl
 
-import org.junit.runner.RunWith
 import org.opencypher.graphddl.GraphDdlParser.parseDdl
 import org.opencypher.okapi.api.graph.GraphName
 import org.opencypher.okapi.api.types.{CTBoolean, CTFloat, CTInteger, CTString}
 import org.opencypher.okapi.testing.MatchHelper.equalWithTracing
-import org.scalatestplus.junit.JUnitRunner
-import org.scalatest.{FunSpec, Matchers}
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 
-@RunWith(classOf[JUnitRunner])
-class GraphDdlTest extends FunSpec with Matchers {
+class GraphDdlTest extends AnyFunSpec with Matchers {
 
   val ddlString: String =
     s"""

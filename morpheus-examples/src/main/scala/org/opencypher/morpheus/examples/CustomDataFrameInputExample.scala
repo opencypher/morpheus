@@ -45,6 +45,8 @@ object CustomDataFrameInputExample extends App {
   // tag::create-session[]
   val spark: SparkSession = SparkSession
     .builder()
+    // TODO We should probably remove this setting. Hide errors like: You're using untyped Scala UDF, which does not have the input type information. Spark may blindly pass null to the Scala closure with primitive-type argument, and the closure will see the default value of the Java type for the null argument, e.g. `udf((x: Int) => x, IntegerType)`, the result is 0 for null input.
+    .config("spark.sql.legacy.allowUntypedScalaUDF", "true")
     .master("local[*]")
     .getOrCreate()
 

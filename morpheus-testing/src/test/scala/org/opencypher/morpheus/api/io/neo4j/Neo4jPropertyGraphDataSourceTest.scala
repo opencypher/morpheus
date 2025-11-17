@@ -55,7 +55,7 @@ class Neo4jPropertyGraphDataSourceTest
     with TeamDataFixture {
 
   it("should cache the schema during and between queries") {
-    val spiedPGDS = spy(CypherGraphSources.neo4j(neo4jConfig))
+    val spiedPGDS = spy[Neo4jPropertyGraphDataSource](CypherGraphSources.neo4j(neo4jConfig))
 
     morpheus.registerSource(Namespace("pgds"), spiedPGDS)
 

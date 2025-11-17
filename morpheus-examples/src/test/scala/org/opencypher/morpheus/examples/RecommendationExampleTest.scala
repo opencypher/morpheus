@@ -26,7 +26,7 @@
  */
 package org.opencypher.morpheus.examples
 
-class RecommendationExampleTest extends ExampleTest {
+class RecommendationExampleTest extends ExampleTestBase {
   // TODO: enable when spark planning bug is fixed
   ignore("should produce the correct output") {
     validate(RecommendationExample.main(Array.empty),
