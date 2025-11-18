@@ -27,7 +27,7 @@
 package org.opencypher.morpheus.impl.convert
 
 import org.apache.spark.sql.Row
-import org.apache.spark.sql.catalyst.encoders.{ExpressionEncoder, RowEncoder}
+import org.apache.spark.sql.catalyst.encoders.{AgnosticEncoder, ExpressionEncoder, RowEncoder}
 import org.apache.spark.sql.types._
 import org.apache.spark.unsafe.types.CalendarInterval
 import org.opencypher.morpheus.impl.SparkSQLMappingException
@@ -184,8 +184,8 @@ object SparkConversions {
       StructType(structFields)
     }
 
-    def rowEncoder: ExpressionEncoder[Row] =
-      RowEncoder(header.toStructType)
+    def rowEncoder: AgnosticEncoder[Row] =
+      RowEncoder.encoderFor(header.toStructType)
   }
 
   implicit class RowOps(row: Row) {

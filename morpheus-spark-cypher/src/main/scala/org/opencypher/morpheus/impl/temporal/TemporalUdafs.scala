@@ -27,90 +27,75 @@
 package org.opencypher.morpheus.impl.temporal
 
 import org.apache.logging.log4j.scala.Logging
-import org.apache.spark.sql.Row
-import org.apache.spark.sql.expressions.{MutableAggregationBuffer, UserDefinedAggregateFunction}
-import org.apache.spark.sql.types.{CalendarIntervalType, DataType, LongType, StructField, StructType}
+import org.apache.spark.sql.catalyst.encoders.AgnosticEncoders.CalendarIntervalEncoder
+import org.apache.spark.sql.catalyst.encoders.ExpressionEncoder
+import org.apache.spark.sql.{Encoder, Encoders, Row}
+import org.apache.spark.sql.catalyst.util.IntervalUtils
+import org.apache.spark.sql.expressions.Aggregator
 import org.apache.spark.unsafe.types.CalendarInterval
-import org.opencypher.okapi.impl.temporal.TemporalConstants
 import org.opencypher.morpheus.impl.temporal.TemporalConversions._
 
 object TemporalUdafs extends Logging {
 
-  abstract class SimpleDurationAggregation(aggrName: String) extends UserDefinedAggregateFunction {
-    override def inputSchema: StructType = StructType(Array(StructField("duration", CalendarIntervalType)))
-    override def bufferSchema: StructType = StructType(Array(StructField(aggrName, CalendarIntervalType)))
-    override def dataType: DataType = CalendarIntervalType
-    override def deterministic: Boolean = true
-    override def initialize(buffer: MutableAggregationBuffer): Unit = {
-      buffer(0) = new CalendarInterval(0, 0L)
-    }
-    override def evaluate(buffer: Row): Any = buffer.getAs[CalendarInterval](0)
+  private val intervalEncoder = ExpressionEncoder(CalendarIntervalEncoder)
+
+  trait SimpleDurationAggregation extends Aggregator[CalendarInterval, CalendarInterval, CalendarInterval] {
+    final override def finish(reduction: CalendarInterval): CalendarInterval = reduction
+    final override def bufferEncoder: Encoder[CalendarInterval] = intervalEncoder
+    final override def outputEncoder: Encoder[CalendarInterval] = intervalEncoder
   }
 
-  class DurationSum extends SimpleDurationAggregation("sum") {
-    override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
-      buffer(0) = buffer.getAs[CalendarInterval](0).add(input.getAs[CalendarInterval](0))
-    }
-    override def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
-      buffer1(0) = buffer2.getAs[CalendarInterval](0).add(buffer1.getAs[CalendarInterval](0))
-    }
+  object DurationSum extends SimpleDurationAggregation {
+    override def zero: CalendarInterval = new CalendarInterval(0, 0, 0L)
+    override def reduce(b: CalendarInterval, a: CalendarInterval): CalendarInterval = IntervalUtils.add(b, a)
+    override def merge(b1: CalendarInterval, b2: CalendarInterval): CalendarInterval = IntervalUtils.add(b1, b2)
   }
 
-  class DurationMax extends SimpleDurationAggregation("max") {
-    override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
-      val currMaxInterval = buffer.getAs[CalendarInterval](0)
-      val inputInterval = input.getAs[CalendarInterval](0)
-      buffer(0) = if (currMaxInterval.toDuration.compare(inputInterval.toDuration) >= 0) currMaxInterval else inputInterval
+  object DurationMax extends SimpleDurationAggregation {
+    override def zero: CalendarInterval = new CalendarInterval(0, 0, 0L)
+
+    override def reduce(b: CalendarInterval, a: CalendarInterval): CalendarInterval = {
+      if (b.toDuration.compare(a.toDuration) >= 0) b else a
     }
-    override def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
-      val interval1 = buffer1.getAs[CalendarInterval](0)
-      val interval2 = buffer2.getAs[CalendarInterval](0)
-      buffer1(0) = if (interval1.toDuration.compare(interval2.toDuration) >= 0) interval1 else interval2
-    }
+
+    override def merge(b1: CalendarInterval, b2: CalendarInterval): CalendarInterval = reduce(b1, b2)
   }
 
-  class DurationMin extends SimpleDurationAggregation("min") {
-    override def initialize(buffer: MutableAggregationBuffer): Unit = {
-      buffer(0) = new CalendarInterval(Integer.MAX_VALUE, Long.MaxValue)
+  object DurationMin extends SimpleDurationAggregation {
+    final override def zero: CalendarInterval = new CalendarInterval(Int.MaxValue, Int.MaxValue, Long.MaxValue)
+
+    override def reduce(b: CalendarInterval, a: CalendarInterval): CalendarInterval = {
+      if (b.toDuration.compare(a.toDuration) >= 0) a else b
     }
-    override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
-      val currMinInterval = buffer.getAs[CalendarInterval](0)
-      val inputInterval = input.getAs[CalendarInterval](0)
-      buffer(0) = if (inputInterval.toDuration.compare(currMinInterval.toDuration) >= 0) currMinInterval else inputInterval
-    }
-    override def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
-      val interval1 = buffer1.getAs[CalendarInterval](0)
-      val interval2 = buffer2.getAs[CalendarInterval](0)
-      buffer1(0) = if (interval2.toDuration.compare(interval1.toDuration) >= 0) interval1 else interval2
-    }
+
+    override def merge(b1: CalendarInterval, b2: CalendarInterval): CalendarInterval = reduce(b1, b2)
   }
 
-  class DurationAvg extends UserDefinedAggregateFunction {
-    override def inputSchema: StructType = StructType(Array(StructField("duration", CalendarIntervalType)))
-    override def bufferSchema: StructType = StructType(Array(StructField("sum", CalendarIntervalType), StructField("cnt", LongType)))
-    override def dataType: DataType = CalendarIntervalType
-    override def deterministic: Boolean = true
-    override def initialize(buffer: MutableAggregationBuffer): Unit = {
-      buffer(0) = new CalendarInterval(0, 0L)
-      buffer(1) = 0L
-    }
-    override def update(buffer: MutableAggregationBuffer, input: Row): Unit = {
-      buffer(0) = buffer.getAs[CalendarInterval](0).add(input.getAs[CalendarInterval](0))
-      buffer(1) = buffer.getLong(1) + 1
-    }
-    override def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
-      buffer1(0) = buffer2.getAs[CalendarInterval](0).add(buffer1.getAs[CalendarInterval](0))
-      buffer1(1) = buffer1.getLong(1) + buffer2.getLong(1)
-    }
-    override def evaluate(buffer: Row): Any = {
-      val sumInterval = buffer.getAs[CalendarInterval](0)
-      val cnt = buffer.getLong(1)
-      new CalendarInterval((sumInterval.months / cnt).toInt, sumInterval.microseconds / cnt)
-    }
-  }
+  case class DurationAvgRunningSum(months: Int, days: Int, micros: Long, count: Long)
 
-  val durationSum = new DurationSum()
-  val durationAvg = new DurationAvg()
-  val durationMin = new DurationMin()
-  val durationMax = new DurationMax()
+  object DurationAvg extends Aggregator[CalendarInterval, DurationAvgRunningSum, CalendarInterval] {
+    override def zero: DurationAvgRunningSum = DurationAvgRunningSum(0, 0, 0, 0)
+
+    override def reduce(b: DurationAvgRunningSum, a: CalendarInterval): DurationAvgRunningSum = DurationAvgRunningSum(
+      months = b.months + a.months,
+      days = b.days + a.days,
+      micros = b.micros + a.microseconds,
+      count = b.count + 1
+    )
+
+    override def merge(b1: DurationAvgRunningSum, b2: DurationAvgRunningSum): DurationAvgRunningSum = {
+      DurationAvgRunningSum(
+        months = b1.months + b2.months,
+        days = b1.days + b2.days,
+        micros = b1.micros + b2.micros,
+        count = b1.count + b2.count
+      )
+    }
+
+    override def finish(reduction: DurationAvgRunningSum): CalendarInterval =
+      IntervalUtils.divideExact(new CalendarInterval(reduction.months, reduction.days, reduction.micros), reduction.count)
+
+    override def bufferEncoder: Encoder[DurationAvgRunningSum] = Encoders.product[DurationAvgRunningSum]
+    override def outputEncoder: Encoder[CalendarInterval] = intervalEncoder
+  }
 }

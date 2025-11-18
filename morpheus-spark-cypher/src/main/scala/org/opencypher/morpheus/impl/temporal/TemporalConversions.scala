@@ -28,8 +28,8 @@ package org.opencypher.morpheus.impl.temporal
 
 import java.sql.{Date, Timestamp}
 import java.time.temporal.ChronoUnit
-
 import org.apache.logging.log4j.scala.Logging
+import org.apache.spark.sql.catalyst.util.DateTimeConstants
 import org.opencypher.okapi.impl.temporal.TemporalTypesHelper._
 import org.apache.spark.sql.{Column, functions}
 import org.apache.spark.unsafe.types.CalendarInterval
@@ -57,11 +57,11 @@ object TemporalConversions extends Logging {
       }
 
       val microseconds = duration.nanos / 1000 +
-        duration.seconds * CalendarInterval.MICROS_PER_SECOND +
-        duration.days * CalendarInterval.MICROS_PER_DAY
+        duration.seconds * DateTimeConstants.MICROS_PER_SECOND
 
       new CalendarInterval(
         duration.months.toInt,
+        duration.days.toInt,
         microseconds
       )
     }
@@ -74,12 +74,14 @@ object TemporalConversions extends Logging {
     */
   implicit class RichCalendarInterval(calendarInterval: CalendarInterval) {
     def toDuration: Duration = {
-      val seconds = calendarInterval.microseconds / CalendarInterval.MICROS_PER_SECOND
-      val normalizedDays = seconds / (CalendarInterval.MICROS_PER_DAY / CalendarInterval.MICROS_PER_SECOND)
-      val normalizedSeconds = seconds % (CalendarInterval.MICROS_PER_DAY / CalendarInterval.MICROS_PER_SECOND)
-      val normalizedNanos = calendarInterval.microseconds % CalendarInterval.MICROS_PER_SECOND * 1000
+      val daysInSeconds = calendarInterval.days * DateTimeConstants.SECONDS_PER_DAY
+      val seconds = daysInSeconds + (calendarInterval.microseconds / DateTimeConstants.MICROS_PER_SECOND)
+      val normalizedDays = seconds / (DateTimeConstants.MICROS_PER_DAY / DateTimeConstants.MICROS_PER_SECOND)
+      val normalizedSeconds = seconds % (DateTimeConstants.MICROS_PER_DAY / DateTimeConstants.MICROS_PER_SECOND)
+      val normalizedNanos = calendarInterval.microseconds % DateTimeConstants.MICROS_PER_SECOND * 1000
 
-      Duration(months = calendarInterval.months,
+      Duration(
+        months = calendarInterval.months,
         days = normalizedDays,
         seconds = normalizedSeconds,
         nanoseconds = normalizedNanos
@@ -88,7 +90,8 @@ object TemporalConversions extends Logging {
 
     def toJavaDuration: java.time.Duration = {
       val micros = calendarInterval.microseconds +
-        (calendarInterval.months * TemporalConstants.AVG_DAYS_PER_MONTH * CalendarInterval.MICROS_PER_DAY).toLong
+        (calendarInterval.days * DateTimeConstants.MICROS_PER_DAY) +
+        (calendarInterval.months * TemporalConstants.AVG_DAYS_PER_MONTH * DateTimeConstants.MICROS_PER_DAY).toLong
       java.time.Duration.of(micros, ChronoUnit.MICROS)
     }
   }

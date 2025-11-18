@@ -46,6 +46,10 @@ subprojects {
     test {
         maxHeapSize = "2g"
         useJUnit()
+
+        def testTempDir = file("$buildDir/tmp/test")
+        testTempDir.mkdirs()
+        systemProperty 'java.io.tmpdir', testTempDir.absolutePath
     }
 
     ext.scalacParameters = [
