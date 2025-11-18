@@ -41,7 +41,7 @@ import org.opencypher.okapi.testing.Bag._
 import org.scalacheck.Prop
 import org.scalatestplus.scalacheck.Checkers
 import org.opencypher.morpheus.impl.MorpheusConverters._
-import org.typelevel.claimant.Claim
+import claimant.Claim
 
 class ExpressionTests extends MorpheusTestSuite with ScanGraphInit with Checkers {
 
