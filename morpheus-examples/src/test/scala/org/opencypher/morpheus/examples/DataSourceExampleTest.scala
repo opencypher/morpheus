@@ -26,7 +26,7 @@
  */
 package org.opencypher.morpheus.examples
 
-class DataSourceExampleTest extends ExampleTest {
+class DataSourceExampleTest extends ExampleTestBase {
   it("should produce the correct output") {
     validate(DataSourceExample.main(Array.empty),
       getClass.getResource("/example_outputs/DataSourceExample.out").toURI)

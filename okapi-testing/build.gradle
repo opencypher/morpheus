@@ -3,13 +3,13 @@ description = 'Okapi Test Utilities'
 dependencies {
     api project(':okapi-api')
 
-    implementation group: 'org.opencypher', name: 'expressions-9.0',  version: ver.cypher.frontend
-    implementation group: 'org.opencypher', name: 'front-end-9.0',  version: ver.cypher.frontend
+    implementation libs.opencypher.expressions
+    implementation libs.opencypher.frontend
 
-    implementation group: 'org.typelevel', name: "cats-core".scala(), version: ver.cats
-    implementation group: 'junit', name: 'junit', version: ver.junit.main
-    implementation group: 'org.mockito', name: 'mockito-all', version: ver.mockito
-    implementation group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
+    implementation libs.typelevel.cats.core
+    implementation libs.mockito.core
+    implementation libs.scalatest
+    implementation libs.scalatestplus.mockito
 }
 
 // We ignore the license check here for unknown historic reasons.

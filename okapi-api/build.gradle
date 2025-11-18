@@ -1,20 +1,23 @@
 description = 'Okapi - openCypher API'
 
+configurations.named("implementation").configure {
+    exclude group: 'com.lihaoyi', module: 'utest_2.12'
+    exclude group: 'com.lihaoyi', module: 'acyclic_2.12'
+}
+
 dependencies {
     api project(':okapi-trees')
 
-    implementation(group: 'org.opencypher', name: 'front-end-9.0', version: ver.cypher.frontend) {
-        exclude group: 'org.scalacheck', module: 'scalacheck'.scala()
-    }
+    implementation(libs.opencypher.frontend.get())
+            .exclude(
+                group: 'org.scalacheck', module: 'scalacheck_2.12'
+            )
 
-    implementation group: 'org.typelevel', name: "cats-core".scala(), version: ver.cats
-    implementation(group: 'com.lihaoyi', name: "upickle".scala(), version: ver.upickle) {
-        exclude group: 'com.lihaoyi', module: 'utest'.scala()
-        exclude group: 'com.lihaoyi', module: 'acyclic'.scala()
-    }
-    implementation group: 'com.lihaoyi', name: "fastparse".scala(), version: ver.fastparse
+    implementation libs.typelevel.cats.core
+    implementation libs.upickle
+    implementation libs.fastparse
 
-    testImplementation group: "org.typelevel", name: "discipline".scala(), version: ver.discipline
-    testImplementation group: "org.typelevel", name: "cats-laws".scala(), version: ver.cats
-    testImplementation group: 'junit', name: 'junit', version: ver.junit.main
+    testImplementation libs.typelevel.discipline.core
+    testImplementation libs.typelevel.discipline.scalatest
+    testImplementation libs.typelevel.cats.laws
 }

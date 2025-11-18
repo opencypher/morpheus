@@ -1,23 +1,26 @@
 description = 'Collection of examples for Cypher for Apache Spark'
 
+configurations.named('implementation').configure {
+    exclude group: 'com.lihaoyi', module: 'utest_2.12'
+    exclude group: 'com.lihaoyi', module: 'acyclic_2.12'
+}
+
 dependencies {
     api project(':morpheus-spark-cypher')
     api project(':morpheus-testing')
 
-    implementation group: 'org.apache.logging.log4j', name: 'log4j-core',           version: ver.log4j.main
-    implementation group: 'org.apache.spark',         name: "spark-graphx".scala(), version: ver.spark
-    implementation group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark
-    implementation(group: 'org.apache.spark', name: "spark-catalyst".scala(), version: ver.spark) {
-        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-    }
-    implementation group: 'io.netty',                 name: 'netty-all',            version: ver.netty
-    implementation group: 'com.h2database',           name: 'h2',                   version: ver.h2
-    implementation(group: 'com.lihaoyi', name: "upickle".scala(), version: ver.upickle) {
-        exclude group: 'com.lihaoyi', module: 'utest'.scala()
-        exclude group: 'com.lihaoyi', module: 'acyclic'.scala()
-    }
-    implementation group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: ver.neo4j.driver
-    testImplementation group: 'org.testcontainers', name: 'testcontainers-neo4j', version: ver.testcontainers
+    implementation libs.log4j.core
+    implementation libs.spark.graphx
+    implementation libs.spark.sql
+    implementation(libs.spark.catalyst.get())
+        .exclude(group: 'org.slf4j', module: 'slf4j-log4j12')
+
+    implementation libs.netty.all
+    implementation libs.h2
+    implementation libs.upickle
+
+    implementation libs.neo4j.java.driver
+    testImplementation libs.testcontainers.neo4j
 }
 
 // We ignore the license check here for unknown historic reasons.

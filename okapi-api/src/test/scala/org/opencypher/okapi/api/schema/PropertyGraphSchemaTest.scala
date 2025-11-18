@@ -31,7 +31,6 @@ import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.impl.util.Version
-import org.scalatest.{FunSpec, Matchers}
 
 class PropertyGraphSchemaTest extends ApiBaseTest {
 
@@ -803,9 +802,8 @@ class PropertyGraphSchemaTest extends ApiBaseTest {
         s"${PropertyGraphSchema.CURRENT_VERSION.major + 1}.0",
         s"${PropertyGraphSchema.CURRENT_VERSION.major - 1}.5"
       ).foreach { v =>
-        an[SchemaException] shouldBe thrownBy {
-          PropertyGraphSchema.fromJson(schemaJson(Version(v)))
-        }
+        val thrown = intercept[Exception] { PropertyGraphSchema.fromJson(schemaJson(Version(v))) }
+        thrown.getCause shouldBe a[SchemaException]
       }
     }
   }

@@ -52,6 +52,8 @@ case class AddPrefix(
 
   override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode =
     defineCodeGen(ctx, ev, (a, p) => s"(byte[])(${AddPrefix.getClass.getName.dropRight(1)}.addPrefix($a, $p))")
+
+  override protected def withNewChildrenInternal(newLeft: Expression, newRight: Expression): Expression = copy(newLeft, newRight)
 }
 
 object AddPrefix {

@@ -1,0 +1,34 @@
+# Version catalog updates generated at 2025-11-18T09:42:10.050993
+#
+# Contents of this file will be applied to libs.versions.toml when running versionCatalogApplyUpdates.
+#
+# Comments will not be applied to the version catalog when updating.
+# To prevent a version upgrade, comment out the entry or remove it.
+#
+[libraries]
+# From version 1.7.2 --> 6.0.2
+neo4j-java-driver = "org.neo4j.driver:neo4j-java-driver:6.0.2"
+# From version 9.0.20190305 --> 9.0.20210312
+opencypher-ast = "org.opencypher:ast-9.0:9.0.20210312"
+# From version 9.0.20190305 --> 9.0.20210312
+opencypher-expressions = "org.opencypher:expressions-9.0:9.0.20210312"
+# From version 9.0.20190305 --> 9.0.20210312
+opencypher-frontend = "org.opencypher:front-end-9.0:9.0.20210312"
+# From version 9.0.20190305 --> 9.0.20210312
+opencypher-rewriting = "org.opencypher:rewriting-9.0:9.0.20210312"
+# From version 1.0.0-M14 --> 2024.2
+opencypher-tck = "org.opencypher:tck:2024.2"
+# From version 1.0.0-M14 --> 2024.2
+opencypher-tck-api = "org.opencypher:tck-api_2.12:2024.2"
+# From version 9.0.20190305 --> 9.0.20210312
+opencypher-util = "org.opencypher:util-9.0:9.0.20210312"
+# @pinned version 2.12.20 --> 2.13.18
+#scala-compiler = "org.scala-lang:scala-compiler:2.13.18"
+# @pinned version 2.12.20 --> 2.13.18
+#scala-library = "org.scala-lang:scala-library:2.13.18"
+# @pinned version 2.12.20 --> 2.13.18
+#scala-reflect = "org.scala-lang:scala-reflect:2.13.18"
+
+[plugins]
+# @pinned version 0.16.3-63da64d --> 0.16.1
+#licencs = "com.github.hierynomus.license:0.16.1"

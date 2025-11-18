@@ -4,10 +4,13 @@ dependencies {
     api project(':okapi-neo4j-io')
     api project(':okapi-testing')
 
-    implementation group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: ver.neo4j.driver
-    implementation group: 'org.bouncycastle', name: 'bctls-jdk15on', version: ver.bctls
-    implementation group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
-    implementation group: 'org.testcontainers', name: 'testcontainers-neo4j', version: ver.testcontainers
+    implementation libs.neo4j.java.driver
+    implementation libs.bouncycastle.jdk18on
+    implementation libs.scalatest
+    implementation libs.testcontainers.neo4j
+
+    implementation libs.scalatestplus.mockito
+
 }
 
 // We ignore the license check here for unknown historic reasons.

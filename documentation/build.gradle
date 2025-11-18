@@ -1,9 +1,9 @@
 group = "${group}.documentation"
 
 task asciidocJar(type: Jar) {
-    group 'documentation'
-    description 'Package asciidoc source files.'
-    classifier = 'asciidoc'
+    group = 'documentation'
+    description = 'Package asciidoc source files.'
+    archiveClassifier = 'asciidoc'
     from("asciidoc")
 }
 
@@ -11,7 +11,7 @@ task aggregatedScalaDoc(type: ScalaDoc) {
     ext.fromProjects = [
             project(':okapi-api'),
             project(':morpheus-spark-cypher'),
-            project(':morpheus-examples'),
+//            project(':morpheus-examples'),
     ]
 
     classpath = project.sourceSets.main.compileClasspath
@@ -26,7 +26,7 @@ task aggregatedScalaDoc(type: ScalaDoc) {
 }
 
 task aggregatedScalaDocJar(type: Jar) {
-    classifier = 'javadoc'
+    archiveClassifier = 'javadoc'
     from tasks.aggregatedScalaDoc
 }
 

@@ -26,7 +26,7 @@
  */
 package org.opencypher.morpheus.examples
 
-class CensusHiveExampleTest extends ExampleTest {
+class CensusHiveExampleTest extends ExampleTestBase {
   it("runs CensusHiveExampleTest") {
     validate(
       CensusHiveExample.main(Array.empty),

@@ -26,24 +26,26 @@
  */
 package org.opencypher.morpheus.api.io.fs
 
-import org.junit.rules.TemporaryFolder
+import org.apache.commons.io.FileUtils
 import org.opencypher.morpheus.api.FSGraphSources
 import org.opencypher.morpheus.api.io.fs.DefaultGraphDirectoryStructure.pathSeparator
 import org.opencypher.morpheus.testing.MorpheusTestSuite
 import org.opencypher.okapi.api.graph.GraphName
 
+import java.nio.file.{Files, Path}
+
 class DefaultFileSystemTest extends MorpheusTestSuite {
 
-  protected var tempDir = new TemporaryFolder()
+  protected var tempDir: Path = _
 
   override protected def beforeEach(): Unit = {
-    tempDir.create()
+    tempDir = Files.createTempDirectory(getClass.getSimpleName)
     super.beforeEach()
   }
 
   override protected def afterEach(): Unit = {
-    tempDir.delete()
-    tempDir = new TemporaryFolder()
+    FileUtils.deleteDirectory(tempDir.toFile)
+    tempDir = null
     super.afterEach()
   }
 
@@ -54,7 +56,7 @@ class DefaultFileSystemTest extends MorpheusTestSuite {
         |  CREATE ()
         |RETURN GRAPH
       """.stripMargin).graph
-    val ds = FSGraphSources(s"${tempDir.getRoot.getAbsolutePath}${pathSeparator}someNewFolder1${pathSeparator}someNewFolder2").csv
+    val ds = FSGraphSources(s"${tempDir.getRoot.toAbsolutePath}${pathSeparator}someNewFolder1${pathSeparator}someNewFolder2").csv
     ds.store(GraphName("foo"), graph)
   }
 

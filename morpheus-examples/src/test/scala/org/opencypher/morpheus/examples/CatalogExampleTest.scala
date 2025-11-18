@@ -26,7 +26,7 @@
  */
 package org.opencypher.morpheus.examples
 
-class CatalogExampleTest extends ExampleTest {
+class CatalogExampleTest extends ExampleTestBase {
   it("should produce the correct output") {
     validate(
       CatalogExample.main(Array.empty),

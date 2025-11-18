@@ -32,7 +32,7 @@ import org.opencypher.morpheus.impl.table.SparkTable.{DataFrameTable, _}
 import org.opencypher.morpheus.testing.MorpheusTestSuite
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
-import org.scalatest.Matchers
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 import scala.collection.mutable.WrappedArray.ofLong

@@ -1,15 +1,37 @@
 plugins {
-    id 'java-library'
-    id 'com.github.hierynomus.license' version '0.16.2-37dde1f' apply false
-    id 'com.github.johnrengelman.shadow' version '7.1.2' apply false
-    id 'com.github.alisiikh.scalastyle' version '3.5.0' apply false
-    id 'me.champeau.jmh' version '0.7.3' apply false
+    id 'buildlogic.scala-application-conventions'
+
+    alias(libs.plugins.champeau.jmh).apply(false)
+    alias(libs.plugins.license).apply(false)
+    alias(libs.plugins.scalastyle).apply(false)
+    alias(libs.plugins.shadowjar).apply(false)
+
+    alias(libs.plugins.versionCatalogUpdate)
 }
 
 apply from: 'build.params.gradle'
 apply plugin: 'base'
 
+configurations {
+    resolvableRuntimeClasspath {
+        extendsFrom configurations.runtimeClasspath
+        canBeResolved = true
+        canBeConsumed = false
+        description = 'Resolvable runtime classpath configuration.'
+    }
+}
+
+
 allprojects {
+    java {
+        sourceCompatibility = 21
+        targetCompatibility = 21
+    }
+
+    scala {
+        scalaVersion = libs.scala.library.get().version
+    }
+
     group = 'org.opencypher'
     version = ver.self
 }
@@ -26,30 +48,67 @@ subprojects {
     }
 
     dependencies {
-        implementation group: 'org.scala-lang', name: 'scala-library', version: ver.scala.full
+        implementation libs.scala.library
 
         // Seems we need to lock these down, otherwise we get runtime errors on reflection
-        implementation group: 'org.scala-lang', name: 'scala-reflect', version: ver.scala.full
-        implementation group: 'org.scala-lang', name: 'scala-compiler', version: ver.scala.full
+        implementation libs.scala.compiler
+        implementation libs.scala.reflect
 
-        implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: ver.log4j.main
-        implementation group: 'org.apache.logging.log4j', name: "log4j-api-scala".scala(), version: ver.log4j.scala
+        implementation libs.log4j.api
+        implementation libs.log4j.api.scala
 
-        testImplementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: ver.log4j.main
-        testImplementation group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
-        testImplementation group: 'org.scalacheck', name: "scalacheck".scala(), version: ver.scalacheck
-        testImplementation group: 'junit', name: 'junit', version: ver.junit.main
-        testImplementation group: 'org.mockito', name: 'mockito-all', version: ver.mockito
-        testRuntimeOnly group: 'org.junit.platform', name: 'junit-platform-runner', version: ver.junit.runner
+        testImplementation libs.scalatestplus.mockito
+        testImplementation libs.scalatestplus.scalacheck
+        testImplementation libs.junit.platform.engine
+        testRuntimeOnly libs.junit.platform.launcher
+        testRuntimeOnly libs.scalatestplus.junit
+        testImplementation libs.log4j.core
+        testImplementation libs.scalatest
+        testImplementation libs.scalacheck
+        testImplementation libs.mockito.core
     }
 
     test {
-        maxHeapSize = "2g"
-        useJUnit()
+        maxHeapSize = '2g'
+
+        // Suggestion from https://docs.gradle.org/current/userguide/performance.html#a_run_tests_in_parallel
+        maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
+
+        // JVM args required by spark (see org.apache.spark.launcher.JavaModuleOptions)
+        jvmArgs(
+                '-XX:+IgnoreUnrecognizedVMOptions',
+                '--add-exports=java.base/sun.nio.ch=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED',
+                '--add-opens=java.base/java.io=ALL-UNNAMED',
+                '--add-opens=java.base/java.net=ALL-UNNAMED',
+                '--add-opens=java.base/java.nio=ALL-UNNAMED',
+                '--add-opens=java.base/java.util=ALL-UNNAMED',
+                '--add-opens=java.base/java.util.concurrent=ALL-UNNAMED',
+                '--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED',
+                '--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED',
+                '--add-opens=java.base/sun.nio.ch=ALL-UNNAMED',
+                '--add-opens=java.base/sun.nio.cs=ALL-UNNAMED',
+                '--add-opens=java.base/sun.security.action=ALL-UNNAMED',
+                '--add-opens=java.base/sun.util.calendar=ALL-UNNAMED',
+                '--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED',
+                '-Djdk.reflect.useDirectMethodHandle=false'
+        )
+        useJUnitPlatform {
+            includeEngines 'scalatest'
+            testLogging {
+                events("passed", "skipped", "failed", "standard_error")
+            }
+        }
+
+        def testTempDir = file("$buildDir/tmp/test")
+        testTempDir.mkdirs()
+        systemProperty 'java.io.tmpdir', testTempDir.absolutePath
     }
 
     ext.scalacParameters = [
-            "-target:jvm-$ver.jvm".toString(),
             '-unchecked',
             '-deprecation',
             '-feature',
@@ -59,50 +118,75 @@ subprojects {
             '-Ywarn-adapted-args'
     ]
 
-    tasks.withType(ScalaCompile) {
+    tasks.withType(Test).configureEach {
+        // JVM args required by spark (see org.apache.spark.launcher.JavaModuleOptions)
+        jvmArgs(
+                '-XX:+IgnoreUnrecognizedVMOptions',
+                '--add-exports=java.base/sun.nio.ch=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED',
+                '--add-opens=java.base/java.io=ALL-UNNAMED',
+                '--add-opens=java.base/java.net=ALL-UNNAMED',
+                '--add-opens=java.base/java.nio=ALL-UNNAMED',
+                '--add-opens=java.base/java.util=ALL-UNNAMED',
+                '--add-opens=java.base/java.util.concurrent=ALL-UNNAMED',
+                '--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED',
+                '--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED',
+                '--add-opens=java.base/sun.nio.ch=ALL-UNNAMED',
+                '--add-opens=java.base/sun.nio.cs=ALL-UNNAMED',
+                '--add-opens=java.base/sun.security.action=ALL-UNNAMED',
+                '--add-opens=java.base/sun.util.calendar=ALL-UNNAMED',
+                '--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED',
+                '-Djdk.reflect.useDirectMethodHandle=false'
+        )
+    }
+
+    tasks.withType(ScalaCompile).configureEach {
         options.encoding = 'UTF-8'
         scalaCompileOptions.additionalParameters = scalacParameters
     }
 
-    tasks.withType(ScalaDoc) {
+    tasks.withType(ScalaDoc).configureEach {
         scalaDocOptions.additionalParameters = scalacParameters
     }
 
-    task sourceJar(type: Jar) {
-        classifier = 'sources'
+    tasks.register('sourceJar', Jar) {
+        archiveClassifier = 'sources'
         from(sourceSets.main.allSource)
     }
 
-    task docJar(type: Jar) {
+    tasks.register('docJar', Jar) {
         dependsOn tasks.scaladoc
-        classifier = 'javadoc'
+        archiveClassifier = 'javadoc'
         from(tasks.scaladoc.destinationDir)
     }
 
-    task testJar(type: Jar) {
-        classifier = 'tests'
+    tasks.register('testJar', Jar) {
+        archiveClassifier = 'tests'
         from(sourceSets.test.output)
     }
 
-    tasks.withType(Jar) {
+    tasks.withType(Jar).configureEach {
         from(tasks.generateLicensesFiles) {
             into("META-INF/")
         }
     }
 
-    task licenseFile {
+    tasks.register('licenseFile') {
         outputs.file(project.parent.file('LICENSE.txt'))
     }
 
-    task dependencySearch(type: DependencyInsightReportTask) {
-        description 'Searches all projects for a dependency'
-        group 'help'
+    tasks.register('dependencySearch', DependencyInsightReportTask) {
+        description = 'Searches all projects for a dependency'
+        group = 'help'
     }
 
-    task runApp {
+    tasks.register('runApp') {
         dependsOn tasks.classes
-        group 'run'
-        description 'Run a custom Scala app (use -PmainClass=com.my.package.App)'
+        group = 'run'
+        description = 'Run a custom Scala app (use -PmainClass=com.my.package.App)'
         doLast {
             javaexec {
                 classpath = sourceSets.main.runtimeClasspath
@@ -111,12 +195,20 @@ subprojects {
         }
     }
 
+    configurations {
+        resolvableDefault {
+            extendsFrom configurations.default
+            canBeResolved = true
+            canBeConsumed = false
+            description = 'Resolvable default configuration.'
+        }
+    }
     // copied from https://stackoverflow.com/a/38058671/568723
-    task depSize  {
-        description 'Lists all dependencies sorted by their size'
+    tasks.register('depSize')  {
+        description = 'Lists all dependencies sorted by their size'
         doLast {
             final formatStr = "%,10.2f"
-            final conf = configurations.default
+            final conf = configurations.resolvableDefault
             final size = conf.collect { it.length() / (1024 * 1024) }.sum()
             final out = new StringBuffer()
             out << 'Total dependencies size:'.padRight(45)
@@ -133,3 +225,27 @@ subprojects {
 
 apply from: 'build.publishing.gradle'
 apply from: 'build.style.gradle'
+
+def isNonStable = { String version ->
+    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
+    def regex = /^[0-9,.v-]+(-r)?$/
+    return !stableKeyword && !(version ==~ regex)
+}
+
+versionCatalogUpdate {
+    // sort the catalog by key (default is true)
+    sortByKey = true
+
+    versionSelector {
+        // here 'it' is a ModuleVersionCandidate that can be used to determine if the version
+        // is allowed, returning true if it is.
+        !isNonStable(it.candidate.version)
+    }
+
+    keep {
+        // keep versions without any library or plugin reference
+        keepUnusedVersions = true
+    }
+
+
+}

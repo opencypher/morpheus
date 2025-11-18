@@ -63,138 +63,138 @@ object GraphDdlParser {
 
   import org.opencypher.okapi.impl.util.ParserUtils._
 
-  private def CREATE[_: P]: P[Unit] = keyword("CREATE")
-  private def ELEMENT[_: P]: P[Unit] = keyword("ELEMENT")
-  private def EXTENDS[_: P]: P[Unit] = keyword("EXTENDS") | keyword("<:")
-  private def KEY[_: P]: P[Unit] = keyword("KEY")
-  private def GRAPH[_: P]: P[Unit] = keyword("GRAPH")
-  private def TYPE[_: P]: P[Unit] = keyword("TYPE")
-  private def OF[_: P]: P[Unit] = keyword("OF")
-  private def AS[_: P]: P[Unit] = keyword("AS")
-  private def FROM[_: P]: P[Unit] = keyword("FROM")
-  private def START[_: P]: P[Unit] = keyword("START")
-  private def END[_: P]: P[Unit] = keyword("END")
-  private def NODES[_: P]: P[Unit] = keyword("NODES")
-  private def JOIN[_: P]: P[Unit] = keyword("JOIN")
-  private def ON[_: P]: P[Unit] = keyword("ON")
-  private def AND[_: P]: P[Unit] = keyword("AND")
-  private def SET[_: P]: P[Unit] = keyword("SET")
-  private def SCHEMA[_: P]: P[Unit] = keyword("SCHEMA")
+  private def CREATE[$: P]: P[Unit] = keyword("CREATE")
+  private def ELEMENT[$: P]: P[Unit] = keyword("ELEMENT")
+  private def EXTENDS[$: P]: P[Unit] = keyword("EXTENDS") | keyword("<:")
+  private def KEY[$: P]: P[Unit] = keyword("KEY")
+  private def GRAPH[$: P]: P[Unit] = keyword("GRAPH")
+  private def TYPE[$: P]: P[Unit] = keyword("TYPE")
+  private def OF[$: P]: P[Unit] = keyword("OF")
+  private def AS[$: P]: P[Unit] = keyword("AS")
+  private def FROM[$: P]: P[Unit] = keyword("FROM")
+  private def START[$: P]: P[Unit] = keyword("START")
+  private def END[$: P]: P[Unit] = keyword("END")
+  private def NODES[$: P]: P[Unit] = keyword("NODES")
+  private def JOIN[$: P]: P[Unit] = keyword("JOIN")
+  private def ON[$: P]: P[Unit] = keyword("ON")
+  private def AND[$: P]: P[Unit] = keyword("AND")
+  private def SET[$: P]: P[Unit] = keyword("SET")
+  private def SCHEMA[$: P]: P[Unit] = keyword("SCHEMA")
 
 
   // ==== Element types ====
 
-  private def property[_: P]: P[(String, CypherType)] =
+  private def property[$: P]: P[(String, CypherType)] =
     P(identifier.! ~/ CypherTypeParser.cypherType)
 
-  private def properties[_: P]: P[Map[String, CypherType]] =
+  private def properties[$: P]: P[Map[String, CypherType]] =
     P("(" ~/ property.rep(min = 0, sep = ",").map(_.toMap) ~/ ")")
 
-  private def keyDefinition[_: P]: P[(String, Set[String])] =
+  private def keyDefinition[$: P]: P[(String, Set[String])] =
     P(KEY ~/ identifier.! ~/ "(" ~/ identifier.!.rep(min = 1, sep = ",").map(_.toSet) ~/ ")")
 
-  private def extendsDefinition[_: P]: P[Set[String]] =
+  private def extendsDefinition[$: P]: P[Set[String]] =
     P(EXTENDS ~/ identifier.!.rep(min = 1, sep = ",").map(_.toSet))
 
-  def elementTypeDefinition[_: P]: P[ElementTypeDefinition] =
+  def elementTypeDefinition[$: P]: P[ElementTypeDefinition] =
     P(identifier.! ~/ extendsDefinition.? ~/ properties.? ~/ keyDefinition.?).map {
       case (id, maybeParents, maybeProps, maybeKey) =>
         ElementTypeDefinition(id, maybeParents.getOrElse(Set.empty), maybeProps.getOrElse(Map.empty), maybeKey)
     }
 
-  def globalElementTypeDefinition[_: P]: P[ElementTypeDefinition] =
+  def globalElementTypeDefinition[$: P]: P[ElementTypeDefinition] =
     P(CREATE ~ ELEMENT ~/ TYPE ~/ elementTypeDefinition)
 
   // ==== Schema ====
 
-  def elementType[_: P]: P[String] =
+  def elementType[$: P]: P[String] =
     P(identifier.!)
 
-  def elementTypes[_: P]: P[Set[String]] =
+  def elementTypes[$: P]: P[Set[String]] =
     P(elementType.rep(min = 1, sep = ",")).map(_.toSet)
 
-  def nodeTypeDefinition[_: P]: P[NodeTypeDefinition] =
+  def nodeTypeDefinition[$: P]: P[NodeTypeDefinition] =
     P("(" ~ elementTypes ~ ")").map(NodeTypeDefinition(_))
 
-  def relTypeDefinition[_: P]: P[RelationshipTypeDefinition] =
+  def relTypeDefinition[$: P]: P[RelationshipTypeDefinition] =
     P(nodeTypeDefinition ~ "-" ~ "[" ~ elementTypes ~ "]" ~ "->" ~ nodeTypeDefinition).map {
       case (startNodeType, eType, endNodeType) => RelationshipTypeDefinition(startNodeType, eType, endNodeType)
     }
 
-  def graphTypeStatements[_: P]: P[List[GraphDdlAst with GraphTypeStatement]] =
+  def graphTypeStatements[$: P]: P[List[GraphDdlAst with GraphTypeStatement]] =
     // Note: Order matters here. relTypeDefinition must appear before nodeTypeDefinition since they parse the same prefix
     P("(" ~/ (elementTypeDefinition | relTypeDefinition | nodeTypeDefinition ).rep(sep = "," ~/ Pass).map(_.toList) ~/ ")")
 
-  def graphTypeDefinition[_: P]: P[GraphTypeDefinition] =
+  def graphTypeDefinition[$: P]: P[GraphTypeDefinition] =
     P(CREATE ~ GRAPH ~ TYPE ~/ identifier.! ~/ graphTypeStatements).map(GraphTypeDefinition.tupled)
 
 
   // ==== Graph ====
 
-  def viewId[_: P]: P[List[String]] =
+  def viewId[$: P]: P[List[String]] =
     P(escapedIdentifier.repX(min = 1, max = 3, sep = ".")).map(_.toList)
 
-  private def propertyToColumn[_: P]: P[(String, String)] =
+  private def propertyToColumn[$: P]: P[(String, String)] =
     P(identifier.! ~ AS ~/ identifier.!).map { case (column, propertyKey) => propertyKey -> column }
 
   // TODO: avoid toMap to not accidentally swallow duplicate property keys
-  def propertyMappingDefinition[_: P]: P[Map[String, String]] = {
+  def propertyMappingDefinition[$: P]: P[Map[String, String]] = {
     P("(" ~ propertyToColumn.rep(min = 1, sep = ",").map(_.toMap) ~/ ")")
   }
 
-  def nodeToViewDefinition[_: P]: P[NodeToViewDefinition] =
+  def nodeToViewDefinition[$: P]: P[NodeToViewDefinition] =
     P(FROM ~/ viewId ~/ propertyMappingDefinition.?).map(NodeToViewDefinition.tupled)
 
-  def nodeMappingDefinition[_: P]: P[NodeMappingDefinition] = {
+  def nodeMappingDefinition[$: P]: P[NodeMappingDefinition] = {
     P(nodeTypeDefinition ~ nodeToViewDefinition.rep(min = 1, sep = ",".?).map(_.toList)).map(NodeMappingDefinition.tupled)
   }
 
-  def nodeMappings[_: P]: P[List[NodeMappingDefinition]] =
+  def nodeMappings[$: P]: P[List[NodeMappingDefinition]] =
     P(nodeMappingDefinition.rep(sep = ",").map(_.toList))
 
-  private def columnIdentifier[_: P] =
+  private def columnIdentifier[$: P] =
     P(identifier.!.rep(min = 2, sep = ".").map(_.toList))
 
-  private def joinTuple[_: P]: P[(List[String], List[String])] =
+  private def joinTuple[$: P]: P[(List[String], List[String])] =
     P(columnIdentifier ~/ "=" ~/ columnIdentifier)
 
-  private def joinOnDefinition[_: P]: P[JoinOnDefinition] =
+  private def joinOnDefinition[$: P]: P[JoinOnDefinition] =
     P(JOIN ~/ ON ~/ joinTuple.rep(min = 1, sep = AND)).map(_.toList).map(JoinOnDefinition)
 
-  private def viewDefinition[_: P]: P[ViewDefinition] =
+  private def viewDefinition[$: P]: P[ViewDefinition] =
     P(viewId ~/ identifier.!).map(ViewDefinition.tupled)
 
-  private def nodeTypeToViewDefinition[_: P]: P[NodeTypeToViewDefinition] =
+  private def nodeTypeToViewDefinition[$: P]: P[NodeTypeToViewDefinition] =
     P(nodeTypeDefinition ~/ FROM ~/ viewDefinition ~/ joinOnDefinition).map(NodeTypeToViewDefinition.tupled)
 
-  private def relTypeToViewDefinition[_: P]: P[RelationshipTypeToViewDefinition] =
+  private def relTypeToViewDefinition[$: P]: P[RelationshipTypeToViewDefinition] =
     P(FROM ~/ viewDefinition ~/ propertyMappingDefinition.? ~/ START ~/ NODES ~/ nodeTypeToViewDefinition ~/ END ~/ NODES ~/ nodeTypeToViewDefinition).map(RelationshipTypeToViewDefinition.tupled)
 
-  def relationshipMappingDefinition[_: P]: P[RelationshipMappingDefinition] = {
+  def relationshipMappingDefinition[$: P]: P[RelationshipMappingDefinition] = {
     P(relTypeDefinition ~ relTypeToViewDefinition.rep(min = 1, sep = ",".?).map(_.toList)).map(RelationshipMappingDefinition.tupled)
   }
 
-  def relationshipMappings[_: P]: P[List[RelationshipMappingDefinition]] =
+  def relationshipMappings[$: P]: P[List[RelationshipMappingDefinition]] =
     P(relationshipMappingDefinition.rep(min = 1, sep = ",").map(_.toList))
 
-  private def graphStatements[_: P]: P[List[GraphDdlAst with GraphStatement]] =
+  private def graphStatements[$: P]: P[List[GraphDdlAst with GraphStatement]] =
   // Note: Order matters here
     P("(" ~/ (relationshipMappingDefinition | nodeMappingDefinition | elementTypeDefinition | relTypeDefinition | nodeTypeDefinition ).rep(sep = "," ~/ Pass).map(_.toList) ~/ ")")
 
-  def graphDefinition[_: P]: P[GraphDefinition] = {
+  def graphDefinition[$: P]: P[GraphDefinition] = {
     P(CREATE ~ GRAPH ~ identifier.! ~/ (OF ~/ identifier.!).? ~/ graphStatements)
       .map { case (gName, graphTypeRef, statements) => GraphDefinition(gName, graphTypeRef, statements) }
   }
 
   // ==== DDL ====
 
-  def setSchemaDefinition[_: P]: P[SetSchemaDefinition] =
+  def setSchemaDefinition[$: P]: P[SetSchemaDefinition] =
     P(SET ~/ SCHEMA ~ identifier.! ~/ "." ~/ identifier.! ~ ";".?).map(SetSchemaDefinition.tupled)
 
-  def ddlStatement[_: P]: P[GraphDdlAst with DdlStatement] =
+  def ddlStatement[$: P]: P[GraphDdlAst with DdlStatement] =
     P(setSchemaDefinition | globalElementTypeDefinition | graphTypeDefinition | graphDefinition)
 
-  def ddlDefinitions[_: P]: P[DdlDefinition] =
+  def ddlDefinitions[$: P]: P[DdlDefinition] =
     // allow for whitespace/comments at the start
     P(Start ~ ddlStatement.rep.map(_.toList) ~/ End).map(DdlDefinition)
 }
