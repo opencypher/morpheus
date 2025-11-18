@@ -4,7 +4,7 @@
 apache-commons-text = "1.14.0"
 bctls-jdk18on = "1.82"
 cats = "2.13.0"
-claimant = "0.0.4"
+claimant = "0.2.0"
 cypher-frontend = "9.0.20190305"
 cypher-tck = "1.0.0-M14"
 discipline-core = "1.7.0"
@@ -13,10 +13,10 @@ eff = "7.0.6"
 fastparse = "3.1.1"
 h2 = "1.4.196"
 hadoop = "3.4.2"
-junit-platform = "1.13.1"
+junit-platform = "6.0.1"
 log4j = "2.25.2"
 log4j-scala = "13.1.0"
-mockito = "5.18.0"
+mockito = "5.20.0"
 neo4j-driver = "1.7.2"
 netty = "4.2.7.Final"
 # @pin
@@ -36,8 +36,8 @@ eff = { module = "org.atnos:eff_2.12", version.ref = "eff" }
 fastparse = { module = "com.lihaoyi:fastparse_2.12", version.ref = "fastparse" }
 h2 = { module = "com.h2database:h2", version.ref = "h2" }
 hadoop-minicluster = { module = "org.apache.hadoop:hadoop-minicluster", version.ref = "hadoop" }
-junit-platform-engine = { module = "org.junit.platform:junit-platform-engine", version.ref = "junit-platform"}
-junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform"}
+junit-platform-engine = { module = "org.junit.platform:junit-platform-engine", version.ref = "junit-platform" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform" }
 log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
 log4j-api-scala = { module = "org.apache.logging.log4j:log4j-api-scala_2.12", version.ref = "log4j-scala" }
 log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
@@ -64,19 +64,18 @@ spark-core = { module = "org.apache.spark:spark-core_2.12", version.ref = "spark
 spark-graphx = { module = "org.apache.spark:spark-graphx_2.12", version.ref = "spark" }
 spark-hive = { module = "org.apache.spark:spark-hive_2.12", version.ref = "spark" }
 spark-sql = { module = "org.apache.spark:spark-sql_2.12", version.ref = "spark" }
-spire-math = { module = "org.spire-math:claimant_2.12", version.ref = "claimant" }
 testcontainers-neo4j = { module = "org.testcontainers:testcontainers-neo4j", version.ref = "testcontainers" }
 typelevel-cats-core = { module = "org.typelevel:cats-core_2.12", version.ref = "cats" }
 typelevel-cats-laws = { module = "org.typelevel:cats-laws_2.12", version.ref = "cats" }
 typelevel-discipline-core = { module = "org.typelevel:discipline-core_2.12", version.ref = "discipline-core" }
 typelevel-discipline-scalatest = { module = "org.typelevel:discipline-scalatest_2.12", version.ref = "discipline-scalatest" }
+typlevel-claimant = { module = "org.typelevel:claimant_2.12", version.ref = "claimant" }
 upickle = { module = "com.lihaoyi:upickle_2.12", version.ref = "upickle" }
 
 [plugins]
 champeau-jmh = "me.champeau.jmh:0.7.3"
 # @pin - version is self-hosted
-licencs = "com.github.hierynomus.license:0.16.3-63da64d"
+license = "com.github.hierynomus.license:0.16.3-63da64d"
 scalastyle = "com.github.alisiikh.scalastyle:3.5.0"
 shadowjar = "com.gradleup.shadow:9.2.2"
-spawn = "ch.kk7.spawn:1.0.20180924200750"
 versionCatalogUpdate = "nl.littlerobots.version-catalog-update:1.0.1"

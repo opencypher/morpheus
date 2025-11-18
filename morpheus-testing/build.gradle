@@ -22,7 +22,7 @@ dependencies {
 
     testImplementation project(':okapi-api').sourceSets.test.output
     testImplementation libs.h2
-    testImplementation libs.spire.math
+    testImplementation libs.typlevel.claimant
     testImplementation libs.upickle
     testImplementation libs.opencypher.frontend
     testImplementation libs.testcontainers.neo4j

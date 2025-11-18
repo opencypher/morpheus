@@ -2,10 +2,9 @@ plugins {
     id 'buildlogic.scala-application-conventions'
 
     alias(libs.plugins.champeau.jmh).apply(false)
-    alias(libs.plugins.licencs).apply(false)
+    alias(libs.plugins.license).apply(false)
     alias(libs.plugins.scalastyle).apply(false)
     alias(libs.plugins.shadowjar).apply(false)
-    alias(libs.plugins.spawn).apply(false)
 
     alias(libs.plugins.versionCatalogUpdate)
 }
@@ -115,7 +114,7 @@ subprojects {
             '-feature',
             '-Xfatal-warnings',
             '-Xfuture',
-//            '-Ypartial-unification',
+            '-Ypartial-unification',
             '-Ywarn-adapted-args'
     ]
 
