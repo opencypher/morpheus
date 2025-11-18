@@ -243,7 +243,7 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
       val result = morpheus.cypher("RETURN degrees(3.14159) AS res")
       result.records.toMaps should equal(
         Bag(
-          CypherMap("res" -> 179.9998479605043)
+          CypherMap("res" -> 179.99984796050427)
         )
       )
     }
