@@ -58,21 +58,15 @@ subprojects {
         implementation libs.log4j.api
         implementation libs.log4j.api.scala
 
-        testImplementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: ver.log4j.main
-        testImplementation group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
-        testImplementation group: 'org.scalacheck', name: "scalacheck".scala(), version: ver.scalacheck
-        testImplementation group: 'org.mockito', name: 'mockito-core', version: ver.mockito
-        testImplementation group: 'org.scalatestplus', name: "mockito-5-18".scala(), version: "${ver.scalatest}.0"
-        testImplementation group: 'org.scalatestplus', name: "scalacheck-1-18".scala(), version: "${ver.scalatest}.0"
-        testImplementation group: 'org.junit.platform', name: 'junit-platform-launcher', version: ver.junit.platform
-        testRuntimeOnly group: 'org.junit.platform', name: 'junit-platform-engine', version: ver.junit.platform
-        testRuntimeOnly group: 'org.scalatestplus', name: "junit-5-13".scala(), version: "${ver.scalatest}.0"
+        testImplementation libs.scalatestplus.mockito
+        testImplementation libs.scalatestplus.scalacheck
+        testImplementation libs.junit.platform.engine
+        testRuntimeOnly libs.junit.platform.launcher
+        testRuntimeOnly libs.scalatestplus.junit
         testImplementation libs.log4j.core
         testImplementation libs.scalatest
         testImplementation libs.scalacheck
-        testImplementation libs.junit
-        testImplementation libs.mockito
-        testRuntimeOnly libs.junit.runner
+        testImplementation libs.mockito.core
     }
 
     test {

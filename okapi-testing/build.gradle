@@ -7,13 +7,9 @@ dependencies {
     implementation libs.opencypher.frontend
 
     implementation libs.typelevel.cats.core
-    implementation libs.junit
-    implementation libs.mockito
+    implementation libs.mockito.core
     implementation libs.scalatest
-    implementation group: 'org.typelevel', name: "cats-core".scala(), version: ver.cats
-    implementation group: 'org.mockito', name: 'mockito-core', version: ver.mockito
-    implementation group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
-    implementation group: 'org.scalatestplus', name: "mockito-5-18".scala(), version: "${ver.scalatest}.0"
+    implementation libs.scalatestplus.mockito
 }
 
 // We ignore the license check here for unknown historic reasons.

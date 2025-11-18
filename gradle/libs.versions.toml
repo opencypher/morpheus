@@ -2,46 +2,46 @@
 # https://docs.gradle.org/current/userguide/platforms.html#sub::toml-dependencies-format
 [versions]
 apache-commons-text = "1.14.0"
-bctls = "1.59"
-cats = "1.6.0"
-claimant = "0.0.2"
+bctls-jdk18on = "1.82"
+cats = "2.13.0"
+claimant = "0.0.4"
 cypher-frontend = "9.0.20190305"
 cypher-tck = "1.0.0-M14"
-discipline = "0.11.0"
-eff = "5.0.0"
-fastparse = "2.1.0"
+discipline-core = "1.7.0"
+discipline-scalatest = "2.3.0"
+eff = "7.0.6"
+fastparse = "3.1.1"
 h2 = "1.4.196"
 hadoop = "3.4.2"
-junit = "4.12"
-junit-runner = "1.0.2"
-log4j = "2.11.0"
-log4j-scala = "11.0"
-mockito = "1.10.19"
+junit-platform = "1.13.1"
+log4j = "2.25.2"
+log4j-scala = "13.1.0"
+mockito = "5.18.0"
 neo4j-driver = "1.7.2"
-neo4j-harness = "3.4.10"
-netty = "4.1.24.Final"
+netty = "4.2.7.Final"
 # @pin
 scala = "2.12.20"
 scala-major = "2.12"
-scalacheck = "1.14.0"
-scalatest = "3.0.6"
+scalacheck = "1.19.0"
+scalatest = "3.2.19"
+scalatestplus = "3.2.19.0"
 spark = "3.5.7"
 testcontainers = "2.0.2"
-upickle = "0.7.1"
+upickle = "4.4.1"
 
 [libraries]
 apache-commons-text = { module = "org.apache.commons:commons-text", version.ref = "apache-commons-text" }
-bouncycastle = { module = "org.bouncycastle:bctls-jdk15on", version.ref = "bctls" }
+bouncycastle-jdk18on = { module = "org.bouncycastle:bctls-jdk18on", version.ref = "bctls-jdk18on" }
 eff = { module = "org.atnos:eff_2.12", version.ref = "eff" }
 fastparse = { module = "com.lihaoyi:fastparse_2.12", version.ref = "fastparse" }
 h2 = { module = "com.h2database:h2", version.ref = "h2" }
 hadoop-minicluster = { module = "org.apache.hadoop:hadoop-minicluster", version.ref = "hadoop" }
-junit = { module = "junit:junit", version.ref = "junit" }
-junit-runner = { module = "org.junit.platform:junit-platform-runner", version.ref = "junit-runner" }
+junit-platform-engine = { module = "org.junit.platform:junit-platform-engine", version.ref = "junit-platform"}
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform"}
 log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
 log4j-api-scala = { module = "org.apache.logging.log4j:log4j-api-scala_2.12", version.ref = "log4j-scala" }
 log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
-mockito = { module = "org.mockito:mockito-all", version.ref = "mockito" }
+mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 neo4j-java-driver = { module = "org.neo4j.driver:neo4j-java-driver", version.ref = "neo4j-driver" }
 netty-all = { module = "io.netty:netty-all", version.ref = "netty" }
 opencypher-ast = { module = "org.opencypher:ast-9.0", version.ref = "cypher-frontend" }
@@ -56,6 +56,9 @@ scala-library = { module = "org.scala-lang:scala-library", version.ref = "scala"
 scala-reflect = { module = "org.scala-lang:scala-reflect", version.ref = "scala" }
 scalacheck = { module = "org.scalacheck:scalacheck_2.12", version.ref = "scalacheck" }
 scalatest = { module = "org.scalatest:scalatest_2.12", version.ref = "scalatest" }
+scalatestplus-junit = { module = "org.scalatestplus:junit-5-13_2.12", version.ref = "scalatestplus" }
+scalatestplus-mockito = { module = "org.scalatestplus:mockito-5-18_2.12", version.ref = "scalatestplus" }
+scalatestplus-scalacheck = { module = "org.scalatestplus:scalacheck-1-18_2.12", version.ref = "scalatestplus" }
 spark-catalyst = { module = "org.apache.spark:spark-catalyst_2.12", version.ref = "spark" }
 spark-core = { module = "org.apache.spark:spark-core_2.12", version.ref = "spark" }
 spark-graphx = { module = "org.apache.spark:spark-graphx_2.12", version.ref = "spark" }
@@ -65,7 +68,8 @@ spire-math = { module = "org.spire-math:claimant_2.12", version.ref = "claimant"
 testcontainers-neo4j = { module = "org.testcontainers:testcontainers-neo4j", version.ref = "testcontainers" }
 typelevel-cats-core = { module = "org.typelevel:cats-core_2.12", version.ref = "cats" }
 typelevel-cats-laws = { module = "org.typelevel:cats-laws_2.12", version.ref = "cats" }
-typelevel-discipline = { module = "org.typelevel:discipline_2.12", version.ref = "discipline" }
+typelevel-discipline-core = { module = "org.typelevel:discipline-core_2.12", version.ref = "discipline-core" }
+typelevel-discipline-scalatest = { module = "org.typelevel:discipline-scalatest_2.12", version.ref = "discipline-scalatest" }
 upickle = { module = "com.lihaoyi:upickle_2.12", version.ref = "upickle" }
 
 [plugins]

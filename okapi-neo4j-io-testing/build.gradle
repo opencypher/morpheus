@@ -5,11 +5,11 @@ dependencies {
     api project(':okapi-testing')
 
     implementation libs.neo4j.java.driver
-    implementation group: 'org.bouncycastle', name: 'bctls-jdk18on', version: ver.bctls
+    implementation libs.bouncycastle.jdk18on
     implementation libs.scalatest
     implementation libs.testcontainers.neo4j
 
-    implementation group: 'org.scalatestplus', name: "mockito-5-18".scala(), version: "${ver.scalatest}.0"
+    implementation libs.scalatestplus.mockito
 
 }
 

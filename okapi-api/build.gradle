@@ -17,7 +17,7 @@ dependencies {
     implementation libs.upickle
     implementation libs.fastparse
 
-    testImplementation group: "org.typelevel", name: "discipline-core".scala(), version: ver.discipline.core
-    testImplementation group: "org.typelevel", name: "discipline-scalatest".scala(), version: ver.discipline.scalatest
-    testImplementation group: "org.typelevel", name: "cats-laws".scala(), version: ver.cats
+    testImplementation libs.typelevel.discipline.core
+    testImplementation libs.typelevel.discipline.scalatest
+    testImplementation libs.typelevel.cats.laws
 }

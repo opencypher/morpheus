@@ -17,8 +17,8 @@ dependencies {
     implementation libs.hadoop.minicluster
 
     implementation libs.scalatest
-    implementation libs.mockito
-    implementation group: 'org.scalatestplus', name: "mockito-5-18".scala(), version: "${ver.scalatest}.0"
+    implementation libs.mockito.core
+    implementation libs.scalatestplus.mockito
 
     testImplementation project(':okapi-api').sourceSets.test.output
     testImplementation libs.h2
