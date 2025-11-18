@@ -114,7 +114,7 @@ subprojects {
             '-feature',
             '-Xfatal-warnings',
             '-Xfuture',
-//            '-Ypartial-unification',
+            '-Ypartial-unification',
             '-Ywarn-adapted-args'
     ]
 
