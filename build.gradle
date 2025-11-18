@@ -45,6 +45,7 @@ subprojects {
 
     test {
         maxHeapSize = "2g"
+        maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
         useJUnit()
 
         def testTempDir = file("$buildDir/tmp/test")
