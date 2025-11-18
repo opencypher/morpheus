@@ -6,6 +6,8 @@ plugins {
     alias(libs.plugins.scalastyle).apply(false)
     alias(libs.plugins.shadowjar).apply(false)
     alias(libs.plugins.spawn).apply(false)
+
+    alias(libs.plugins.versionCatalogUpdate)
 }
 
 apply from: 'build.params.gradle'
@@ -119,7 +121,7 @@ subprojects {
             '-feature',
             '-Xfatal-warnings',
             '-Xfuture',
-            '-Ypartial-unification',
+//            '-Ypartial-unification',
             '-Ywarn-adapted-args'
     ]
 
@@ -230,3 +232,27 @@ subprojects {
 
 apply from: 'build.publishing.gradle'
 apply from: 'build.style.gradle'
+
+def isNonStable = { String version ->
+    def stableKeyword = ['RELEASE', 'FINAL', 'GA'].any { it -> version.toUpperCase().contains(it) }
+    def regex = /^[0-9,.v-]+(-r)?$/
+    return !stableKeyword && !(version ==~ regex)
+}
+
+versionCatalogUpdate {
+    // sort the catalog by key (default is true)
+    sortByKey = true
+
+    versionSelector {
+        // here 'it' is a ModuleVersionCandidate that can be used to determine if the version
+        // is allowed, returning true if it is.
+        !isNonStable(it.candidate.version)
+    }
+
+    keep {
+        // keep versions without any library or plugin reference
+        keepUnusedVersions = true
+    }
+
+
+}
