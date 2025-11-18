@@ -11,12 +11,12 @@ discipline-core = "1.7.0"
 discipline-scalatest = "2.3.0"
 eff = "7.0.6"
 fastparse = "3.1.1"
-h2 = "1.4.196"
+h2 = "2.4.240"
 hadoop = "3.4.2"
-junit-platform = "1.13.1"
+junit-platform = "6.0.1"
 log4j = "2.25.2"
 log4j-scala = "13.1.0"
-mockito = "5.18.0"
+mockito = "5.20.0"
 neo4j-driver = "1.7.2"
 netty = "4.2.7.Final"
 # @pin
@@ -36,8 +36,8 @@ eff = { module = "org.atnos:eff_2.12", version.ref = "eff" }
 fastparse = { module = "com.lihaoyi:fastparse_2.12", version.ref = "fastparse" }
 h2 = { module = "com.h2database:h2", version.ref = "h2" }
 hadoop-minicluster = { module = "org.apache.hadoop:hadoop-minicluster", version.ref = "hadoop" }
-junit-platform-engine = { module = "org.junit.platform:junit-platform-engine", version.ref = "junit-platform"}
-junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform"}
+junit-platform-engine = { module = "org.junit.platform:junit-platform-engine", version.ref = "junit-platform" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform" }
 log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j" }
 log4j-api-scala = { module = "org.apache.logging.log4j:log4j-api-scala_2.12", version.ref = "log4j-scala" }
 log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j" }
@@ -75,8 +75,7 @@ upickle = { module = "com.lihaoyi:upickle_2.12", version.ref = "upickle" }
 [plugins]
 champeau-jmh = "me.champeau.jmh:0.7.3"
 # @pin - version is self-hosted
-licencs = "com.github.hierynomus.license:0.16.3-63da64d"
+license = "com.github.hierynomus.license:0.16.3-63da64d"
 scalastyle = "com.github.alisiikh.scalastyle:3.5.0"
 shadowjar = "com.gradleup.shadow:9.2.2"
-spawn = "ch.kk7.spawn:1.0.20180924200750"
 versionCatalogUpdate = "nl.littlerobots.version-catalog-update:1.0.1"
