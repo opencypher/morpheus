@@ -74,12 +74,14 @@ object TemporalConversions extends Logging {
     */
   implicit class RichCalendarInterval(calendarInterval: CalendarInterval) {
     def toDuration: Duration = {
-      val seconds = calendarInterval.microseconds / DateTimeConstants.MICROS_PER_SECOND
+      val daysInSeconds = calendarInterval.days * DateTimeConstants.SECONDS_PER_DAY
+      val seconds = daysInSeconds + (calendarInterval.microseconds / DateTimeConstants.MICROS_PER_SECOND)
       val normalizedDays = seconds / (DateTimeConstants.MICROS_PER_DAY / DateTimeConstants.MICROS_PER_SECOND)
       val normalizedSeconds = seconds % (DateTimeConstants.MICROS_PER_DAY / DateTimeConstants.MICROS_PER_SECOND)
       val normalizedNanos = calendarInterval.microseconds % DateTimeConstants.MICROS_PER_SECOND * 1000
 
-      Duration(months = calendarInterval.months,
+      Duration(
+        months = calendarInterval.months,
         days = normalizedDays,
         seconds = normalizedSeconds,
         nanoseconds = normalizedNanos
@@ -88,6 +90,7 @@ object TemporalConversions extends Logging {
 
     def toJavaDuration: java.time.Duration = {
       val micros = calendarInterval.microseconds +
+        (calendarInterval.days * DateTimeConstants.MICROS_PER_DAY) +
         (calendarInterval.months * TemporalConstants.AVG_DAYS_PER_MONTH * DateTimeConstants.MICROS_PER_DAY).toLong
       java.time.Duration.of(micros, ChronoUnit.MICROS)
     }

@@ -48,7 +48,7 @@ object TemporalUdfs extends Logging {
       if (date == null || interval == null) {
         null
       } else {
-        val days = interval.microseconds / DateTimeConstants.MICROS_PER_DAY
+        val days = interval.days + interval.microseconds / DateTimeConstants.MICROS_PER_DAY
 
         if (interval.microseconds % DateTimeConstants.MICROS_PER_DAY != 0) {
           logger.warn("Arithmetic with Date and Duration can lead to incorrect results when sub-day values are present.")
@@ -72,7 +72,7 @@ object TemporalUdfs extends Logging {
       if (date == null || interval == null) {
         null
       } else {
-        val days = interval.microseconds / DateTimeConstants.MICROS_PER_DAY
+        val days = interval.days + interval.microseconds / DateTimeConstants.MICROS_PER_DAY
 
         if (interval.microseconds % DateTimeConstants.MICROS_PER_DAY != 0) {
           logger.warn("Arithmetic with Date and Duration can lead to incorrect results when sub-day values are present.")
@@ -125,8 +125,8 @@ object TemporalUdfs extends Logging {
           case "years" => duration.months / 12
           case "quarters" => duration.months / 3
           case "months" => duration.months
-          case "weeks" => duration.microseconds / DateTimeConstants.MICROS_PER_DAY / 7
-          case "days" => duration.microseconds / DateTimeConstants.MICROS_PER_DAY
+          case "weeks" => duration.days / DateTimeConstants.DAYS_PER_WEEK + duration.microseconds / DateTimeConstants.MICROS_PER_DAY / 7
+          case "days" => duration.days + duration.microseconds / DateTimeConstants.MICROS_PER_DAY
           case "hours" => (duration.microseconds - daysInMicros) / DateTimeConstants.MICROS_PER_HOUR
           case "minutes" => (duration.microseconds - daysInMicros) / DateTimeConstants.MICROS_PER_MINUTE
           case "seconds" => (duration.microseconds - daysInMicros) / DateTimeConstants.MICROS_PER_SECOND

@@ -436,17 +436,17 @@ object SparkSQLExprMapper {
         case CountStar => count(ONE_LIT)
         case _: Avg =>
           expr.cypherType match {
-            case CTDuration => TemporalUdafs.durationAvg(child0)
+            case CTDuration => udaf(TemporalUdafs.DurationAvg).apply(child0)
             case _ => avg(child0)
           }
         case _: Max =>
           expr.cypherType match {
-            case CTDuration => TemporalUdafs.durationMax(child0)
+            case CTDuration => udaf(TemporalUdafs.DurationMax).apply(child0)
             case _ => max(child0)
           }
         case _: Min =>
           expr.cypherType match {
-            case CTDuration => TemporalUdafs.durationMin(child0)
+            case CTDuration => udaf(TemporalUdafs.DurationMin).apply(child0)
             case _ => min(child0)
           }
         case _: PercentileCont =>
@@ -465,7 +465,7 @@ object SparkSQLExprMapper {
         case _: StDevP => stddev_pop(child0)
         case _: Sum =>
           expr.cypherType match {
-            case CTDuration => TemporalUdafs.durationSum(child0)
+            case CTDuration => udaf(TemporalUdafs.DurationSum).apply(child0)
             case _ => sum(child0)
           }
 
