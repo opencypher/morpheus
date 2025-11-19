@@ -144,7 +144,7 @@ object TemporalUdfs extends Logging {
 
           case other => throw UnsupportedOperationException(s"Unknown Duration accessor: $other")
         }
-        new java.lang.Long(l)
+        java.lang.Long.valueOf(l)
       }
     }
   )
