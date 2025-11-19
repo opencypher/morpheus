@@ -8,7 +8,7 @@ cypher-tck = "1.0.0-M14"
 discipline = "0.11.0"
 eff = "7.0.6"
 fastparse = "2.1.0"
-h2 = "1.4.196"
+h2 = "2.4.240"
 # Note: has shared transitive dependencies with spark
 hadoop = "3.3.4"
 junit-main = "4.12"
