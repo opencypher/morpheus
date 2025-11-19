@@ -3,18 +3,19 @@ description = 'Okapi - openCypher API'
 dependencies {
     api project(':okapi-trees')
 
-    implementation(group: 'org.opencypher', name: 'front-end-9.0', version: ver.cypher.frontend) {
-        exclude group: 'org.scalacheck', module: 'scalacheck'.scala()
-    }
+    implementation(libs.opencypher.frontend.get()).exclude(
+        group: libs.testing.scala.scalacheck.get().group,
+        module: libs.testing.scala.scalacheck.get().name
+    )
 
-    implementation group: 'org.typelevel', name: "cats-core".scala(), version: ver.cats
-    implementation(group: 'com.lihaoyi', name: "upickle".scala(), version: ver.upickle) {
-        exclude group: 'com.lihaoyi', module: 'utest'.scala()
-        exclude group: 'com.lihaoyi', module: 'acyclic'.scala()
-    }
-    implementation group: 'com.lihaoyi', name: "fastparse".scala(), version: ver.fastparse
+    implementation libs.scala.typelevel.cats.core
+    implementation(libs.scala.upickle.get())
+        .exclude(group: libs.exclusions.utest.get().group, module: libs.exclusions.utest.get().name)
+        .exclude(group: libs.exclusions.acyclic.get().group, module: libs.exclusions.acyclic.get().name)
 
-    testImplementation group: "org.typelevel", name: "discipline".scala(), version: ver.discipline
-    testImplementation group: "org.typelevel", name: "cats-laws".scala(), version: ver.cats
-    testImplementation group: 'junit', name: 'junit', version: ver.junit.main
+    implementation libs.scala.fastparse
+
+    testImplementation libs.scala.typelevel.discipline
+    testImplementation libs.scala.typelevel.cats.laws
+    testImplementation libs.testing.junit
 }

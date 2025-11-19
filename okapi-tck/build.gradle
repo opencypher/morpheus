@@ -4,10 +4,11 @@ dependencies {
     api project(':okapi-testing')
     api project(':okapi-ir')
 
-    api group: 'org.opencypher', name: 'tck',             version: ver.cypher.tck
-    api group: 'org.opencypher', name: 'tck-api'.scala(), version: ver.cypher.tck
-    implementation group: 'org.apache.commons', name: 'commons-text', version: ver.apache.commons.text
-    implementation group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
+    api libs.opencypher.tck
+    api libs.opencypher.tck.api
+
+    implementation libs.apache.commons.text
+    implementation libs.testing.scala.scalatest
 }
 
 // We ignore the license check here for unknown historic reasons.

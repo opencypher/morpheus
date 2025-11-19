@@ -8,7 +8,7 @@ sourceSets{
 dependencies {
     testImplementation project(':okapi-tck')
     testImplementation project(':morpheus-testing')
-    testImplementation group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark
+    testImplementation libs.scala.spark.sql
     generatorImplementation project(':okapi-tck')
     generatorImplementation project(':morpheus-testing')
 }

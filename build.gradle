@@ -29,21 +29,21 @@ subprojects {
     }
 
     dependencies {
-        implementation group: 'org.scala-lang', name: 'scala-library', version: ver.scala.full
+        implementation libs.scala.library
 
         // Seems we need to lock these down, otherwise we get runtime errors on reflection
-        implementation group: 'org.scala-lang', name: 'scala-reflect', version: ver.scala.full
-        implementation group: 'org.scala-lang', name: 'scala-compiler', version: ver.scala.full
+        implementation libs.scala.lang.compiler
+        implementation libs.scala.lang.reflect
 
-        implementation group: 'org.apache.logging.log4j', name: 'log4j-api', version: ver.log4j.main
-        implementation group: 'org.apache.logging.log4j', name: "log4j-api-scala".scala(), version: ver.log4j.scala
+        implementation libs.log4j.api
+        implementation libs.scala.log4j.api
 
-        testImplementation group: 'org.apache.logging.log4j', name: 'log4j-core', version: ver.log4j.main
-        testImplementation group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
-        testImplementation group: 'org.scalacheck', name: "scalacheck".scala(), version: ver.scalacheck
-        testImplementation group: 'junit', name: 'junit', version: ver.junit.main
-        testImplementation group: 'org.mockito', name: 'mockito-all', version: ver.mockito
-        testRuntimeOnly group: 'org.junit.platform', name: 'junit-platform-runner', version: ver.junit.runner
+        testImplementation libs.log4j.core
+        testImplementation libs.testing.scala.scalatest
+        testImplementation libs.testing.scala.scalacheck
+        testImplementation libs.testing.junit
+        testImplementation libs.testing.mockito.all
+        testRuntimeOnly libs.testing.junit.platform.runner
     }
 
     test {
