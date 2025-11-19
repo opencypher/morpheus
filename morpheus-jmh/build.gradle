@@ -2,18 +2,19 @@ apply plugin: 'me.champeau.jmh'
 
 description = 'Micro benchmarks for Cypher for Apache Spark'
 
+configurations.implementation {
+    exclude(
+        group: libs.exclusions.slf4j.log4j12.get().group,
+        module: libs.exclusions.slf4j.log4j12.get().name
+    )
+}
+
 dependencies {
     api project(':morpheus-spark-cypher')
 
-    implementation(group: 'org.apache.spark', name: "spark-core".scala(), version: ver.spark) {
-        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-    }
-    implementation(group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark) {
-        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-    }
-    implementation(group: 'org.apache.spark', name: "spark-catalyst".scala(), version: ver.spark) {
-        exclude group: 'org.slf4j', module: 'slf4j-log4j12'
-    }
+    implementation libs.scala.spark.core
+    implementation libs.scala.spark.sql
+    implementation libs.scala.spark.catalyst
 }
 
 jmh {

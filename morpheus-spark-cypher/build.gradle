@@ -22,16 +22,16 @@ dependencies {
     api project(':okapi-neo4j-io')
     api project(':graph-ddl')
 
-    implementation(group: 'com.lihaoyi', name: "upickle".scala(), version: ver.upickle) {
-        exclude group: 'com.lihaoyi', module: 'utest'.scala()
-        exclude group: 'com.lihaoyi', module: 'acyclic'.scala()
-    }
-    implementation group: 'org.typelevel', name: "cats-core".scala(), version: ver.cats
-    implementation group: 'org.neo4j.driver', name: 'neo4j-java-driver', version: ver.neo4j.driver
+    implementation(libs.scala.upickle.get())
+        .exclude(group: libs.exclusions.utest.get().group, module: libs.exclusions.utest.get().name)
+        .exclude(group: libs.exclusions.acyclic.get().group, module: libs.exclusions.acyclic.get().name)
 
-    compileOnly group: 'org.apache.spark', name: "spark-core".scala(), version: ver.spark
-    compileOnly group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark
-    compileOnly group: 'org.apache.spark', name: "spark-catalyst".scala(), version: ver.spark
+    implementation libs.scala.typelevel.cats.core
+    implementation libs.neo4j.java.driver
+
+    compileOnly libs.scala.spark.core
+    compileOnly libs.scala.spark.sql
+    compileOnly libs.scala.spark.catalyst
 }
 
 shadowJar {

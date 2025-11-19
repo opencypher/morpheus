@@ -2,7 +2,7 @@ subprojects {
     apply plugin: 'com.github.alisiikh.scalastyle'
 
     scalastyle {
-        scalaVersion = ver.scala.major
+        scalaVersion = libs.versions.scala.major.get()
         config = rootProject.file("etc/scalastyle_config.xml")
     }
 }

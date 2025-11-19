@@ -5,23 +5,24 @@ dependencies {
     api project(':okapi-testing')
     api project(':okapi-neo4j-io-testing')
 
-    implementation group: 'org.apache.spark', name: "spark-core".scala(), version: ver.spark
-    implementation group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark
-    implementation group: 'org.apache.spark', name: "spark-hive".scala(), version: ver.spark
-    implementation group: 'org.apache.hadoop', name: 'hadoop-client-minicluster', version: ver.hadoop
+    implementation libs.scala.spark.core
+    implementation libs.scala.spark.sql
+    implementation libs.scala.spark.hive
+    implementation libs.hadoop.client.minicluster
 
-    implementation group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
-    implementation group: 'org.mockito', name: 'mockito-all', version: ver.mockito
+    implementation libs.testing.scala.scalatest
+    implementation libs.testing.mockito.all
 
     testImplementation project(':okapi-api').sourceSets.test.output
-    testImplementation group: 'com.h2database', name: 'h2', version: ver.h2
-    testImplementation group: 'org.spire-math', name: 'claimant'.scala(), version: ver.claimant
-    testImplementation(group: 'com.lihaoyi', name: "upickle".scala(), version: ver.upickle) {
-        exclude group: 'com.lihaoyi', module: 'utest'.scala()
-        exclude group: 'com.lihaoyi', module: 'acyclic'.scala()
-    }
-    testImplementation group: 'org.opencypher', name: 'front-end-9.0',  version: ver.cypher.frontend
-    testImplementation group: 'org.testcontainers', name: 'testcontainers-neo4j', version: ver.testcontainers
+
+    testImplementation libs.h2
+    testImplementation libs.scala.claimant
+    implementation(libs.scala.upickle.get())
+        .exclude(group: libs.exclusions.utest.get().group, module: libs.exclusions.utest.get().name)
+        .exclude(group: libs.exclusions.acyclic.get().group, module: libs.exclusions.acyclic.get().name)
+
+    testImplementation libs.opencypher.frontend
+    testImplementation libs.testcontainers.neo4j
 }
 
 // We ignore the license check here for unknown historic reasons.

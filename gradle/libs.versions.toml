@@ -1,0 +1,81 @@
+[versions]
+apache-commons-text = "1.14.0"
+bctls = "1.59"
+cats = "1.6.0"
+claimant = "0.0.2"
+cypher-frontend = "9.0.20190305"
+cypher-tck = "1.0.0-M14"
+discipline = "0.11.0"
+eff = "5.0.0"
+fastparse = "2.1.0"
+h2 = "1.4.196"
+# Note: has shared transitive dependencies with spark
+hadoop = "3.3.4"
+junit-main = "4.12"
+junit-runner = "1.0.2"
+log4j-main = "2.11.0"
+log4j-scala = "11.0"
+mockito = "1.10.19"
+neo4j-driver = "1.7.2"
+netty = "4.1.24.Final"
+# @pin - let's prevent automatic updates for the moment
+scala-full = "2.12.20"
+# @pin - let's prevent automatic updates for the moment
+scala-major = "2.12"
+scalacheck = "1.14.0"
+scalatest = "3.0.6"
+spark = "3.5.7"
+testcontainers = "2.0.2"
+upickle = "0.7.1"
+
+[libraries]
+apache-commons-text = { module = "org.apache.commons:commons-text", version.ref = "apache-commons-text" }
+bouncycastle = { module = "org.bouncycastle:bctls-jdk15on", version.ref = "bctls" }
+exclusions-acyclic = { module = "com.lihaoyi:acyclic_2.12" }
+exclusions-slf4j-log4j12 = { module = "org.slf4j:slf4j-log4j12" }
+exclusions-utest = { module = "com.lihaoyi:utest_2.12" }
+h2 = { module = "com.h2database:h2", version.ref = "h2" }
+hadoop-client-minicluster = { module = "org.apache.hadoop:hadoop-client-minicluster", version.ref = "hadoop" }
+log4j-api = { module = "org.apache.logging.log4j:log4j-api", version.ref = "log4j-main" }
+log4j-core = { module = "org.apache.logging.log4j:log4j-core", version.ref = "log4j-main" }
+neo4j-java-driver = { module = "org.neo4j.driver:neo4j-java-driver", version.ref = "neo4j-driver" }
+netty-all = { module = "io.netty:netty-all", version.ref = "netty" }
+opencypher-ast = { module = "org.opencypher:ast-9.0", version.ref = "cypher-frontend" }
+opencypher-expressions = { module = "org.opencypher:expressions-9.0", version.ref = "cypher-frontend" }
+opencypher-frontend = { module = "org.opencypher:front-end-9.0", version.ref = "cypher-frontend" }
+opencypher-rewriting = { module = "org.opencypher:rewriting-9.0", version.ref = "cypher-frontend" }
+opencypher-tck = { module = "org.opencypher:tck", version.ref = "cypher-tck" }
+opencypher-tck-api = { module = "org.opencypher:tck-api_2.12", version.ref = "cypher-tck" }
+opencypher-util = { module = "org.opencypher:util-9.0", version.ref = "cypher-frontend" }
+scala-claimant = { module = "org.spire-math:claimant_2.12", version.ref = "claimant" }
+scala-eff = { module = "org.atnos:eff_2.12", version.ref = "eff" }
+scala-fastparse = { module = "com.lihaoyi:fastparse_2.12", version.ref = "fastparse" }
+# Seems we need to lock this down, otherwise we get runtime errors on reflection
+scala-lang-compiler = { module = "org.scala-lang:scala-compiler", version.ref = "scala-full" }
+# Seems we need to lock this down, otherwise we get runtime errors on reflection
+scala-lang-reflect = { module = "org.scala-lang:scala-reflect", version.ref = "scala-full" }
+scala-library = { module = "org.scala-lang:scala-library", version.ref = "scala-full" }
+scala-log4j-api = { module = "org.apache.logging.log4j:log4j-api-scala_2.12", version.ref = "log4j-scala" }
+scala-spark-catalyst = { module = "org.apache.spark:spark-catalyst_2.12", version.ref = "spark" }
+scala-spark-core = { module = "org.apache.spark:spark-core_2.12", version.ref = "spark" }
+scala-spark-graphx = { module = "org.apache.spark:spark-graphx_2.12", version.ref = "spark" }
+scala-spark-hive = { module = "org.apache.spark:spark-hive_2.12", version.ref = "spark" }
+scala-spark-sql = { module = "org.apache.spark:spark-sql_2.12", version.ref = "spark" }
+scala-typelevel-cats-core = { module = "org.typelevel:cats-core_2.12", version.ref = "cats" }
+scala-typelevel-cats-laws = { module = "org.typelevel:cats-laws_2.12", version.ref = "cats" }
+scala-typelevel-discipline = { module = "org.typelevel:discipline_2.12", version.ref = "discipline" }
+scala-upickle = { module = "com.lihaoyi:upickle_2.12", version.ref = "upickle" }
+testcontainers-neo4j = { module = "org.testcontainers:testcontainers-neo4j", version.ref = "testcontainers" }
+testing-junit = { module = "junit:junit", version.ref = "junit-main" }
+testing-junit-platform-runner = { module = "org.junit.platform:junit-platform-runner", version.ref = "junit-runner" }
+testing-mockito-all = { module = "org.mockito:mockito-all", version.ref = "mockito" }
+testing-scala-scalacheck = { module = "org.scalacheck:scalacheck_2.12", version.ref = "scalacheck" }
+testing-scala-scalatest = { module = "org.scalatest:scalatest_2.12", version.ref = "scalatest" }
+
+[plugins]
+champeau-jmh = "me.champeau.jmh:0.7.3"
+# @pin - version is self-hosted
+license = "com.github.hierynomus.license:0.16.2-37dde1f"
+scalastyle = "com.github.alisiikh.scalastyle:3.5.0"
+shadowjar = "com.github.johnrengelman.shadow:7.1.2"
+versionCatalogUpdate = "nl.littlerobots.version-catalog-update:1.0.1"
