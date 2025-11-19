@@ -125,14 +125,14 @@ subprojects {
     }
 
     task dependencySearch(type: DependencyInsightReportTask) {
-        description 'Searches all projects for a dependency'
-        group 'help'
+        description = 'Searches all projects for a dependency'
+        group = 'help'
     }
 
     task runApp {
         dependsOn tasks.classes
-        group 'run'
-        description 'Run a custom Scala app (use -PmainClass=com.my.package.App)'
+        group = 'run'
+        description = 'Run a custom Scala app (use -PmainClass=com.my.package.App)'
         doLast {
             javaexec {
                 classpath = sourceSets.main.runtimeClasspath
@@ -143,7 +143,7 @@ subprojects {
 
     // copied from https://stackoverflow.com/a/38058671/568723
     task depSize  {
-        description 'Lists all dependencies sorted by their size'
+        description = 'Lists all dependencies sorted by their size'
         doLast {
             final formatStr = "%,10.2f"
             final conf = configurations.default

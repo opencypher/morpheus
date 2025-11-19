@@ -1,8 +1,8 @@
 group = "${group}.documentation"
 
 task asciidocJar(type: Jar) {
-    group 'documentation'
-    description 'Package asciidoc source files.'
+    group = 'documentation'
+    description = 'Package asciidoc source files.'
     archiveClassifier = 'asciidoc'
     from("asciidoc")
 }
