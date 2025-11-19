@@ -98,7 +98,7 @@ object MorpheusSession extends Serializable {
     val conf = new SparkConf(true)
     conf.set("spark.sql.codegen.wholeStage", "true")
     conf.set("spark.sql.shuffle.partitions", "12")
-    conf.set("spark.default.parallelism", "8")
+    conf.set("spark.default.parallelism", Runtime.getRuntime.availableProcessors().toString)
     // Required for left outer join without join expressions in OPTIONAL MATCH (leads to cartesian product)
     conf.set("spark.sql.crossJoin.enabled", "true")
     // We should probably remove this setting. Hide errors like: You're using untyped Scala UDF, which does not have the input type information. Spark may blindly pass null to the Scala closure with primitive-type argument, and the closure will see the default value of the Java type for the null argument, e.g. `udf((x: Int) => x, IntegerType)`, the result is 0 for null input.
