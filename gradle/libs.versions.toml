@@ -1,7 +1,7 @@
 [versions]
 apache-commons-text = "1.14.0"
 bctls = "1.59"
-cats = "1.6.0"
+cats = "2.13.0"
 claimant = "0.0.2"
 cypher-frontend = "9.0.20190305"
 cypher-tck = "1.0.0-M14"
