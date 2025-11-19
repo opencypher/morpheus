@@ -5,6 +5,8 @@ plugins {
     alias(libs.plugins.license).apply(false)
     alias(libs.plugins.scalastyle).apply(false)
     alias(libs.plugins.shadowjar).apply(false)
+
+    alias(libs.plugins.versionCatalogUpdate)
 }
 
 apply from: 'build.params.gradle'
@@ -161,3 +163,4 @@ subprojects {
 
 apply from: 'build.publishing.gradle'
 apply from: 'build.style.gradle'
+apply from: 'build.version.catalog.update.gradle'
