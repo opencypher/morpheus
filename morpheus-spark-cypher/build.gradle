@@ -18,9 +18,14 @@ if (project.hasProperty('testOkapiShade')) {
 }
 
 configurations.implementation {
-    exclude group: 'com.lihaoyi', module: 'utest_2.12'
-    exclude group: 'com.lihaoyi', module: 'acyclic_2.12'
-
+    exclude(
+        group: libs.exclusions.lihaoyi.acyclic.get().group,
+        module: libs.exclusions.lihaoyi.acyclic.get().name
+    )
+    exclude(
+        group: libs.exclusions.lihaoyi.utest.get().group,
+        module: libs.exclusions.lihaoyi.utest.get().name
+    )
 }
 
 dependencies {

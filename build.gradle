@@ -68,46 +68,6 @@ subprojects {
         testImplementation libs.mockito.core
     }
 
-    test {
-        maxHeapSize = '2g'
-
-        // Suggestion from https://docs.gradle.org/current/userguide/performance.html#a_run_tests_in_parallel
-        maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
-
-        // JVM args required by spark (see org.apache.spark.launcher.JavaModuleOptions)
-        jvmArgs(
-                '-XX:+IgnoreUnrecognizedVMOptions',
-                '--add-exports=java.base/sun.nio.ch=ALL-UNNAMED',
-                '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
-                '--add-opens=java.base/java.lang=ALL-UNNAMED',
-                '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
-                '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED',
-                '--add-opens=java.base/java.io=ALL-UNNAMED',
-                '--add-opens=java.base/java.net=ALL-UNNAMED',
-                '--add-opens=java.base/java.nio=ALL-UNNAMED',
-                '--add-opens=java.base/java.util=ALL-UNNAMED',
-                '--add-opens=java.base/java.util.concurrent=ALL-UNNAMED',
-                '--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED',
-                '--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED',
-                '--add-opens=java.base/sun.nio.ch=ALL-UNNAMED',
-                '--add-opens=java.base/sun.nio.cs=ALL-UNNAMED',
-                '--add-opens=java.base/sun.security.action=ALL-UNNAMED',
-                '--add-opens=java.base/sun.util.calendar=ALL-UNNAMED',
-                '--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED',
-                '-Djdk.reflect.useDirectMethodHandle=false'
-        )
-        useJUnitPlatform {
-            includeEngines 'scalatest'
-            testLogging {
-                events("passed", "skipped", "failed", "standard_error")
-            }
-        }
-
-        def testTempDir = file("$buildDir/tmp/test")
-        testTempDir.mkdirs()
-        systemProperty 'java.io.tmpdir', testTempDir.absolutePath
-    }
-
     ext.scalacParameters = [
             '-unchecked',
             '-deprecation',
@@ -119,6 +79,20 @@ subprojects {
     ]
 
     tasks.withType(Test).configureEach {
+        maxHeapSize = '2g'
+
+        useJUnitPlatform {
+            includeEngines 'scalatest'
+        }
+
+        testLogging {
+            events("passed", "skipped", "failed", "standard_error")
+        }
+
+        def testTempDir = layout.buildDirectory.get().dir("tmp/$it.name").asFile
+        testTempDir.mkdirs()
+        systemProperty 'java.io.tmpdir', testTempDir.absolutePath
+
         // JVM args required by spark (see org.apache.spark.launcher.JavaModuleOptions)
         jvmArgs(
                 '-XX:+IgnoreUnrecognizedVMOptions',

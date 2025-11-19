@@ -71,6 +71,11 @@ typelevel-discipline-core = { module = "org.typelevel:discipline-core_2.12", ver
 typelevel-discipline-scalatest = { module = "org.typelevel:discipline-scalatest_2.12", version.ref = "discipline-scalatest" }
 typlevel-claimant = { module = "org.typelevel:claimant_2.12", version.ref = "claimant" }
 upickle = { module = "com.lihaoyi:upickle_2.12", version.ref = "upickle" }
+exclusions-scalacheck = { group = "org.scalacheck", name = "scalacheck_2.12" }
+exclusions-lihaoyi-utest = { group = "com.lihaoyi", name = "utest_2.12" }
+exclusions-lihaoyi-acyclic = { group = "com.lihaoyi", name = "acyclic_2.12" }
+exclusions-slf4j-log4j12 = { group = "org.slf4j", name = "slf4j-log4j12" }
+
 
 [plugins]
 champeau-jmh = "me.champeau.jmh:0.7.3"

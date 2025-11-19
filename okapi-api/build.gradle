@@ -1,8 +1,14 @@
 description = 'Okapi - openCypher API'
 
 configurations.named("implementation").configure {
-    exclude group: 'com.lihaoyi', module: 'utest_2.12'
-    exclude group: 'com.lihaoyi', module: 'acyclic_2.12'
+    exclude(
+            group: libs.exclusions.lihaoyi.acyclic.get().group,
+            module: libs.exclusions.lihaoyi.acyclic.get().name
+    )
+    exclude(
+            group: libs.exclusions.lihaoyi.utest.get().group,
+            module: libs.exclusions.lihaoyi.utest.get().name
+    )
 }
 
 dependencies {
@@ -10,7 +16,8 @@ dependencies {
 
     implementation(libs.opencypher.frontend.get())
             .exclude(
-                group: 'org.scalacheck', module: 'scalacheck_2.12'
+                group: libs.exclusions.scalacheck.get().group,
+                module: libs.exclusions.scalacheck.get().name
             )
 
     implementation libs.typelevel.cats.core

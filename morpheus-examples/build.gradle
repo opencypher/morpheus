@@ -1,8 +1,14 @@
 description = 'Collection of examples for Cypher for Apache Spark'
 
 configurations.named('implementation').configure {
-    exclude group: 'com.lihaoyi', module: 'utest_2.12'
-    exclude group: 'com.lihaoyi', module: 'acyclic_2.12'
+    exclude(
+            group: libs.exclusions.lihaoyi.acyclic.get().group,
+            module: libs.exclusions.lihaoyi.acyclic.get().name
+    )
+    exclude(
+            group: libs.exclusions.lihaoyi.utest.get().group,
+            module: libs.exclusions.lihaoyi.utest.get().name
+    )
 }
 
 dependencies {
@@ -13,7 +19,10 @@ dependencies {
     implementation libs.spark.graphx
     implementation libs.spark.sql
     implementation(libs.spark.catalyst.get())
-        .exclude(group: 'org.slf4j', module: 'slf4j-log4j12')
+        .exclude(
+            group: libs.exclusions.slf4j.log4j12.get().group,
+            module: libs.exclusions.slf4j.log4j12.get().name
+        )
 
     implementation libs.netty.all
     implementation libs.h2
