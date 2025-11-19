@@ -8,7 +8,7 @@ dependencies {
     implementation group: 'org.apache.spark', name: "spark-core".scala(), version: ver.spark
     implementation group: 'org.apache.spark', name: "spark-sql".scala(), version: ver.spark
     implementation group: 'org.apache.spark', name: "spark-hive".scala(), version: ver.spark
-    implementation group: 'org.apache.hadoop', name: 'hadoop-minicluster', version: ver.hadoop
+    implementation group: 'org.apache.hadoop', name: 'hadoop-client-minicluster', version: ver.hadoop
 
     implementation group: 'org.scalatest', name: "scalatest".scala(), version: ver.scalatest
     implementation group: 'org.mockito', name: 'mockito-all', version: ver.mockito

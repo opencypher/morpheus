@@ -206,7 +206,6 @@ Feature "ListOperations": Scenario "Equality between different lists with null s
 Feature "ListOperations": Scenario "Returning nested expressions based on list property"
 Feature "MatchAcceptance": Scenario "Return relationships by collecting them as a list - undirected, starting from two extremes"
 Feature "ListOperations": Scenario "Equality between almost equal nested lists with null should return null"
-Feature "ListOperations": Scenario "Equality of nested lists of different length should return false despite nulls"
 Feature "ListOperations": Scenario "IN should return false if different length lists compared, even if the extra element is null"
 Feature "ListOperations": Scenario "Equality between almost equal lists with null should return null"
 Feature "ListOperations": Scenario "IN should return true when both LHS and RHS contain a nested list alongside a scalar element"
