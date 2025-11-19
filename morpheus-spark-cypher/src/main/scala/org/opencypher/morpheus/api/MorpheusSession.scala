@@ -106,6 +106,7 @@ object MorpheusSession extends Serializable {
 
     // Store Hive tables in local temp folder
     conf.set("spark.sql.warehouse.dir", Files.createTempDirectory("spark-warehouse").toString)
+    conf.set("spark.hadoop.hive.metastore.warehouse.dir", Files.createTempDirectory("hive-warehouse").toString)
     // Configure Hive to run with in-memory Derby (skips writing metastore_db)
     conf.set("javax.jdo.option.ConnectionURL", "jdbc:derby:memory:metastore_db;create=true")
     conf.set("javax.jdo.option.ConnectionDriverName", "org.apache.derby.jdbc.EmbeddedDriver")
