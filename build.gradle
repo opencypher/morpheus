@@ -74,7 +74,7 @@ subprojects {
                 '-Djdk.reflect.useDirectMethodHandle=false'
         )
 
-        def testTempDir = file("$buildDir/tmp/test")
+        def testTempDir = layout.buildDirectory.get().dir("tmp/test").asFile
         testTempDir.mkdirs()
         systemProperty 'java.io.tmpdir', testTempDir.absolutePath
     }
@@ -99,18 +99,18 @@ subprojects {
     }
 
     task sourceJar(type: Jar) {
-        classifier = 'sources'
+        archiveClassifier = 'sources'
         from(sourceSets.main.allSource)
     }
 
     task docJar(type: Jar) {
         dependsOn tasks.scaladoc
-        classifier = 'javadoc'
+        archiveClassifier = 'javadoc'
         from(tasks.scaladoc.destinationDir)
     }
 
     task testJar(type: Jar) {
-        classifier = 'tests'
+        archiveClassifier = 'tests'
         from(sourceSets.test.output)
     }
 
