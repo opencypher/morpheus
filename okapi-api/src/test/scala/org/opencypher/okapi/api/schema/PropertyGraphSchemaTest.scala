@@ -803,8 +803,11 @@ class PropertyGraphSchemaTest extends ApiBaseTest {
         s"${PropertyGraphSchema.CURRENT_VERSION.major + 1}.0",
         s"${PropertyGraphSchema.CURRENT_VERSION.major - 1}.5"
       ).foreach { v =>
-        an[SchemaException] shouldBe thrownBy {
-          PropertyGraphSchema.fromJson(schemaJson(Version(v)))
+        val json = schemaJson(Version(v))
+        withClue(s"json: $json") {
+          an[SchemaException] shouldBe thrownBy {
+            PropertyGraphSchema.fromJson(json)
+          }
         }
       }
     }

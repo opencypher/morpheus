@@ -88,7 +88,7 @@ object PropertyGraphSchemaImpl {
         case other => throw SchemaException(s"Expected Version to be a String or a Number but got $other")
       }
       val version = Version(versionString)
-      if(!version.compatibleWith(PropertyGraphSchema.CURRENT_VERSION)) throw SchemaException("Incompatible Schema versions")
+      if(!version.compatibleWith(PropertyGraphSchema.CURRENT_VERSION)) throw SchemaException(s"Incompatible Schema version: $version")
 
       val labelPropertyMap = read[LabelPropertyMap](json.obj(LABEL_PROPERTY_MAP))
       val relTypePropertyMap = read[RelTypePropertyMap](json.obj(REL_TYPE_PROPERTY_MAP))
