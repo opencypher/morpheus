@@ -74,7 +74,7 @@ subprojects {
                 '-Djdk.reflect.useDirectMethodHandle=false'
         )
 
-        def testTempDir = file("$buildDir/tmp/test")
+        def testTempDir = layout.buildDirectory.get().dir("tmp/test").asFile
         testTempDir.mkdirs()
         systemProperty 'java.io.tmpdir', testTempDir.absolutePath
     }
@@ -99,18 +99,18 @@ subprojects {
     }
 
     task sourceJar(type: Jar) {
-        classifier = 'sources'
+        archiveClassifier = 'sources'
         from(sourceSets.main.allSource)
     }
 
     task docJar(type: Jar) {
         dependsOn tasks.scaladoc
-        classifier = 'javadoc'
+        archiveClassifier = 'javadoc'
         from(tasks.scaladoc.destinationDir)
     }
 
     task testJar(type: Jar) {
-        classifier = 'tests'
+        archiveClassifier = 'tests'
         from(sourceSets.test.output)
     }
 
@@ -125,14 +125,14 @@ subprojects {
     }
 
     task dependencySearch(type: DependencyInsightReportTask) {
-        description 'Searches all projects for a dependency'
-        group 'help'
+        description = 'Searches all projects for a dependency'
+        group = 'help'
     }
 
     task runApp {
         dependsOn tasks.classes
-        group 'run'
-        description 'Run a custom Scala app (use -PmainClass=com.my.package.App)'
+        group = 'run'
+        description = 'Run a custom Scala app (use -PmainClass=com.my.package.App)'
         doLast {
             javaexec {
                 classpath = sourceSets.main.runtimeClasspath
@@ -143,7 +143,7 @@ subprojects {
 
     // copied from https://stackoverflow.com/a/38058671/568723
     task depSize  {
-        description 'Lists all dependencies sorted by their size'
+        description = 'Lists all dependencies sorted by their size'
         doLast {
             final formatStr = "%,10.2f"
             final conf = configurations.default
