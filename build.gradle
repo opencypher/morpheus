@@ -143,18 +143,30 @@ subprojects {
     }
 
     // copied from https://stackoverflow.com/a/38058671/568723
-    task depSize  {
+    tasks.register('depSize') {
         description = 'Lists all dependencies sorted by their size'
+
+        doFirst {
+            configurations {
+                resolvableDefault {
+                    extendsFrom configurations.default
+                    canBeResolved = true
+                    canBeConsumed = false
+                    description = 'Resolvable default configuration.'
+                }
+            }
+        }
+
         doLast {
             final formatStr = "%,10.2f"
-            final conf = configurations.default
+            final conf = configurations.resolvableDefault
             final size = conf.collect { it.length() / (1024 * 1024) }.sum()
             final out = new StringBuffer()
-            out << 'Total dependencies size:'.padRight(45)
+            out << 'Total dependencies size:'.padRight(65)
             out << "${String.format(formatStr, size)} Mb\n\n"
             conf.sort { -it.length() }
                     .each {
-                        out << "${it.name}".padRight(45)
+                        out << "${it.name}".padRight(65)
                         out << "${String.format(formatStr, (it.length() / 1024))} kb\n"
                     }
             println(out)
