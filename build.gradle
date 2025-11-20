@@ -15,6 +15,12 @@ apply plugin: 'base'
 allprojects {
     group = 'org.opencypher'
     version = ver.self
+
+    // Gradle version-catalog-update has to be able to resolve the dependencies.
+    repositories {
+        mavenCentral()
+        mavenLocal()
+    }
 }
 
 apply from: 'build.licenses.gradle'
@@ -22,11 +28,6 @@ apply from: 'build.licenses.gradle'
 subprojects {
     apply plugin: 'scala'
     apply plugin: 'java-library'
-
-    repositories {
-        mavenCentral()
-        mavenLocal()
-    }
 
     dependencies {
         implementation libs.scala.library
