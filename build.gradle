@@ -25,6 +25,7 @@ allprojects {
     java {
         toolchain {
             languageVersion = JavaLanguageVersion.of(21)
+            vendor = JvmVendorSpec.ADOPTIUM // Gradle constant for Temurin
         }
     }
 }
