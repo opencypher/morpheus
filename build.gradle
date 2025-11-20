@@ -21,6 +21,12 @@ allprojects {
         mavenCentral()
         mavenLocal()
     }
+
+    java {
+        toolchain {
+            languageVersion = JavaLanguageVersion.of(21)
+        }
+    }
 }
 
 apply from: 'build.licenses.gradle'
