@@ -145,7 +145,7 @@ subprojects {
         description = 'Run a custom Scala app (use -PmainClass=com.my.package.App)'
 
         classpath = sourceSets.main.runtimeClasspath
-        mainClass = project.getProperty("mainClass")
+        mainClass = project.provider { project.findProperty('mainClass') }
     }
 
     tasks.named('runApp').configure {
