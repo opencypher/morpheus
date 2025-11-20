@@ -75,7 +75,7 @@ testing-scala-scalatest = { module = "org.scalatest:scalatest_2.12", version.ref
 [plugins]
 champeau-jmh = "me.champeau.jmh:0.7.3"
 # @pin - version is self-hosted
-license = "com.github.hierynomus.license:0.16.2-37dde1f"
+license = "com.github.hierynomus.license:0.16.3-63da64d"
 scalastyle = "com.github.alisiikh.scalastyle:3.5.0"
 shadowjar = "com.github.johnrengelman.shadow:7.1.2"
 versionCatalogUpdate = "nl.littlerobots.version-catalog-update:1.0.1"
