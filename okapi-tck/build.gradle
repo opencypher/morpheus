@@ -7,8 +7,8 @@ dependencies {
     api libs.opencypher.tck
     api libs.opencypher.tck.api
 
-    implementation libs.apache.commons.text
-    implementation libs.testing.scala.scalatest
+    api libs.apache.commons.text
+    api libs.testing.scala.scalatest
 }
 
 // We ignore the license check here for unknown historic reasons.

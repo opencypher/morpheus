@@ -5,19 +5,19 @@ dependencies {
     api project(':okapi-testing')
     api project(':okapi-neo4j-io-testing')
 
-    implementation libs.scala.spark.core
-    implementation libs.scala.spark.sql
-    implementation libs.scala.spark.hive
-    implementation libs.hadoop.client.minicluster
+    api libs.scala.spark.core
+    api libs.scala.spark.sql
+    api libs.scala.spark.hive
+    api libs.hadoop.client.minicluster
 
-    implementation libs.testing.scala.scalatest
-    implementation libs.testing.mockito.all
+    api libs.testing.scala.scalatest
+    api libs.testing.mockito.all
 
     testImplementation project(':okapi-api').sourceSets.test.output
 
     testImplementation libs.h2
     testImplementation libs.scala.claimant
-    implementation(libs.scala.upickle.get())
+    api(libs.scala.upickle.get())
         .exclude(group: libs.exclusions.utest.get().group, module: libs.exclusions.utest.get().name)
         .exclude(group: libs.exclusions.acyclic.get().group, module: libs.exclusions.acyclic.get().name)
 

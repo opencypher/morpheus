@@ -4,8 +4,8 @@ dependencies {
     api project(':okapi-trees')
     api project(':okapi-api')
 
-    implementation libs.scala.fastparse
-    implementation libs.scala.typelevel.cats.core
+    api libs.scala.fastparse
+    api libs.scala.typelevel.cats.core
 
     testImplementation project(':okapi-testing')
 }

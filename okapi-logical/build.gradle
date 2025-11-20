@@ -3,7 +3,7 @@ description = 'Okapi Logical - Logical representation of Cypher queries'
 dependencies {
     api project(':okapi-ir')
 
-    implementation libs.opencypher.expressions
+    api libs.opencypher.expressions
 
     testImplementation project(':okapi-testing')
     testImplementation libs.opencypher.frontend

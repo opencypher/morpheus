@@ -37,14 +37,14 @@ subprojects {
     apply plugin: 'java-library'
 
     dependencies {
-        implementation libs.scala.library
+        api libs.scala.library
 
         // Seems we need to lock these down, otherwise we get runtime errors on reflection
-        implementation libs.scala.lang.compiler
-        implementation libs.scala.lang.reflect
+        api libs.scala.lang.compiler
+        api libs.scala.lang.reflect
 
-        implementation libs.log4j.api
-        implementation libs.scala.log4j.api
+        api libs.log4j.api
+        api libs.scala.log4j.api
 
         testImplementation libs.log4j.core
         testImplementation libs.testing.scala.scalatest
