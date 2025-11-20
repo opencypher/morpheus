@@ -13,7 +13,7 @@ apply from: 'build.params.gradle'
 apply plugin: 'base'
 
 allprojects {
-    group = 'org.opencypher'
+    group = 'org.opencypher.morpheus'
     version = ver.self
 
     // Gradle version-catalog-update has to be able to resolve the dependencies.
