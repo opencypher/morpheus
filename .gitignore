@@ -28,3 +28,6 @@ gradle-app.setting
 # Demo data sets
 yelp_json
 yelp_graph
+
+# For some reason this directory is created when running the tests
+/morpheus-testing/target/
