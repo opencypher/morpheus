@@ -1,23 +1,23 @@
 [versions]
 apache-commons-text = "1.14.0"
 bctls = "1.59"
-cats = "1.6.0"
+cats = "2.13.0"
 claimant = "0.0.2"
 cypher-frontend = "9.0.20190305"
 cypher-tck = "1.0.0-M14"
 discipline = "0.11.0"
-eff = "5.0.0"
+eff = "7.0.6"
 fastparse = "2.1.0"
-h2 = "1.4.196"
+h2 = "2.4.240"
 # Note: has shared transitive dependencies with spark
 hadoop = "3.3.4"
 junit-main = "4.12"
 junit-runner = "1.0.2"
-log4j-main = "2.11.0"
-log4j-scala = "11.0"
+log4j-main = "2.25.2"
+log4j-scala = "13.1.0"
 mockito = "1.10.19"
 neo4j-driver = "1.7.2"
-netty = "4.1.24.Final"
+netty = "4.2.7.Final"
 # @pin - let's prevent automatic updates for the moment
 scala-full = "2.12.20"
 # @pin - let's prevent automatic updates for the moment
@@ -26,7 +26,7 @@ scalacheck = "1.14.0"
 scalatest = "3.0.6"
 spark = "3.5.7"
 testcontainers = "2.0.2"
-upickle = "0.7.1"
+upickle = "4.4.1"
 
 [libraries]
 apache-commons-text = { module = "org.apache.commons:commons-text", version.ref = "apache-commons-text" }

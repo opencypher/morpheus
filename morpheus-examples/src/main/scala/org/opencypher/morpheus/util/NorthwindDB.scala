@@ -38,7 +38,7 @@ object NorthwindDB {
   def init(sqlDataSourceConfig: SqlDataSourceConfig.Jdbc): Unit = {
 
     withConnection(sqlDataSourceConfig) { connection =>
-      connection.execute("DROP SCHEMA IF EXISTS NORTHWIND")
+      connection.execute("DROP SCHEMA IF EXISTS NORTHWIND CASCADE")
       connection.execute("CREATE SCHEMA NORTHWIND")
       connection.setSchema("NORTHWIND")
 

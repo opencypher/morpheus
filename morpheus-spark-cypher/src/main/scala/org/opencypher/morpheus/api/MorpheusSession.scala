@@ -26,7 +26,6 @@
  */
 package org.opencypher.morpheus.api
 
-import java.io.File
 import java.util.UUID
 
 import org.apache.spark.SparkConf
@@ -42,6 +41,7 @@ import org.opencypher.okapi.impl.exception.UnsupportedOperationException
 import org.opencypher.okapi.relational.api.graph.RelationalCypherSession
 import org.opencypher.okapi.relational.api.planning.RelationalCypherResult
 
+import java.nio.file.Files
 import scala.reflect.runtime.universe._
 
 /**
@@ -94,18 +94,19 @@ object MorpheusSession extends Serializable {
     */
   def create(implicit sparkSession: SparkSession): MorpheusSession = new MorpheusSession(sparkSession)
 
-  val localSparkConf: SparkConf = {
+  def localSparkConf: SparkConf = {
     val conf = new SparkConf(true)
     conf.set("spark.sql.codegen.wholeStage", "true")
     conf.set("spark.sql.shuffle.partitions", "12")
-    conf.set("spark.default.parallelism", "8")
+    conf.set("spark.default.parallelism", Runtime.getRuntime.availableProcessors().toString)
     // Required for left outer join without join expressions in OPTIONAL MATCH (leads to cartesian product)
     conf.set("spark.sql.crossJoin.enabled", "true")
     // We should probably remove this setting. Hide errors like: You're using untyped Scala UDF, which does not have the input type information. Spark may blindly pass null to the Scala closure with primitive-type argument, and the closure will see the default value of the Java type for the null argument, e.g. `udf((x: Int) => x, IntegerType)`, the result is 0 for null input.
     conf.set("spark.sql.legacy.allowUntypedScalaUDF", "true")
 
     // Store Hive tables in local temp folder
-    conf.set("spark.sql.warehouse.dir", s"${System.getProperty("java.io.tmpdir")}${File.separator}spark-warehouse-${System.nanoTime()}")
+    conf.set("spark.sql.warehouse.dir", Files.createTempDirectory("spark-warehouse").toString)
+    conf.set("spark.hadoop.hive.metastore.warehouse.dir", Files.createTempDirectory("hive-warehouse").toString)
     // Configure Hive to run with in-memory Derby (skips writing metastore_db)
     conf.set("javax.jdo.option.ConnectionURL", "jdbc:derby:memory:metastore_db;create=true")
     conf.set("javax.jdo.option.ConnectionDriverName", "org.apache.derby.jdbc.EmbeddedDriver")

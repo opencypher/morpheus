@@ -28,7 +28,7 @@ CREATE TABLE Employees
         ReportsTo
     ) REFERENCES Employees (
         EmployeeID
-    ),
+    )
 
 );
 

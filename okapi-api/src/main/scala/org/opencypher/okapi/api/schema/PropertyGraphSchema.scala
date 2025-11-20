@@ -48,7 +48,11 @@ object PropertyGraphSchema {
   )
 
   def fromJson(jsonString: String): PropertyGraphSchema =
-    upickle.default.read[PropertyGraphSchema](jsonString)
+    try upickle.default.read[PropertyGraphSchema](jsonString)
+    catch {
+      case throwable: Throwable if Option(throwable.getCause).exists(_.getClass.getPackageName.startsWith("org.opencypher")) =>
+        throw throwable.getCause
+    }
 }
 
 /**

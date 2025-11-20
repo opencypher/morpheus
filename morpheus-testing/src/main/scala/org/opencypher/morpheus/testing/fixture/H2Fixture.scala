@@ -39,7 +39,7 @@ trait H2Fixture extends SparkSessionFixture {
   }
 
   def dropH2Database(cfg: SqlDataSourceConfig.Jdbc, name: String): Unit = {
-    withConnection(cfg) { conn => conn.execute(s"DROP SCHEMA IF EXISTS $name")}
+    withConnection(cfg) { conn => conn.execute(s"DROP SCHEMA IF EXISTS $name CASCADE")}
   }
 
   def freshH2Database(cfg: SqlDataSourceConfig.Jdbc, name: String): Unit = {
