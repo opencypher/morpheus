@@ -64,3 +64,8 @@ shadowJar {
 }
 
 assemble.dependsOn shadowJar
+
+// TODO: this is a way but not the right way to achieve this
+tasks.named('publishFullPublicationToMavenLocal').configure {
+    enabled = false
+}

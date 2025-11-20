@@ -47,7 +47,8 @@ subprojects {
             // We do not want to have dev and full publications for okapi-shade
             if (project.name != "okapi-shade") {
                 dev(MavenPublication) {
-                    from components.java
+                    artifact tasks.jar
+                    artifact tasks.sourceJar
 
                     afterEvaluate {
                         pom pomConfig
@@ -58,7 +59,8 @@ subprojects {
                 }
 
                 full(MavenPublication) {
-                    from components.java
+                    artifact tasks.jar
+                    artifact tasks.sourceJar
 
                     afterEvaluate {
                         pom pomConfig
