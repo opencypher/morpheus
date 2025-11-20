@@ -90,56 +90,81 @@ subprojects {
             '-Ywarn-adapted-args'
     ]
 
-    tasks.withType(ScalaCompile) {
+    tasks.withType(ScalaCompile).configureEach {
         options.encoding = 'UTF-8'
         scalaCompileOptions.additionalParameters = scalacParameters
     }
 
-    tasks.withType(ScalaDoc) {
+    tasks.withType(ScalaDoc).configureEach {
         scalaDocOptions.additionalParameters = scalacParameters
     }
 
-    task sourceJar(type: Jar) {
+    tasks.register('sourceJar', Jar) {
         archiveClassifier = 'sources'
         from(sourceSets.main.allSource)
     }
 
-    task docJar(type: Jar) {
+    tasks.register('docJar', Jar) {
         dependsOn tasks.scaladoc
         archiveClassifier = 'javadoc'
         from(tasks.scaladoc.destinationDir)
     }
 
-    task testJar(type: Jar) {
+    tasks.register('testJar', Jar) {
         archiveClassifier = 'tests'
         from(sourceSets.test.output)
     }
 
-    tasks.withType(Jar) {
+    tasks.withType(Jar).configureEach {
         from(tasks.generateLicensesFiles) {
             into("META-INF/")
         }
     }
 
-    task licenseFile {
+    tasks.register('licenseFile') {
         outputs.file(project.parent.file('LICENSE.txt'))
     }
 
-    task dependencySearch(type: DependencyInsightReportTask) {
+    tasks.register('dependencySearch', DependencyInsightReportTask) {
         description = 'Searches all projects for a dependency'
         group = 'help'
     }
 
-    task runApp {
+    // TODO: it looks like this is only used for `:morpheus-examples` - we don't need it for all sub-projects 🤔
+    // see: README.md:163
+    tasks.register('runApp', JavaExec) {
         dependsOn tasks.classes
         group = 'run'
         description = 'Run a custom Scala app (use -PmainClass=com.my.package.App)'
-        doLast {
-            javaexec {
-                classpath = sourceSets.main.runtimeClasspath
-                main = project.getProperty("mainClass")
-            }
-        }
+
+        classpath = sourceSets.main.runtimeClasspath
+        mainClass = project.getProperty("mainClass")
+    }
+
+    tasks.named('runApp').configure {
+        jvmArgs = [
+                '-Xmx2g',
+                '-Dconfig.file=app.conf',
+                '-XX:+IgnoreUnrecognizedVMOptions',
+                '--add-exports=java.base/sun.nio.ch=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang.invoke=ALL-UNNAMED',
+                '--add-opens=java.base/java.lang.reflect=ALL-UNNAMED',
+                '--add-opens=java.base/java.io=ALL-UNNAMED',
+                '--add-opens=java.base/java.net=ALL-UNNAMED',
+                '--add-opens=java.base/java.nio=ALL-UNNAMED',
+                '--add-opens=java.base/java.util=ALL-UNNAMED',
+                '--add-opens=java.base/java.util.concurrent=ALL-UNNAMED',
+                '--add-opens=java.base/java.util.concurrent.atomic=ALL-UNNAMED',
+                '--add-opens=java.base/jdk.internal.ref=ALL-UNNAMED',
+                '--add-opens=java.base/sun.nio.ch=ALL-UNNAMED',
+                '--add-opens=java.base/sun.nio.cs=ALL-UNNAMED',
+                '--add-opens=java.base/sun.security.action=ALL-UNNAMED',
+                '--add-opens=java.base/sun.util.calendar=ALL-UNNAMED',
+                '--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED',
+                '-Djdk.reflect.useDirectMethodHandle=false'
+        ]
     }
 
     // copied from https://stackoverflow.com/a/38058671/568723

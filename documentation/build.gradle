@@ -1,13 +1,13 @@
 group = "${group}.documentation"
 
-task asciidocJar(type: Jar) {
+tasks.register('asciidocJar', Jar) {
     group = 'documentation'
     description = 'Package asciidoc source files.'
     archiveClassifier = 'asciidoc'
     from("asciidoc")
 }
 
-task aggregatedScalaDoc(type: ScalaDoc) {
+tasks.register('aggregatedScalaDoc', ScalaDoc) {
     ext.fromProjects = [
             project(':okapi-api'),
             project(':morpheus-spark-cypher'),
@@ -25,7 +25,7 @@ task aggregatedScalaDoc(type: ScalaDoc) {
     scalaDocOptions.additionalParameters = scalacParameters
 }
 
-task aggregatedScalaDocJar(type: Jar) {
+tasks.register('aggregatedScalaDocJar', Jar) {
     archiveClassifier = 'javadoc'
     from tasks.aggregatedScalaDoc
 }
