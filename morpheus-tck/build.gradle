@@ -15,8 +15,8 @@ dependencies {
 
 // split scenario name / key-words with | --> debugTCKScenarios -Pscenarios = 'sc1|sc2|..'
 task debugTCKScenarios() {
-    description 'Generates scala-test from TCK scenarios (keywords of the scenario names suffice)'
-    group 'generator' 
+    description = 'Generates scala-test from TCK scenarios (keywords of the scenario names suffice)'
+    group = 'generator'
     def outPath = project.findProperty('outDir') ?: 'src/test/scala/org/opencypher/morpheus/testing/'
     def resDir = project.findProperty('resDir') ?: 'src/test/resources/'
     def scenarios = project.findProperty('scenarios') ?: ''
