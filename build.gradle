@@ -93,7 +93,8 @@ subprojects {
             '-feature',
             '-Xfatal-warnings',
             '-Xfuture',
-            '-Ypartial-unification',
+            // Not available in Scala 2.13
+            // '-Ypartial-unification',
             '-Ywarn-adapted-args'
     ]
 
