@@ -3,5 +3,5 @@ description = 'Okapi - Neo4j IO'
 dependencies {
     api project(':okapi-api')
 
-    implementation libs.neo4j.java.driver
+    api libs.neo4j.java.driver
 }

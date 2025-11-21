@@ -50,6 +50,28 @@ subprojects {
                     artifact tasks.jar
                     artifact tasks.sourceJar
 
+                    // TODO: VN: I don't quite like this - let's figure out a more generic way
+                    pom.withXml {
+                        def dependenciesNode = asNode().appendNode('dependencies')
+                        configurations.runtimeClasspath.allDependencies.each { dep ->
+                            if (dep.group && dep.name && dep.version) {
+                                def depNode = dependenciesNode.appendNode('dependency')
+                                depNode.appendNode('groupId', dep.group)
+                                depNode.appendNode('artifactId', dep.name)
+                                depNode.appendNode('version', dep.version)
+                                depNode.appendNode('scope', 'compile')
+                                if (dep.hasProperty('excludeRules') && dep.excludeRules) {
+                                    def exclusionsNode = depNode.appendNode('exclusions')
+                                    dep.excludeRules.each { rule ->
+                                        def exclusionNode = exclusionsNode.appendNode('exclusion')
+                                        exclusionNode.appendNode('groupId', rule.group ?: '*')
+                                        exclusionNode.appendNode('artifactId', rule.module ?: '*')
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     afterEvaluate {
                         pom pomConfig
                         artifacts = pub.dev.artifacts
@@ -61,6 +83,29 @@ subprojects {
                 full(MavenPublication) {
                     artifact tasks.jar
                     artifact tasks.sourceJar
+
+                    // TODO: VN: I don't quite like this - let's figure out a more generic way
+                    pom.withXml {
+                        def dependenciesNode = asNode().appendNode('dependencies')
+                        configurations.runtimeClasspath.allDependencies.each { dep ->
+                            if (dep.group && dep.name && dep.version) {
+                                def depNode = dependenciesNode.appendNode('dependency')
+                                depNode.appendNode('groupId', dep.group)
+                                depNode.appendNode('artifactId', dep.name)
+                                depNode.appendNode('version', dep.version)
+                                depNode.appendNode('scope', 'compile')
+                                if (dep.hasProperty('excludeRules') && dep.excludeRules) {
+                                    def exclusionsNode = depNode.appendNode('exclusions')
+                                    dep.excludeRules.each { rule ->
+                                        def exclusionNode = exclusionsNode.appendNode('exclusion')
+                                        exclusionNode.appendNode('groupId', rule.group ?: '*')
+                                        exclusionNode.appendNode('artifactId', rule.module ?: '*')
+                                    }
+                                }
+                            }
+                        }
+                    }
+
 
                     afterEvaluate {
                         pom pomConfig

@@ -13,7 +13,7 @@ if (project.hasProperty('testOkapiShade')) {
         }
     }
     dependencies {
-        implementation group: 'org.opencypher', name: 'okapi-shade', version: ver.self
+        api group: 'org.opencypher', name: 'okapi-shade', version: ver.self
     }
 }
 
@@ -22,12 +22,12 @@ dependencies {
     api project(':okapi-neo4j-io')
     api project(':graph-ddl')
 
-    implementation(libs.scala.upickle.get())
+    api(libs.scala.upickle.get())
         .exclude(group: libs.exclusions.utest.get().group, module: libs.exclusions.utest.get().name)
         .exclude(group: libs.exclusions.acyclic.get().group, module: libs.exclusions.acyclic.get().name)
 
-    implementation libs.scala.typelevel.cats.core
-    implementation libs.neo4j.java.driver
+    api libs.scala.typelevel.cats.core
+    api libs.neo4j.java.driver
 
     compileOnly libs.scala.spark.core
     compileOnly libs.scala.spark.sql

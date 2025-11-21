@@ -3,11 +3,11 @@ description = 'Okapi IR - Declarative representation of Cypher queries'
 dependencies {
     api project(':okapi-api')
 
-    implementation libs.opencypher.expressions
-    implementation libs.opencypher.ast
-    implementation libs.opencypher.rewriting
-    implementation libs.opencypher.frontend
-    implementation libs.scala.eff
+    api libs.opencypher.expressions
+    api libs.opencypher.ast
+    api libs.opencypher.rewriting
+    api libs.opencypher.frontend
+    api libs.scala.eff
 
     testImplementation project(':okapi-testing')
 

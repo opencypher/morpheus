@@ -4,10 +4,10 @@ dependencies {
     api project(':okapi-neo4j-io')
     api project(':okapi-testing')
 
-    implementation libs.neo4j.java.driver
-    implementation libs.bouncycastle
-    implementation libs.testing.scala.scalatest
-    implementation libs.testcontainers.neo4j
+    api libs.neo4j.java.driver
+    api libs.bouncycastle
+    api libs.testing.scala.scalatest
+    api libs.testcontainers.neo4j
 }
 
 // We ignore the license check here for unknown historic reasons.
