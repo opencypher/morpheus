@@ -26,7 +26,7 @@
  */
 package org.opencypher.morpheus.examples
 
-class UpdateExampleTest extends ExampleTest {
+class UpdateExampleTest extends ExampleTestBase {
   it("should produce the correct output") {
     validate(UpdateExample.main(Array.empty),
       getClass.getResource("/example_outputs/UpdateExample.out").toURI)

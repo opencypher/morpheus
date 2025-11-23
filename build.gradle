@@ -12,6 +12,8 @@ plugins {
 apply from: 'build.params.gradle'
 apply plugin: 'base'
 
+
+
 allprojects {
     group = 'org.opencypher.morpheus'
     version = ver.self
@@ -36,6 +38,10 @@ subprojects {
     apply plugin: 'scala'
     apply plugin: 'java-library'
 
+    configurations {
+        mockitoAgent
+    }
+
     dependencies {
         api libs.scala.library
 
@@ -49,15 +55,28 @@ subprojects {
         testImplementation libs.log4j.core
         testImplementation libs.testing.scala.scalatest
         testImplementation libs.testing.scala.scalacheck
-        testImplementation libs.testing.junit
-        testImplementation libs.testing.mockito.all
-        testRuntimeOnly libs.testing.junit.platform.runner
+        testImplementation libs.testing.mockito.core
+        mockitoAgent(libs.testing.mockito.core) {
+            transitive = false
+        }
+        testImplementation libs.testing.scalatest.scalacheck
+        testImplementation libs.testing.scalatest.mockito
+        testImplementation libs.testing.junit.platform.launcher
+
+        testRuntimeOnly libs.testing.junit.platform.engine
+        testRuntimeOnly libs.testing.scalatest.junit
     }
 
     test {
         maxHeapSize = "2g"
         maxParallelForks = Runtime.runtime.availableProcessors().intdiv(2) ?: 1
-        useJUnit()
+
+        useJUnitPlatform {
+            includeEngines 'scalatest'
+            testLogging {
+                events("failed", "standard_error")
+            }
+        }
 
         // JVM args required by spark (see org.apache.spark.launcher.JavaModuleOptions)
         jvmArgs(
@@ -81,6 +100,7 @@ subprojects {
                 '--add-opens=java.security.jgss/sun.security.krb5=ALL-UNNAMED',
                 '-Djdk.reflect.useDirectMethodHandle=false'
         )
+        jvmArgs += "-javaagent:${configurations.mockitoAgent.asPath}"
 
         def testTempDir = layout.buildDirectory.get().dir("tmp/test").asFile
         testTempDir.mkdirs()

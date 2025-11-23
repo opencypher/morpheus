@@ -15,7 +15,7 @@ dependencies {
 
     api libs.scala.fastparse
 
-    testImplementation libs.scala.typelevel.discipline
+    testImplementation libs.scala.typelevel.discipline.core
+    testImplementation libs.scala.typelevel.discipline.scalatest
     testImplementation libs.scala.typelevel.cats.laws
-    testImplementation libs.testing.junit
 }

@@ -26,7 +26,7 @@
  */
 package org.opencypher.morpheus.api.io.neo4j
 
-import org.junit.rules.TemporaryFolder
+import org.apache.commons.io.FileUtils
 import org.opencypher.morpheus.api.io.neo4j.Neo4jBulkCSVDataSink._
 import org.opencypher.morpheus.impl.acceptance.ScanGraphInit
 import org.opencypher.morpheus.impl.table.SparkTable
@@ -36,25 +36,26 @@ import org.opencypher.okapi.api.graph.{GraphName, Namespace}
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.scalatest.BeforeAndAfterAll
 
+import java.nio.file.{Files, Path}
 import scala.io.Source
 
 class Neo4jBulkCSVDataSinkTest extends MorpheusTestSuite with TeamDataFixture with ScanGraphInit with BeforeAndAfterAll {
-  protected val tempDir = new TemporaryFolder()
+  protected var tempDir: Path = _
 
   private val graphName = GraphName("teamdata")
   private val namespace = Namespace("teamDatasource")
 
   override protected def beforeAll(): Unit = {
     super.beforeAll()
-    tempDir.create()
+    tempDir = Files.createTempDirectory(getClass.getSimpleName)
     val graph: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph(dataFixture)
-    val dataSource = new Neo4jBulkCSVDataSink(tempDir.getRoot.getAbsolutePath)
+    val dataSource = new Neo4jBulkCSVDataSink(tempDir.toAbsolutePath.toString)
     dataSource.store(graphName, graph)
     morpheus.catalog.register(namespace, dataSource)
   }
 
   protected override def afterAll(): Unit = {
-    tempDir.delete()
+    FileUtils.deleteDirectory(tempDir.toFile)
     super.afterAll()
   }
 
