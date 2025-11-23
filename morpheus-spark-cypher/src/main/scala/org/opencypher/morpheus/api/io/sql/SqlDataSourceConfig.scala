@@ -27,12 +27,7 @@
 package org.opencypher.morpheus.api.io.sql
 
 import org.opencypher.morpheus.api.io.{FileFormat, HiveFormat, JdbcFormat, StorageFormat}
-import ujson.Arr
-import ujson.Bool
-import ujson.Null
-import ujson.Num
 import ujson.Obj
-import ujson.Str
 import ujson.Value
 
 import scala.util.{Failure, Success, Try}

@@ -12,8 +12,6 @@ plugins {
 apply from: 'build.params.gradle'
 apply plugin: 'base'
 
-
-
 allprojects {
     group = 'org.opencypher.morpheus'
     version = ver.self
