@@ -37,13 +37,12 @@ import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 
 class Neo4jPropertyGraphDataSourceWriteTest
-  extends MorpheusTestSuite
+    extends MorpheusTestSuite
     with Neo4jServerFixture
-    with ScanGraphInit{
+    with ScanGraphInit {
 
   it("can write a graph to Neo4j") {
-    val g = initGraph(
-      """
+    val g = initGraph("""
         |CREATE (a:A {val: 1})-[:REL {val: 3}]->(b:B {val: 2})
         |CREATE (b)-[:REL {val: 4}]->(a)
       """.stripMargin)
@@ -52,10 +51,15 @@ class Neo4jPropertyGraphDataSourceWriteTest
 
     dataSource.store(GraphName("g1"), g)
 
-    neo4jConfig.cypherWithNewSession("MATCH (n)-[r]->(m) RETURN n.val, r.val, m.val").map(x => CypherMap(x.toSeq:_*)).toBag should equal(Bag(
-      CypherMap("n.val" -> 1, "r.val" -> 3, "m.val" -> 2),
-      CypherMap("n.val" -> 2, "r.val" -> 4, "m.val" -> 1)
-    ))
+    neo4jConfig
+      .cypherWithNewSession("MATCH (n)-[r]->(m) RETURN n.val, r.val, m.val")
+      .map(x => CypherMap(x.toSeq: _*))
+      .toBag should equal(
+      Bag(
+        CypherMap("n.val" -> 1, "r.val" -> 3, "m.val" -> 2),
+        CypherMap("n.val" -> 2, "r.val" -> 4, "m.val" -> 1)
+      )
+    )
   }
 
   override def dataFixture: String = ""

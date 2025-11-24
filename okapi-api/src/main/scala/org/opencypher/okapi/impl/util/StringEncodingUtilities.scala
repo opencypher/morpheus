@@ -34,7 +34,8 @@ object StringEncodingUtilities {
 
   val relTypePrefix: String = "relType_"
 
-  protected val maxCharactersInHexStringEncoding: Int = 4 // Hex string encoding of a `Char` is up to 4 characters
+  protected val maxCharactersInHexStringEncoding: Int =
+    4 // Hex string encoding of a `Char` is up to 4 characters
 
   implicit class CharOps(val c: Char) extends AnyVal {
     def isAscii: Boolean = c.toInt <= 127
@@ -65,10 +66,11 @@ object StringEncodingUtilities {
     /**
       * Encodes special characters in a string.
       *
-      * The encoded string contains only ASCII letters, numbers, '_', and '@'. The encoded string is compatible
-      * with both SQL column names and file paths.
+      * The encoded string contains only ASCII letters, numbers, '_', and '@'. The encoded string is
+      * compatible with both SQL column names and file paths.
       *
-      * @return encoded string
+      * @return
+      *   encoded string
       */
     def encodeSpecialCharacters: String = {
       val sb = new StringBuilder
@@ -96,7 +98,8 @@ object StringEncodingUtilities {
     /**
       * Recovers the original string from a string encoded with [[encodeSpecialCharacters]].
       *
-      * @return original string
+      * @return
+      *   original string
       */
     def decodeSpecialCharacters: String = {
       val sb = new StringBuilder
@@ -106,8 +109,10 @@ object StringEncodingUtilities {
           val charToDecode = s(index)
           val nextIndex = if (charToDecode == '@') {
             val encodedHexStringStart = index + 1
-            val indexAfterHexStringEnd = encodedHexStringStart + maxCharactersInHexStringEncoding
-            val hexString = s.substring(encodedHexStringStart, indexAfterHexStringEnd)
+            val indexAfterHexStringEnd =
+              encodedHexStringStart + maxCharactersInHexStringEncoding
+            val hexString =
+              s.substring(encodedHexStringStart, indexAfterHexStringEnd)
             sb.append(hexString.parseHex)
             indexAfterHexStringEnd
           } else {

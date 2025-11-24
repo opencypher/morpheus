@@ -29,14 +29,20 @@ package org.opencypher.morpheus.impl.graph
 import org.opencypher.morpheus.api.MorpheusSession
 import org.opencypher.morpheus.impl.table.SparkTable.DataFrameTable
 import org.opencypher.morpheus.schema.MorpheusSchema._
-import org.opencypher.okapi.relational.api.graph.{RelationalCypherGraph, RelationalCypherGraphFactory}
+import org.opencypher.okapi.relational.api.graph.{
+  RelationalCypherGraph,
+  RelationalCypherGraphFactory
+}
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 
-case class MorpheusGraphFactory()(implicit val session: MorpheusSession) extends RelationalCypherGraphFactory[DataFrameTable] {
+case class MorpheusGraphFactory()(implicit val session: MorpheusSession)
+    extends RelationalCypherGraphFactory[DataFrameTable] {
   override type Graph = RelationalCypherGraph[DataFrameTable]
-  override def unionGraph(graphs: RelationalCypherGraph[DataFrameTable]*)(implicit context: RelationalRuntimeContext[DataFrameTable]): Graph = {
-    val unionGraph = super.unionGraph(graphs:_*)
-    unionGraph.schema.asMorpheus //to check for schema compatibility
+  override def unionGraph(
+    graphs: RelationalCypherGraph[DataFrameTable]*
+  )(implicit context: RelationalRuntimeContext[DataFrameTable]): Graph = {
+    val unionGraph = super.unionGraph(graphs: _*)
+    unionGraph.schema.asMorpheus // to check for schema compatibility
     unionGraph
   }
 }

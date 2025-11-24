@@ -45,7 +45,8 @@ import org.opencypher.okapi.trees.AbstractTreeNode
 
 import scala.reflect.runtime.universe.TypeTag
 
-abstract class RelationalOperator[T <: Table[T] : TypeTag] extends AbstractTreeNode[RelationalOperator[T]] {
+abstract class RelationalOperator[T <: Table[T]: TypeTag]
+    extends AbstractTreeNode[RelationalOperator[T]] {
 
   def header: RecordHeader = children.head.header
 
@@ -61,8 +62,9 @@ abstract class RelationalOperator[T <: Table[T] : TypeTag] extends AbstractTreeN
 
   def maybeReturnItems: Option[Seq[Var]] = children.head.maybeReturnItems
 
-  protected def resolve(qualifiedGraphName: QualifiedGraphName)
-    (implicit context: RelationalRuntimeContext[T]): RelationalCypherGraph[T] =
+  protected def resolve(qualifiedGraphName: QualifiedGraphName)(implicit
+    context: RelationalRuntimeContext[T]
+  ): RelationalCypherGraph[T] =
     context.resolveGraph(qualifiedGraphName)
 
   def table: T = {
@@ -79,7 +81,9 @@ abstract class RelationalOperator[T <: Table[T] : TypeTag] extends AbstractTreeN
       if (duplicateColumns.nonEmpty)
         throw IllegalArgumentException(
           s"${getClass.getSimpleName}: a table with distinct columns",
-          s"a table with duplicate columns: ${initialDataColumns.sorted.mkString("[", ", ", "]")}")
+          s"a table with duplicate columns: ${initialDataColumns.sorted
+              .mkString("[", ", ", "]")}"
+        )
 
       // Verify that all header column names exist in the data
       val headerColumnNames = header.columns
@@ -87,9 +91,13 @@ abstract class RelationalOperator[T <: Table[T] : TypeTag] extends AbstractTreeN
       val missingTableColumns = headerColumnNames -- dataColumnNames
       if (missingTableColumns.nonEmpty) {
         throw IllegalArgumentException(
-          s"${getClass.getSimpleName}: table with columns ${header.columns.toSeq.sorted.mkString("\n[", ", ", "]\n")}",
-          s"""|table with columns ${dataColumnNames.toSeq.sorted.mkString("\n[", ", ", "]\n")}
-              |column(s) ${missingTableColumns.mkString(", ")} are missing in the table
+          s"${getClass.getSimpleName}: table with columns ${header.columns.toSeq.sorted
+              .mkString("\n[", ", ", "]\n")}",
+          s"""|table with columns ${dataColumnNames.toSeq.sorted
+               .mkString("\n[", ", ", "]\n")}
+              |column(s) ${missingTableColumns.mkString(
+               ", "
+             )} are missing in the table
            """.stripMargin
         )
       }
@@ -112,10 +120,16 @@ abstract class RelationalOperator[T <: Table[T] : TypeTag] extends AbstractTreeN
 
         headerType match {
           case n if n.subTypeOf(CTNode.nullable) && tableType == CTInteger =>
-          case r if r.subTypeOf(CTRelationship.nullable) && tableType == CTInteger =>
+          case r
+              if r.subTypeOf(
+                CTRelationship.nullable
+              ) && tableType == CTInteger =>
           case _ if tableType == headerType =>
-          case _ => throw IllegalArgumentException(
-            s"${getClass.getSimpleName}: data matching header type $headerType for expression $expr", tableType)
+          case _ =>
+            throw IllegalArgumentException(
+              s"${getClass.getSimpleName}: data matching header type $headerType for expression $expr",
+              tableType
+            )
         }
       }
     }
@@ -143,27 +157,34 @@ trait UnitTable[T <: Table[T]] {
 
 object Start {
 
-  def fromEmptyGraph[T <: Table[T] : TypeTag](records: RelationalCypherRecords[T])
-    (implicit context: RelationalRuntimeContext[T]): Start[T] = {
+  def fromEmptyGraph[T <: Table[T]: TypeTag](
+    records: RelationalCypherRecords[T]
+  )(implicit context: RelationalRuntimeContext[T]): Start[T] = {
     Start(context.session.emptyGraphQgn, Some(records))
   }
 
-  def apply[T <: Table[T] : TypeTag](qgn: QualifiedGraphName, records: RelationalCypherRecords[T])
-    (implicit context: RelationalRuntimeContext[T]): Start[T] = {
+  def apply[T <: Table[T]: TypeTag](
+    qgn: QualifiedGraphName,
+    records: RelationalCypherRecords[T]
+  )(implicit context: RelationalRuntimeContext[T]): Start[T] = {
     Start(qgn, Some(records))
   }
 
 }
 
-final case class Start[T <: Table[T] : TypeTag](
+final case class Start[T <: Table[T]: TypeTag](
   qgn: QualifiedGraphName,
   maybeRecords: Option[RelationalCypherRecords[T]] = None
-)(implicit override val context: RelationalRuntimeContext[T], override val tt: TypeTag[RelationalOperator[T]])
-  extends RelationalOperator[T] {
+)(implicit
+  override val context: RelationalRuntimeContext[T],
+  override val tt: TypeTag[RelationalOperator[T]]
+) extends RelationalOperator[T] {
 
-  override lazy val header: RecordHeader = maybeRecords.map(_.header).getOrElse(RecordHeader.empty)
+  override lazy val header: RecordHeader =
+    maybeRecords.map(_.header).getOrElse(RecordHeader.empty)
 
-  override lazy val _table: T = maybeRecords.map(_.table).getOrElse(session.records.unit().table)
+  override lazy val _table: T =
+    maybeRecords.map(_.table).getOrElse(session.records.unit().table)
 
   override lazy val graph: RelationalCypherGraph[T] = resolve(qgn)
 
@@ -182,33 +203,37 @@ final case class Start[T <: Table[T] : TypeTag](
 
 // Unary
 
-final case class PrefixGraph[T <: Table[T] : TypeTag](
+final case class PrefixGraph[T <: Table[T]: TypeTag](
   in: RelationalOperator[T],
   prefix: GraphIdPrefix
-) extends RelationalOperator[T] with EmptyTable[T] {
+) extends RelationalOperator[T]
+    with EmptyTable[T] {
 
-  override lazy val graphName: QualifiedGraphName = QualifiedGraphName(s"${in.graphName}_tempPrefixed_$prefix")
+  override lazy val graphName: QualifiedGraphName = QualifiedGraphName(
+    s"${in.graphName}_tempPrefixed_$prefix"
+  )
 
-  override lazy val graph: RelationalCypherGraph[T] = session.graphs.prefixedGraph(in.graph, prefix)
+  override lazy val graph: RelationalCypherGraph[T] =
+    session.graphs.prefixedGraph(in.graph, prefix)
 }
 
 /**
-  * Cache is a marker operator that indicates that its child operator is used multiple times within the query.
+  * Cache is a marker operator that indicates that its child operator is used multiple times within
+  * the query.
   */
-final case class Cache[T <: Table[T] : TypeTag](in: RelationalOperator[T])
-  extends RelationalOperator[T] {
+final case class Cache[T <: Table[T]: TypeTag](in: RelationalOperator[T])
+    extends RelationalOperator[T] {
 
   override lazy val _table: T = in._table.cache()
 
 }
 
-final case class SwitchContext[T <: Table[T] : TypeTag](
+final case class SwitchContext[T <: Table[T]: TypeTag](
   in: RelationalOperator[T],
   override val context: RelationalRuntimeContext[T]
 ) extends RelationalOperator[T]
 
-
-final case class Alias[T <: Table[T] : TypeTag](
+final case class Alias[T <: Table[T]: TypeTag](
   in: RelationalOperator[T],
   aliases: Seq[AliasExpr]
 ) extends RelationalOperator[T] {
@@ -216,7 +241,7 @@ final case class Alias[T <: Table[T] : TypeTag](
   override lazy val header: RecordHeader = in.header.withAlias(aliases: _*)
 }
 
-final case class Add[T <: Table[T] : TypeTag](
+final case class Add[T <: Table[T]: TypeTag](
   in: RelationalOperator[T],
   exprs: List[Expr]
 ) extends RelationalOperator[T] {
@@ -226,12 +251,12 @@ final case class Add[T <: Table[T] : TypeTag](
       if (aggHeader.contains(expr)) {
         expr match {
           case a: AliasExpr => aggHeader.withAlias(a)
-          case _ => aggHeader
+          case _            => aggHeader
         }
       } else {
         expr match {
           case a: AliasExpr => aggHeader.withExpr(a.expr).withAlias(a)
-          case _ => aggHeader.withExpr(expr)
+          case _            => aggHeader.withExpr(expr)
         }
       }
     }
@@ -243,12 +268,14 @@ final case class Add[T <: Table[T] : TypeTag](
     if (physicalAdditions.isEmpty) {
       in.table
     } else {
-      in.table.withColumns(physicalAdditions.map(expr => expr -> header.column(expr)): _*)(header, context.parameters)
+      in.table.withColumns(
+        physicalAdditions.map(expr => expr -> header.column(expr)): _*
+      )(header, context.parameters)
     }
   }
 }
 
-final case class AddInto[T <: Table[T] : TypeTag](
+final case class AddInto[T <: Table[T]: TypeTag](
   in: RelationalOperator[T],
   valueIntoTuples: List[(Expr, Expr)]
 ) extends RelationalOperator[T] {
@@ -258,12 +285,14 @@ final case class AddInto[T <: Table[T] : TypeTag](
   }
 
   override lazy val _table: T = {
-    val valuesToColumnNames = valueIntoTuples.map { case (value, into) => value -> header.column(into) }
+    val valuesToColumnNames = valueIntoTuples.map { case (value, into) =>
+      value -> header.column(into)
+    }
     in.table.withColumns(valuesToColumnNames: _*)(header, context.parameters)
   }
 }
 
-final case class Drop[E <: Expr, T <: Table[T] : TypeTag](
+final case class Drop[E <: Expr, T <: Table[T]: TypeTag](
   in: RelationalOperator[T],
   exprs: Set[E]
 ) extends RelationalOperator[T] {
@@ -281,23 +310,24 @@ final case class Drop[E <: Expr, T <: Table[T] : TypeTag](
   }
 }
 
-final case class Filter[T <: Table[T] : TypeTag](
+final case class Filter[T <: Table[T]: TypeTag](
   in: RelationalOperator[T],
   expr: Expr
 ) extends RelationalOperator[T] {
 
-  override lazy val _table: T = in.table.filter(expr)(header, context.parameters)
+  override lazy val _table: T =
+    in.table.filter(expr)(header, context.parameters)
 }
 
-final case class ReturnGraph[T <: Table[T] : TypeTag](in: RelationalOperator[T])
-  extends RelationalOperator[T] {
+final case class ReturnGraph[T <: Table[T]: TypeTag](in: RelationalOperator[T])
+    extends RelationalOperator[T] {
 
   override lazy val header: RecordHeader = RecordHeader.empty
 
   override lazy val _table: T = session.records.empty().table
 }
 
-final case class Select[T <: Table[T] : TypeTag](
+final case class Select[T <: Table[T]: TypeTag](
   in: RelationalOperator[T],
   expressions: List[Expr],
   columnRenames: Map[Expr, String] = Map.empty
@@ -305,61 +335,72 @@ final case class Select[T <: Table[T] : TypeTag](
 
   private lazy val selectHeader = in.header.select(expressions: _*)
 
-  override lazy val header: RecordHeader = selectHeader.withColumnsReplaced(columnRenames)
+  override lazy val header: RecordHeader =
+    selectHeader.withColumnsReplaced(columnRenames)
 
   private lazy val returnExpressions = expressions.map {
     case AliasExpr(_, alias) => alias
-    case other => other
+    case other               => other
   }
 
   override lazy val _table: T = {
-    val selectExpressions = returnExpressions.flatMap(expr => header.expressionsFor(expr).toSeq.sorted)
-    val selectColumns = selectExpressions.map { expr => selectHeader.column(expr) -> header.column(expr) }.distinct
+    val selectExpressions =
+      returnExpressions.flatMap(expr => header.expressionsFor(expr).toSeq.sorted)
+    val selectColumns = selectExpressions.map { expr =>
+      selectHeader.column(expr) -> header.column(expr)
+    }.distinct
     in.table.select(selectColumns.head, selectColumns.tail: _*)
   }
 
   override lazy val maybeReturnItems: Option[Seq[Var]] =
-    Some(returnExpressions.flatMap(_.owner).collect { case e: Var => e }.distinct)
+    Some(
+      returnExpressions.flatMap(_.owner).collect { case e: Var => e }.distinct
+    )
 }
 
-final case class Distinct[T <: Table[T] : TypeTag](
+final case class Distinct[T <: Table[T]: TypeTag](
   in: RelationalOperator[T],
   fields: Set[Var]
 ) extends RelationalOperator[T] {
 
-  override lazy val _table: T = in.table.distinct(fields.flatMap(header.expressionsFor).map(header.column).toSeq: _*)
+  override lazy val _table: T = in.table.distinct(
+    fields.flatMap(header.expressionsFor).map(header.column).toSeq: _*
+  )
 
 }
 
-final case class Aggregate[T <: Table[T] : TypeTag](
+final case class Aggregate[T <: Table[T]: TypeTag](
   in: RelationalOperator[T],
   group: Set[Var],
   aggregations: Set[(Var, Aggregator)]
 ) extends RelationalOperator[T] {
 
-  override lazy val header: RecordHeader = in.header.select(group).withExprs(aggregations.map { case (v, _) => v })
+  override lazy val header: RecordHeader =
+    in.header.select(group).withExprs(aggregations.map { case (v, _) => v })
 
   override lazy val _table: T = {
-    val preparedAggregations = aggregations.map { case (v, agg) => header.column(v) -> agg }.toMap
+    val preparedAggregations = aggregations.map { case (v, agg) =>
+      header.column(v) -> agg
+    }.toMap
     in.table.group(group, preparedAggregations)(in.header, context.parameters)
   }
 }
 
-final case class OrderBy[T <: Table[T] : TypeTag](
+final case class OrderBy[T <: Table[T]: TypeTag](
   in: RelationalOperator[T],
   sortItems: Seq[SortItem]
 ) extends RelationalOperator[T] {
 
   override lazy val _table: T = {
     val tableSortItems = sortItems.map {
-      case Asc(expr) => expr -> Ascending
+      case Asc(expr)  => expr -> Ascending
       case Desc(expr) => expr -> Descending
     }
     in.table.orderBy(tableSortItems: _*)(header, context.parameters)
   }
 }
 
-final case class Skip[T <: Table[T] : TypeTag](
+final case class Skip[T <: Table[T]: TypeTag](
   in: RelationalOperator[T],
   expr: Expr
 ) extends RelationalOperator[T] {
@@ -370,15 +411,16 @@ final case class Skip[T <: Table[T] : TypeTag](
       case Param(name) =>
         context.parameters(name) match {
           case CypherInteger(l) => l
-          case other => throw IllegalArgumentException("a CypherInteger", other)
+          case other            => throw IllegalArgumentException("a CypherInteger", other)
         }
-      case other => throw IllegalArgumentException("an integer literal or parameter", other)
+      case other =>
+        throw IllegalArgumentException("an integer literal or parameter", other)
     }
     in.table.skip(skip)
   }
 }
 
-final case class Limit[T <: Table[T] : TypeTag](
+final case class Limit[T <: Table[T]: TypeTag](
   in: RelationalOperator[T],
   expr: Expr
 ) extends RelationalOperator[T] {
@@ -389,7 +431,7 @@ final case class Limit[T <: Table[T] : TypeTag](
       case Param(name) =>
         context.parameters(name) match {
           case CypherInteger(v) => v
-          case other => throw IllegalArgumentException("a CypherInteger", other)
+          case other            => throw IllegalArgumentException("a CypherInteger", other)
         }
       case other => throw IllegalArgumentException("an integer literal", other)
     }
@@ -397,7 +439,7 @@ final case class Limit[T <: Table[T] : TypeTag](
   }
 }
 
-final case class EmptyRecords[T <: Table[T] : TypeTag](
+final case class EmptyRecords[T <: Table[T]: TypeTag](
   in: RelationalOperator[T],
   fields: Set[Var] = Set.empty
 ) extends RelationalOperator[T] {
@@ -407,12 +449,14 @@ final case class EmptyRecords[T <: Table[T] : TypeTag](
   override lazy val _table: T = session.records.empty(header).table
 }
 
-final case class FromCatalogGraph[T <: Table[T] : TypeTag](
+final case class FromCatalogGraph[T <: Table[T]: TypeTag](
   in: RelationalOperator[T],
   logicalGraph: LogicalCatalogGraph
 ) extends RelationalOperator[T] {
 
-  override def graph: RelationalCypherGraph[T] = resolve(logicalGraph.qualifiedGraphName)
+  override def graph: RelationalCypherGraph[T] = resolve(
+    logicalGraph.qualifiedGraphName
+  )
 
   override def graphName: QualifiedGraphName = logicalGraph.qualifiedGraphName
 
@@ -420,35 +464,45 @@ final case class FromCatalogGraph[T <: Table[T] : TypeTag](
 
 // Binary
 
-final case class Join[T <: Table[T] : TypeTag](
+final case class Join[T <: Table[T]: TypeTag](
   lhs: RelationalOperator[T],
   rhs: RelationalOperator[T],
   joinExprs: Seq[(Expr, Expr)] = Seq.empty,
   joinType: JoinType
 ) extends RelationalOperator[T] {
-  require((lhs.header.expressions intersect rhs.header.expressions).isEmpty, "Join cannot join operators with overlapping expressions")
-  require((lhs.header.columns intersect rhs.header.columns).isEmpty, "Join cannot join tables with column name collisions")
+  require(
+    (lhs.header.expressions intersect rhs.header.expressions).isEmpty,
+    "Join cannot join operators with overlapping expressions"
+  )
+  require(
+    (lhs.header.columns intersect rhs.header.columns).isEmpty,
+    "Join cannot join tables with column name collisions"
+  )
 
   override lazy val header: RecordHeader = lhs.header join rhs.header
 
   override lazy val _table: T = {
-    val joinCols = joinExprs.map { case (l, r) => header.column(l) -> rhs.header.column(r) }
+    val joinCols = joinExprs.map { case (l, r) =>
+      header.column(l) -> rhs.header.column(r)
+    }
     lhs.table.join(rhs.table, joinType, joinCols: _*)
   }
 }
 
 /**
-  * Computes the union of the two input operators. The two inputs must have identical headers.
-  * This operation does not remove duplicates.
+  * Computes the union of the two input operators. The two inputs must have identical headers. This
+  * operation does not remove duplicates.
   *
   * The output header of this operation is identical to the input headers.
   *
-  * @param lhs the first operand
-  * @param rhs the second operand
+  * @param lhs
+  *   the first operand
+  * @param rhs
+  *   the second operand
   */
 // TODO: rename to UnionByName
 // TODO: refactor to n-ary operator (i.e. take List[PhysicalOperator] as input)
-final case class TabularUnionAll[T <: Table[T] : TypeTag](
+final case class TabularUnionAll[T <: Table[T]: TypeTag](
   lhs: RelationalOperator[T],
   rhs: RelationalOperator[T]
 ) extends RelationalOperator[T] {
@@ -464,11 +518,17 @@ final case class TabularUnionAll[T <: Table[T] : TypeTag](
     val sortedRightColumns = rightColumns.sorted.mkString(", ")
 
     if (leftColumns.size != rightColumns.size) {
-      throw IllegalArgumentException("same number of columns", s"left:  $sortedLeftColumns\n\tright: $sortedRightColumns")
+      throw IllegalArgumentException(
+        "same number of columns",
+        s"left:  $sortedLeftColumns\n\tright: $sortedRightColumns"
+      )
     }
 
     if (leftColumns.toSet != rightColumns.toSet) {
-      throw IllegalArgumentException("same column names", s"left:  $sortedLeftColumns\n\tright: $sortedRightColumns")
+      throw IllegalArgumentException(
+        "same column names",
+        s"left:  $sortedLeftColumns\n\tright: $sortedRightColumns"
+      )
     }
 
     val orderedRhsTable = if (leftColumns != rightColumns) {
@@ -481,12 +541,13 @@ final case class TabularUnionAll[T <: Table[T] : TypeTag](
   }
 }
 
-final case class ConstructGraph[T <: Table[T] : TypeTag](
+final case class ConstructGraph[T <: Table[T]: TypeTag](
   in: RelationalOperator[T],
   constructedGraph: RelationalCypherGraph[T],
   construct: LogicalPatternGraph,
   override val context: RelationalRuntimeContext[T]
-) extends RelationalOperator[T] with UnitTable[T] {
+) extends RelationalOperator[T]
+    with UnitTable[T] {
 
   override def maybeReturnItems: Option[Seq[Var]] = None
 
@@ -502,13 +563,15 @@ final case class ConstructGraph[T <: Table[T] : TypeTag](
 
 // N-ary
 
-final case class GraphUnionAll[T <: Table[T] : TypeTag](
+final case class GraphUnionAll[T <: Table[T]: TypeTag](
   inputs: NonEmptyList[RelationalOperator[T]],
   qgn: QualifiedGraphName
-) extends RelationalOperator[T] with EmptyTable[T]  {
+) extends RelationalOperator[T]
+    with EmptyTable[T] {
 
   override lazy val graphName: QualifiedGraphName = qgn
 
-  override lazy val graph: RelationalCypherGraph[T] = session.graphs.unionGraph(inputs.map(_.graph).toList: _*)
+  override lazy val graph: RelationalCypherGraph[T] =
+    session.graphs.unionGraph(inputs.map(_.graph).toList: _*)
 
 }

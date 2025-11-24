@@ -50,15 +50,18 @@ trait RecordMatchingTestSupport {
 
   implicit class RichRow(r: Row) {
 
-    def getCypherValue(expr: Expr, header: RecordHeader)
-      (implicit context: RelationalRuntimeContext[DataFrameTable]): CypherValue = {
+    def getCypherValue(expr: Expr, header: RecordHeader)(implicit
+      context: RelationalRuntimeContext[DataFrameTable]
+    ): CypherValue = {
       expr match {
         case Param(name) => context.parameters(name)
         case _ =>
           header.getColumn(expr) match {
-            case None => throw IllegalArgumentException(
-              expected = s"column for $expr",
-              actual = header.pretty)
+            case None =>
+              throw IllegalArgumentException(
+                expected = s"column for $expr",
+                actual = header.pretty
+              )
             case Some(column) => CypherValue(r.get(r.schema.fieldIndex(column)))
           }
       }

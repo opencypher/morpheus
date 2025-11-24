@@ -41,39 +41,60 @@ class MetaTest extends BaseTestSuite {
   val readmeName = "README.md"
   val moduleName = "morpheus-examples"
 
-  private val rootFolderPath = findRootFolderPath(Paths.get(".").toAbsolutePath.normalize.toString)
-  private val examplePath = DataFrameInputExample.getClass.getName.dropRight(1).replace(".", File.separator)
-  private val exampleClassName = examplePath.substring(examplePath.lastIndexOf(File.separator) + 1) + ".scala"
-  private val examplePackagePath = examplePath.substring(0, examplePath.lastIndexOf(File.separator))
+  private val rootFolderPath = findRootFolderPath(
+    Paths.get(".").toAbsolutePath.normalize.toString
+  )
+  private val examplePath = DataFrameInputExample.getClass.getName
+    .dropRight(1)
+    .replace(".", File.separator)
+  private val exampleClassName = examplePath.substring(
+    examplePath.lastIndexOf(File.separator) + 1
+  ) + ".scala"
+  private val examplePackagePath =
+    examplePath.substring(0, examplePath.lastIndexOf(File.separator))
   private val readmePath = Paths.get(rootFolderPath, readmeName).toString
 
   private def absolutePackagePath(scope: String) =
-    Paths.get(rootFolderPath, moduleName, Paths.get("src", scope, "scala").toString, examplePackagePath).toString
+    Paths
+      .get(
+        rootFolderPath,
+        moduleName,
+        Paths.get("src", scope, "scala").toString,
+        examplePackagePath
+      )
+      .toString
 
   private val dataFrameInputExamplePath =
     Paths.get(absolutePackagePath("main"), exampleClassName).toString
 
   it("should exist a test for each Morpheus example") {
-    val exampleClassPrefixes = new File(absolutePackagePath("main")).listFiles()
+    val exampleClassPrefixes = new File(absolutePackagePath("main"))
+      .listFiles()
       .map(_.getName)
       .filter(_.contains("Example"))
       .map(example => example.substring(0, example.indexOf("Example")))
 
-    val exampleTestClassPrefixes = new File(absolutePackagePath("test")).listFiles()
+    val exampleTestClassPrefixes = new File(absolutePackagePath("test"))
+      .listFiles()
       .map(_.getName)
       .filter(_.contains("Example"))
 
-    exampleClassPrefixes.forall(prefix => exampleTestClassPrefixes.exists(_.startsWith(prefix))) shouldBe true
+    exampleClassPrefixes.forall(prefix =>
+      exampleTestClassPrefixes.exists(_.startsWith(prefix))
+    ) shouldBe true
   }
 
   /**
-    * Tests whether the README example is aligned with the code contained in [[DataFrameInputExample]].
+    * Tests whether the README example is aligned with the code contained in
+    * [[DataFrameInputExample]].
     */
   it("the code in the readme matches the example") {
     val readmeLines = Source.fromFile(readmePath).getLines.toVector
-    val readmeSourceCodeBlocks = extractMarkdownScalaSourceBlocks(readmeLines).map(_.canonical).toSet
+    val readmeSourceCodeBlocks =
+      extractMarkdownScalaSourceBlocks(readmeLines).map(_.canonical).toSet
 
-    val exampleSourceCodeLines = Source.fromFile(dataFrameInputExamplePath).getLines.toVector
+    val exampleSourceCodeLines =
+      Source.fromFile(dataFrameInputExamplePath).getLines.toVector
     val exampleSourceCode = ScalaSourceCode(exampleSourceCodeLines).canonical
 
     readmeSourceCodeBlocks should contain(exampleSourceCode)
@@ -81,17 +102,18 @@ class MetaTest extends BaseTestSuite {
 
   case class ScalaSourceCode(lines: Vector[String]) {
     def canonical: Vector[String] = lines
-      .dropWhile(line => !line.startsWith("import")) // Drop license and everything else before the first import
-      .filterNot(_.contains("// tag::")).filterNot(_.contains("// end::")) // Filter documentation tags
+      .dropWhile(line =>
+        !line.startsWith("import")
+      ) // Drop license and everything else before the first import
+      .filterNot(_.contains("// tag::"))
+      .filterNot(_.contains("// end::")) // Filter documentation tags
       .filterNot(_.contains("import App")) // Filter custom App import
       .filterNot(_ == "") // Filter empty lines
 
     override def toString: String = lines.mkString("\n")
   }
 
-  /**
-    * Find the root folder path even if the tests are executed in a child path.
-    */
+  /** Find the root folder path even if the tests are executed in a child path. */
   def findRootFolderPath(potentialChildFolderPath: String): String = {
     @tailrec def recFindRootFolderPath(folder: String): String = {
       if (isRootFolderPath(folder)) {
@@ -103,18 +125,25 @@ class MetaTest extends BaseTestSuite {
 
     Try(recFindRootFolderPath(potentialChildFolderPath)).getOrElse(
       throw new PathNotFoundException(
-        s"Directory $potentialChildFolderPath is not a sub-folder of the project root directory."))
+        s"Directory $potentialChildFolderPath is not a sub-folder of the project root directory."
+      )
+    )
   }
 
   /**
-    * Check by testing if the CONTRIBUTING.adoc file can be found. This works even if the root folder has a different name.
+    * Check by testing if the CONTRIBUTING.adoc file can be found. This works even if the root
+    * folder has a different name.
     */
-  def isRootFolderPath(path: String): Boolean = Paths.get(path, "CONTRIBUTING.adoc").toFile.exists
+  def isRootFolderPath(path: String): Boolean =
+    Paths.get(path, "CONTRIBUTING.adoc").toFile.exists
 
-  def extractMarkdownScalaSourceBlocks(lines: Vector[String]): Seq[ScalaSourceCode] = {
-    val currentParsingState: (Vector[ScalaSourceCode], Option[Vector[String]]) = (Vector.empty, None)
-    val sourceCodeSnippets = lines.foldLeft(currentParsingState) {
-      case ((sourceBlocks, currentBlock), currentLine) =>
+  def extractMarkdownScalaSourceBlocks(
+    lines: Vector[String]
+  ): Seq[ScalaSourceCode] = {
+    val currentParsingState: (Vector[ScalaSourceCode], Option[Vector[String]]) =
+      (Vector.empty, None)
+    val sourceCodeSnippets = lines
+      .foldLeft(currentParsingState) { case ((sourceBlocks, currentBlock), currentLine) =>
         currentBlock match {
           case Some(block) =>
             if (currentLine == "```") {
@@ -129,7 +158,8 @@ class MetaTest extends BaseTestSuite {
               (sourceBlocks, None)
             }
         }
-    }._1
+      }
+      ._1
     sourceCodeSnippets
   }
 }

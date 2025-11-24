@@ -36,24 +36,29 @@ import org.opencypher.okapi.api.value.CypherValue.{Node, Relationship}
 import ujson._
 
 import scala.util.Random
-/**
-  * Provides helper methods for Apache Zeppelin integration
-  */
+
+/** Provides helper methods for Apache Zeppelin integration */
 object ZeppelinSupport {
 
   implicit class ResultVisualizer(result: CypherResult) {
 
     /**
-      * Visualizes the result in Zeppelin.
-      * If the result contains a graph, it is shown as a network (see [[ZeppelinSupport.ZeppelinGraph#printGraph]]).
-      * If the result contains a tabular result, they are:
-      *   - visualized as a graph if the result only contains nodes and relationships (see [[ZeppelinSupport.ZeppelinRecords#printGraph]])
-      *   - TODO: visualized as a table if the result contains non element values (see [[ZeppelinSupport.ZeppelinRecords#printTable]])
+      * Visualizes the result in Zeppelin. If the result contains a graph, it is shown as a network
+      * (see [[ZeppelinSupport.ZeppelinGraph#printGraph]]). If the result contains a tabular result,
+      * they are:
+      *   - visualized as a graph if the result only contains nodes and relationships (see
+      *     [[ZeppelinSupport.ZeppelinRecords#printGraph]])
+      *   - TODO: visualized as a table if the result contains non element values (see
+      *     [[ZeppelinSupport.ZeppelinRecords#printTable]])
       */
-    def visualize()(implicit formatValue: Any => String = CypherValue.Format.defaultValueFormatter): Unit = {
+    def visualize()(implicit
+      formatValue: Any => String = CypherValue.Format.defaultValueFormatter
+    ): Unit = {
       result.getGraph match {
         case Some(g) => g.printGraph()
-        case None => result.records.printTable() // TODO find a way to identify results that could be printed as a graph
+        case None =>
+          result.records
+            .printTable() // TODO find a way to identify results that could be printed as a graph
       }
     }
   }
@@ -76,12 +81,13 @@ object ZeppelinSupport {
       *   Bob\t42
       * }}}
       */
-    def printTable()(implicit formatValue: Any => String = CypherValue.Format.defaultValueFormatter): Unit = {
+    def printTable()(implicit
+      formatValue: Any => String = CypherValue.Format.defaultValueFormatter
+    ): Unit = {
       print(s"""
         |%table
         |$toZeppelinTable
-        |""".stripMargin
-      )
+        |""".stripMargin)
     }
 
     /**
@@ -103,9 +109,10 @@ object ZeppelinSupport {
       * }
       * }}}
       */
-    def printGraph()(implicit formatValue: Any => String = CypherValue.Format.defaultValueFormatter): Unit = {
-      print(
-        s"""
+    def printGraph()(implicit
+      formatValue: Any => String = CypherValue.Format.defaultValueFormatter
+    ): Unit = {
+      print(s"""
            |%network
            |$toZeppelinGraph
         """.stripMargin)
@@ -120,19 +127,21 @@ object ZeppelinSupport {
       *   Bob\t42
       * }}}
       */
-    def toZeppelinTable()(implicit formatValue: Any => String = CypherValue.Format.defaultValueFormatter): String = {
+    def toZeppelinTable()(implicit
+      formatValue: Any => String = CypherValue.Format.defaultValueFormatter
+    ): String = {
       val columns = r.logicalColumns.get
       s"""${columns.mkString("\t")}
-         |${
-        r.iterator.map { row =>
-          columns.map(row(_).toCypherString).mkString("\t")
-        }.mkString("\n")
-      }""".stripMargin
+         |${r.iterator
+          .map { row =>
+            columns.map(row(_).toCypherString).mkString("\t")
+          }
+          .mkString("\n")}""".stripMargin
     }
 
     /**
-      * Returns a Zeppelin compatible Json representation of the result.
-      * Only colums that are nodes or edges are represented.
+      * Returns a Zeppelin compatible Json representation of the result. Only colums that are nodes
+      * or edges are represented.
       *
       * {{{
       * {
@@ -144,20 +153,27 @@ object ZeppelinSupport {
       * }
       * }}}
       */
-    def toZeppelinGraph()(implicit formatValue: Any => String = CypherValue.Format.defaultValueFormatter): String = {
+    def toZeppelinGraph()(implicit
+      formatValue: Any => String = CypherValue.Format.defaultValueFormatter
+    ): String = {
       val data = r.collect
 
-      val nodeCols = data.headOption.map { row =>
-        row.value.collect {
-          case (key, _: Node[_]) => key
+      val nodeCols = data.headOption
+        .map { row =>
+          row.value.collect { case (key, _: Node[_]) =>
+            key
+          }
         }
-      }.getOrElse(Seq.empty)
+        .getOrElse(Seq.empty)
 
-      val relCols = data.headOption.map { row =>
-        row.value.collect {
-          case (key, _: Relationship[_]) => key
+      val relCols = data.headOption
+        .map { row =>
+          row.value.collect { case (key, _: Relationship[_]) =>
+            key
+          }
         }
-      }.getOrElse(Seq.empty).toSet
+        .getOrElse(Seq.empty)
+        .toSet
 
       val nodes = data
         .flatMap { row => nodeCols.map(row(_).cast[Node[_]]) }
@@ -174,9 +190,14 @@ object ZeppelinSupport {
       val labels = nodes.flatMap(_.labels).toSet
       val types = rels.map(_.relType).toSet
 
-      ZeppelinGraph.toZeppelinJson(
-        nodes.toIterator, rels.toIterator, labels, types
-      ).render(2)
+      ZeppelinGraph
+        .toZeppelinJson(
+          nodes.toIterator,
+          rels.toIterator,
+          labels,
+          types
+        )
+        .render(2)
     }
   }
 
@@ -247,8 +268,10 @@ object ZeppelinSupport {
   }
 
   private object ZeppelinGraph {
+
     /**
-      * Returns a Zeppelin compatible Json representation of a graph defined by a list of nodes and edges:
+      * Returns a Zeppelin compatible Json representation of a graph defined by a list of nodes and
+      * edges:
       *
       * {{{
       * {
@@ -342,8 +365,7 @@ object ZeppelinSupport {
       * }}}
       */
     def printGraph()(implicit formatValue: Any => String): Unit = {
-      print(
-        s"""
+      print(s"""
            |%network
            |${toZeppelinJson.render(2)}
         """.stripMargin)
@@ -364,10 +386,14 @@ object ZeppelinSupport {
       */
     def toZeppelinJson()(implicit formatValue: Any => String): Value = {
       val nodes = g.nodes("n").iterator.map(m => m("n").cast[Node[_]])
-      val rels = g.relationships("r").iterator.map(m => m("r").cast[Relationship[_]])
+      val rels =
+        g.relationships("r").iterator.map(m => m("r").cast[Relationship[_]])
 
       ZeppelinGraph.toZeppelinJson(
-        nodes, rels, g.schema.labels, g.schema.relationshipTypes
+        nodes,
+        rels,
+        g.schema.labels,
+        g.schema.relationshipTypes
       )
     }
   }

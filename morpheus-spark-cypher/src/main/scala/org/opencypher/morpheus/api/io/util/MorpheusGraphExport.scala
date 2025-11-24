@@ -43,28 +43,51 @@ object MorpheusGraphExport {
   implicit class CanonicalTableSparkSchema(val schema: PropertyGraphSchema) extends AnyVal {
 
     def canonicalNodeStructType(labels: Set[String]): StructType = {
-      val id = StructField(GraphElement.sourceIdKey, BinaryType, nullable = false)
-      val properties = schema.nodePropertyKeys(labels).toSeq
-        .map { case (propertyName, cypherType) => propertyName.toPropertyColumnName -> cypherType }
+      val id =
+        StructField(GraphElement.sourceIdKey, BinaryType, nullable = false)
+      val properties = schema
+        .nodePropertyKeys(labels)
+        .toSeq
+        .map { case (propertyName, cypherType) =>
+          propertyName.toPropertyColumnName -> cypherType
+        }
         .sortBy { case (propertyColumnName, _) => propertyColumnName }
         .map { case (propertyColumnName, cypherType) =>
-          StructField(propertyColumnName, cypherType.getSparkType, cypherType.isNullable)
+          StructField(
+            propertyColumnName,
+            cypherType.getSparkType,
+            cypherType.isNullable
+          )
         }
       StructType(id +: properties)
     }
 
     def canonicalRelStructType(relType: String): StructType = {
-      val id = StructField(GraphElement.sourceIdKey, BinaryType, nullable = false)
-      val sourceId = StructField(Relationship.sourceStartNodeKey, BinaryType, nullable = false)
-      val targetId = StructField(Relationship.sourceEndNodeKey, BinaryType, nullable = false)
-      val properties = schema.relationshipPropertyKeys(relType).toSeq.sortBy(_._1).map { case (propertyName, cypherType) =>
-        StructField(propertyName.toPropertyColumnName, cypherType.getSparkType, cypherType.isNullable)
-      }
+      val id =
+        StructField(GraphElement.sourceIdKey, BinaryType, nullable = false)
+      val sourceId = StructField(
+        Relationship.sourceStartNodeKey,
+        BinaryType,
+        nullable = false
+      )
+      val targetId =
+        StructField(Relationship.sourceEndNodeKey, BinaryType, nullable = false)
+      val properties =
+        schema.relationshipPropertyKeys(relType).toSeq.sortBy(_._1).map {
+          case (propertyName, cypherType) =>
+            StructField(
+              propertyName.toPropertyColumnName,
+              cypherType.getSparkType,
+              cypherType.isNullable
+            )
+        }
       StructType(id +: sourceId +: targetId +: properties)
     }
   }
 
-  implicit class CanonicalTableExport(graph: RelationalCypherGraph[DataFrameTable]) {
+  implicit class CanonicalTableExport(
+    graph: RelationalCypherGraph[DataFrameTable]
+  ) {
 
     def canonicalNodeTable(labels: Set[String]): DataFrame = {
       val ct = CTNode(labels)
@@ -74,11 +97,14 @@ object MorpheusGraphExport {
 
       val idRename = header.column(v) -> GraphElement.sourceIdKey
       val properties: Set[Property] = header.propertiesFor(v)
-      val propertyRenames = properties.map { p => header.column(p) -> p.key.name.toPropertyColumnName }
-
-      val selectColumns = (idRename :: propertyRenames.toList.sortBy(_._2)).map {
-        case (oldName, newName) => nodeRecords.table.df.col(oldName).as(newName)
+      val propertyRenames = properties.map { p =>
+        header.column(p) -> p.key.name.toPropertyColumnName
       }
+
+      val selectColumns =
+        (idRename :: propertyRenames.toList.sortBy(_._2)).map { case (oldName, newName) =>
+          nodeRecords.table.df.col(oldName).as(newName)
+        }
 
       nodeRecords.table.df.select(selectColumns: _*)
     }
@@ -90,14 +116,20 @@ object MorpheusGraphExport {
       val header = relRecords.header
 
       val idRename = header.column(v) -> GraphElement.sourceIdKey
-      val sourceIdRename = header.column(header.startNodeFor(v)) -> Relationship.sourceStartNodeKey
-      val targetIdRename = header.column(header.endNodeFor(v)) -> Relationship.sourceEndNodeKey
+      val sourceIdRename =
+        header.column(header.startNodeFor(v)) -> Relationship.sourceStartNodeKey
+      val targetIdRename =
+        header.column(header.endNodeFor(v)) -> Relationship.sourceEndNodeKey
       val properties: Set[Property] = relRecords.header.propertiesFor(v)
-      val propertyRenames = properties.map { p => relRecords.header.column(p) -> p.key.name.toPropertyColumnName }
-
-      val selectColumns = (idRename :: sourceIdRename :: targetIdRename :: propertyRenames.toList.sorted).map {
-        case (oldName, newName) => relRecords.table.df.col(oldName).as(newName)
+      val propertyRenames = properties.map { p =>
+        relRecords.header.column(p) -> p.key.name.toPropertyColumnName
       }
+
+      val selectColumns =
+        (idRename :: sourceIdRename :: targetIdRename :: propertyRenames.toList.sorted)
+          .map { case (oldName, newName) =>
+            relRecords.table.df.col(oldName).as(newName)
+          }
 
       relRecords.table.df.select(selectColumns: _*)
     }

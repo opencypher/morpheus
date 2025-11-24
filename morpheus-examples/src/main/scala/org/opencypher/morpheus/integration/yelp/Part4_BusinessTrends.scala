@@ -49,8 +49,7 @@ object Part4_BusinessTrends extends App {
   log("Write to Neo4j and compute pageRank", 1)
   (2017 to 2018) foreach { year =>
     log(s"For year $year", 2)
-    cypher(
-      s"""
+    cypher(s"""
          |CATALOG CREATE GRAPH $neo4jNamespace.${coReviewedGraphName(year)} {
          |  FROM $fsNamespace.${coReviewedGraphName(year)}
          |  RETURN GRAPH
@@ -70,8 +69,12 @@ object Part4_BusinessTrends extends App {
            |  weightProperty: "reviewCount"
            |})
            |YIELD nodes, loadMillis, computeMillis, writeMillis
-           |RETURN nodes, loadMillis + computeMillis + writeMillis AS total""".stripMargin).head
-      log(s"Computing page rank on ${pageRankStats("nodes")} nodes took ${pageRankStats("total")} ms", 2)
+           |RETURN nodes, loadMillis + computeMillis + writeMillis AS total""".stripMargin
+      ).head
+      log(
+        s"Computing page rank on ${pageRankStats("nodes")} nodes took ${pageRankStats("total")} ms",
+        2
+      )
     }
   }
 
@@ -80,15 +83,18 @@ object Part4_BusinessTrends extends App {
 
   // Load graphs from Neo4j into Spark and compute trend rank for each business based on their page ranks.
   log("Load graphs back to Spark and compute trend rank", 1)
-  cypher(
-    s"""
+  cypher(s"""
        |CATALOG CREATE GRAPH $businessTrendsGraphName {
        |  FROM GRAPH $neo4jNamespace.${coReviewedGraphName(2017)}
        |  MATCH (b1:Business)
        |  FROM GRAPH $neo4jNamespace.${coReviewedGraphName(2018)}
        |  MATCH (b2:Business)
        |  WHERE b1.businessId = b2.businessId
-       |  WITH b1 AS b, (b2.${pageRankProp(2018)} / ${normalizationFactor(2018)}) - (b1.${pageRankProp(2017)} / ${normalizationFactor(2017)}) AS trendRank
+       |  WITH b1 AS b, (b2.${pageRankProp(2018)} / ${normalizationFactor(
+             2018
+           )}) - (b1.${pageRankProp(2017)} / ${normalizationFactor(
+             2017
+           )}) AS trendRank
        |  CONSTRUCT
        |    CREATE (newB COPY OF b)
        |    SET newB.trendRank = trendRank
@@ -97,8 +103,7 @@ object Part4_BusinessTrends extends App {
      """.stripMargin)
 
   // Top 10 Increasing popularity
-  cypher(
-    s"""
+  cypher(s"""
        |FROM GRAPH $businessTrendsGraphName
        |MATCH (b:Business)
        |RETURN b.name AS name, b.address AS address, b.trendRank AS trendRank
@@ -106,9 +111,12 @@ object Part4_BusinessTrends extends App {
        |LIMIT 10
      """.stripMargin).show
 
-  def normalizationFactor(year: Int): Double = neo4jConfig.cypherWithNewSession(
-    s"""
+  def normalizationFactor(year: Int): Double = neo4jConfig
+    .cypherWithNewSession(s"""
        |MATCH (b:Business)
        |RETURN sum(b.${pageRankProp(year)}) AS nf
-     """.stripMargin).head("nf").cast[CypherFloat].value
+     """.stripMargin)
+    .head("nf")
+    .cast[CypherFloat]
+    .value
 }

@@ -29,7 +29,11 @@ package org.opencypher.morpheus.integration.yelp
 import org.apache.log4j.{Level, Logger}
 import org.opencypher.morpheus.api.{GraphSources, MorpheusSession}
 import org.opencypher.morpheus.impl.MorpheusConverters._
-import org.opencypher.morpheus.integration.yelp.YelpConstants.{defaultYelpGraphFolder, yelpGraphName, _}
+import org.opencypher.morpheus.integration.yelp.YelpConstants.{
+  defaultYelpGraphFolder,
+  yelpGraphName,
+  _
+}
 
 object Part2_YelpGraphLibrary extends App {
   Logger.getRootLogger.setLevel(Level.ERROR)
@@ -45,8 +49,7 @@ object Part2_YelpGraphLibrary extends App {
 
   // Construct City sub graph
   log("Construct city sub graph", 1)
-  cypher(
-    s"""
+  cypher(s"""
        |CATALOG CREATE GRAPH $cityGraphName {
        |  FROM GRAPH $fsNamespace.$yelpGraphName
        |  MATCH (business:Business)<-[r:REVIEWS]-(user1:User)
@@ -58,15 +61,18 @@ object Part2_YelpGraphLibrary extends App {
       """.stripMargin)
 
   // Cache graph before performing multiple projections
-  catalog.source(catalog.sessionNamespace).graph(cityGraphName).asMorpheus.cache()
+  catalog
+    .source(catalog.sessionNamespace)
+    .graph(cityGraphName)
+    .asMorpheus
+    .cache()
 
   // Create multiple projections of the City graph and store them in yearly buckets
   log(s"Create graph projections for '$city'", 1)
   (2015 to 2018) foreach { year =>
     log(s"For year $year", 2)
     // Compute (:User)-[:REVIEWS]->(:Business) graph
-    cypher(
-      s"""
+    cypher(s"""
          |CATALOG CREATE GRAPH $fsNamespace.${reviewGraphName(year)} {
          |  FROM GRAPH $cityGraphName
          |  MATCH (business:Business)<-[r:REVIEWS]-(user:User)
@@ -78,8 +84,7 @@ object Part2_YelpGraphLibrary extends App {
      """.stripMargin)
 
     // Compute (:Business)-[:CO_REVIEWED]->(:Business) graph
-    cypher(
-      s"""
+    cypher(s"""
          |CATALOG CREATE GRAPH $fsNamespace.${coReviewedGraphName(year)} {
          |  FROM GRAPH $fsNamespace.${reviewGraphName(year)}
          |  MATCH (business1:Business)<-[r1:REVIEWS]-(user:User)-[r2:REVIEWS]->(business2:Business)
@@ -94,8 +99,7 @@ object Part2_YelpGraphLibrary extends App {
      """.stripMargin)
 
     // Compute (:User)-[:CO_REVIEWS]->(:User) graph
-    cypher(
-      s"""
+    cypher(s"""
          |CATALOG CREATE GRAPH $fsNamespace.${coReviewsGraphName(year)} {
          |  FROM GRAPH $fsNamespace.${reviewGraphName(year)}
          |  MATCH (business:Business)<-[r1:REVIEWS]-(user1:User),
@@ -111,9 +115,10 @@ object Part2_YelpGraphLibrary extends App {
      """.stripMargin)
 
     // Compute (:User)-[:CO_REVIEWS]->(:User), (:User)-[:REVIEWS]->(:Business) graph
-    cypher(
-      s"""
-         |CATALOG CREATE GRAPH $fsNamespace.${coReviewAndBusinessGraphName(year)} {
+    cypher(s"""
+         |CATALOG CREATE GRAPH $fsNamespace.${coReviewAndBusinessGraphName(
+               year
+             )} {
          |  FROM GRAPH $fsNamespace.${reviewGraphName(year)}
          |  MATCH (business:Business)<-[r1:REVIEWS]-(user1:User),
          |        (business)<-[r2:REVIEWS]-(user2:User)

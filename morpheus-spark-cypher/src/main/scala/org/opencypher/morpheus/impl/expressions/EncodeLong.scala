@@ -1,43 +1,49 @@
 /**
   * Copyright (c) 2016-2019 "Neo4j Sweden, AB" [https://neo4j.com]
   *
-  * Licensed under the Apache License, Version 2.0 (the "License");
-  * you may not use this file except in compliance with the License.
-  * You may obtain a copy of the License at
+  * Licensed under the Apache License, Version 2.0 (the "License"); you may not use this file except
+  * in compliance with the License. You may obtain a copy of the License at
   *
   * http://www.apache.org/licenses/LICENSE-2.0
   *
-  * Unless required by applicable law or agreed to in writing, software
-  * distributed under the License is distributed on an "AS IS" BASIS,
-  * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-  * See the License for the specific language governing permissions and
+  * Unless required by applicable law or agreed to in writing, software distributed under the
+  * License is distributed on an "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either
+  * express or implied. See the License for the specific language governing permissions and
   * limitations under the License.
   *
   * Attribution Notice under the terms of the Apache License 2.0
   *
-  * This work was created by the collective efforts of the openCypher community.
-  * Without limiting the terms of Section 6, any Derivative Work that is not
-  * approved by the public consensus process of the openCypher Implementers Group
-  * should not be described as “Cypher” (and Cypher® is a registered trademark of
-  * Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes or
-  * proposals for change that have been documented or implemented should only be
-  * described as "implementation extensions to Cypher" or as "proposed changes to
-  * Cypher that are not yet approved by the openCypher community".
+  * This work was created by the collective efforts of the openCypher community. Without limiting
+  * the terms of Section 6, any Derivative Work that is not approved by the public consensus process
+  * of the openCypher Implementers Group should not be described as “Cypher” (and Cypher® is a
+  * registered trademark of Neo4j Inc.) or as "openCypher". Extensions by implementers or prototypes
+  * or proposals for change that have been documented or implemented should only be described as
+  * "implementation extensions to Cypher" or as "proposed changes to Cypher that are not yet
+  * approved by the openCypher community".
   */
 package org.opencypher.morpheus.impl.expressions
 
 import org.apache.spark.sql.Column
 import org.apache.spark.sql.catalyst.expressions.codegen.{CodegenContext, ExprCode}
-import org.apache.spark.sql.catalyst.expressions.{ExpectsInputTypes, Expression, NullIntolerant, UnaryExpression}
+import org.apache.spark.sql.catalyst.expressions.{
+  ExpectsInputTypes,
+  Expression,
+  NullIntolerant,
+  UnaryExpression
+}
 import org.apache.spark.sql.types.{BinaryType, DataType, LongType}
 import org.opencypher.morpheus.api.value.MorpheusElement._
 
 /**
   * Spark expression that encodes a long into a byte array using variable-length encoding.
   *
-  * @param child expression of type LongType that is encoded by this expression
+  * @param child
+  *   expression of type LongType that is encoded by this expression
   */
-case class EncodeLong(child: Expression) extends UnaryExpression with NullIntolerant with ExpectsInputTypes {
+case class EncodeLong(child: Expression)
+    extends UnaryExpression
+    with NullIntolerant
+    with ExpectsInputTypes {
 
   override val dataType: DataType = BinaryType
 
@@ -46,10 +52,19 @@ case class EncodeLong(child: Expression) extends UnaryExpression with NullIntole
   override protected def nullSafeEval(input: Any): Any =
     EncodeLong.encodeLong(input.asInstanceOf[Long])
 
-  override protected def doGenCode(ctx: CodegenContext, ev: ExprCode): ExprCode =
-    defineCodeGen(ctx, ev, c => s"(byte[])(${EncodeLong.getClass.getName.dropRight(1)}.encodeLong($c))")
+  override protected def doGenCode(
+    ctx: CodegenContext,
+    ev: ExprCode
+  ): ExprCode =
+    defineCodeGen(
+      ctx,
+      ev,
+      c => s"(byte[])(${EncodeLong.getClass.getName.dropRight(1)}.encodeLong($c))"
+    )
 
-  override protected def withNewChildInternal(newChild: Expression): Expression = copy(newChild)
+  override protected def withNewChildInternal(
+    newChild: Expression
+  ): Expression = copy(newChild)
 }
 
 object EncodeLong {
@@ -82,7 +97,10 @@ object EncodeLong {
   // Same encoding as as Base 128 Varints @ https://developers.google.com/protocol-buffers/docs/encoding
   @inline
   final def decodeLong(input: Array[Byte]): Long = {
-    assert(input.nonEmpty, "`decodeLong` requires a non-empty array as its input")
+    assert(
+      input.nonEmpty,
+      "`decodeLong` requires a non-empty array as its input"
+    )
     var index = 0
     var currentByte = input(index)
     var decoded = currentByte & varLength7BitMask
@@ -94,14 +112,17 @@ object EncodeLong {
       decoded |= (currentByte & varLength7BitMask) << nextLeftShift
       nextLeftShift += 7
     }
-    assert(index == input.length - 1,
-      s"`decodeLong` received an input array ${input.toSeq.toHex} with extra bytes that could not be decoded.")
+    assert(
+      index == input.length - 1,
+      s"`decodeLong` received an input array ${input.toSeq.toHex} with extra bytes that could not be decoded."
+    )
     decoded
   }
 
   implicit class ColumnLongOps(val c: Column) extends AnyVal {
 
-    def encodeLongAsMorpheusId(name: String): Column = encodeLongAsMorpheusId.as(name)
+    def encodeLongAsMorpheusId(name: String): Column =
+      encodeLongAsMorpheusId.as(name)
 
     def encodeLongAsMorpheusId: Column = new Column(EncodeLong(c.expr))
 

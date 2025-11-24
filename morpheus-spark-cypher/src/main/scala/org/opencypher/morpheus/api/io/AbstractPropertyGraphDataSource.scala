@@ -49,26 +49,36 @@ import scala.util.{Failure, Success}
 
 object AbstractPropertyGraphDataSource {
 
-  def nodeColsWithCypherType(schema: PropertyGraphSchema, labelCombination: Set[String]): Map[String, CypherType] = {
-    val propertyColsWithCypherType = schema.nodePropertyKeysForCombinations(Set(labelCombination)).map {
-      case (key, cypherType) => key.toPropertyColumnName -> cypherType
-    }
+  def nodeColsWithCypherType(
+    schema: PropertyGraphSchema,
+    labelCombination: Set[String]
+  ): Map[String, CypherType] = {
+    val propertyColsWithCypherType =
+      schema.nodePropertyKeysForCombinations(Set(labelCombination)).map { case (key, cypherType) =>
+        key.toPropertyColumnName -> cypherType
+      }
     propertyColsWithCypherType + (GraphElement.sourceIdKey -> CTIdentity)
   }
 
-  def relColsWithCypherType(schema: PropertyGraphSchema, relType: String): Map[String, CypherType] = {
-    val propertyColsWithCypherType = schema.relationshipPropertyKeys(relType).map {
-      case (key, cypherType) => key.toPropertyColumnName -> cypherType
-    }
-    propertyColsWithCypherType ++ Relationship.nonPropertyAttributes.map(_ -> CTIdentity)
+  def relColsWithCypherType(
+    schema: PropertyGraphSchema,
+    relType: String
+  ): Map[String, CypherType] = {
+    val propertyColsWithCypherType =
+      schema.relationshipPropertyKeys(relType).map { case (key, cypherType) =>
+        key.toPropertyColumnName -> cypherType
+      }
+    propertyColsWithCypherType ++ Relationship.nonPropertyAttributes.map(
+      _ -> CTIdentity
+    )
   }
 }
 
 /**
   * Abstract data source implementation that takes care of caching graph names and schemas.
   *
-  * It automatically creates initializes a ScanGraphs an only requires the implementor to provider simpler methods for
-  * reading/writing files and tables.
+  * It automatically creates initializes a ScanGraphs an only requires the implementor to provider
+  * simpler methods for reading/writing files and tables.
   */
 abstract class AbstractPropertyGraphDataSource extends MorpheusPropertyGraphDataSource {
 
@@ -78,7 +88,8 @@ abstract class AbstractPropertyGraphDataSource extends MorpheusPropertyGraphData
 
   protected var schemaCache: Map[GraphName, MorpheusSchema] = Map.empty
 
-  protected var graphNameCache: Set[GraphName] = listGraphNames.map(GraphName).toSet
+  protected var graphNameCache: Set[GraphName] =
+    listGraphNames.map(GraphName).toSet
 
   protected def listGraphNames: List[String]
 
@@ -88,21 +99,43 @@ abstract class AbstractPropertyGraphDataSource extends MorpheusPropertyGraphData
 
   protected def writeSchema(graphName: GraphName, schema: MorpheusSchema): Unit
 
-  protected def readMorpheusGraphMetaData(graphName: GraphName): MorpheusGraphMetaData
+  protected def readMorpheusGraphMetaData(
+    graphName: GraphName
+  ): MorpheusGraphMetaData
 
-  protected def writeMorpheusGraphMetaData(graphName: GraphName, morpheusGraphMetaData: MorpheusGraphMetaData): Unit
+  protected def writeMorpheusGraphMetaData(
+    graphName: GraphName,
+    morpheusGraphMetaData: MorpheusGraphMetaData
+  ): Unit
 
-  protected def readNodeTable(graphName: GraphName, labelCombination: Set[String], sparkSchema: StructType): DataFrame
+  protected def readNodeTable(
+    graphName: GraphName,
+    labelCombination: Set[String],
+    sparkSchema: StructType
+  ): DataFrame
 
-  protected def writeNodeTable(graphName: GraphName, labelCombination: Set[String], table: DataFrame): Unit
+  protected def writeNodeTable(
+    graphName: GraphName,
+    labelCombination: Set[String],
+    table: DataFrame
+  ): Unit
 
-  protected def readRelationshipTable(graphName: GraphName, relKey: String, sparkSchema: StructType): DataFrame
+  protected def readRelationshipTable(
+    graphName: GraphName,
+    relKey: String,
+    sparkSchema: StructType
+  ): DataFrame
 
-  protected def writeRelationshipTable(graphName: GraphName, relKey: String, table: DataFrame): Unit
+  protected def writeRelationshipTable(
+    graphName: GraphName,
+    relKey: String,
+    table: DataFrame
+  ): Unit
 
   override def graphNames: Set[GraphName] = graphNameCache
 
-  override def hasGraph(graphName: GraphName): Boolean = graphNameCache.contains(graphName)
+  override def hasGraph(graphName: GraphName): Boolean =
+    graphNameCache.contains(graphName)
 
   override def delete(graphName: GraphName): Unit = {
     deleteGraph(graphName)
@@ -116,17 +149,28 @@ abstract class AbstractPropertyGraphDataSource extends MorpheusPropertyGraphData
     } else {
       val morpheusSchema: MorpheusSchema = schema(name).get
       val nodeTables = morpheusSchema.allCombinations.map { combo =>
-        val df = readNodeTable(name, combo, morpheusSchema.canonicalNodeStructType(combo))
+        val df = readNodeTable(
+          name,
+          combo,
+          morpheusSchema.canonicalNodeStructType(combo)
+        )
         MorpheusNodeTable(combo, df)
       }
       val relTables = morpheusSchema.relationshipTypes.map { relType =>
-        val df = readRelationshipTable(name, relType, morpheusSchema.canonicalRelStructType(relType))
+        val df = readRelationshipTable(
+          name,
+          relType,
+          morpheusSchema.canonicalRelStructType(relType)
+        )
         MorpheusRelationshipTable(relType, df)
       }
       if (nodeTables.isEmpty) {
         morpheus.graphs.empty
       } else {
-        morpheus.graphs.create(Some(morpheusSchema), (nodeTables ++ relTables).toSeq: _*)
+        morpheus.graphs.create(
+          Some(morpheusSchema),
+          (nodeTables ++ relTables).toSeq: _*
+        )
       }
     }
   }
@@ -141,14 +185,16 @@ abstract class AbstractPropertyGraphDataSource extends MorpheusPropertyGraphData
     }
   }
 
-
   override def store(graphName: GraphName, graph: PropertyGraph): Unit = {
     checkStorable(graphName)
 
-    val poolSize = morpheus.sparkSession.sparkContext.statusTracker.getExecutorInfos.length
+    val poolSize =
+      morpheus.sparkSession.sparkContext.statusTracker.getExecutorInfos.length
 
     implicit val executionContext: ExecutionContextExecutorService =
-      ExecutionContext.fromExecutorService(Executors.newFixedThreadPool(poolSize))
+      ExecutionContext.fromExecutorService(
+        Executors.newFixedThreadPool(poolSize)
+      )
 
     try {
       val relationalGraph = graph.asMorpheus
@@ -156,18 +202,29 @@ abstract class AbstractPropertyGraphDataSource extends MorpheusPropertyGraphData
       val schema = relationalGraph.schema.asMorpheus
       schemaCache += graphName -> schema
       graphNameCache += graphName
-      writeMorpheusGraphMetaData(graphName, MorpheusGraphMetaData(tableStorageFormat.name))
+      writeMorpheusGraphMetaData(
+        graphName,
+        MorpheusGraphMetaData(tableStorageFormat.name)
+      )
       writeSchema(graphName, schema)
 
       val nodeWrites = schema.labelCombinations.combos.map { combo =>
         Future {
-          writeNodeTable(graphName, combo, relationalGraph.canonicalNodeTable(combo))
+          writeNodeTable(
+            graphName,
+            combo,
+            relationalGraph.canonicalNodeTable(combo)
+          )
         }
       }
 
       val relWrites = schema.relationshipTypes.map { relType =>
         Future {
-          writeRelationshipTable(graphName, relType, relationalGraph.canonicalRelationshipTable(relType))
+          writeRelationshipTable(
+            graphName,
+            relType,
+            relationalGraph.canonicalRelationshipTable(relType)
+          )
         }
       }
 
@@ -183,7 +240,9 @@ abstract class AbstractPropertyGraphDataSource extends MorpheusPropertyGraphData
     graphNameCache = listGraphNames.map(GraphName).toSet
   }
 
-  protected def waitForWriteCompletion(writeFutures: Set[Future[Unit]])(implicit ec: ExecutionContext): Unit = {
+  protected def waitForWriteCompletion(
+    writeFutures: Set[Future[Unit]]
+  )(implicit ec: ExecutionContext): Unit = {
     writeFutures.foreach { writeFuture =>
       Await.ready(writeFuture, Duration.Inf)
       writeFuture.onComplete {

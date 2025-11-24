@@ -29,5 +29,5 @@ package org.opencypher.okapi.testing
 import org.scalatest.{BeforeAndAfterAll, BeforeAndAfterEach}
 
 trait BaseTestFixture extends BeforeAndAfterEach with BeforeAndAfterAll {
-  self: BaseTestSuite  =>
+  self: BaseTestSuite =>
 }

@@ -31,7 +31,11 @@ import org.opencypher.morpheus.api.io.MorpheusElementTable
 import org.opencypher.morpheus.api.value.MorpheusElement._
 import org.opencypher.morpheus.impl.table.SparkTable.DataFrameTable
 import org.opencypher.morpheus.testing.MorpheusTestSuite
-import org.opencypher.morpheus.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
+import org.opencypher.morpheus.testing.fixture.{
+  GraphConstructionFixture,
+  RecordsVerificationFixture,
+  TeamDataFixture
+}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.RelationalCypherRecords
@@ -40,16 +44,19 @@ import org.opencypher.okapi.testing.Bag
 
 import scala.reflect.runtime.universe
 
-abstract class MorpheusGraphTest extends MorpheusTestSuite
-  with GraphConstructionFixture
-  with RecordsVerificationFixture
-  with TeamDataFixture {
+abstract class MorpheusGraphTest
+    extends MorpheusTestSuite
+    with GraphConstructionFixture
+    with RecordsVerificationFixture
+    with TeamDataFixture {
 
   object MorpheusGraphTest {
     implicit class RecordOps(records: RelationalCypherRecords[DataFrameTable]) {
       def planStart: Start[DataFrameTable] = {
-        implicit val tableTypeTag: universe.TypeTag[DataFrameTable] = morpheus.tableTypeTag
-        implicit val context: RelationalRuntimeContext[DataFrameTable] = morpheus.basicRuntimeContext()
+        implicit val tableTypeTag: universe.TypeTag[DataFrameTable] =
+          morpheus.tableTypeTag
+        implicit val context: RelationalRuntimeContext[DataFrameTable] =
+          morpheus.basicRuntimeContext()
         Start.fromEmptyGraph(records)
       }
     }
@@ -64,12 +71,17 @@ abstract class MorpheusGraphTest extends MorpheusTestSuite
       nHasPropertyLuckyNumber,
       nHasPropertyName
     )
-    verify(nodes, cols, Bag(Row(4L.encodeAsMorpheusId.toList, true, 8L, "Donald")))
+    verify(
+      nodes,
+      cols,
+      Bag(Row(4L.encodeAsMorpheusId.toList, true, 8L, "Donald"))
+    )
   }
 
   it("should return only nodes with that exact label (multiple labels)") {
     val graph = initGraph(dataFixtureWithoutArrays)
-    val nodes = graph.nodes("n", CTNode("Person", "German"), exactLabelMatch = true)
+    val nodes =
+      graph.nodes("n", CTNode("Person", "German"), exactLabelMatch = true)
     val cols = Seq(
       n,
       nHasLabelGerman,
@@ -87,27 +99,31 @@ abstract class MorpheusGraphTest extends MorpheusTestSuite
 
   it("should support the same node label from multiple node tables") {
     // this creates additional :Person nodes
-    val personsPart2 = morpheus.sparkSession.createDataFrame(
-      Seq(
-        (5L, false, "Soeren", 23L),
-        (6L, false, "Hannes", 42L))
-    ).toDF("ID", "IS_SWEDE", "NAME", "NUM")
+    val personsPart2 = morpheus.sparkSession
+      .createDataFrame(
+        Seq((5L, false, "Soeren", 23L), (6L, false, "Hannes", 42L))
+      )
+      .toDF("ID", "IS_SWEDE", "NAME", "NUM")
 
-    val personTable2 = MorpheusElementTable.create(personTable.mapping, personsPart2)
+    val personTable2 =
+      MorpheusElementTable.create(personTable.mapping, personsPart2)
 
     val graph = morpheus.graphs.create(personTable, personTable2)
     graph.nodes("n").size shouldBe 6
   }
 
-  it("should support the same relationship type from multiple relationship tables") {
+  it(
+    "should support the same relationship type from multiple relationship tables"
+  ) {
     // this creates additional :KNOWS relationships
-    val knowsParts2 = morpheus.sparkSession.createDataFrame(
-      Seq(
-        (1L, 7L, 2L, 2017L),
-        (1L, 8L, 3L, 2016L))
-    ).toDF("SRC", "ID", "DST", "SINCE")
+    val knowsParts2 = morpheus.sparkSession
+      .createDataFrame(
+        Seq((1L, 7L, 2L, 2017L), (1L, 8L, 3L, 2016L))
+      )
+      .toDF("SRC", "ID", "DST", "SINCE")
 
-    val knowsTable2 = MorpheusElementTable.create(knowsTable.mapping, knowsParts2)
+    val knowsTable2 =
+      MorpheusElementTable.create(knowsTable.mapping, knowsParts2)
 
     val graph = morpheus.graphs.create(personTable, knowsTable, knowsTable2)
     graph.relationships("r").size shouldBe 8

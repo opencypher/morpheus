@@ -48,10 +48,14 @@ object Part5_BusinessRecommendations extends App {
 
   val year = 2017
 
-  log("Write to Neo4j, detect communities and find similar users within communities", 1)
-  cypher(
-    s"""
-       |CATALOG CREATE GRAPH $neo4jNamespace.${coReviewAndBusinessGraphName(year)} {
+  log(
+    "Write to Neo4j, detect communities and find similar users within communities",
+    1
+  )
+  cypher(s"""
+       |CATALOG CREATE GRAPH $neo4jNamespace.${coReviewAndBusinessGraphName(
+             year
+           )} {
        |  FROM $fsNamespace.${coReviewAndBusinessGraphName(year)}
        |  RETURN GRAPH
        |}
@@ -59,20 +63,26 @@ object Part5_BusinessRecommendations extends App {
 
   // Use Neo4j Graph Algorithms to compute Louvain clusters and Jaccard similarity within clusters
   neo4jConfig.withSession { implicit session =>
-
     log("Find communities via Louvain", 1)
     val louvainStats = neo4jCypher(
       s"""
-         |CALL algo.louvain('${coReviewAndBusinessGraphName(year).metaLabel}', 'CO_REVIEWS', {
+         |CALL algo.louvain('${coReviewAndBusinessGraphName(
+          year
+        ).metaLabel}', 'CO_REVIEWS', {
          |  write:           true,
          |  weightProperty: 'reviewCount',
          |  writeProperty:  '${communityProp(year)}'
          |})
          |YIELD communityCount, nodes, loadMillis, computeMillis, writeMillis
-         |RETURN communityCount, nodes, loadMillis + computeMillis + writeMillis AS total""".stripMargin).head
-    log(s"Computing Louvain modularity on ${louvainStats("nodes")} nodes took ${louvainStats("total")} ms", 1)
+         |RETURN communityCount, nodes, loadMillis + computeMillis + writeMillis AS total""".stripMargin
+    ).head
+    log(
+      s"Computing Louvain modularity on ${louvainStats("nodes")} nodes took ${louvainStats("total")} ms",
+      1
+    )
 
-    val communityNumber = louvainStats("communityCount").cast[CypherInteger].value.toInt
+    val communityNumber =
+      louvainStats("communityCount").cast[CypherInteger].value.toInt
 
     log(s"Find similar users within $communityNumber communities", 1)
     // We use Jaccard similarity because it doesn't require equal length vectors
@@ -114,5 +124,3 @@ object Part5_BusinessRecommendations extends App {
 
   recommendations.show
 }
-
-

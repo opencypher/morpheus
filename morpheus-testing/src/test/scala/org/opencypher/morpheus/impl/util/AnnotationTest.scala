@@ -53,18 +53,26 @@ case class TestAnnotation(foo: String) extends StaticAnnotation
 class AnnotationTest extends BaseTestSuite {
 
   test("read node label annotation") {
-    Annotation.labels[NodeWithoutAnnotation] should equal(Set(classOf[NodeWithoutAnnotation].getSimpleName))
+    Annotation.labels[NodeWithoutAnnotation] should equal(
+      Set(classOf[NodeWithoutAnnotation].getSimpleName)
+    )
     Annotation.labels[NodeWithEmptyAnnotation] should equal(Set.empty)
     Annotation.labels[NodeWithSingleAnnotation] should equal(Set("One"))
-    Annotation.labels[NodeWithMultipleAnnotations] should equal(Set("One", "Two", "Three"))
+    Annotation.labels[NodeWithMultipleAnnotations] should equal(
+      Set("One", "Two", "Three")
+    )
   }
 
   test("read relationship type annotation") {
-    Annotation.relType[RelWithoutAnnotation] should equal(classOf[RelWithoutAnnotation].getSimpleName.toUpperCase)
+    Annotation.relType[RelWithoutAnnotation] should equal(
+      classOf[RelWithoutAnnotation].getSimpleName.toUpperCase
+    )
     Annotation.relType[RelWithAnnotation] should equal("One")
   }
 
   test("read more general static annotation") {
-    Annotation.get[TestAnnotation, TestAnnotation] should equal(Some(TestAnnotation("Foo")))
+    Annotation.get[TestAnnotation, TestAnnotation] should equal(
+      Some(TestAnnotation("Foo"))
+    )
   }
 }

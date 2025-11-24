@@ -58,25 +58,28 @@ object NorthwindJdbcExample extends App {
   morpheus.registerSource(Namespace("sql"), sqlGraphSource)
 
   // print the number of nodes in the graph
-  morpheus.cypher(
-    """
+  morpheus
+    .cypher("""
       |FROM GRAPH sql.Northwind
       |MATCH (n)
       |RETURN count(n)
-    """.stripMargin).records.show
+    """.stripMargin)
+    .records
+    .show
 
   // print the schema of the graph
   println(morpheus.catalog.graph("sql.Northwind").schema.pretty)
 
   // run a simple query
-  morpheus.cypher(
-    """
+  morpheus
+    .cypher("""
       |FROM GRAPH sql.Northwind
       |MATCH (e:Employee)-[:REPORTS_TO]->(:Employee)<-[:HAS_EMPLOYEE]-(o:Order)
       |RETURN o.customerID AS customer, o.orderDate AS orderedAt, e.lastName AS handledBy, e.title AS employee
       |  ORDER BY orderedAt, handledBy, customer
       |  LIMIT 50
-      |""".stripMargin).show
+      |""".stripMargin)
+    .show
 
 }
 // end::full-example[]

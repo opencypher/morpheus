@@ -75,30 +75,29 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
 
     it("matches a label") {
       // Given
-      val given = initGraph(
-        """
+      val given = initGraph("""
           |CREATE (p:Person {firstName: "Alice", lastName: "Foo"})
         """.stripMargin)
 
       // When
-      val result = given.cypher(
-        """
+      val result = given.cypher("""
           |MATCH (a:Person)
           |RETURN a.firstName
         """.stripMargin)
 
       // Then
-      result.records.toMaps should equal(Bag(CypherMap("a.firstName" -> "Alice")
-      ))
+      result.records.toMaps should equal(
+        Bag(CypherMap("a.firstName" -> "Alice"))
+      )
     }
 
     it("matches an unknown label") {
       // Given
-      val given = initGraph("CREATE (p:Person {firstName: 'Alice', lastName: 'Foo'})")
+      val given =
+        initGraph("CREATE (p:Person {firstName: 'Alice', lastName: 'Foo'})")
 
       // When
-      val result = given.cypher(
-        """
+      val result = given.cypher("""
           |MATCH (a:Animal)
           |RETURN a
         """.stripMargin)
@@ -111,8 +110,7 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
   describe("multiple match clauses") {
     it("can handle multiple match clauses") {
       // Given
-      val given = initGraph(
-        """CREATE (p1:Person {name: "Alice"})
+      val given = initGraph("""CREATE (p1:Person {name: "Alice"})
           |CREATE (p2:Person {name: "Bob"})
           |CREATE (p3:Person {name: "Eve"})
           |CREATE (p1)-[:KNOWS]->(p2)
@@ -120,8 +118,7 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
         """.stripMargin)
 
       // When
-      val result = given.cypher(
-        """MATCH (p1:Person)
+      val result = given.cypher("""MATCH (p1:Person)
           |MATCH (p1:Person)-[e1]->(p2:Person)
           |MATCH (p2)-[e2]->(p3:Person)
           |RETURN p1.name, p2.name, p3.name
@@ -136,13 +133,13 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
             "p3.name" ->
               "Eve"
           )
-        ))
+        )
+      )
     }
 
     it("cyphermorphism and multiple match clauses") {
       // Given
-      val given = initGraph(
-        """
+      val given = initGraph("""
           |CREATE (p1:Person {name: "Alice"})
           |CREATE (p2:Person {name: "Bob"})
           |CREATE (p1)-[:KNOWS]->(p2)
@@ -150,8 +147,7 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
         """.stripMargin)
 
       // When
-      val result = given.cypher(
-        """
+      val result = given.cypher("""
           |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person)-[e2:KNOWS]->(p3:Person)
           |MATCH (p3)-[e3:KNOWS]->(p4:Person)
           |RETURN p1.name, p2.name, p3.name, p4.name
@@ -172,7 +168,8 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
             "p3.name" -> "Alice",
             "p4.name" -> "Bob"
           )
-        ))
+        )
+      )
     }
   }
 
@@ -180,8 +177,7 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
 
     it("disconnected components") {
       // Given
-      val given = initGraph(
-        """
+      val given = initGraph("""
           |CREATE (p1:Narcissist {name: "Alice"})
           |CREATE (p2:Narcissist {name: "Bob"})
           |CREATE (p1)-[:LOVES]->(p1)
@@ -189,8 +185,7 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
         """.stripMargin)
 
       // When
-      val result = given.cypher(
-        """
+      val result = given.cypher("""
           |MATCH (a:Narcissist), (b:Narcissist)
           |RETURN a.name AS one, b.name AS two
         """.stripMargin)
@@ -202,13 +197,13 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
           CypherMap("one" -> "Alice", "two" -> "Bob"),
           CypherMap("one" -> "Bob", "two" -> "Bob"),
           CypherMap("one" -> "Bob", "two" -> "Alice")
-        ))
+        )
+      )
     }
 
     it("joined components") {
       // Given
-      val given = initGraph(
-        """
+      val given = initGraph("""
           |CREATE (p1:Narcissist {name: "Alice"})
           |CREATE (p2:Narcissist {name: "Bob"})
           |CREATE (p1)-[:LOVES]->(p1)
@@ -216,8 +211,7 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
         """.stripMargin)
 
       // When
-      val result = given.cypher(
-        """
+      val result = given.cypher("""
           |MATCH (a:Narcissist), (b:Narcissist) WHERE a.name = b.name
           |RETURN a.name AS one, b.name AS two
         """.stripMargin)
@@ -227,14 +221,16 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
         Bag(
           CypherMap("one" -> "Alice", "two" -> "Alice"),
           CypherMap("one" -> "Bob", "two" -> "Bob")
-        ))
+        )
+      )
 
       // TODO: Move to plan based testing
       result.plans.logical should include("ValueJoin")
     }
 
     it("can evaluate cross Product between multiple match clauses") {
-      val graph = initGraph("CREATE (:A {val: 0}), (:B {val: 1})-[:REL]->(:C {val: 2})")
+      val graph =
+        initGraph("CREATE (:A {val: 0}), (:B {val: 1})-[:REL]->(:C {val: 2})")
       val query =
         """
           |MATCH (a:A)
@@ -242,9 +238,11 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
           |RETURN a.val, c.val
         """.stripMargin
 
-      graph.cypher(query).records.collect.toBag should equal(Bag(
-        CypherMap("a.val" -> 0, "c.val" -> 2)
-      ))
+      graph.cypher(query).records.collect.toBag should equal(
+        Bag(
+          CypherMap("a.val" -> 0, "c.val" -> 2)
+        )
+      )
     }
   }
 
@@ -262,12 +260,15 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
         """.stripMargin
       )
 
-      val result = given.cypher("MATCH (a:A)--(other) RETURN a.prop, other.prop")
+      val result =
+        given.cypher("MATCH (a:A)--(other) RETURN a.prop, other.prop")
 
-      result.records.collect.toBag should equal(Bag(
-        CypherMap("a.prop" -> "isA", "other.prop" -> "fromA"),
-        CypherMap("a.prop" -> "isA", "other.prop" -> "toA")
-      ))
+      result.records.collect.toBag should equal(
+        Bag(
+          CypherMap("a.prop" -> "isA", "other.prop" -> "fromA"),
+          CypherMap("a.prop" -> "isA", "other.prop" -> "toA")
+        )
+      )
     }
 
     it("matches an undirected relationship with two hops") {
@@ -284,13 +285,16 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
         """.stripMargin
       )
 
-      val result = given.cypher("MATCH (a:A)--()--(other) RETURN a.prop, other.prop")
+      val result =
+        given.cypher("MATCH (a:A)--()--(other) RETURN a.prop, other.prop")
 
-      result.records.collect.toBag should equal(Bag(
-        CypherMap("a.prop" -> "a", "other.prop" -> "c"),
-        CypherMap("a.prop" -> "a", "other.prop" -> "b"),
-        CypherMap("a.prop" -> "a", "other.prop" -> "d")
-      ))
+      result.records.collect.toBag should equal(
+        Bag(
+          CypherMap("a.prop" -> "a", "other.prop" -> "c"),
+          CypherMap("a.prop" -> "a", "other.prop" -> "b"),
+          CypherMap("a.prop" -> "a", "other.prop" -> "d")
+        )
+      )
     }
 
     it("matches an undirected pattern with pre-bound nodes") {
@@ -303,18 +307,19 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
         """.stripMargin
       )
 
-      val result = given.cypher(
-        """
+      val result = given.cypher("""
           |MATCH (a:A)
           |MATCH (b:B)
           |MATCH (a)--(b)
           |RETURN a.prop, b.prop
         """.stripMargin)
 
-      result.records.collect.toBag should equal(Bag(
-        CypherMap("a.prop" -> "a", "b.prop" -> "b"),
-        CypherMap("a.prop" -> "a", "b.prop" -> "b")
-      ))
+      result.records.collect.toBag should equal(
+        Bag(
+          CypherMap("a.prop" -> "a", "b.prop" -> "b"),
+          CypherMap("a.prop" -> "a", "b.prop" -> "b")
+        )
+      )
     }
 
     it("matches a mixed directed/undirected pattern") {
@@ -330,14 +335,17 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
         """.stripMargin
       )
 
-      val result = given.cypher("MATCH (a:A)--(a)<--(other) RETURN a.prop, other.prop")
+      val result =
+        given.cypher("MATCH (a:A)--(a)<--(other) RETURN a.prop, other.prop")
 
-      result.records.collect.toBag should equal(Bag(
-        CypherMap("a.prop" -> "a", "other.prop" -> "a"),
-        CypherMap("a.prop" -> "a", "other.prop" -> "a"),
-        CypherMap("a.prop" -> "a", "other.prop" -> "b"),
-        CypherMap("a.prop" -> "a", "other.prop" -> "b")
-      ))
+      result.records.collect.toBag should equal(
+        Bag(
+          CypherMap("a.prop" -> "a", "other.prop" -> "a"),
+          CypherMap("a.prop" -> "a", "other.prop" -> "a"),
+          CypherMap("a.prop" -> "a", "other.prop" -> "b"),
+          CypherMap("a.prop" -> "a", "other.prop" -> "b")
+        )
+      )
     }
 
     it("matches an undirected cyclic relationship") {
@@ -352,9 +360,11 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
 
       val result = given.cypher("MATCH (a:A)--(a) RETURN a.prop")
 
-      result.records.collect.toBag should equal(Bag(
-        CypherMap("a.prop" -> "isA")
-      ))
+      result.records.collect.toBag should equal(
+        Bag(
+          CypherMap("a.prop" -> "isA")
+        )
+      )
     }
 
     it("matches an undirected variable-length relationship") {
@@ -368,11 +378,14 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
         """.stripMargin
       )
 
-      val result = given.cypher("MATCH (a:A)-[*2..2]-(other) RETURN a.prop, other.prop")
+      val result =
+        given.cypher("MATCH (a:A)-[*2..2]-(other) RETURN a.prop, other.prop")
 
-      result.records.collect.toBag should equal(Bag(
-        CypherMap("a.prop" -> "a", "other.prop" -> "c")
-      ))
+      result.records.collect.toBag should equal(
+        Bag(
+          CypherMap("a.prop" -> "a", "other.prop" -> "c")
+        )
+      )
     }
   }
 
@@ -419,13 +432,14 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
 
     it("reports error on mismatched scans on constructed graph") {
       an[IllegalArgumentException] shouldBe thrownBy {
-        morpheus.cypher(
-          """
+        morpheus
+          .cypher("""
             |CONSTRUCT
             |  CREATE (:A {p: 1})
             |  CREATE (:B {p: 'hi'})
             |MATCH (n)
-            |RETURN count(*)""".stripMargin).show
+            |RETURN count(*)""".stripMargin)
+          .show
       }
     }
   }
@@ -448,26 +462,34 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
       "MATCH (a:Person)-[:LIVES_IN]->(c:City)<-[:LIVES_IN]-(b:Person), (a)-[:KNOWS*1..2]->(b) RETURN a.name, b.name, c.name"
     )
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("a.name" -> "Philip", "b.name" -> "Stefan", "c.name" -> "The Pan-European Sprawl")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "a.name" -> "Philip",
+          "b.name" -> "Stefan",
+          "c.name" -> "The Pan-European Sprawl"
+        )
+      )
+    )
   }
 
   describe("match disjunctions of relationship types") {
 
     it("can match a disjunction of two types") {
       val given = initGraph(sprawlGraphInit)
-      val result = given.cypher("MATCH ()-[r:LIVES_IN|KNOWS]->() RETURN type(r)")
-      result.records.toMaps should equal(Bag(
-        CypherMap("type(r)" -> "LIVES_IN"),
-        CypherMap("type(r)" -> "LIVES_IN"),
-        CypherMap("type(r)" -> "KNOWS")
-      ))
+      val result =
+        given.cypher("MATCH ()-[r:LIVES_IN|KNOWS]->() RETURN type(r)")
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("type(r)" -> "LIVES_IN"),
+          CypherMap("type(r)" -> "LIVES_IN"),
+          CypherMap("type(r)" -> "KNOWS")
+        )
+      )
     }
 
     it("can match a disjunction of four types with var length expand") {
-      val given = initGraph(
-        """
+      val given = initGraph("""
           |CREATE (a { val: 'a' })
           |CREATE (b { val: 'b' })
           |CREATE (c { val: 'c' })
@@ -477,18 +499,22 @@ class MatchTests extends MorpheusTestSuite with ScanGraphInit {
           |CREATE (b)-[:C]->(c)
           |CREATE (c)-[:D]->(d)
         """.stripMargin)
-      val result = given.cypher("MATCH (from)-[:A|B|C|D*1..3]->(to) RETURN from.val as from, to.val as to")
-      result.records.toMaps should equal(Bag(
-        CypherMap("from" -> "a", "to" -> "a"),
-        CypherMap("from" -> "a", "to" -> "b"),
-        CypherMap("from" -> "a", "to" -> "b"),
-        CypherMap("from" -> "a", "to" -> "c"),
-        CypherMap("from" -> "a", "to" -> "c"),
-        CypherMap("from" -> "a", "to" -> "d"),
-        CypherMap("from" -> "b", "to" -> "c"),
-        CypherMap("from" -> "b", "to" -> "d"),
-        CypherMap("from" -> "c", "to" -> "d")
-      ))
+      val result = given.cypher(
+        "MATCH (from)-[:A|B|C|D*1..3]->(to) RETURN from.val as from, to.val as to"
+      )
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("from" -> "a", "to" -> "a"),
+          CypherMap("from" -> "a", "to" -> "b"),
+          CypherMap("from" -> "a", "to" -> "b"),
+          CypherMap("from" -> "a", "to" -> "c"),
+          CypherMap("from" -> "a", "to" -> "c"),
+          CypherMap("from" -> "a", "to" -> "d"),
+          CypherMap("from" -> "b", "to" -> "c"),
+          CypherMap("from" -> "b", "to" -> "d"),
+          CypherMap("from" -> "c", "to" -> "d")
+        )
+      )
     }
 
   }

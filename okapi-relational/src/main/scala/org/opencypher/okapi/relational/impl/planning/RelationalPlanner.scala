@@ -30,7 +30,11 @@ import cats.data.NonEmptyList
 import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 import org.opencypher.okapi.api.types._
-import org.opencypher.okapi.impl.exception.{NotImplementedException, SchemaException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{
+  NotImplementedException,
+  SchemaException,
+  UnsupportedOperationException
+}
 import org.opencypher.okapi.impl.types.CypherTypeUtils._
 import org.opencypher.okapi.ir.api.block.SortItem
 import org.opencypher.okapi.ir.api.expr.PrefixId.GraphIdPrefix
@@ -52,8 +56,9 @@ import scala.reflect.runtime.universe.TypeTag
 object RelationalPlanner {
 
   // TODO: rename to 'plan'
-  def process[T <: Table[T] : TypeTag](input: LogicalOperator)
-    (implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
+  def process[T <: Table[T]: TypeTag](
+    input: LogicalOperator
+  )(implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
 
     implicit val session: CypherSession = context.session
 
@@ -62,7 +67,6 @@ object RelationalPlanner {
         process[T](lhs).join(process[T](rhs), Seq.empty, CrossJoin)
 
       case logical.Select(fields, in, _) =>
-
         val inOp = process[T](in)
 
         val selectExpressions = fields
@@ -78,8 +82,8 @@ object RelationalPlanner {
 
         maybeAlias match {
           case Some(alias) if containsExpr => inOp.alias(expr as alias)
-          case Some(alias) => inOp.add(expr as alias)
-          case None => inOp.add(expr)
+          case Some(alias)                 => inOp.add(expr as alias)
+          case None                        => inOp.add(expr)
         }
 
       case logical.EmptyRecords(fields, in, _) =>
@@ -87,13 +91,15 @@ object RelationalPlanner {
 
       case logical.Start(graph, _) => relational.Start(graph.qualifiedGraphName)
 
-      case logical.DrivingTable(graph, _, _) => relational.Start(graph.qualifiedGraphName, context.maybeInputRecords)
+      case logical.DrivingTable(graph, _, _) =>
+        relational.Start(graph.qualifiedGraphName, context.maybeInputRecords)
 
       case logical.FromGraph(graph, in, _) =>
         val inOp = process[T](in)
         graph match {
           case g: LogicalCatalogGraph => relational.FromCatalogGraph(inOp, g)
-          case construct: LogicalPatternGraph => planConstructGraph(inOp, construct)
+          case construct: LogicalPatternGraph =>
+            planConstructGraph(inOp, construct)
         }
 
       case logical.Unwind(list, item, in, _) =>
@@ -108,7 +114,8 @@ object RelationalPlanner {
           mapping
         )
 
-      case logical.Aggregate(aggregations, group, in, _) => relational.Aggregate(process[T](in), group, aggregations)
+      case logical.Aggregate(aggregations, group, in, _) =>
+        relational.Aggregate(process[T](in), group, aggregations)
 
       case logical.Filter(expr, in, _) => process[T](in).filter(expr)
 
@@ -127,7 +134,15 @@ object RelationalPlanner {
         process[T](left).graphUnionAll(process[T](right))
 
       // TODO: This needs to be a ternary operator taking source, rels and target records instead of just source and target and planning rels only at the physical layer
-      case logical.Expand(source, rel, target, direction, sourceOp, targetOp, _) =>
+      case logical.Expand(
+            source,
+            rel,
+            target,
+            direction,
+            sourceOp,
+            targetOp,
+            _
+          ) =>
         val first = process[T](sourceOp)
         val third = process[T](targetOp)
 
@@ -144,22 +159,28 @@ object RelationalPlanner {
 
         direction match {
           case Outgoing =>
-            val tempResult = first.join(second, Seq(source -> startNode), InnerJoin)
+            val tempResult =
+              first.join(second, Seq(source -> startNode), InnerJoin)
             tempResult.join(third, Seq(endNode -> target), InnerJoin)
 
           case org.opencypher.okapi.logical.impl.Incoming =>
-            val tempResult = third.join(second, Seq(target -> endNode), InnerJoin)
+            val tempResult =
+              third.join(second, Seq(target -> endNode), InnerJoin)
             tempResult.join(first, Seq(startNode -> source), InnerJoin)
 
           case Undirected =>
-            val tempOutgoing = first.join(second, Seq(source -> startNode), InnerJoin)
-            val outgoing = tempOutgoing.join(third, Seq(endNode -> target), InnerJoin)
+            val tempOutgoing =
+              first.join(second, Seq(source -> startNode), InnerJoin)
+            val outgoing =
+              tempOutgoing.join(third, Seq(endNode -> target), InnerJoin)
 
             val filterExpression = Not(Equals(startNode, endNode))
             val relsWithoutLoops = second.filter(filterExpression)
 
-            val tempIncoming = first.join(relsWithoutLoops, Seq(source -> endNode), InnerJoin)
-            val incoming = tempIncoming.join(third, Seq(startNode -> target), InnerJoin)
+            val tempIncoming =
+              first.join(relsWithoutLoops, Seq(source -> endNode), InnerJoin)
+            val incoming =
+              tempIncoming.join(third, Seq(startNode -> target), InnerJoin)
 
             relational.TabularUnionAll(outgoing, incoming)
         }
@@ -180,16 +201,38 @@ object RelationalPlanner {
 
         direction match {
           case Outgoing | Incoming =>
-            in.join(relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
+            in.join(
+              relationships,
+              Seq(source -> startNode, target -> endNode),
+              InnerJoin
+            )
 
           case Undirected =>
-            val outgoing = in.join(relationships, Seq(source -> startNode, target -> endNode), InnerJoin)
-            val incoming = in.join(relationships, Seq(target -> startNode, source -> endNode), InnerJoin)
+            val outgoing = in.join(
+              relationships,
+              Seq(source -> startNode, target -> endNode),
+              InnerJoin
+            )
+            val incoming = in.join(
+              relationships,
+              Seq(target -> startNode, source -> endNode),
+              InnerJoin
+            )
             relational.TabularUnionAll(outgoing, incoming)
         }
 
-      case logical.BoundedVarLengthExpand(source, list, target, edgeScanType, direction, lower, upper, sourceOp, targetOp, _) =>
-
+      case logical.BoundedVarLengthExpand(
+            source,
+            list,
+            target,
+            edgeScanType,
+            direction,
+            lower,
+            upper,
+            sourceOp,
+            targetOp,
+            _
+          ) =>
         val edgeScan = Var(list.name)(edgeScanType)
 
         val edgePattern = RelationshipPattern(edgeScanType)
@@ -204,17 +247,33 @@ object RelationalPlanner {
 
         val planner = direction match {
           // TODO: verify that var length is able to traverse in different directions
-          case Outgoing | Incoming => new DirectedVarLengthExpandPlanner[T](
-            source, list, edgeScan, target,
-            lower, upper,
-            sourceOp, edgeScanOp, targetOp,
-            isExpandInto)
+          case Outgoing | Incoming =>
+            new DirectedVarLengthExpandPlanner[T](
+              source,
+              list,
+              edgeScan,
+              target,
+              lower,
+              upper,
+              sourceOp,
+              edgeScanOp,
+              targetOp,
+              isExpandInto
+            )
 
-          case Undirected => new UndirectedVarLengthExpandPlanner[T](
-            source, list, edgeScan, target,
-            lower, upper,
-            sourceOp, edgeScanOp, targetOp,
-            isExpandInto)
+          case Undirected =>
+            new UndirectedVarLengthExpandPlanner[T](
+              source,
+              list,
+              edgeScan,
+              target,
+              lower,
+              upper,
+              sourceOp,
+              edgeScanOp,
+              targetOp,
+              isExpandInto
+            )
         }
 
         planner.plan
@@ -222,7 +281,6 @@ object RelationalPlanner {
       case logical.Optional(lhs, rhs, _) => planOptional(lhs, rhs)
 
       case logical.ExistsSubQuery(predicateField, lhs, rhs, _) =>
-
         val leftResult = process[T](lhs)
         val rightResult = process[T](rhs)
 
@@ -238,9 +296,14 @@ object RelationalPlanner {
         val exprsToRemove = joinExprs.flatMap(v => rightHeader.ownedBy(v))
         val reducedRhsData = rightWithAliases.dropExprSet(exprsToRemove)
         // 3. Compute distinct rows in rhs
-        val distinctRhsData = relational.Distinct(reducedRhsData, renameExprs.map(_.alias))
+        val distinctRhsData =
+          relational.Distinct(reducedRhsData, renameExprs.map(_.alias))
         // 4. Join lhs and prepared rhs using a left outer join
-        val joinedData = leftResult.join(distinctRhsData, renameExprs.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
+        val joinedData = leftResult.join(
+          distinctRhsData,
+          renameExprs.map(a => a.expr -> a.alias).toSeq,
+          LeftOuterJoin
+        )
         // 5. If at least one rhs join column is not null, the sub-query exists and true is projected to the target expression
         val targetExpr = renameExprs.head.alias
         joinedData.addInto(IsNotNull(targetExpr) -> predicateField.targetField)
@@ -256,11 +319,12 @@ object RelationalPlanner {
 
       case logical.ReturnGraph(in, _) => relational.ReturnGraph(process[T](in))
 
-      case other => throw NotImplementedException(s"Physical planning of operator $other")
+      case other =>
+        throw NotImplementedException(s"Physical planning of operator $other")
     }
   }
 
-  def planScan[T <: Table[T] : TypeTag](
+  def planScan[T <: Table[T]: TypeTag](
     maybeInOp: Option[RelationalOperator[T]],
     logicalGraph: LogicalGraph,
     scanPattern: Pattern,
@@ -268,14 +332,15 @@ object RelationalPlanner {
   )(implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
     val inOp = maybeInOp match {
       case Some(relationalOp) => relationalOp
-      case _ => relational.Start(logicalGraph.qualifiedGraphName)
+      case _                  => relational.Start(logicalGraph.qualifiedGraphName)
     }
 
     val graph = logicalGraph match {
       case _: LogicalCatalogGraph =>
         inOp.context.resolveGraph(logicalGraph.qualifiedGraphName)
       case p: LogicalPatternGraph =>
-        inOp.context.queryLocalCatalog.getOrElse(p.qualifiedGraphName, planConstructGraph(inOp, p).graph)
+        inOp.context.queryLocalCatalog
+          .getOrElse(p.qualifiedGraphName, planConstructGraph(inOp, p).graph)
     }
 
     val scanOp = graph.scanOperator(scanPattern)
@@ -286,8 +351,11 @@ object RelationalPlanner {
       }
     }
 
-    if (!validScan) throw SchemaException(s"Expected the scan to include Variables for all elements of ${scanPattern.elements}" +
-      s" but got ${scanOp.header.elementVars}")
+    if (!validScan)
+      throw SchemaException(
+        s"Expected the scan to include Variables for all elements of ${scanPattern.elements}" +
+          s" but got ${scanOp.header.elementVars}"
+      )
 
     scanOp
       .assignScanName(varPatternElementMapping.mapValues(_.toVar).map(_.swap))
@@ -295,8 +363,10 @@ object RelationalPlanner {
   }
 
   // TODO: process operator outside of def
-  private def planOptional[T <: Table[T] : TypeTag](lhs: LogicalOperator, rhs: LogicalOperator)
-    (implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
+  private def planOptional[T <: Table[T]: TypeTag](
+    lhs: LogicalOperator,
+    rhs: LogicalOperator
+  )(implicit context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
     val lhsOp = process[T](lhs)
     val rhsOp = process[T](rhs)
 
@@ -306,7 +376,8 @@ object RelationalPlanner {
     def generateUniqueName = s"tmp${System.nanoTime}"
 
     // 1. Compute expressions between left and right side
-    val commonExpressions = lhsHeader.expressions.intersect(rhsHeader.expressions)
+    val commonExpressions =
+      lhsHeader.expressions.intersect(rhsHeader.expressions)
     val joinExprs = commonExpressions.collect { case v: Var => v }
     val otherExpressions = commonExpressions -- joinExprs
 
@@ -317,38 +388,50 @@ object RelationalPlanner {
     val rhsWithDropped = relational.Drop(rhsOp, expressionsToRemove)
 
     // 3. Rename the join expressions on the right hand side, in order to make them distinguishable after the join
-    val joinExprRenames = joinExprs.map(e => e as Var(generateUniqueName)(e.cypherType))
+    val joinExprRenames =
+      joinExprs.map(e => e as Var(generateUniqueName)(e.cypherType))
     val rhsWithAlias = relational.Alias(rhsWithDropped, joinExprRenames.toSeq)
-    val rhsJoinReady = relational.Drop(rhsWithAlias, joinExprs.collect { case e: Expr => e })
+    val rhsJoinReady =
+      relational.Drop(rhsWithAlias, joinExprs.collect { case e: Expr => e })
 
     // 4. Left outer join the left side and the processed right side
-    val joined = lhsOp.join(rhsJoinReady, joinExprRenames.map(a => a.expr -> a.alias).toSeq, LeftOuterJoin)
+    val joined = lhsOp.join(
+      rhsJoinReady,
+      joinExprRenames.map(a => a.expr -> a.alias).toSeq,
+      LeftOuterJoin
+    )
 
     // 5. Select the resulting header expressions
     relational.Select(joined, joined.header.expressions.toList)
   }
 
-  implicit class RelationalOperatorOps[T <: Table[T] : TypeTag](op: RelationalOperator[T]) {
+  implicit class RelationalOperatorOps[T <: Table[T]: TypeTag](
+    op: RelationalOperator[T]
+  ) {
     private implicit def context: RelationalRuntimeContext[T] = op.context
 
-    def select(expressions: Expr*): RelationalOperator[T] = relational.Select(op, expressions.toList)
+    def select(expressions: Expr*): RelationalOperator[T] =
+      relational.Select(op, expressions.toList)
 
     def filter(expression: Expr): RelationalOperator[T] = {
       if (expression == TrueLit) {
         op
       } else if (expression.cypherType == CTNull) {
-        relational.Start.fromEmptyGraph(context.session.records.empty(op.header))
+        relational.Start.fromEmptyGraph(
+          context.session.records.empty(op.header)
+        )
       } else {
         relational.Filter(op, expression)
       }
     }
 
     /**
-      * Renames physical columns to given header expression names.
-      * Ensures that there is a physical column for each return item, i.e. aliases lead to duplicate physical columns.
+      * Renames physical columns to given header expression names. Ensures that there is a physical
+      * column for each return item, i.e. aliases lead to duplicate physical columns.
       */
     def alignColumnsWithReturnItems: RelationalOperator[T] = {
-      val selectExprs = op.maybeReturnItems.getOrElse(List.empty)
+      val selectExprs = op.maybeReturnItems
+        .getOrElse(List.empty)
         .flatMap(op.header.expressionsFor)
         .toList
 
@@ -359,35 +442,58 @@ object RelationalPlanner {
       relational.Select(op, selectExprs, renames)
     }
 
-    def renameColumns(columnRenames: Map[Expr, String]): RelationalOperator[T] = {
-      if (columnRenames.isEmpty) op else relational.Select(op, op.header.expressions.toList, columnRenames)
+    def renameColumns(
+      columnRenames: Map[Expr, String]
+    ): RelationalOperator[T] = {
+      if (columnRenames.isEmpty) op
+      else relational.Select(op, op.header.expressions.toList, columnRenames)
     }
 
-    def join(other: RelationalOperator[T], joinExprs: Seq[(Expr, Expr)], joinType: JoinType): RelationalOperator[T] = {
-      relational.Join(op, other.withDisjointColumnNames(op.header), joinExprs, joinType)
+    def join(
+      other: RelationalOperator[T],
+      joinExprs: Seq[(Expr, Expr)],
+      joinType: JoinType
+    ): RelationalOperator[T] = {
+      relational.Join(
+        op,
+        other.withDisjointColumnNames(op.header),
+        joinExprs,
+        joinType
+      )
     }
 
     def graphUnionAll(other: RelationalOperator[T]): RelationalOperator[T] = {
-      relational.GraphUnionAll(NonEmptyList(op, List(other)), QualifiedGraphName("UnionAllGraph"))
+      relational.GraphUnionAll(
+        NonEmptyList(op, List(other)),
+        QualifiedGraphName("UnionAllGraph")
+      )
     }
 
     def unionAll(other: RelationalOperator[T]): RelationalOperator[T] = {
       val combinedHeader = op.header union other.header
 
       // rename all columns to make sure we have no conflicts
-      val targetHeader = RecordHeader.empty.withExprs(combinedHeader.expressions)
+      val targetHeader =
+        RecordHeader.empty.withExprs(combinedHeader.expressions)
 
       val elementVars = targetHeader.nodeVars ++ targetHeader.relationshipVars
 
-      val opWithAlignedElements = elementVars.foldLeft(op) {
-        case (acc, elementVar) => acc.alignExpressions(elementVar, elementVar, targetHeader)
-      }.alignColumnNames(targetHeader)
+      val opWithAlignedElements = elementVars
+        .foldLeft(op) { case (acc, elementVar) =>
+          acc.alignExpressions(elementVar, elementVar, targetHeader)
+        }
+        .alignColumnNames(targetHeader)
 
-      val otherWithAlignedElements = elementVars.foldLeft(other) {
-        case (acc, elementVar) => acc.alignExpressions(elementVar, elementVar, targetHeader)
-      }.alignColumnNames(targetHeader)
+      val otherWithAlignedElements = elementVars
+        .foldLeft(other) { case (acc, elementVar) =>
+          acc.alignExpressions(elementVar, elementVar, targetHeader)
+        }
+        .alignColumnNames(targetHeader)
 
-      relational.TabularUnionAll(opWithAlignedElements, otherWithAlignedElements)
+      relational.TabularUnionAll(
+        opWithAlignedElements,
+        otherWithAlignedElements
+      )
     }
 
     def add(values: Expr*): RelationalOperator[T] = {
@@ -411,43 +517,68 @@ object RelationalPlanner {
 
     def alias(aliases: AliasExpr*): RelationalOperator[T] = Alias(op, aliases)
 
-    def alias(aliases: Set[AliasExpr]): RelationalOperator[T] = alias(aliases.toSeq: _*)
+    def alias(aliases: Set[AliasExpr]): RelationalOperator[T] = alias(
+      aliases.toSeq: _*
+    )
 
     // Only works with single element tables
     def assignScanName(mapping: Map[Var, Var]): RelationalOperator[T] = {
-      val aliases = mapping.map {
-        case (from, to) => AliasExpr(from, to)
+      val aliases = mapping.map { case (from, to) =>
+        AliasExpr(from, to)
       }
 
       op.select(aliases.toList: _*)
     }
 
-    def switchContext(context: RelationalRuntimeContext[T]): RelationalOperator[T] = {
+    def switchContext(
+      context: RelationalRuntimeContext[T]
+    ): RelationalOperator[T] = {
       SwitchContext(op, context)
     }
 
-    def prefixVariableId(v: Var, prefix: GraphIdPrefix): RelationalOperator[T] = {
-      val prefixedIds = op.header.idExpressions(v).map(exprToPrefix => PrefixId(ToId(exprToPrefix), prefix) -> exprToPrefix)
+    def prefixVariableId(
+      v: Var,
+      prefix: GraphIdPrefix
+    ): RelationalOperator[T] = {
+      val prefixedIds = op.header
+        .idExpressions(v)
+        .map(exprToPrefix => PrefixId(ToId(exprToPrefix), prefix) -> exprToPrefix)
       op.addInto(prefixedIds.toSeq: _*)
     }
 
-    def alignWith(inputElement: Var, targetElement: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
-      op.alignExpressions(inputElement, targetElement, targetHeader).alignColumnNames(targetHeader)
+    def alignWith(
+      inputElement: Var,
+      targetElement: Var,
+      targetHeader: RecordHeader
+    ): RelationalOperator[T] = {
+      op.alignExpressions(inputElement, targetElement, targetHeader)
+        .alignColumnNames(targetHeader)
     }
 
     // TODO: element needs to contain all labels/relTypes: all case needs to be explicitly expanded with the schema
     /**
-      * Aligns a single element within the operator with the given target element in the target header.
+      * Aligns a single element within the operator with the given target element in the target
+      * header.
       *
-      * @param inputVar     the variable of the element that should be aligned
-      * @param targetVar    the variable of the reference element
-      * @param targetHeader the header describing the desired state
-      * @return operator with aligned element
+      * @param inputVar
+      *   the variable of the element that should be aligned
+      * @param targetVar
+      *   the variable of the reference element
+      * @param targetHeader
+      *   the header describing the desired state
+      * @return
+      *   operator with aligned element
       */
-    def alignExpressions(inputVar: Var, targetVar: Var, targetHeader: RecordHeader): RelationalOperator[T] = {
+    def alignExpressions(
+      inputVar: Var,
+      targetVar: Var,
+      targetHeader: RecordHeader
+    ): RelationalOperator[T] = {
 
-      val targetHeaderLabels = targetHeader.labelsFor(targetVar).map(_.label.name)
-      val targetHeaderTypes = targetHeader.typesFor(targetVar).map(_.relType.name)
+      val targetHeaderLabels =
+        targetHeader.labelsFor(targetVar).map(_.label.name)
+      val targetHeaderTypes =
+        targetHeader.typesFor(targetVar).map(_.relType.name)
 
       // Labels/RelTypes that do not need to be added
       val existingLabels = op.header.labelsFor(inputVar).map(_.label.name)
@@ -460,79 +591,113 @@ object RelationalPlanner {
       val renamedElement = op.select(toRetain.toSeq: _*)
 
       // Drop expressions that are not in the target header
-      val dropExpressions = renamedElement.header.expressions -- targetHeader.expressions
+      val dropExpressions =
+        renamedElement.header.expressions -- targetHeader.expressions
       val withDroppedExpressions = renamedElement.dropExprSet(dropExpressions)
 
       // Fill in missing true label columns
       val trueLabels = inputVar.cypherType match {
-        case CTNode(labels, _) => (targetHeaderLabels intersect labels) -- existingLabels
+        case CTNode(labels, _) =>
+          (targetHeaderLabels intersect labels) -- existingLabels
         case _ => Set.empty
       }
       val withTrueLabels = withDroppedExpressions.addInto(
-        trueLabels.map(label => TrueLit -> HasLabel(targetVar, Label(label))).toSeq: _*
+        trueLabels
+          .map(label => TrueLit -> HasLabel(targetVar, Label(label)))
+          .toSeq: _*
       )
 
       // Fill in missing false label columns
       val falseLabels = targetVar.cypherType match {
-        case n if n.subTypeOf(CTNode.nullable) => targetHeaderLabels -- trueLabels -- existingLabels
+        case n if n.subTypeOf(CTNode.nullable) =>
+          targetHeaderLabels -- trueLabels -- existingLabels
         case _ => Set.empty
       }
       val withFalseLabels = withTrueLabels.addInto(
-        falseLabels.map(label => FalseLit -> HasLabel(targetVar, Label(label))).toSeq: _*
+        falseLabels
+          .map(label => FalseLit -> HasLabel(targetVar, Label(label)))
+          .toSeq: _*
       )
 
       // Fill in missing true relType columns
       val trueRelTypes = inputVar.cypherType match {
-        case CTRelationship(relTypes, _) => (targetHeaderTypes intersect relTypes) -- existingRelTypes
+        case CTRelationship(relTypes, _) =>
+          (targetHeaderTypes intersect relTypes) -- existingRelTypes
         case _ => Set.empty
       }
       val withTrueRelTypes = withFalseLabels.addInto(
-        trueRelTypes.map(relType => TrueLit -> HasType(targetVar, RelType(relType))).toSeq: _*
+        trueRelTypes
+          .map(relType => TrueLit -> HasType(targetVar, RelType(relType)))
+          .toSeq: _*
       )
 
       // Fill in missing false relType columns
       val falseRelTypes = targetVar.cypherType match {
-        case r if r.subTypeOf(CTRelationship.nullable) => targetHeaderTypes -- trueRelTypes -- existingRelTypes
+        case r if r.subTypeOf(CTRelationship.nullable) =>
+          targetHeaderTypes -- trueRelTypes -- existingRelTypes
         case _ => Set.empty
       }
       val withFalseRelTypes = withTrueRelTypes.addInto(
-        falseRelTypes.map(relType => FalseLit -> HasType(targetVar, RelType(relType))).toSeq: _*
+        falseRelTypes
+          .map(relType => FalseLit -> HasType(targetVar, RelType(relType)))
+          .toSeq: _*
       )
 
       // Fill in missing properties
-      val missingProperties = targetHeader.propertiesFor(targetVar) -- withFalseRelTypes.header.propertiesFor(targetVar)
+      val missingProperties = targetHeader.propertiesFor(
+        targetVar
+      ) -- withFalseRelTypes.header.propertiesFor(targetVar)
       val withProperties = withFalseRelTypes.addInto(
         missingProperties.map(propertyExpr => NullLit -> propertyExpr).toSeq: _*
       )
 
       import Expr._
-      assert(targetHeader.expressionsFor(targetVar) == withProperties.header.expressionsFor(targetVar),
+      assert(
+        targetHeader.expressionsFor(targetVar) == withProperties.header
+          .expressionsFor(targetVar),
         s"""Expected header expressions for $targetVar:
-           |\t${targetHeader.expressionsFor(targetVar).toSeq.sorted.mkString(", ")},
+           |\t${targetHeader
+            .expressionsFor(targetVar)
+            .toSeq
+            .sorted
+            .mkString(", ")},
            |got
-           |\t${withProperties.header.expressionsFor(targetVar).toSeq.sorted.mkString(", ")}""".stripMargin)
+           |\t${withProperties.header
+            .expressionsFor(targetVar)
+            .toSeq
+            .sorted
+            .mkString(", ")}""".stripMargin
+      )
       withProperties
     }
 
     /**
-      * Returns an operator with renamed columns such that the operators columns do not overlap with the other header's
-      * columns.
+      * Returns an operator with renamed columns such that the operators columns do not overlap with
+      * the other header's columns.
       *
-      * @param otherHeader header from which the column names should be disjoint
-      * @return operator with disjoint column names
+      * @param otherHeader
+      *   header from which the column names should be disjoint
+      * @return
+      *   operator with disjoint column names
       */
-    def withDisjointColumnNames(otherHeader: RecordHeader): RelationalOperator[T] = {
+    def withDisjointColumnNames(
+      otherHeader: RecordHeader
+    ): RelationalOperator[T] = {
       val header = op.header
-      val conflictingExpressions = header.expressions.filter(e => otherHeader.columns.contains(header.column(e)))
+      val conflictingExpressions =
+        header.expressions.filter(e => otherHeader.columns.contains(header.column(e)))
 
       if (conflictingExpressions.isEmpty) {
         op
       } else {
-        val renameMapping = conflictingExpressions.foldLeft(Map.empty[Expr, String]) {
-          case (acc, nextRename) =>
-            val newColumnName = header.newConflictFreeColumnName(nextRename, otherHeader.columns ++ acc.values)
+        val renameMapping =
+          conflictingExpressions.foldLeft(Map.empty[Expr, String]) { case (acc, nextRename) =>
+            val newColumnName = header.newConflictFreeColumnName(
+              nextRename,
+              otherHeader.columns ++ acc.values
+            )
             acc + (nextRename -> newColumnName)
-        }
+          }
         op.renameColumns(renameMapping)
       }
     }
@@ -540,25 +705,34 @@ object RelationalPlanner {
     /**
       * Ensures that the column names are aligned with the target header.
       *
-      * @note All expressions in the operator header must be present in the target header.
-      * @param targetHeader the header with which the column names should be aligned with
-      * @return operator with aligned column names
+      * @note
+      *   All expressions in the operator header must be present in the target header.
+      * @param targetHeader
+      *   the header with which the column names should be aligned with
+      * @return
+      *   operator with aligned column names
       */
     def alignColumnNames(targetHeader: RecordHeader): RelationalOperator[T] = {
       val exprsNotInTarget = op.header.expressions -- targetHeader.expressions
-      require(exprsNotInTarget.isEmpty,
+      require(
+        exprsNotInTarget.isEmpty,
         s"""|Column alignment requires for all header expressions to be present in the target header:
             |Current: ${op.header}
             |Target: $targetHeader
             |Missing expressions: ${exprsNotInTarget.mkString(", ")}
-        """.stripMargin)
+        """.stripMargin
+      )
 
-      if (op.header.expressions.forall(expr => op.header.column(expr) == targetHeader.column(expr))) {
+      if (
+        op.header.expressions
+          .forall(expr => op.header.column(expr) == targetHeader.column(expr))
+      ) {
         op
       } else {
-        val columnRenames = op.header.expressions.foldLeft(Map.empty[Expr, String]) {
-          case (currentMap, expr) => currentMap + (expr -> targetHeader.column(expr))
-        }
+        val columnRenames =
+          op.header.expressions.foldLeft(Map.empty[Expr, String]) { case (currentMap, expr) =>
+            currentMap + (expr -> targetHeader.column(expr))
+          }
         op.renameColumns(columnRenames)
       }
     }
@@ -566,8 +740,15 @@ object RelationalPlanner {
     def singleElement: Var = {
       op.header.elementVars.toList match {
         case element :: Nil => element
-        case Nil => throw SchemaException(s"Operation requires single element table, input contains no elements")
-        case other => throw SchemaException(s"Operation requires single element table, found ${other.mkString("[", ", ", "]")}")
+        case Nil =>
+          throw SchemaException(
+            s"Operation requires single element table, input contains no elements"
+          )
+        case other =>
+          throw SchemaException(
+            s"Operation requires single element table, found ${other
+                .mkString("[", ", ", "]")}"
+          )
       }
     }
 
@@ -576,8 +757,11 @@ object RelationalPlanner {
 
       val header = op.header
       val idCol = header.idColumns(element).head
-      val properties = header.propertiesFor(element).map(p => p -> header.column(p))
-      val propertyMapping = properties.map { case (p: Property, column) => p.key.name -> column }
+      val properties =
+        header.propertiesFor(element).map(p => p -> header.column(p))
+      val propertyMapping = properties.map { case (p: Property, column) =>
+        p.key.name -> column
+      }
 
       element.cypherType match {
         case CTNode(labels, _) =>
@@ -602,7 +786,8 @@ object RelationalPlanner {
 
           op.session.elementTables.elementTable(mapping, op.table)
 
-        case other => throw UnsupportedOperationException(s"Cannot create scan for $other")
+        case other =>
+          throw UnsupportedOperationException(s"Cannot create scan for $other")
       }
     }
   }

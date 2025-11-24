@@ -56,13 +56,19 @@ class ConcatColumnBenchmark {
 
   @Benchmark
   def concatWs(): Int = {
-    val result = df.withColumn("c", functions.concat_ws("|", df.col("i"), df.col("s"), df.col("b")))
+    val result = df.withColumn(
+      "c",
+      functions.concat_ws("|", df.col("i"), df.col("s"), df.col("b"))
+    )
     result.select("c").collect().length
   }
 
   @Benchmark
   def serialize(): Int = {
-    val result = df.withColumn("c", MorpheusFunctions.serialize(df.col("i"), df.col("s"), df.col("b")))
+    val result = df.withColumn(
+      "c",
+      MorpheusFunctions.serialize(df.col("i"), df.col("s"), df.col("b"))
+    )
     result.select("c").collect().length
   }
 

@@ -55,8 +55,7 @@ class NorthwindJdbcExampleTest extends ExampleTestBase {
     val sqlResult = H2Utils.withConnection(dataSourceConfig) { conn =>
       val stmt = conn.createStatement()
       var resultTuples = List.empty[Seq[CypherValue]]
-      val result = stmt.executeQuery(
-        """
+      val result = stmt.executeQuery("""
           |SELECT
           | ord.CustomerID AS customer,
           | ord.OrderDate AS orderedAt,
@@ -85,12 +84,17 @@ class NorthwindJdbcExampleTest extends ExampleTestBase {
         )
         resultTuples = resultTuples :+ tuple
       }
-      toTable(Seq("customer", "orderedAt", "handledBy", "employee"), resultTuples.map(row => row.map(_.toCypherString()))).dropRight(1)
+      toTable(
+        Seq("customer", "orderedAt", "handledBy", "employee"),
+        resultTuples.map(row => row.map(_.toCypherString()))
+      ).dropRight(1)
     }
 
     // We only need the last query result from the expected example output
     val cypherResult = Source
-      .fromFile(getClass.getResource("/example_outputs/NorthwindJdbcExample.out").toURI)
+      .fromFile(
+        getClass.getResource("/example_outputs/NorthwindJdbcExample.out").toURI
+      )
       .getLines()
       .toList
       .takeRight(55)

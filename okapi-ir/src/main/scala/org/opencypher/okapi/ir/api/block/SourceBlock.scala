@@ -30,7 +30,7 @@ import org.opencypher.okapi.ir.api.IRGraph
 import org.opencypher.okapi.ir.api.expr.Expr
 
 case class SourceBlock(
-    graph: IRGraph
+  graph: IRGraph
 ) extends BasicBlock[Binds](BlockType("source")) {
   override def where: Set[Expr] = Set.empty[Expr]
   override val after: List[Block] = List.empty

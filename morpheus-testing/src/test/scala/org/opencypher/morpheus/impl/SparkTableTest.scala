@@ -42,37 +42,91 @@ class SparkTableTest extends MorpheusTestSuite with Matchers with ScalaCheckDriv
 
   it("it should cast integer columns to long") {
 
-    val df = sparkSession.createDataFrame(List(
-      Row(1, 2L, Array(42), Array(42), Array(42L), Row(42, 42L))
-    ).asJava, StructType(Seq(
-      StructField("a", IntegerType, nullable = true),
-      StructField("b", LongType, nullable = false),
-      StructField("c", ArrayType(IntegerType, containsNull = true), nullable = true),
-      StructField("d", ArrayType(IntegerType, containsNull = false), nullable = false),
-      StructField("e", ArrayType(LongType, containsNull = false), nullable = false),
-      StructField("f", StructType(Seq(
-        StructField("foo", IntegerType, true),
-        StructField("bar", LongType, false)
-      )), nullable = true)
-    )))
+    val df = sparkSession.createDataFrame(
+      List(
+        Row(1, 2L, Array(42), Array(42), Array(42L), Row(42, 42L))
+      ).asJava,
+      StructType(
+        Seq(
+          StructField("a", IntegerType, nullable = true),
+          StructField("b", LongType, nullable = false),
+          StructField(
+            "c",
+            ArrayType(IntegerType, containsNull = true),
+            nullable = true
+          ),
+          StructField(
+            "d",
+            ArrayType(IntegerType, containsNull = false),
+            nullable = false
+          ),
+          StructField(
+            "e",
+            ArrayType(LongType, containsNull = false),
+            nullable = false
+          ),
+          StructField(
+            "f",
+            StructType(
+              Seq(
+                StructField("foo", IntegerType, true),
+                StructField("bar", LongType, false)
+              )
+            ),
+            nullable = true
+          )
+        )
+      )
+    )
 
     val updatedDf = df.castToLong
 
-    updatedDf.schema should equal(StructType(Seq(
-      StructField("a", LongType, nullable = true),
-      StructField("b", LongType, nullable = false),
-      StructField("c", ArrayType(LongType, containsNull = true), nullable = true),
-      StructField("d", ArrayType(LongType, containsNull = false), nullable = false),
-      StructField("e", ArrayType(LongType, containsNull = false), nullable = false),
-      StructField("f", StructType(Seq(
-        StructField("foo", LongType, true),
-        StructField("bar", LongType, true)
-      )), nullable = false)
-    )))
+    updatedDf.schema should equal(
+      StructType(
+        Seq(
+          StructField("a", LongType, nullable = true),
+          StructField("b", LongType, nullable = false),
+          StructField(
+            "c",
+            ArrayType(LongType, containsNull = true),
+            nullable = true
+          ),
+          StructField(
+            "d",
+            ArrayType(LongType, containsNull = false),
+            nullable = false
+          ),
+          StructField(
+            "e",
+            ArrayType(LongType, containsNull = false),
+            nullable = false
+          ),
+          StructField(
+            "f",
+            StructType(
+              Seq(
+                StructField("foo", LongType, true),
+                StructField("bar", LongType, true)
+              )
+            ),
+            nullable = false
+          )
+        )
+      )
+    )
 
-    updatedDf.collect().toBag should equal(Bag(
-      Row(1L, 2L, new ofLong(Array(42L)), new ofLong(Array(42L)), new ofLong(Array(42L)), Row(42L, 42L))
-    ))
+    updatedDf.collect().toBag should equal(
+      Bag(
+        Row(
+          1L,
+          2L,
+          new ofLong(Array(42L)),
+          new ofLong(Array(42L)),
+          new ofLong(Array(42L)),
+          Row(42L, 42L)
+        )
+      )
+    )
   }
 
   // These tests verifies that https://issues.apache.org/jira/browse/SPARK-26572 is still fixed
@@ -81,13 +135,21 @@ class SparkTableTest extends MorpheusTestSuite with Matchers with ScalaCheckDriv
       val baseTable = Seq(1, 1).toDF("idx")
 
       // Uses Spark distinct
-      val distinctWithId = baseTable.distinct.withColumn("id", functions.monotonically_increasing_id())
+      val distinctWithId = baseTable.distinct.withColumn(
+        "id",
+        functions.monotonically_increasing_id()
+      )
 
       val monotonicallyOnLeft = distinctWithId.join(baseTable, "idx")
 
       // Bug in Spark: "monotonically_increasing_id" is pushed down when it shouldn't be. Push down only happens when the
       // DF containing the "monotonically_increasing_id" expression is on the left side of the join.
-      monotonicallyOnLeft.select("id").collect().map(_.get(0)).distinct.length shouldBe 1
+      monotonicallyOnLeft
+        .select("id")
+        .collect()
+        .map(_.get(0))
+        .distinct
+        .length shouldBe 1
     }
 
   }

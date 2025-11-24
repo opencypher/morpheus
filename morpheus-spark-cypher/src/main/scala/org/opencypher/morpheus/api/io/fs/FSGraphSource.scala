@@ -44,13 +44,18 @@ import org.opencypher.okapi.api.graph.{GraphName, Node, Relationship}
 /**
   * Data source implementation that handles the writing of files and tables to a filesystem.
   *
-  * By default Spark is used to write tables and the Hadoop filesystem configured in Spark is used to write files.
-  * The file/folder/table structure into which the graphs are stored is defined in [[DefaultGraphDirectoryStructure]].
+  * By default Spark is used to write tables and the Hadoop filesystem configured in Spark is used
+  * to write files. The file/folder/table structure into which the graphs are stored is defined in
+  * [[DefaultGraphDirectoryStructure]].
   *
-  * @param rootPath path where the graphs are stored
-  * @param tableStorageFormat Spark configuration parameter for the table format
-  * @param hiveDatabaseName optional Hive database to write tables to
-  * @param filesPerTable optional parameter that specifies how many files a table is coalesced into, by default 1
+  * @param rootPath
+  *   path where the graphs are stored
+  * @param tableStorageFormat
+  *   Spark configuration parameter for the table format
+  * @param hiveDatabaseName
+  *   optional Hive database to write tables to
+  * @param filesPerTable
+  *   optional parameter that specifies how many files a table is coalesced into, by default 1
   */
 class FSGraphSource(
   val rootPath: String,
@@ -58,31 +63,41 @@ class FSGraphSource(
   val hiveDatabaseName: Option[String] = None,
   val filesPerTable: Option[Int] = None
 )(override implicit val morpheus: MorpheusSession)
-  extends AbstractPropertyGraphDataSource with JsonSerialization {
+    extends AbstractPropertyGraphDataSource
+    with JsonSerialization {
 
   protected val directoryStructure = DefaultGraphDirectoryStructure(rootPath)
 
   import directoryStructure._
 
   protected lazy val fileSystem: FileSystem = {
-    FileSystem.get(new URI(rootPath), morpheus.sparkSession.sparkContext.hadoopConfiguration)
+    FileSystem.get(
+      new URI(rootPath),
+      morpheus.sparkSession.sparkContext.hadoopConfiguration
+    )
   }
 
-  protected def listDirectories(path: String): List[String] = fileSystem.listDirectories(path)
+  protected def listDirectories(path: String): List[String] =
+    fileSystem.listDirectories(path)
 
-  protected def deleteDirectory(path: String): Unit = fileSystem.deleteDirectory(path)
+  protected def deleteDirectory(path: String): Unit =
+    fileSystem.deleteDirectory(path)
 
   protected def readFile(path: String): String = fileSystem.readFile(path)
 
-  protected def writeFile(path: String, content: String): Unit = fileSystem.writeFile(path, content)
+  protected def writeFile(path: String, content: String): Unit =
+    fileSystem.writeFile(path, content)
 
   protected def readTable(path: String, schema: StructType): DataFrame = {
-    morpheus.sparkSession.read.format(tableStorageFormat.name).schema(schema).load(path)
+    morpheus.sparkSession.read
+      .format(tableStorageFormat.name)
+      .schema(schema)
+      .load(path)
   }
 
   protected def writeTable(path: String, table: DataFrame): Unit = {
     val coalescedTable = filesPerTable match {
-      case None => table
+      case None           => table
       case Some(numFiles) => table.coalesce(numFiles)
     }
     // TODO: Consider changing computation of canonical tables so `null` typed columns don't make it here
@@ -90,13 +105,21 @@ class FSGraphSource(
     val h :: t = coalescedTable.columns.collect {
       case c if coalescedTable.schema(c).dataType != NullType => c
     }.toList
-    coalescedTable.select(h, t: _*).write.format(tableStorageFormat.name).save(path)
+    coalescedTable
+      .select(h, t: _*)
+      .write
+      .format(tableStorageFormat.name)
+      .save(path)
   }
 
   override protected def listGraphNames: List[String] = {
     def traverse(parent: String): List[String] = {
       val children = listDirectories(parent)
-      if (children.contains(nodeTablesDirectoryName) || children.contains(relationshipTablesDirectoryName)) {
+      if (
+        children.contains(nodeTablesDirectoryName) || children.contains(
+          relationshipTablesDirectoryName
+        )
+      ) {
         List(parent)
       } else {
         children.flatMap(child => traverse(parent / child))
@@ -124,11 +147,20 @@ class FSGraphSource(
     readTable(pathToNodeTable(graphName, labels), sparkSchema)
   }
 
-  override protected def writeNodeTable(graphName: GraphName, labels: Set[String], table: DataFrame): Unit = {
+  override protected def writeNodeTable(
+    graphName: GraphName,
+    labels: Set[String],
+    table: DataFrame
+  ): Unit = {
     writeTable(pathToNodeTable(graphName, labels), table)
     if (hiveDatabaseName.isDefined) {
-      val hiveNodeTableName = HiveTableName(hiveDatabaseName.get, graphName, Node, labels)
-      writeHiveTable(pathToNodeTable(graphName, labels), hiveNodeTableName, table.schema)
+      val hiveNodeTableName =
+        HiveTableName(hiveDatabaseName.get, graphName, Node, labels)
+      writeHiveTable(
+        pathToNodeTable(graphName, labels),
+        hiveNodeTableName,
+        table.schema
+      )
     }
   }
 
@@ -140,16 +172,38 @@ class FSGraphSource(
     readTable(pathToRelationshipTable(graphName, relKey), sparkSchema)
   }
 
-  override protected def writeRelationshipTable(graphName: GraphName, relKey: String, table: DataFrame): Unit = {
+  override protected def writeRelationshipTable(
+    graphName: GraphName,
+    relKey: String,
+    table: DataFrame
+  ): Unit = {
     writeTable(pathToRelationshipTable(graphName, relKey), table)
     if (hiveDatabaseName.isDefined) {
-      val hiveRelationshipTableName = HiveTableName(hiveDatabaseName.get, graphName, Relationship, Set(relKey))
-      writeHiveTable(pathToRelationshipTable(graphName, relKey), hiveRelationshipTableName, table.schema)
+      val hiveRelationshipTableName = HiveTableName(
+        hiveDatabaseName.get,
+        graphName,
+        Relationship,
+        Set(relKey)
+      )
+      writeHiveTable(
+        pathToRelationshipTable(graphName, relKey),
+        hiveRelationshipTableName,
+        table.schema
+      )
     }
   }
 
-  private def writeHiveTable(pathToTable: String, hiveTableName: String, schema: StructType): Unit = {
-    morpheus.sparkSession.catalog.createTable(hiveTableName, tableStorageFormat.name, schema, Map("path" -> pathToTable))
+  private def writeHiveTable(
+    pathToTable: String,
+    hiveTableName: String,
+    schema: StructType
+  ): Unit = {
+    morpheus.sparkSession.catalog.createTable(
+      hiveTableName,
+      tableStorageFormat.name,
+      schema,
+      Map("path" -> pathToTable)
+    )
     morpheus.sparkSession.catalog.refreshTable(hiveTableName)
   }
 
@@ -159,12 +213,18 @@ class FSGraphSource(
     val relTypes = graphSchema.relationshipTypes
 
     labelCombinations.foreach { combo =>
-      val tableName = HiveTableName(hiveDatabaseName.get, graphName, Node, combo)
+      val tableName =
+        HiveTableName(hiveDatabaseName.get, graphName, Node, combo)
       morpheus.sparkSession.sql(s"DROP TABLE IF EXISTS $tableName")
     }
 
     relTypes.foreach { relType =>
-      val tableName = HiveTableName(hiveDatabaseName.get, graphName, Relationship, Set(relType))
+      val tableName = HiveTableName(
+        hiveDatabaseName.get,
+        graphName,
+        Relationship,
+        Set(relType)
+      )
       morpheus.sparkSession.sql(s"DROP TABLE IF EXISTS $tableName")
     }
   }
@@ -173,32 +233,45 @@ class FSGraphSource(
     readFile(pathToGraphSchema(graphName))
   }
 
-  override protected def writeJsonSchema(graphName: GraphName, schema: String): Unit = {
+  override protected def writeJsonSchema(
+    graphName: GraphName,
+    schema: String
+  ): Unit = {
     writeFile(pathToGraphSchema(graphName), schema)
   }
 
-  override protected def readJsonMorpheusGraphMetaData(graphName: GraphName): String = {
+  override protected def readJsonMorpheusGraphMetaData(
+    graphName: GraphName
+  ): String = {
     readFile(pathToMorpheusMetaData(graphName))
   }
 
-  override protected def writeJsonMorpheusGraphMetaData(graphName: GraphName, morpheusGraphMetaData: String): Unit = {
+  override protected def writeJsonMorpheusGraphMetaData(
+    graphName: GraphName,
+    morpheusGraphMetaData: String
+  ): Unit = {
     writeFile(pathToMorpheusMetaData(graphName), morpheusGraphMetaData)
   }
 
 }
 
 /**
-  * Spark CSV does not support storing BinaryType columns by default. This data source implementation encodes BinaryType
-  * columns to Hex-encoded strings and decodes such columns back to BinaryType. This feature is required because ids
-  * within Morpheus are stored as BinaryType.
+  * Spark CSV does not support storing BinaryType columns by default. This data source
+  * implementation encodes BinaryType columns to Hex-encoded strings and decodes such columns back
+  * to BinaryType. This feature is required because ids within Morpheus are stored as BinaryType.
   */
-class CsvGraphSource(rootPath: String, filesPerTable: Option[Int] = None)(override implicit val morpheus: MorpheusSession)
-  extends FSGraphSource(rootPath, FileFormat.csv, None, filesPerTable) {
+class CsvGraphSource(rootPath: String, filesPerTable: Option[Int] = None)(
+  override implicit val morpheus: MorpheusSession
+) extends FSGraphSource(rootPath, FileFormat.csv, None, filesPerTable) {
 
   override protected def writeTable(path: String, table: DataFrame): Unit =
     super.writeTable(path, table.encodeBinaryToHexString)
 
-  protected override def readNodeTable(graphName: GraphName, labels: Set[String], sparkSchema: StructType): DataFrame =
+  protected override def readNodeTable(
+    graphName: GraphName,
+    labels: Set[String],
+    sparkSchema: StructType
+  ): DataFrame =
     readElementTable(graphName, Left(labels), sparkSchema)
 
   protected override def readRelationshipTable(
@@ -216,7 +289,8 @@ class CsvGraphSource(rootPath: String, filesPerTable: Option[Int] = None)(overri
 
     val tableWithEncodedStrings = labelsOrRelKey match {
       case Left(labels) => super.readNodeTable(graphName, labels, readSchema)
-      case Right(relKey) => super.readRelationshipTable(graphName, relKey, readSchema)
+      case Right(relKey) =>
+        super.readRelationshipTable(graphName, relKey, readSchema)
     }
 
     tableWithEncodedStrings.decodeHexStringToBinary(sparkSchema.binaryColumns)

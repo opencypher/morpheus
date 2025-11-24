@@ -39,16 +39,28 @@ trait GraphMatchingTestSupport {
 
   self: BaseTestSuite with SparkSessionFixture with MorpheusSessionFixture =>
 
-  private def getElementIds(records: RelationalCypherRecords[DataFrameTable]): Set[List[Byte]] = {
+  private def getElementIds(
+    records: RelationalCypherRecords[DataFrameTable]
+  ): Set[List[Byte]] = {
     val elementVar = records.header.vars.toSeq match {
       case Seq(v) => v
-      case other => throw new UnsupportedOperationException(s"Expected records with 1 element, got $other")
+      case other =>
+        throw new UnsupportedOperationException(
+          s"Expected records with 1 element, got $other"
+        )
     }
 
-    records.table.df.select(records.header.column(elementVar)).collect().map(_.getAs[Array[Byte]](0).toList).toSet
+    records.table.df
+      .select(records.header.column(elementVar))
+      .collect()
+      .map(_.getAs[Array[Byte]](0).toList)
+      .toSet
   }
 
-  private def verify(actual: RelationalCypherGraph[DataFrameTable], expected: RelationalCypherGraph[DataFrameTable]): Assertion = {
+  private def verify(
+    actual: RelationalCypherGraph[DataFrameTable],
+    expected: RelationalCypherGraph[DataFrameTable]
+  ): Assertion = {
     val expectedNodeIds = getElementIds(expected.nodes("n"))
     val expectedRelIds = getElementIds(expected.relationships("r"))
 
@@ -59,19 +71,25 @@ trait GraphMatchingTestSupport {
     expectedRelIds should equal(actualRelIds)
   }
 
-  implicit class GraphsMatcher(graphs: Map[String, RelationalCypherGraph[DataFrameTable]]) {
-    def shouldMatch(expectedGraphs: RelationalCypherGraph[DataFrameTable]*): Unit = {
+  implicit class GraphsMatcher(
+    graphs: Map[String, RelationalCypherGraph[DataFrameTable]]
+  ) {
+    def shouldMatch(
+      expectedGraphs: RelationalCypherGraph[DataFrameTable]*
+    ): Unit = {
       withClue("expected and actual must have same size") {
         graphs.size should equal(expectedGraphs.size)
       }
 
-      graphs.values.zip(expectedGraphs).foreach {
-        case (actual, expected) => verify(actual, expected)
+      graphs.values.zip(expectedGraphs).foreach { case (actual, expected) =>
+        verify(actual, expected)
       }
     }
   }
 
   implicit class GraphMatcher(graph: RelationalCypherGraph[DataFrameTable]) {
-    def shouldMatch(expectedGraph: RelationalCypherGraph[DataFrameTable]): Unit = verify(graph, expectedGraph)
+    def shouldMatch(
+      expectedGraph: RelationalCypherGraph[DataFrameTable]
+    ): Unit = verify(graph, expectedGraph)
   }
 }

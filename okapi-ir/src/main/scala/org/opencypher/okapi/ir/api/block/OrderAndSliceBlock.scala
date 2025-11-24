@@ -30,11 +30,11 @@ import org.opencypher.okapi.ir.api.IRGraph
 import org.opencypher.okapi.ir.api.expr.Expr
 
 final case class OrderAndSliceBlock(
-    after: List[Block],
-    orderBy: Seq[SortItem],
-    skip: Option[Expr],
-    limit: Option[Expr],
-    graph: IRGraph
+  after: List[Block],
+  orderBy: Seq[SortItem],
+  skip: Option[Expr],
+  limit: Option[Expr],
+  graph: IRGraph
 ) extends BasicBlock[OrderedFields](BlockType("order-and-slice")) {
   override val binds: OrderedFields = OrderedFields()
   override def where: Set[Expr] = Set.empty[Expr]

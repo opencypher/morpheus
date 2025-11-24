@@ -38,8 +38,7 @@ class TablePrinterTest extends ApiBaseTest {
     val header = Seq.empty
     val data = Seq.empty
 
-    toTable(header, data) should equal(
-      """|╔══════════════╗
+    toTable(header, data) should equal("""|╔══════════════╗
          |║ (no columns) ║
          |╠══════════════╣
          |║ (empty row)  ║
@@ -52,8 +51,7 @@ class TablePrinterTest extends ApiBaseTest {
     val header = Seq("column")
     val data = Seq.empty
 
-    toTable(header, data) should equal(
-      """|╔════════╗
+    toTable(header, data) should equal("""|╔════════╗
          |║ column ║
          |╚════════╝
          |(no rows)
@@ -64,8 +62,7 @@ class TablePrinterTest extends ApiBaseTest {
     val header = Seq("column")
     val data = Seq(Seq(1))
 
-    toTable(header, data) should equal(
-      """|╔════════╗
+    toTable(header, data) should equal("""|╔════════╗
          |║ column ║
          |╠════════╣
          |║ 1      ║
@@ -78,8 +75,7 @@ class TablePrinterTest extends ApiBaseTest {
     val header = Seq("column")
     val data = Seq(Seq(1), Seq(2))
 
-    toTable(header, data) should equal(
-      """|╔════════╗
+    toTable(header, data) should equal("""|╔════════╗
          |║ column ║
          |╠════════╣
          |║ 1      ║
@@ -100,13 +96,21 @@ class TablePrinterTest extends ApiBaseTest {
          |║ foo    │ 42      │ 42.23 │ true    ║
          |╚════════╧═════════╧═══════╧═════════╝
          |(1 row)
-         |""".stripMargin)
+         |""".stripMargin
+    )
   }
 
   it("prints simple cypher values correctly") {
 
     val header = Seq("String", "Integer", "Float", "Boolean")
-    val data = Seq(Seq(CypherValue("foo"), CypherValue(42), CypherValue(42.23), CypherValue(true)))
+    val data = Seq(
+      Seq(
+        CypherValue("foo"),
+        CypherValue(42),
+        CypherValue(42.23),
+        CypherValue(true)
+      )
+    )
 
     implicit val f: CypherValue => String = v => v.toCypherString
 
@@ -117,7 +121,8 @@ class TablePrinterTest extends ApiBaseTest {
          |║ 'foo'  │ 42      │ 42.23 │ true    ║
          |╚════════╧═════════╧═══════╧═════════╝
          |(1 row)
-         |""".stripMargin)
+         |""".stripMargin
+    )
   }
 
   it("prints nested cypher values correctly") {
@@ -144,13 +149,29 @@ class TablePrinterTest extends ApiBaseTest {
 
   case class TestNode(id: Long, labels: Set[String], properties: CypherMap) extends Node[Long] {
     override type I = TestNode
-    override def copy(id: Long, labels: Set[String], properties: CypherMap): TestNode =
+    override def copy(
+      id: Long,
+      labels: Set[String],
+      properties: CypherMap
+    ): TestNode =
       copy(id, labels, properties)
   }
 
-  case class TestRelationship(id: Long, startId: Long, endId: Long, relType: String, properties: CypherMap) extends Relationship[Long] {
+  case class TestRelationship(
+    id: Long,
+    startId: Long,
+    endId: Long,
+    relType: String,
+    properties: CypherMap
+  ) extends Relationship[Long] {
     override type I = TestRelationship
-    override def copy(id: Long, source: Long, target: Long, relType: String, properties: CypherMap): TestRelationship =
+    override def copy(
+      id: Long,
+      source: Long,
+      target: Long,
+      relType: String,
+      properties: CypherMap
+    ): TestRelationship =
       copy(id, source, target, relType, properties)
   }
 }

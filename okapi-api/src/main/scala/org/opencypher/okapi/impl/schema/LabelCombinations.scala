@@ -32,16 +32,17 @@ object LabelCombinations {
 
 case class LabelCombinations(combos: Set[Set[String]]) {
 
-  /**
-    * Returns all combinations that contain the argument `labels`
-    */
+  /** Returns all combinations that contain the argument `labels` */
   def combinationsFor(labels: Set[String]): Set[Set[String]] =
     combos.filter(labels.subsetOf)
 
   def withCombinations(coExistingLabels: String*): LabelCombinations = {
-    val (lhs, rhs) = combos.partition(labels => coExistingLabels.exists(labels(_)))
+    val (lhs, rhs) =
+      combos.partition(labels => coExistingLabels.exists(labels(_)))
     copy(combos = rhs + (lhs.flatten ++ coExistingLabels))
   }
 
-  def ++(other: LabelCombinations): LabelCombinations = copy(combos ++ other.combos)
+  def ++(other: LabelCombinations): LabelCombinations = copy(
+    combos ++ other.combos
+  )
 }

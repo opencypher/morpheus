@@ -155,25 +155,39 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
       CTNumber -> ("NUMBER" -> "NUMBER?"),
       CTInteger -> ("INTEGER" -> "INTEGER?"),
       CTFloat -> ("FLOAT" -> "FLOAT?"),
-      CTMap(Map("foo" -> CTString, "bar" -> CTInteger)) -> ("MAP(foo: STRING, bar: INTEGER)" -> "MAP(foo: STRING, bar: INTEGER)?"),
+      CTMap(
+        Map("foo" -> CTString, "bar" -> CTInteger)
+      ) -> ("MAP(foo: STRING, bar: INTEGER)" -> "MAP(foo: STRING, bar: INTEGER)?"),
       CTNode -> ("NODE" -> "NODE?"),
       CTNode("Person") -> ("NODE(:Person)" -> "NODE(:Person)?"),
-      CTNode("Person", "Employee") -> ("NODE(:Person:Employee)" -> "NODE(:Person:Employee)?"),
-      CTNode(Set("Person"), Some(QualifiedGraphName("foo.bar"))) -> ("NODE(:Person) @ foo.bar" -> "NODE(:Person) @ foo.bar?"),
+      CTNode(
+        "Person",
+        "Employee"
+      ) -> ("NODE(:Person:Employee)" -> "NODE(:Person:Employee)?"),
+      CTNode(
+        Set("Person"),
+        Some(QualifiedGraphName("foo.bar"))
+      ) -> ("NODE(:Person) @ foo.bar" -> "NODE(:Person) @ foo.bar?"),
       CTRelationship -> ("RELATIONSHIP" -> "RELATIONSHIP?"),
-      CTRelationship(Set("KNOWS")) -> ("RELATIONSHIP(:KNOWS)" -> "RELATIONSHIP(:KNOWS)?"),
-      CTRelationship(Set("KNOWS", "LOVES")) -> ("RELATIONSHIP(:KNOWS|:LOVES)" -> "RELATIONSHIP(:KNOWS|:LOVES)?"),
-      CTRelationship(Set("KNOWS"), Some(QualifiedGraphName("foo.bar"))) -> ("RELATIONSHIP(:KNOWS) @ foo.bar" -> "RELATIONSHIP(:KNOWS) @ foo.bar?"),
+      CTRelationship(
+        Set("KNOWS")
+      ) -> ("RELATIONSHIP(:KNOWS)" -> "RELATIONSHIP(:KNOWS)?"),
+      CTRelationship(
+        Set("KNOWS", "LOVES")
+      ) -> ("RELATIONSHIP(:KNOWS|:LOVES)" -> "RELATIONSHIP(:KNOWS|:LOVES)?"),
+      CTRelationship(
+        Set("KNOWS"),
+        Some(QualifiedGraphName("foo.bar"))
+      ) -> ("RELATIONSHIP(:KNOWS) @ foo.bar" -> "RELATIONSHIP(:KNOWS) @ foo.bar?"),
       CTPath -> ("PATH" -> "PATH?"),
       CTList(CTInteger) -> ("LIST(INTEGER)" -> "LIST(INTEGER)?"),
       CTList(CTInteger.nullable) -> ("LIST(INTEGER?)" -> "LIST(INTEGER?)?"),
       CTDate -> ("DATE" -> "DATE?"),
       CTLocalDateTime -> ("LOCALDATETIME" -> "LOCALDATETIME?")
-    ).foreach {
-      case (t, (materialName, nullableName)) =>
-        t.isNullable shouldBe false
-        t.name shouldBe materialName
-        t.nullable.name shouldBe nullableName
+    ).foreach { case (t, (materialName, nullableName)) =>
+      t.isNullable shouldBe false
+      t.name shouldBe materialName
+      t.nullable.name shouldBe nullableName
     }
 
     CTVoid.name shouldBe "VOID"
@@ -186,18 +200,32 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTRelationship("KNOWS").superTypeOf(CTRelationship()) shouldBe false
     CTRelationship().subTypeOf(CTRelationship("KNOWS")) shouldBe false
     CTRelationship("KNOWS").superTypeOf(CTRelationship("KNOWS")) shouldBe true
-    CTRelationship("KNOWS").superTypeOf(CTRelationship("KNOWS", "LOVES")) shouldBe false
-    CTRelationship("KNOWS", "LOVES").superTypeOf(CTRelationship("LOVES")) shouldBe true
+    CTRelationship("KNOWS").superTypeOf(
+      CTRelationship("KNOWS", "LOVES")
+    ) shouldBe false
+    CTRelationship("KNOWS", "LOVES").superTypeOf(
+      CTRelationship("LOVES")
+    ) shouldBe true
     CTRelationship("KNOWS").superTypeOf(CTRelationship("NOSE")) shouldBe false
   }
 
   it("RELATIONSHIP? type") {
     CTRelationship.nullable.superTypeOf(CTRelationship.nullable) shouldBe true
-    CTRelationship.nullable.superTypeOf(CTRelationship("KNOWS").nullable) shouldBe true
-    CTRelationship("KNOWS").nullable.superTypeOf(CTRelationship("KNOWS").nullable) shouldBe true
-    CTRelationship("KNOWS").nullable.superTypeOf(CTRelationship("KNOWS", "LOVES").nullable) shouldBe false
-    CTRelationship("KNOWS", "LOVES").nullable.superTypeOf(CTRelationship("LOVES").nullable) shouldBe true
-    CTRelationship("KNOWS").nullable.superTypeOf(CTRelationship("NOSE").nullable) shouldBe false
+    CTRelationship.nullable.superTypeOf(
+      CTRelationship("KNOWS").nullable
+    ) shouldBe true
+    CTRelationship("KNOWS").nullable.superTypeOf(
+      CTRelationship("KNOWS").nullable
+    ) shouldBe true
+    CTRelationship("KNOWS").nullable.superTypeOf(
+      CTRelationship("KNOWS", "LOVES").nullable
+    ) shouldBe false
+    CTRelationship("KNOWS", "LOVES").nullable.superTypeOf(
+      CTRelationship("LOVES").nullable
+    ) shouldBe true
+    CTRelationship("KNOWS").nullable.superTypeOf(
+      CTRelationship("NOSE").nullable
+    ) shouldBe false
     CTRelationship("FOO").nullable.superTypeOf(CTNull) shouldBe true
   }
 
@@ -216,9 +244,15 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
   it("NODE? type") {
     CTNode.nullable.superTypeOf(CTNode.nullable) shouldBe true
     CTNode.nullable.superTypeOf(CTNode("Person").nullable) shouldBe true
-    CTNode("Person").nullable.superTypeOf(CTNode("Person").nullable) shouldBe true
-    CTNode("Person").nullable.superTypeOf(CTNode("Person", "Employee").nullable) shouldBe true
-    CTNode("Person", "Employee").nullable.superTypeOf(CTNode("Employee").nullable) shouldBe false
+    CTNode("Person").nullable.superTypeOf(
+      CTNode("Person").nullable
+    ) shouldBe true
+    CTNode("Person").nullable.superTypeOf(
+      CTNode("Person", "Employee").nullable
+    ) shouldBe true
+    CTNode("Person", "Employee").nullable.superTypeOf(
+      CTNode("Employee").nullable
+    ) shouldBe false
     CTNode("Person").nullable.superTypeOf(CTNode("Foo").nullable) shouldBe false
     CTNode("Foo").nullable.superTypeOf(CTNull) shouldBe true
   }
@@ -250,8 +284,12 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
   it("basic type inheritance") {
     CTNumber superTypeOf CTInteger shouldBe true
     CTNumber superTypeOf CTFloat shouldBe true
-    CTMap(Map("foo" -> CTAny, "bar" -> CTInteger)) superTypeOf CTMap(Map("foo" -> CTString, "bar" -> CTInteger)) shouldBe true
-    CTMap(Map("foo" -> CTAny, "bar" -> CTAny)) superTypeOf CTMap(Map("foo" -> CTString, "bar" -> CTInteger)) shouldBe true
+    CTMap(Map("foo" -> CTAny, "bar" -> CTInteger)) superTypeOf CTMap(
+      Map("foo" -> CTString, "bar" -> CTInteger)
+    ) shouldBe true
+    CTMap(Map("foo" -> CTAny, "bar" -> CTAny)) superTypeOf CTMap(
+      Map("foo" -> CTString, "bar" -> CTInteger)
+    ) shouldBe true
 
     CTAnyMaterial superTypeOf CTInteger shouldBe true
     CTAnyMaterial superTypeOf CTFloat shouldBe true
@@ -301,12 +339,20 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
     CTNumber join CTFloat shouldBe CTNumber
     CTNumber join CTInteger shouldBe CTNumber
     CTNumber join CTBigDecimal shouldBe CTNumber
-    CTNumber join CTString shouldBe CTUnion(CTString, CTInteger, CTFloat, CTBigDecimal)
+    CTNumber join CTString shouldBe CTUnion(
+      CTString,
+      CTInteger,
+      CTFloat,
+      CTBigDecimal
+    )
 
     CTString join CTBoolean shouldBe CTUnion(CTString, CTBoolean)
     CTAnyMaterial join CTInteger shouldBe CTAnyMaterial
 
-    CTList(CTInteger) join CTList(CTFloat) shouldBe CTUnion(CTList(CTInteger), CTList(CTFloat))
+    CTList(CTInteger) join CTList(CTFloat) shouldBe CTUnion(
+      CTList(CTInteger),
+      CTList(CTFloat)
+    )
     CTList(CTInteger) join CTNode shouldBe CTUnion(CTList(CTInteger), CTNode)
 
     CTAnyMaterial join CTVoid shouldBe CTAnyMaterial
@@ -328,26 +374,47 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
   it("join with nullables") {
     CTInteger join CTFloat.nullable join CTBigDecimal shouldBe CTNumber.nullable
     CTFloat.nullable join CTInteger.nullable join CTBigDecimal shouldBe CTNumber.nullable
-    CTNumber.nullable join CTString shouldBe CTUnion(CTString, CTFloat, CTInteger, CTBigDecimal, CTNull)
+    CTNumber.nullable join CTString shouldBe CTUnion(
+      CTString,
+      CTFloat,
+      CTInteger,
+      CTBigDecimal,
+      CTNull
+    )
 
-    CTString.nullable join CTBoolean.nullable shouldBe CTUnion(CTString, CTNull, CTTrue, CTFalse)
+    CTString.nullable join CTBoolean.nullable shouldBe CTUnion(
+      CTString,
+      CTNull,
+      CTTrue,
+      CTFalse
+    )
     CTAnyMaterial join CTInteger.nullable shouldBe CTAnyMaterial.nullable
   }
 
   it("join with labels and types") {
     CTNode join CTNode("Person") shouldBe CTNode
-    CTNode("Other") join CTNode("Person") shouldBe CTUnion(CTNode("Other"), CTNode("Person"))
+    CTNode("Other") join CTNode("Person") shouldBe CTUnion(
+      CTNode("Other"),
+      CTNode("Person")
+    )
     CTNode("Person") join CTNode("Person") shouldBe CTNode("Person")
-    CTNode("L1", "L2", "Lx") join CTNode("L1", "L2", "Ly") shouldBe CTUnion(CTNode("L1", "L2", "Lx"), CTNode("L1", "L2", "Ly"))
+    CTNode("L1", "L2", "Lx") join CTNode("L1", "L2", "Ly") shouldBe CTUnion(
+      CTNode("L1", "L2", "Lx"),
+      CTNode("L1", "L2", "Ly")
+    )
 
     CTRelationship join CTRelationship("KNOWS") shouldBe CTRelationship
-    CTRelationship("OTHER") join CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS", "OTHER")
-    CTRelationship("KNOWS") join CTRelationship("KNOWS") shouldBe CTRelationship("KNOWS")
-    CTRelationship("T1", "T2", "Tx") join CTRelationship("T1", "T2", "Ty") shouldBe CTRelationship(
+    CTRelationship("OTHER") join CTRelationship(
+      "KNOWS"
+    ) shouldBe CTRelationship("KNOWS", "OTHER")
+    CTRelationship("KNOWS") join CTRelationship(
+      "KNOWS"
+    ) shouldBe CTRelationship("KNOWS")
+    CTRelationship("T1", "T2", "Tx") join CTRelationship(
       "T1",
       "T2",
-      "Tx",
-      "Ty")
+      "Ty"
+    ) shouldBe CTRelationship("T1", "T2", "Tx", "Ty")
   }
 
   it("meet") {
@@ -364,8 +431,12 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
 
     CTNode meet CTNode("Person") shouldBe CTNode("Person")
 
-    CTMap("age" -> CTInteger) meet CTMap() shouldBe CTMap("age" -> CTInteger.nullable)
-    CTMap() meet CTMap("age" -> CTInteger)  shouldBe CTMap("age" -> CTInteger.nullable)
+    CTMap("age" -> CTInteger) meet CTMap() shouldBe CTMap(
+      "age" -> CTInteger.nullable
+    )
+    CTMap() meet CTMap("age" -> CTInteger) shouldBe CTMap(
+      "age" -> CTInteger.nullable
+    )
     CTMap("age" -> CTInteger) meet CTMap shouldBe CTMap("age" -> CTInteger)
   }
 
@@ -376,7 +447,9 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
 
     CTRelationship("KNOWS") meet CTRelationship shouldBe CTRelationship("KNOWS")
     CTRelationship("KNOWS") meet CTRelationship("LOVES") shouldBe CTVoid
-    CTRelationship("KNOWS", "LOVES") meet CTRelationship("LOVES") shouldBe CTRelationship("LOVES")
+    CTRelationship("KNOWS", "LOVES") meet CTRelationship(
+      "LOVES"
+    ) shouldBe CTRelationship("LOVES")
   }
 
   it("type equality for all types") {
@@ -445,7 +518,9 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
 
     it("can parse maps with escaped keys") {
       val input = "MAP(`foo bar_my baz`: STRING)"
-      parseCypherType(input) should equal(Some(CTMap(Map("foo bar_my baz" -> CTString))))
+      parseCypherType(input) should equal(
+        Some(CTMap(Map("foo bar_my baz" -> CTString)))
+      )
     }
 
     it("can parse node types with escaped labels") {
@@ -455,7 +530,9 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
 
     it("can parse relationship types with escaped labels") {
       val input = "Relationship(:`foo bar_my baz`|:bar)"
-      parseCypherType(input) should equal(Some(CTRelationship("foo bar_my baz", "bar")))
+      parseCypherType(input) should equal(
+        Some(CTRelationship("foo bar_my baz", "bar"))
+      )
     }
 
     it("handles white space") {
@@ -467,43 +544,68 @@ class CypherTypesTest extends ApiBaseTest with Checkers {
   }
 
   it("types for literals") {
-    check(Prop.forAll(any) { v: CypherValue =>
-      (v.cypherType | CTNull).isNullable === true
-    }, minSuccessful(100))
+    check(
+      Prop.forAll(any) { v: CypherValue =>
+        (v.cypherType | CTNull).isNullable === true
+      },
+      minSuccessful(100)
+    )
 
-    check(Prop.forAll(any) { v: CypherValue =>
-      (v.cypherType | CTNull).material.isNullable === false
-    }, minSuccessful(100))
+    check(
+      Prop.forAll(any) { v: CypherValue =>
+        (v.cypherType | CTNull).material.isNullable === false
+      },
+      minSuccessful(100)
+    )
 
-    check(Prop.forAll(any) { v: CypherValue =>
-      v.cypherType.nullable.isNullable === true
-    }, minSuccessful(100))
+    check(
+      Prop.forAll(any) { v: CypherValue =>
+        v.cypherType.nullable.isNullable === true
+      },
+      minSuccessful(100)
+    )
 
-    check(Prop.forAll(any) { v: CypherValue =>
-      v.cypherType.nullable.material.isNullable === false
-    }, minSuccessful(100))
+    check(
+      Prop.forAll(any) { v: CypherValue =>
+        v.cypherType.nullable.material.isNullable === false
+      },
+      minSuccessful(100)
+    )
 
-    check(Prop.forAll(any) { v: CypherValue =>
-      (v.cypherType | CTNull) === v.cypherType.nullable
-    }, minSuccessful(100))
+    check(
+      Prop.forAll(any) { v: CypherValue =>
+        (v.cypherType | CTNull) === v.cypherType.nullable
+      },
+      minSuccessful(100)
+    )
 
-    check(Prop.forAll(any) { v: CypherValue =>
-      CTUnion(v.cypherType) === v.cypherType
-    }, minSuccessful(100))
+    check(
+      Prop.forAll(any) { v: CypherValue =>
+        CTUnion(v.cypherType) === v.cypherType
+      },
+      minSuccessful(100)
+    )
 
-    check(Prop.forAll(any) { v: CypherValue =>
-      CTUnion(v.cypherType, CTNull) === v.cypherType.nullable
-    }, minSuccessful(100))
+    check(
+      Prop.forAll(any) { v: CypherValue =>
+        CTUnion(v.cypherType, CTNull) === v.cypherType.nullable
+      },
+      minSuccessful(100)
+    )
   }
 
   it("intersects map types with different properties") {
-    CTMap(Map("name" -> CTString)) & CTMap(Map("age" -> CTInteger)) should equal(
+    CTMap(Map("name" -> CTString)) & CTMap(
+      Map("age" -> CTInteger)
+    ) should equal(
       CTMap(Map("name" -> CTString.nullable, "age" -> CTInteger.nullable))
     )
   }
 
   it("intersects map types with overlapping properties") {
-    CTMap(Map("name" -> CTString)) & CTMap(Map("name" -> CTInteger)) should equal(
+    CTMap(Map("name" -> CTString)) & CTMap(
+      Map("name" -> CTInteger)
+    ) should equal(
       CTMap(Map("name" -> (CTString | CTInteger)))
     )
   }

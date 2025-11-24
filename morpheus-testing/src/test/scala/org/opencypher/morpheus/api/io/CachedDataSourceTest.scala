@@ -37,7 +37,10 @@ import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 import org.opencypher.okapi.relational.impl.graph.ScanGraph
 import org.scalatest.BeforeAndAfterEach
 
-class CachedDataSourceTest extends MorpheusTestSuite with GraphConstructionFixture with BeforeAndAfterEach {
+class CachedDataSourceTest
+    extends MorpheusTestSuite
+    with GraphConstructionFixture
+    with BeforeAndAfterEach {
 
   override val testNamespace: Namespace = morpheus.catalog.sessionNamespace
   private val testDataSource = morpheus.catalog.source(testNamespace)
@@ -88,7 +91,8 @@ class CachedDataSourceTest extends MorpheusTestSuite with GraphConstructionFixtu
   }
 
   private def assert(g: PropertyGraph, storageLevel: StorageLevel): Unit = {
-    g.asInstanceOf[ScanGraph[DataFrameTable]].scans
+    g.asInstanceOf[ScanGraph[DataFrameTable]]
+      .scans
       .map(_.table.df)
       .foreach(_.storageLevel should equal(storageLevel))
   }

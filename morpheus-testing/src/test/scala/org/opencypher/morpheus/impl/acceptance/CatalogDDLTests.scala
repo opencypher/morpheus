@@ -39,28 +39,29 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
 
   override def afterEach(): Unit = {
     super.afterEach()
-    morpheus.catalog.graphNames.filterNot(_ == morpheus.emptyGraphQgn).foreach(morpheus.catalog.dropGraph)
+    morpheus.catalog.graphNames
+      .filterNot(_ == morpheus.emptyGraphQgn)
+      .foreach(morpheus.catalog.dropGraph)
     morpheus.catalog.viewNames.foreach(morpheus.catalog.dropView)
   }
 
   describe("CATALOG CREATE GRAPH") {
     it("supports CATALOG CREATE GRAPH on the session") {
-      val inputGraph = initGraph(
-        """
+      val inputGraph = initGraph("""
           |CREATE (:A)
         """.stripMargin)
 
       morpheus.catalog.store("foo", inputGraph)
 
-      val result = morpheus.cypher(
-        """
+      val result = morpheus.cypher("""
           |CATALOG CREATE GRAPH bar {
           | FROM GRAPH foo
           | RETURN GRAPH
           |}
         """.stripMargin)
 
-      val sessionSource = morpheus.catalog.source(morpheus.catalog.sessionNamespace)
+      val sessionSource =
+        morpheus.catalog.source(morpheus.catalog.sessionNamespace)
       sessionSource.hasGraph(GraphName("bar")) shouldBe true
       sessionSource.graph(GraphName("bar")) shouldEqual inputGraph
       result.getGraph shouldBe None
@@ -71,8 +72,7 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
   describe("CATALOG CREATE VIEW") {
 
     it("supports storing a VIEW") {
-      morpheus.cypher(
-        """
+      morpheus.cypher("""
           |CATALOG CREATE VIEW bar {
           | FROM GRAPH foo
           | RETURN GRAPH
@@ -85,8 +85,7 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
     }
 
     it("throws an error when a view QGN collides with an existing view QGN") {
-      morpheus.cypher(
-        """
+      morpheus.cypher("""
           |CATALOG CREATE VIEW foo {
           | FROM GRAPH whatever
           | RETURN GRAPH
@@ -94,8 +93,7 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
         """.stripMargin)
 
       a[ViewAlreadyExistsException] should be thrownBy {
-        morpheus.cypher(
-          """
+        morpheus.cypher("""
             |CATALOG CREATE VIEW foo {
             | FROM GRAPH whatever
             | RETURN GRAPH
@@ -107,8 +105,7 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
 
     it("can still resolve a graph when a view with the same name exists") {
 
-      morpheus.cypher(
-        """
+      morpheus.cypher("""
           |CATALOG CREATE GRAPH foo {
           | CONSTRUCT
           |   CREATE ()
@@ -116,22 +113,23 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
           |}
         """.stripMargin)
 
-      morpheus.cypher(
-        """
+      morpheus.cypher("""
           |CATALOG CREATE VIEW foo {
           | FROM GRAPH whatever
           | RETURN GRAPH
           |}
         """.stripMargin)
 
-      morpheus.cypher("FROM GRAPH foo MATCH (n) RETURN n").records.size shouldBe 1
+      morpheus
+        .cypher("FROM GRAPH foo MATCH (n) RETURN n")
+        .records
+        .size shouldBe 1
 
     }
 
     it("can still resolve a view when a graph with the same name exists") {
 
-      morpheus.cypher(
-        """
+      morpheus.cypher("""
           |CATALOG CREATE GRAPH bar {
           | CONSTRUCT
           |   CREATE ()
@@ -140,8 +138,7 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
           |}
         """.stripMargin)
 
-      morpheus.cypher(
-        """
+      morpheus.cypher("""
           |CATALOG CREATE GRAPH foo {
           | CONSTRUCT
           |   CREATE ()
@@ -149,8 +146,7 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
           |}
         """.stripMargin)
 
-      morpheus.cypher(
-        """
+      morpheus.cypher("""
           |CATALOG CREATE VIEW foo {
           | FROM bar
           | RETURN GRAPH
@@ -161,10 +157,11 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
 
     }
 
-    it("throws an illegal argument exception, when no view with the given name is stored") {
+    it(
+      "throws an illegal argument exception, when no view with the given name is stored"
+    ) {
       an[IllegalArgumentException] should be thrownBy {
-        morpheus.cypher(
-          """
+        morpheus.cypher("""
             |FROM GRAPH someView()
             |MATCH (n)
             |RETURN n
@@ -173,15 +170,13 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
     }
 
     it("supports simple nested CATALOG CREATE VIEW in a query") {
-      val inputGraphA = initGraph(
-        """
+      val inputGraphA = initGraph("""
           |CREATE (:A {val: 0})
         """.stripMargin)
 
       morpheus.catalog.store("a", inputGraphA)
 
-      morpheus.cypher(
-        """
+      morpheus.cypher("""
           |CATALOG CREATE VIEW inc($g1) {
           | FROM GRAPH $g1
           | MATCH (a: A)
@@ -195,28 +190,29 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
       morpheus.catalog.catalogNames should contain(inc)
       morpheus.catalog.viewNames should contain(inc)
 
-      val result = morpheus.cypher(
-        """
+      val result = morpheus.cypher("""
           |FROM GRAPH inc(inc(inc(inc(a))))
           |MATCH (n)
           |RETURN n.val as val
         """.stripMargin)
 
-      result.records.toMaps should equal(Bag(CypherMap(
-        "val" -> 4
-      )))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap(
+            "val" -> 4
+          )
+        )
+      )
     }
 
     it("disallows graph parameters as view invocation parameters") {
-      val inputGraphA = initGraph(
-        """
+      val inputGraphA = initGraph("""
           |CREATE (:A {val: 0})
         """.stripMargin)
 
       morpheus.catalog.store("a", inputGraphA)
 
-      morpheus.cypher(
-        """
+      morpheus.cypher("""
           |CATALOG CREATE VIEW inc($g1) {
           | FROM GRAPH $g1
           | MATCH (a: A)
@@ -236,17 +232,17 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
             |FROM GRAPH inc($param)
             |MATCH (n)
             |RETURN n.val as val
-          """.stripMargin, CypherMap("param" -> "a"))
+          """.stripMargin,
+          CypherMap("param" -> "a")
+        )
       }
     }
 
     it("supports CATALOG CREATE VIEW with two parameters") {
-      val inputGraphA = initGraph(
-        """
+      val inputGraphA = initGraph("""
           |CREATE (:A)
         """.stripMargin)
-      val inputGraphB = initGraph(
-        """
+      val inputGraphB = initGraph("""
           |CREATE (:B)
           |CREATE (:B)
         """.stripMargin)
@@ -254,8 +250,7 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
       morpheus.catalog.store("a", inputGraphA)
       morpheus.catalog.store("b", inputGraphB)
 
-      morpheus.cypher(
-        """
+      morpheus.cypher("""
           |CATALOG CREATE VIEW bar($g1, $g2) {
           | FROM GRAPH $g1
           | MATCH (a: A)
@@ -272,11 +267,12 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
       morpheus.catalog.catalogNames should contain(bar)
       morpheus.catalog.viewNames should contain(bar)
 
-      val resultGraph = morpheus.cypher(
-        """
+      val resultGraph = morpheus
+        .cypher("""
           |FROM GRAPH bar(a, b)
           |RETURN GRAPH
-        """.stripMargin).graph
+        """.stripMargin)
+        .graph
 
       resultGraph.nodes("n").size shouldBe 3
       resultGraph.nodes("a", CTNode("A")).size shouldBe 1
@@ -284,20 +280,17 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
     }
 
     it("supports nested CREATE VIEW with two parameters") {
-      val inputGraphA1 = initGraph(
-        """
+      val inputGraphA1 = initGraph("""
           |CREATE ({val: 1})
         """.stripMargin)
-      val inputGraphA2 = initGraph(
-        """
+      val inputGraphA2 = initGraph("""
           |CREATE ({val: 1000})
         """.stripMargin)
 
       morpheus.catalog.store("a1", inputGraphA1)
       morpheus.catalog.store("a2", inputGraphA2)
 
-      morpheus.cypher(
-        """
+      morpheus.cypher("""
           |CATALOG CREATE VIEW bar($g1, $g2) {
           | FROM GRAPH $g1
           | MATCH (n)
@@ -309,26 +302,29 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
           |}
         """.stripMargin)
 
-      val resultGraph = morpheus.cypher(
-        """
+      val resultGraph = morpheus
+        .cypher("""
           |FROM GRAPH bar(bar(a2, a1), bar(a1, a2))
           |RETURN GRAPH
-        """.stripMargin).graph
+        """.stripMargin)
+        .graph
 
       resultGraph.nodes("n").size shouldBe 1
-      resultGraph.cypher("MATCH (n) RETURN n.val").records.toMaps should equal(Bag(
-        CypherMap("n.val" -> 2002)
-      ))
+      resultGraph.cypher("MATCH (n) RETURN n.val").records.toMaps should equal(
+        Bag(
+          CypherMap("n.val" -> 2002)
+        )
+      )
     }
 
-    it("supports nested CREATE VIEW with two parameters and multiple constructed nodes") {
-      val inputGraphA = initGraph(
-        """
+    it(
+      "supports nested CREATE VIEW with two parameters and multiple constructed nodes"
+    ) {
+      val inputGraphA = initGraph("""
           |CREATE ({name: 'A1'})
           |CREATE ({name: 'A2'})
         """.stripMargin)
-      val inputGraphB = initGraph(
-        """
+      val inputGraphB = initGraph("""
           |CREATE ({name: 'B1'})
           |CREATE ({name: 'B2'})
         """.stripMargin)
@@ -336,8 +332,7 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
       morpheus.catalog.store("a", inputGraphA)
       morpheus.catalog.store("b", inputGraphB)
 
-      morpheus.cypher(
-        """
+      morpheus.cypher("""
           |CATALOG CREATE VIEW bar($g1, $g2) {
           | FROM GRAPH $g1
           | MATCH (n)
@@ -350,23 +345,22 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
           |}
         """.stripMargin)
 
-      val resultGraph = morpheus.cypher(
-        """
+      val resultGraph = morpheus
+        .cypher("""
           |FROM GRAPH bar(bar(b, a), bar(a, b))
           |RETURN GRAPH
-        """.stripMargin).graph
+        """.stripMargin)
+        .graph
 
       resultGraph.nodes("n").size shouldBe 8
     }
 
     it("supports nested CREATE VIEW with two parameters with cloning") {
-      val inputGraphA = initGraph(
-        """
+      val inputGraphA = initGraph("""
           |CREATE ({name: 'A1'})
           |CREATE ({name: 'A2'})
         """.stripMargin)
-      val inputGraphB = initGraph(
-        """
+      val inputGraphB = initGraph("""
           |CREATE ({name: 'B1'})
           |CREATE ({name: 'B2'})
         """.stripMargin)
@@ -374,8 +368,7 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
       morpheus.catalog.store("a", inputGraphA)
       morpheus.catalog.store("b", inputGraphB)
 
-      morpheus.cypher(
-        """
+      morpheus.cypher("""
           |CATALOG CREATE VIEW bar($g1, $g2) {
           | FROM GRAPH $g1
           | MATCH (n)
@@ -388,23 +381,24 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
           |}
         """.stripMargin)
 
-      val resultGraph = morpheus.cypher(
-        """
+      val resultGraph = morpheus
+        .cypher("""
           |FROM GRAPH bar(bar(b, a), bar(a, b))
           |RETURN GRAPH
-        """.stripMargin).graph
+        """.stripMargin)
+        .graph
 
       resultGraph.nodes("n").size shouldBe 8
     }
 
-    it("supports nested CREATE VIEW with two parameters and empty constructed nodes") {
-      val inputGraphA = initGraph(
-        """
+    it(
+      "supports nested CREATE VIEW with two parameters and empty constructed nodes"
+    ) {
+      val inputGraphA = initGraph("""
           |CREATE ({name: 'A1'})
           |CREATE ({name: 'A2'})
         """.stripMargin)
-      val inputGraphB = initGraph(
-        """
+      val inputGraphB = initGraph("""
           |CREATE ({name: 'B1'})
           |CREATE ({name: 'B2'})
         """.stripMargin)
@@ -412,8 +406,7 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
       morpheus.catalog.store("a", inputGraphA)
       morpheus.catalog.store("b", inputGraphB)
 
-      morpheus.cypher(
-        """
+      morpheus.cypher("""
           |CATALOG CREATE VIEW bar($g1, $g2) {
           | FROM GRAPH $g1
           | MATCH (n)
@@ -426,11 +419,12 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
           |}
         """.stripMargin)
 
-      val resultGraph = morpheus.cypher(
-        """
+      val resultGraph = morpheus
+        .cypher("""
           |FROM GRAPH bar(bar(b, a), bar(a, b))
           |RETURN GRAPH
-        """.stripMargin).graph
+        """.stripMargin)
+        .graph
 
       resultGraph.nodes("n").size shouldBe 42
     }
@@ -440,8 +434,7 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
   describe("DROP GRAPH/VIEW") {
 
     it("can drop a view") {
-      morpheus.cypher(
-        """
+      morpheus.cypher("""
           |CATALOG CREATE VIEW bar {
           | FROM GRAPH foo
           | RETURN GRAPH
@@ -477,7 +470,9 @@ class CatalogDDLTests extends MorpheusTestSuite with ScanGraphInit with BeforeAn
         """.stripMargin
       )
 
-      morpheus.catalog.source(morpheus.catalog.sessionNamespace).hasGraph(GraphName("foo")) shouldBe false
+      morpheus.catalog
+        .source(morpheus.catalog.sessionNamespace)
+        .hasGraph(GraphName("foo")) shouldBe false
       result.getGraph shouldBe None
       result.getRecords shouldBe None
     }

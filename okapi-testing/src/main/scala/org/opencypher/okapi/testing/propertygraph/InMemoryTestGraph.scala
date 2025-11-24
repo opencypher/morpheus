@@ -34,21 +34,26 @@ trait InMemoryGraph {
 
   def getNodeById(id: Long): Option[InMemoryTestNode] = {
     nodes.collectFirst {
-      case n : InMemoryTestNode if n.id == id => n
+      case n: InMemoryTestNode if n.id == id => n
     }
   }
 
   def getRelationshipById(id: Long): Option[InMemoryTestRelationship] = {
     relationships.collectFirst {
-      case r : InMemoryTestRelationship if r.id == id => r
+      case r: InMemoryTestRelationship if r.id == id => r
     }
   }
 }
 
-case class InMemoryTestGraph(nodes: Seq[InMemoryTestNode], relationships: Seq[InMemoryTestRelationship]) extends InMemoryGraph {
-  def updated(node: InMemoryTestNode): InMemoryTestGraph = copy(nodes = node +: nodes)
+case class InMemoryTestGraph(
+  nodes: Seq[InMemoryTestNode],
+  relationships: Seq[InMemoryTestRelationship]
+) extends InMemoryGraph {
+  def updated(node: InMemoryTestNode): InMemoryTestGraph =
+    copy(nodes = node +: nodes)
 
-  def updated(rel: InMemoryTestRelationship): InMemoryTestGraph = copy(relationships = rel +: relationships)
+  def updated(rel: InMemoryTestRelationship): InMemoryTestGraph =
+    copy(relationships = rel +: relationships)
 }
 
 object InMemoryTestGraph {
@@ -63,7 +68,11 @@ case class InMemoryTestNode(
 
   type I = InMemoryTestNode
 
-  override def copy(id: Long = id, labels: Set[String] = labels, properties: CypherMap = properties): InMemoryTestNode.this.type = {
+  override def copy(
+    id: Long = id,
+    labels: Set[String] = labels,
+    properties: CypherMap = properties
+  ): InMemoryTestNode.this.type = {
     InMemoryTestNode(id, labels, properties).asInstanceOf[this.type]
   }
 
@@ -82,8 +91,15 @@ case class InMemoryTestRelationship(
 
   type I = InMemoryTestRelationship
 
-  override def copy(id: Long = id, source: Long = startId, target: Long = endId, relType: String = relType, properties: CypherMap = properties): InMemoryTestRelationship.this.type = {
-    InMemoryTestRelationship(id, source, target, relType, properties).asInstanceOf[this.type]
+  override def copy(
+    id: Long = id,
+    source: Long = startId,
+    target: Long = endId,
+    relType: String = relType,
+    properties: CypherMap = properties
+  ): InMemoryTestRelationship.this.type = {
+    InMemoryTestRelationship(id, source, target, relType, properties)
+      .asInstanceOf[this.type]
   }
 
   def equalsSemantically(other: I): Boolean = {
@@ -93,5 +109,8 @@ case class InMemoryTestRelationship(
 }
 
 trait InMemoryGraphFactory {
-  def apply(createQuery: String, parameters: Map[String, Any]): InMemoryTestGraph
+  def apply(
+    createQuery: String,
+    parameters: Map[String, Any]
+  ): InMemoryTestGraph
 }

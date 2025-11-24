@@ -47,15 +47,20 @@ trait IrConstruction {
   def project(
     fields: Fields,
     after: List[Block] = List(leafBlock),
-    given: Set[Expr] = Set.empty) =
+    given: Set[Expr] = Set.empty
+  ) =
     ProjectBlock(after, fields, given, testGraph)
 
-
-  private def testGraph()(implicit schema: PropertyGraphSchema = testGraphSchema) =
+  private def testGraph()(implicit
+    schema: PropertyGraphSchema = testGraphSchema
+  ) =
     IRCatalogGraph(testQualifiedGraphName, schema)
 
   protected def leafPlan: Start =
-    Start(LogicalCatalogGraph(testGraph.qualifiedGraphName, testGraph.schema), SolvedQueryModel.empty)
+    Start(
+      LogicalCatalogGraph(testGraph.qualifiedGraphName, testGraph.schema),
+      SolvedQueryModel.empty
+    )
 
   protected def irFor(root: Block): SingleQuery = {
     val result = TableResultBlock(
@@ -73,17 +78,23 @@ trait IrConstruction {
     MatchBlock(List(leafBlock), pattern, Set.empty, false, testGraph)
 
   implicit class RichString(queryText: String) {
-    def parseIR[T <: CypherStatement : ClassTag](graphsWithSchema: (GraphName, PropertyGraphSchema)*)
-      (implicit schema: PropertyGraphSchema = PropertyGraphSchema.empty): T =
-      ir(graphsWithSchema: _ *) match {
+    def parseIR[T <: CypherStatement: ClassTag](
+      graphsWithSchema: (GraphName, PropertyGraphSchema)*
+    )(implicit schema: PropertyGraphSchema = PropertyGraphSchema.empty): T =
+      ir(graphsWithSchema: _*) match {
         case cq: T => cq
-        case other => throw new IllegalArgumentException(s"Cannot convert $other")
+        case other =>
+          throw new IllegalArgumentException(s"Cannot convert $other")
       }
 
-    def asCypherQuery(graphsWithSchema: (GraphName, PropertyGraphSchema)*)(implicit schema: PropertyGraphSchema = PropertyGraphSchema.empty): SingleQuery =
+    def asCypherQuery(graphsWithSchema: (GraphName, PropertyGraphSchema)*)(implicit
+      schema: PropertyGraphSchema = PropertyGraphSchema.empty
+    ): SingleQuery =
       parseIR[SingleQuery](graphsWithSchema: _*)
 
-    def ir(graphsWithSchema: (GraphName, PropertyGraphSchema)*)(implicit schema: PropertyGraphSchema = PropertyGraphSchema.empty): CypherStatement = {
+    def ir(graphsWithSchema: (GraphName, PropertyGraphSchema)*)(implicit
+      schema: PropertyGraphSchema = PropertyGraphSchema.empty
+    ): CypherStatement = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       val parameters = Map.empty[String, CypherValue]
       IRBuilder(stmt)(
@@ -93,16 +104,21 @@ trait IrConstruction {
           SemanticState.clean,
           testGraph()(schema),
           qgnGenerator,
-          Map.empty.withDefaultValue(testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*)),
+          Map.empty.withDefaultValue(
+            testGraphSource(graphsWithSchema :+ (testGraphName -> schema): _*)
+          ),
           _ => ???
         )
       )
     }
 
-    def irWithParams(params: (String, CypherValue)*)(implicit schema: PropertyGraphSchema = PropertyGraphSchema.empty): CypherStatement = {
+    def irWithParams(params: (String, CypherValue)*)(implicit
+      schema: PropertyGraphSchema = PropertyGraphSchema.empty
+    ): CypherStatement = {
       val stmt = CypherParser(queryText)(CypherParser.defaultContext)
       IRBuilder(stmt)(
-        IRBuilderContext.initial(queryText,
+        IRBuilderContext.initial(
+          queryText,
           params.toMap,
           SemanticState.clean,
           testGraph()(schema),
@@ -113,6 +129,5 @@ trait IrConstruction {
       )
     }
   }
-
 
 }

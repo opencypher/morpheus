@@ -34,81 +34,107 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 /**
   * A Property Graph as defined by the openCypher Property Graph Model.
   *
-  * A graph is always tied to and managed by a session. The lifetime of a graph is bounded
-  * by the session lifetime.
+  * A graph is always tied to and managed by a session. The lifetime of a graph is bounded by the
+  * session lifetime.
   *
   * A graph always has a schema, which describes the properties of the elements in the graph,
   * grouped by the labels and relationship types of the elements.
   *
-  * @see [[https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc openCypher Property Graph Model]]
+  * @see
+  *   [[https://github.com/opencypher/openCypher/blob/master/docs/property-graph-model.adoc openCypher Property Graph Model]]
   */
 trait PropertyGraph {
 
   /**
     * The schema that describes this graph.
     *
-    * @return the schema of this graph.
+    * @return
+    *   the schema of this graph.
     */
   def schema: PropertyGraphSchema
 
   /**
     * The session in which this graph is managed.
     *
-    * @return the session of this graph.
+    * @return
+    *   the session of this graph.
     */
   def session: CypherSession
 
   /**
     * Returns all nodes in this graph with the given [[org.opencypher.okapi.api.types.CTNode]] type.
     *
-    * @param name            field name for the returned nodes
-    * @param nodeCypherType  node type used for selection
-    * @param exactLabelMatch return only nodes that have exactly the given labels
-    * @return table of nodes of the specified type
+    * @param name
+    *   field name for the returned nodes
+    * @param nodeCypherType
+    *   node type used for selection
+    * @param exactLabelMatch
+    *   return only nodes that have exactly the given labels
+    * @return
+    *   table of nodes of the specified type
     */
-  def nodes(name: String, nodeCypherType: CTNode = CTNode, exactLabelMatch: Boolean = false): CypherRecords
+  def nodes(
+    name: String,
+    nodeCypherType: CTNode = CTNode,
+    exactLabelMatch: Boolean = false
+  ): CypherRecords
 
   /**
-    * Returns all relationships in this graph with the given [[org.opencypher.okapi.api.types.CTRelationship]] type.
+    * Returns all relationships in this graph with the given
+    * [[org.opencypher.okapi.api.types.CTRelationship]] type.
     *
-    * @param name          field name for the returned relationships
-    * @param relCypherType relationship type used for selection
-    * @return table of relationships of the specified type
+    * @param name
+    *   field name for the returned relationships
+    * @param relCypherType
+    *   relationship type used for selection
+    * @return
+    *   table of relationships of the specified type
     */
-  def relationships(name: String, relCypherType: CTRelationship = CTRelationship): CypherRecords
+  def relationships(
+    name: String,
+    relCypherType: CTRelationship = CTRelationship
+  ): CypherRecords
 
   /**
-    * Constructs the union of this graph and the argument graphs. Note that the argument graphs have to
-    * be managed by the same session as this graph.
+    * Constructs the union of this graph and the argument graphs. Note that the argument graphs have
+    * to be managed by the same session as this graph.
     *
-    * This operation does not merge any nodes or relationships, but simply creates a new graph consisting
-    * of all nodes and relationships of the argument graphs.
+    * This operation does not merge any nodes or relationships, but simply creates a new graph
+    * consisting of all nodes and relationships of the argument graphs.
     *
-    * @param others argument graphs with which to union
-    * @return union of this and the argument graph
+    * @param others
+    *   argument graphs with which to union
+    * @return
+    *   union of this and the argument graph
     */
   def unionAll(others: PropertyGraph*): PropertyGraph
 
   /**
-    * Executes a Cypher query in the session that manages this graph, using this graph as the input graph.
+    * Executes a Cypher query in the session that manages this graph, using this graph as the input
+    * graph.
     *
-    * @param query      Cypher query to execute
-    * @param parameters parameters used by the Cypher query
-    * @return result of the query.
+    * @param query
+    *   Cypher query to execute
+    * @param parameters
+    *   parameters used by the Cypher query
+    * @return
+    *   result of the query.
     */
   def cypher(
     query: String,
     parameters: CypherMap = CypherMap.empty,
     drivingTable: Option[CypherRecords] = None,
     queryCatalog: Map[QualifiedGraphName, PropertyGraph] = Map.empty
-  ): CypherResult = session.cypherOnGraph(this, query, parameters, drivingTable, queryCatalog)
+  ): CypherResult =
+    session.cypherOnGraph(this, query, parameters, drivingTable, queryCatalog)
 
   /**
     * Returns all patterns that the graph can provide
     *
-    * @return patterns that the graph can provide
+    * @return
+    *   patterns that the graph can provide
     */
   def patterns: Set[Pattern] =
     schema.labelCombinations.combos.map(c => NodePattern(CTNode(c))) ++
-    schema.relationshipTypes.map(r => RelationshipPattern(CTRelationship(r)))
+      schema.relationshipTypes.map(r => RelationshipPattern(CTRelationship(r)))
 }

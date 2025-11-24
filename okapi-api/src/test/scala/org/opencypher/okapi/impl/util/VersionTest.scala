@@ -32,14 +32,14 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 class VersionTest extends ApiBaseTest {
   describe("parsing") {
     it("parses two valued version numbers") {
-      Version("1.0") should equal(Version(1,0))
-      Version("1.5") should equal(Version(1,5))
-      Version("42.21") should equal(Version(42,21))
+      Version("1.0") should equal(Version(1, 0))
+      Version("1.5") should equal(Version(1, 5))
+      Version("42.21") should equal(Version(42, 21))
     }
 
     it("parses single valued version numbers") {
-      Version("1") should equal(Version(1,0))
-      Version("42") should equal(Version(42,0))
+      Version("1") should equal(Version(1, 0))
+      Version("42") should equal(Version(42, 0))
     }
 
     it("throws errors on malformed version string") {

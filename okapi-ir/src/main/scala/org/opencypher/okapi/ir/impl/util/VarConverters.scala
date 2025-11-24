@@ -57,6 +57,7 @@ object VarConverters {
 
   implicit def toField(s: Symbol): IRField = IRField(s.name)()
 
-  implicit def toField(t: (Symbol, CypherType)): IRField = IRField(t._1.name)(t._2)
+  implicit def toField(t: (Symbol, CypherType)): IRField =
+    IRField(t._1.name)(t._2)
 
 }

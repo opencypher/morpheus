@@ -35,7 +35,8 @@ sealed trait TyperError extends Throwable {
 }
 
 case class UnsupportedExpr(expr: Expression) extends TyperError {
-  override def toString = s"The expression ${expr.show} is not supported by the system"
+  override def toString =
+    s"The expression ${expr.show} is not supported by the system"
 }
 
 case class UnTypedExpr(it: Expression) extends TyperError {
@@ -46,25 +47,42 @@ case class MissingParameter(it: String) extends TyperError {
   override def toString = s"Expected a type for $$$it but found none"
 }
 
-case class NoSuitableSignatureForExpr(it: Expression, argTypes: Seq[CypherType]) extends TyperError {
-  override def toString = s"No signature for ${it.show} matched input types ${argTypes.mkString("{ ", ", ", " }")}"
+case class NoSuitableSignatureForExpr(it: Expression, argTypes: Seq[CypherType])
+    extends TyperError {
+  override def toString =
+    s"No signature for ${it.show} matched input types ${argTypes.mkString("{ ", ", ", " }")}"
 }
 
-case class AlreadyTypedExpr(it: Expression, oldTyp: CypherType, newTyp: CypherType) extends TyperError {
-  override def toString = s"Tried to type ${it.show} with $newTyp but it was already typed as $oldTyp"
+case class AlreadyTypedExpr(
+  it: Expression,
+  oldTyp: CypherType,
+  newTyp: CypherType
+) extends TyperError {
+  override def toString =
+    s"Tried to type ${it.show} with $newTyp but it was already typed as $oldTyp"
 }
 
 case class InvalidContainerAccess(it: Expression) extends TyperError {
-  override def toString = s"Invalid indexing into a container detected when typing ${it.show}"
+  override def toString =
+    s"Invalid indexing into a container detected when typing ${it.show}"
 }
 
 object InvalidType {
-  def apply(it: Expression, expected: CypherType, actual: CypherType): InvalidType =
+  def apply(
+    it: Expression,
+    expected: CypherType,
+    actual: CypherType
+  ): InvalidType =
     InvalidType(it, Seq(expected), actual)
 }
 
-case class InvalidType(it: Expression, expected: Seq[CypherType], actual: CypherType) extends TyperError {
-  override def toString = s"Expected ${it.show} to have $expectedString, but it was of type $actual"
+case class InvalidType(
+  it: Expression,
+  expected: Seq[CypherType],
+  actual: CypherType
+) extends TyperError {
+  override def toString =
+    s"Expected ${it.show} to have $expectedString, but it was of type $actual"
 
   private def expectedString =
     if (expected.size == 1) s"type ${expected.head}"
@@ -72,7 +90,8 @@ case class InvalidType(it: Expression, expected: Seq[CypherType], actual: Cypher
 }
 
 case object TypeTrackerScopeError extends TyperError {
-  override def toString = "Tried to pop scope of type tracker, but it was at top level already"
+  override def toString =
+    "Tried to pop scope of type tracker, but it was at top level already"
 }
 
 case class InvalidArgument(expr: Expression, argument: Expression) extends TyperError {
@@ -80,5 +99,6 @@ case class InvalidArgument(expr: Expression, argument: Expression) extends Typer
 }
 
 case class WrongNumberOfArguments(expr: Expression, expected: Int, actual: Int) extends TyperError {
-  override def toString = s"Expected $expected argument(s) for $expr, but got $actual"
+  override def toString =
+    s"Expected $expected argument(s) for $expr, but got $actual"
 }

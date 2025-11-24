@@ -36,14 +36,17 @@ object H2Utils {
   implicit class ConnOps(conn: Connection) {
     def run[T](code: Statement => T): T = {
       val stmt = conn.createStatement()
-      try { code(stmt) } finally { stmt.close() }
+      try { code(stmt) }
+      finally { stmt.close() }
     }
     def execute(sql: String): Boolean = conn.run(_.execute(sql))
     def query(sql: String): ResultSet = conn.run(_.executeQuery(sql))
     def update(sql: String): Int = conn.run(_.executeUpdate(sql))
   }
 
-  def withConnection[T](cfg: SqlDataSourceConfig.Jdbc)(code: Connection => T): T = {
+  def withConnection[T](
+    cfg: SqlDataSourceConfig.Jdbc
+  )(code: Connection => T): T = {
     Class.forName(cfg.driver)
     val conn = (cfg.options.get("user"), cfg.options.get("password")) match {
       case (Some(user), Some(pass)) =>

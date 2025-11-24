@@ -41,7 +41,8 @@ object MorpheusElement {
 
   implicit class LongIdEncoding(val l: Long) extends AnyVal {
 
-    def withPrefix(prefix: Int): Array[Byte] = l.encodeAsMorpheusId.withPrefix(prefix.toByte)
+    def withPrefix(prefix: Int): Array[Byte] =
+      l.encodeAsMorpheusId.withPrefix(prefix.toByte)
 
     def encodeAsMorpheusId: Array[Byte] = encodeLong(l)
 
@@ -71,11 +72,15 @@ object MorpheusNode {
 }
 
 /**
-  * Representation of a [[Node]] in Morpheus. A node contains an id of type [[Long]], a set of string labels and a map of properties.
+  * Representation of a [[Node]] in Morpheus. A node contains an id of type [[Long]], a set of
+  * string labels and a map of properties.
   *
-  * @param id         the id of the node, unique within the containing graph.
-  * @param labels     the labels of the node.
-  * @param properties the properties of the node.
+  * @param id
+  *   the id of the node, unique within the containing graph.
+  * @param labels
+  *   the labels of the node.
+  * @param properties
+  *   the properties of the node.
   */
 case class MorpheusNode(
   override val id: Seq[Byte],
@@ -85,10 +90,15 @@ case class MorpheusNode(
 
   override type I = MorpheusNode
 
-  override def copy(id: Seq[Byte] = id, labels: Set[String] = labels, properties: CypherMap = properties): MorpheusNode = {
+  override def copy(
+    id: Seq[Byte] = id,
+    labels: Set[String] = labels,
+    properties: CypherMap = properties
+  ): MorpheusNode = {
     MorpheusNode(id, labels, properties)
   }
-  override def toString: String = s"${getClass.getSimpleName}(id=${id.toHex}, labels=$labels, properties=$properties)"
+  override def toString: String =
+    s"${getClass.getSimpleName}(id=${id.toHex}, labels=$labels, properties=$properties)"
 }
 
 object MorpheusRelationship {
@@ -98,7 +108,12 @@ object MorpheusRelationship {
     startId: Long,
     endId: Long,
     relType: String
-  ): MorpheusRelationship = MorpheusRelationship(id.encodeAsMorpheusId, startId.encodeAsMorpheusId, endId.encodeAsMorpheusId, relType)
+  ): MorpheusRelationship = MorpheusRelationship(
+    id.encodeAsMorpheusId,
+    startId.encodeAsMorpheusId,
+    endId.encodeAsMorpheusId,
+    relType
+  )
 
   def apply(
     id: Long,
@@ -106,17 +121,29 @@ object MorpheusRelationship {
     endId: Long,
     relType: String,
     properties: CypherMap
-  ): MorpheusRelationship = MorpheusRelationship(id.encodeAsMorpheusId, startId.encodeAsMorpheusId, endId.encodeAsMorpheusId, relType, properties)
+  ): MorpheusRelationship = MorpheusRelationship(
+    id.encodeAsMorpheusId,
+    startId.encodeAsMorpheusId,
+    endId.encodeAsMorpheusId,
+    relType,
+    properties
+  )
 }
 
 /**
-  * Representation of a [[Relationship]] in Morpheus. A relationship contains an id of type [[Long]], ids of its adjacent nodes, a relationship type and a map of properties.
+  * Representation of a [[Relationship]] in Morpheus. A relationship contains an id of type
+  * [[Long]], ids of its adjacent nodes, a relationship type and a map of properties.
   *
-  * @param id         the id of the relationship, unique within the containing graph.
-  * @param startId    the id of the source node.
-  * @param endId      the id of the target node.
-  * @param relType    the relationship type.
-  * @param properties the properties of the node.
+  * @param id
+  *   the id of the relationship, unique within the containing graph.
+  * @param startId
+  *   the id of the source node.
+  * @param endId
+  *   the id of the target node.
+  * @param relType
+  *   the relationship type.
+  * @param properties
+  *   the properties of the node.
   */
 case class MorpheusRelationship(
   override val id: Seq[Byte],
@@ -134,8 +161,10 @@ case class MorpheusRelationship(
     endId: Seq[Byte] = endId,
     relType: String = relType,
     properties: CypherMap = properties
-  ): MorpheusRelationship = MorpheusRelationship(id, startId, endId, relType, properties)
+  ): MorpheusRelationship =
+    MorpheusRelationship(id, startId, endId, relType, properties)
 
-  override def toString: String = s"${getClass.getSimpleName}(id=${id.toHex}, startId=${startId.toHex}, endId=${endId.toHex}, relType=$relType, properties=$properties)"
+  override def toString: String =
+    s"${getClass.getSimpleName}(id=${id.toHex}, startId=${startId.toHex}, endId=${endId.toHex}, relType=$relType, properties=$properties)"
 
 }

@@ -30,9 +30,9 @@ import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.ir.api.{IRField, IRGraph}
 
 final case class UnwindBlock(
-    after: List[Block],
-    binds: UnwoundList,
-    graph: IRGraph
+  after: List[Block],
+  binds: UnwoundList,
+  graph: IRGraph
 ) extends BasicBlock[UnwoundList](BlockType("unwind")) {
   override def where: Set[Expr] = Set.empty[Expr] // never filters
 }

@@ -53,7 +53,8 @@ object Part3_YelpHiveIntegration extends App {
   prepareDemoData()
 
   val h2Config = SqlDataSourceConfig.Jdbc(
-    url = s"jdbc:h2:mem:$yelpBookDB.db;INIT=CREATE SCHEMA IF NOT EXISTS $yelpBookDB;DB_CLOSE_DELAY=30;",
+    url =
+      s"jdbc:h2:mem:$yelpBookDB.db;INIT=CREATE SCHEMA IF NOT EXISTS $yelpBookDB;DB_CLOSE_DELAY=30;",
     driver = "org.h2.Driver"
   )
 
@@ -88,12 +89,14 @@ object Part3_YelpHiveIntegration extends App {
   // Load integrated graph using SQL Property Graph Data Source using above DDL script and two data sources
   val sqlPgds = GraphSources
     .sql(GraphDdl(graphDdl))
-    .withSqlDataSourceConfigs("HIVE" -> SqlDataSourceConfig.Hive, "H2" -> h2Config)
+    .withSqlDataSourceConfigs(
+      "HIVE" -> SqlDataSourceConfig.Hive,
+      "H2" -> h2Config
+    )
 
   registerSource(Namespace("federation"), sqlPgds)
 
-  cypher(
-    s"""
+  cypher(s"""
        |FROM GRAPH federation.$integratedGraphName
        |MATCH (user1:User)-[:REVIEWS]->(b:Business)<-[:REVIEWS]-(user2:User)
        |RETURN EXISTS((user1)-[:FRIEND]-(user2)), count(b) AS coReviews
@@ -119,9 +122,18 @@ object Part3_YelpHiveIntegration extends App {
     sql(s"CREATE DATABASE $yelpDB")
     sql(s"USE $yelpDB")
 
-    read.json(s"$inputPath/$cityGraphName/$yelpDB/business.json").write.saveAsTable(s"$yelpDB.business")
-    read.json(s"$inputPath/$cityGraphName/$yelpDB/user.json").write.saveAsTable(s"$yelpDB.user")
-    read.json(s"$inputPath/$cityGraphName/$yelpDB/review.json").write.saveAsTable(s"$yelpDB.review")
+    read
+      .json(s"$inputPath/$cityGraphName/$yelpDB/business.json")
+      .write
+      .saveAsTable(s"$yelpDB.business")
+    read
+      .json(s"$inputPath/$cityGraphName/$yelpDB/user.json")
+      .write
+      .saveAsTable(s"$yelpDB.user")
+    read
+      .json(s"$inputPath/$cityGraphName/$yelpDB/review.json")
+      .write
+      .saveAsTable(s"$yelpDB.review")
   }
 
   def prepareDemoData(): Unit = if (!Paths.get(inputPath).toFile.exists()) {

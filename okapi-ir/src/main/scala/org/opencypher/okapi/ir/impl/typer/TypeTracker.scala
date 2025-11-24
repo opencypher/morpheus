@@ -37,13 +37,19 @@ object TypeTracker {
   val empty = TypeTracker(Map.empty)
 }
 
-case class TypeTracker(map: Map[Expression, CypherType], parameters: Map[String, CypherValue] = Map.empty) {
+case class TypeTracker(
+  map: Map[Expression, CypherType],
+  parameters: Map[String, CypherValue] = Map.empty
+) {
 
-  def withParameters(newParameters: Map[String, CypherValue]): TypeTracker = copy(parameters = newParameters)
+  def withParameters(newParameters: Map[String, CypherValue]): TypeTracker =
+    copy(parameters = newParameters)
 
   def get(e: Expression): Option[CypherType] = map.get(e)
 
-  def getParameterType(e: String): Option[CypherType] = parameters.get(e).map(_.cypherType)
+  def getParameterType(e: String): Option[CypherType] =
+    parameters.get(e).map(_.cypherType)
 
-  def updated(e: Expression, t: CypherType): TypeTracker = copy(map = map.updated(e, t))
+  def updated(e: Expression, t: CypherType): TypeTracker =
+    copy(map = map.updated(e, t))
 }

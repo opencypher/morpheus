@@ -41,38 +41,40 @@ trait CypherResult extends CypherPrintable {
   type Graph <: PropertyGraph
 
   /**
-    * Retrieves the graph if one is returned by the query.
-    * If the query returns a table, `None` is returned.
+    * Retrieves the graph if one is returned by the query. If the query returns a table, `None` is
+    * returned.
     *
-    * @return a graph if the query returned one, `None` otherwise
+    * @return
+    *   a graph if the query returned one, `None` otherwise
     */
   def getGraph: Option[Graph]
 
   /**
     * Retrieves the graph if one is returned by the query, otherwise an exception is thrown.
     *
-    * @return graph as returned by the query.
+    * @return
+    *   graph as returned by the query.
     */
   def graph: Graph = getGraph.get
 
   /**
-    * The table of records if one was returned by the query.
-    * Returns `None` if the query returned a graph.
+    * The table of records if one was returned by the query. Returns `None` if the query returned a
+    * graph.
     *
-    * @return a table of records, `None` otherwise.
+    * @return
+    *   a table of records, `None` otherwise.
     */
   def getRecords: Option[Records]
 
   /**
     * The table of records if one was returned by the query, otherwise an exception is thrown.
     *
-    * @return a table of records.
+    * @return
+    *   a table of records.
     */
   def records: Records = getRecords.get
 
-  /**
-    * API for printable plans. This is used for explaining the execution plan of a Cypher query.
-    */
+  /** API for printable plans. This is used for explaining the execution plan of a Cypher query. */
   def plans: CypherQueryPlans
 
 }

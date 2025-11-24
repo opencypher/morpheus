@@ -35,7 +35,10 @@ class BigDecimalTests extends MorpheusTestSuite with ScanGraphInit {
   describe("general") {
 
     it("returns a big decimal") {
-      morpheus.cypher("RETURN bigdecimal(1234, 4, 2) AS decimal").records.toMaps should equal(
+      morpheus
+        .cypher("RETURN bigdecimal(1234, 4, 2) AS decimal")
+        .records
+        .toMaps should equal(
         Bag(
           CypherMap("decimal" -> BigDecimal(1234, 2))
         )
@@ -46,7 +49,12 @@ class BigDecimalTests extends MorpheusTestSuite with ScanGraphInit {
   describe("arithmetics") {
 
     it("adds two big decimals") {
-      morpheus.cypher("RETURN bigdecimal(1234, 4, 2) + bigdecimal(12, 2, 1) AS decimal").records.toMaps should equal(
+      morpheus
+        .cypher(
+          "RETURN bigdecimal(1234, 4, 2) + bigdecimal(12, 2, 1) AS decimal"
+        )
+        .records
+        .toMaps should equal(
         Bag(
           CypherMap("decimal" -> BigDecimal(1354, 2))
         )
@@ -54,13 +62,19 @@ class BigDecimalTests extends MorpheusTestSuite with ScanGraphInit {
     }
 
     it("adds a big decimal and an integer") {
-      morpheus.cypher("RETURN bigdecimal(1234, 4, 2) + 10 AS decimal").records.toMaps should equal(
+      morpheus
+        .cypher("RETURN bigdecimal(1234, 4, 2) + 10 AS decimal")
+        .records
+        .toMaps should equal(
         Bag(
           CypherMap("decimal" -> BigDecimal(2234, 2))
         )
       )
 
-      morpheus.cypher("RETURN 10 + bigdecimal(1234, 4, 2) AS decimal").records.toMaps should equal(
+      morpheus
+        .cypher("RETURN 10 + bigdecimal(1234, 4, 2) AS decimal")
+        .records
+        .toMaps should equal(
         Bag(
           CypherMap("decimal" -> BigDecimal(2234, 2))
         )
@@ -68,13 +82,19 @@ class BigDecimalTests extends MorpheusTestSuite with ScanGraphInit {
     }
 
     it("adds a big decimal and a float") {
-      morpheus.cypher("RETURN bigdecimal(1234, 4, 2) + 10.2 AS decimal").records.toMaps should equal(
+      morpheus
+        .cypher("RETURN bigdecimal(1234, 4, 2) + 10.2 AS decimal")
+        .records
+        .toMaps should equal(
         Bag(
           CypherMap("decimal" -> 22.54)
         )
       )
 
-      morpheus.cypher("RETURN 10.2 + bigdecimal(1234, 4, 2) AS decimal").records.toMaps should equal(
+      morpheus
+        .cypher("RETURN 10.2 + bigdecimal(1234, 4, 2) AS decimal")
+        .records
+        .toMaps should equal(
         Bag(
           CypherMap("decimal" -> 22.54)
         )
@@ -82,13 +102,19 @@ class BigDecimalTests extends MorpheusTestSuite with ScanGraphInit {
     }
 
     it("subtracts a big decimal and an integer") {
-      morpheus.cypher("RETURN bigdecimal(1234, 4, 2) - 10 AS decimal").records.toMaps should equal(
+      morpheus
+        .cypher("RETURN bigdecimal(1234, 4, 2) - 10 AS decimal")
+        .records
+        .toMaps should equal(
         Bag(
           CypherMap("decimal" -> BigDecimal(234, 2))
         )
       )
 
-      morpheus.cypher("RETURN 10 - bigdecimal(1234, 4, 2) AS decimal").records.toMaps should equal(
+      morpheus
+        .cypher("RETURN 10 - bigdecimal(1234, 4, 2) AS decimal")
+        .records
+        .toMaps should equal(
         Bag(
           CypherMap("decimal" -> BigDecimal(-234, 2))
         )
@@ -96,7 +122,10 @@ class BigDecimalTests extends MorpheusTestSuite with ScanGraphInit {
     }
 
     it("subtracts a big decimal and a float") {
-      morpheus.cypher("RETURN bigdecimal(44, 2, 1) - 0.2 AS decimal").records.toMaps should equal(
+      morpheus
+        .cypher("RETURN bigdecimal(44, 2, 1) - 0.2 AS decimal")
+        .records
+        .toMaps should equal(
         Bag(
           CypherMap("decimal" -> 4.2)
         )

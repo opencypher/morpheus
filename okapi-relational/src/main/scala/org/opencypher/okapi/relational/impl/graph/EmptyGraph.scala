@@ -37,7 +37,9 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 import scala.reflect.runtime.universe.TypeTag
 
-sealed case class EmptyGraph[T <: Table[T] : TypeTag]()(implicit val session: RelationalCypherSession[T]) extends RelationalCypherGraph[T] {
+sealed case class EmptyGraph[T <: Table[T]: TypeTag]()(implicit
+  val session: RelationalCypherSession[T]
+) extends RelationalCypherGraph[T] {
 
   override type Session = RelationalCypherSession[T]
 
@@ -49,11 +51,15 @@ sealed case class EmptyGraph[T <: Table[T] : TypeTag]()(implicit val session: Re
 
   override def tables: Seq[T] = Seq.empty
 
-  override def scanOperator(searchPattern: Pattern, exactLabelMatch: Boolean): RelationalOperator[T] = {
-    implicit val context: RelationalRuntimeContext[T] = session.basicRuntimeContext()
+  override def scanOperator(
+    searchPattern: Pattern,
+    exactLabelMatch: Boolean
+  ): RelationalOperator[T] = {
+    implicit val context: RelationalRuntimeContext[T] =
+      session.basicRuntimeContext()
 
     val scanHeader = searchPattern.elements
-      .map { e => RecordHeader.from(e.toVar)}
+      .map { e => RecordHeader.from(e.toVar) }
       .reduce(_ ++ _)
 
     val records = session.records.empty(scanHeader)

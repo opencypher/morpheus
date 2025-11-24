@@ -33,14 +33,17 @@ import org.opencypher.v9_0.util.Ref
 
 import scala.annotation.tailrec
 
-final case class TypeRecorder(recordedTypes: List[(Ref[Expression], CypherType)]) {
+final case class TypeRecorder(
+  recordedTypes: List[(Ref[Expression], CypherType)]
+) {
 
   def toMap: Map[Ref[Expression], CypherType] = toMap(Map.empty, recordedTypes)
 
   @tailrec
   private def toMap(
-      m: Map[Ref[Expression], CypherType],
-      recorded: Seq[(Ref[Expression], CypherType)]): Map[Ref[Expression], CypherType] =
+    m: Map[Ref[Expression], CypherType],
+    recorded: Seq[(Ref[Expression], CypherType)]
+  ): Map[Ref[Expression], CypherType] =
     recorded.headOption match {
       case Some((ref, t)) =>
         m.get(ref) match {
@@ -55,8 +58,8 @@ final case class TypeRecorder(recordedTypes: List[(Ref[Expression], CypherType)]
 object TypeRecorder {
 
   def from(tuples: List[(Expression, CypherType)]): TypeRecorder = {
-    TypeRecorder(tuples.map {
-      case (e, t) => Ref(e) -> t
+    TypeRecorder(tuples.map { case (e, t) =>
+      Ref(e) -> t
     })
   }
 

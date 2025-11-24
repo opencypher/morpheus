@@ -34,7 +34,10 @@ import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.testing.Bag
 
-class MorpheusGraphOperationsTest extends MorpheusTestSuite with TeamDataFixture with RecordsVerificationFixture {
+class MorpheusGraphOperationsTest
+    extends MorpheusTestSuite
+    with TeamDataFixture
+    with RecordsVerificationFixture {
 
   test("union") {
     val graph1 = morpheus.graphs.create(personTable, knowsTable)
@@ -53,45 +56,256 @@ class MorpheusGraphOperationsTest extends MorpheusTestSuite with TeamDataFixture
       nHasPropertyLuckyNumber,
       nHasPropertyName,
       nHasPropertyTitle,
-      nHasPropertyYear)
+      nHasPropertyYear
+    )
 
-    verify(nodeRecords, nExprs, Bag(
-      Row(1L.withPrefix(0).toList, false, true, false,  null, 23L, "Mats", null, null),
-      Row(2L.withPrefix(0).toList, false, true, false,  null, 42L, "Martin", null, null),
-      Row(3L.withPrefix(0).toList, false, true, false,  null, 1337L, "Max", null, null),
-      Row(4L.withPrefix(0).toList, false, true, false,  null, 9L, "Stefan", null, null),
-      Row(10L.withPrefix(1).toList, true, false, false, null, null, null, "1984", 1949L),
-      Row(20L.withPrefix(1).toList, true, false, false, null, null, null, "Cryptonomicon", 1999L),
-      Row(30L.withPrefix(1).toList, true, false, false, null, null, null, "The Eye of the World", 1990L),
-      Row(40L.withPrefix(1).toList, true, false, false, null, null, null, "The Circle", 2013L),
-      Row(100L.withPrefix(1).toList, false, true, true, "C", 42L, "Alice", null, null),
-      Row(200L.withPrefix(1).toList, false, true, true, "D", 23L, "Bob", null, null),
-      Row(300L.withPrefix(1).toList, false, true, true, "F", 84L, "Eve", null, null),
-      Row(400L.withPrefix(1).toList, false, true, true, "R", 49L, "Carl", null, null)
-    ))
+    verify(
+      nodeRecords,
+      nExprs,
+      Bag(
+        Row(
+          1L.withPrefix(0).toList,
+          false,
+          true,
+          false,
+          null,
+          23L,
+          "Mats",
+          null,
+          null
+        ),
+        Row(
+          2L.withPrefix(0).toList,
+          false,
+          true,
+          false,
+          null,
+          42L,
+          "Martin",
+          null,
+          null
+        ),
+        Row(
+          3L.withPrefix(0).toList,
+          false,
+          true,
+          false,
+          null,
+          1337L,
+          "Max",
+          null,
+          null
+        ),
+        Row(
+          4L.withPrefix(0).toList,
+          false,
+          true,
+          false,
+          null,
+          9L,
+          "Stefan",
+          null,
+          null
+        ),
+        Row(
+          10L.withPrefix(1).toList,
+          true,
+          false,
+          false,
+          null,
+          null,
+          null,
+          "1984",
+          1949L
+        ),
+        Row(
+          20L.withPrefix(1).toList,
+          true,
+          false,
+          false,
+          null,
+          null,
+          null,
+          "Cryptonomicon",
+          1999L
+        ),
+        Row(
+          30L.withPrefix(1).toList,
+          true,
+          false,
+          false,
+          null,
+          null,
+          null,
+          "The Eye of the World",
+          1990L
+        ),
+        Row(
+          40L.withPrefix(1).toList,
+          true,
+          false,
+          false,
+          null,
+          null,
+          null,
+          "The Circle",
+          2013L
+        ),
+        Row(
+          100L.withPrefix(1).toList,
+          false,
+          true,
+          true,
+          "C",
+          42L,
+          "Alice",
+          null,
+          null
+        ),
+        Row(
+          200L.withPrefix(1).toList,
+          false,
+          true,
+          true,
+          "D",
+          23L,
+          "Bob",
+          null,
+          null
+        ),
+        Row(
+          300L.withPrefix(1).toList,
+          false,
+          true,
+          true,
+          "F",
+          84L,
+          "Eve",
+          null,
+          null
+        ),
+        Row(
+          400L.withPrefix(1).toList,
+          false,
+          true,
+          true,
+          "R",
+          49L,
+          "Carl",
+          null,
+          null
+        )
+      )
+    )
 
     val relRecords = result.relationships("r")
 
-    val rExprs = Seq(rStart,
-    r,
-    rHasTypeKnows,
-    rHasTypeReads,
-    rEnd,
-    rHasPropertyRecommends,
-    rHasPropertySince)
+    val rExprs = Seq(
+      rStart,
+      r,
+      rHasTypeKnows,
+      rHasTypeReads,
+      rEnd,
+      rHasPropertyRecommends,
+      rHasPropertySince
+    )
 
-    verify(relRecords, rExprs, Bag(
-      Row(1L.withPrefix(0).toList, 1L.withPrefix(0).toList, true, false, 2L.withPrefix(0).toList, null, 2017L),
-      Row(1L.withPrefix(0).toList, 2L.withPrefix(0).toList, true, false, 3L.withPrefix(0).toList, null, 2016L),
-      Row(1L.withPrefix(0).toList, 3L.withPrefix(0).toList, true, false, 4L.withPrefix(0).toList, null, 2015L),
-      Row(2L.withPrefix(0).toList, 4L.withPrefix(0).toList, true, false, 3L.withPrefix(0).toList, null, 2016L),
-      Row(2L.withPrefix(0).toList, 5L.withPrefix(0).toList, true, false, 4L.withPrefix(0).toList, null, 2013L),
-      Row(3L.withPrefix(0).toList, 6L.withPrefix(0).toList, true, false, 4L.withPrefix(0).toList, null, 2016L),
-      Row(100L.withPrefix(1).toList, 100L.withPrefix(1).toList, false, true, 10L.withPrefix(1).toList, true, null),
-      Row(200L.withPrefix(1).toList, 200L.withPrefix(1).toList, false, true, 40L.withPrefix(1).toList, true, null),
-      Row(300L.withPrefix(1).toList, 300L.withPrefix(1).toList, false, true, 30L.withPrefix(1).toList, true, null),
-      Row(400L.withPrefix(1).toList, 400L.withPrefix(1).toList, false, true, 20L.withPrefix(1).toList, false, null)
-    ))
+    verify(
+      relRecords,
+      rExprs,
+      Bag(
+        Row(
+          1L.withPrefix(0).toList,
+          1L.withPrefix(0).toList,
+          true,
+          false,
+          2L.withPrefix(0).toList,
+          null,
+          2017L
+        ),
+        Row(
+          1L.withPrefix(0).toList,
+          2L.withPrefix(0).toList,
+          true,
+          false,
+          3L.withPrefix(0).toList,
+          null,
+          2016L
+        ),
+        Row(
+          1L.withPrefix(0).toList,
+          3L.withPrefix(0).toList,
+          true,
+          false,
+          4L.withPrefix(0).toList,
+          null,
+          2015L
+        ),
+        Row(
+          2L.withPrefix(0).toList,
+          4L.withPrefix(0).toList,
+          true,
+          false,
+          3L.withPrefix(0).toList,
+          null,
+          2016L
+        ),
+        Row(
+          2L.withPrefix(0).toList,
+          5L.withPrefix(0).toList,
+          true,
+          false,
+          4L.withPrefix(0).toList,
+          null,
+          2013L
+        ),
+        Row(
+          3L.withPrefix(0).toList,
+          6L.withPrefix(0).toList,
+          true,
+          false,
+          4L.withPrefix(0).toList,
+          null,
+          2016L
+        ),
+        Row(
+          100L.withPrefix(1).toList,
+          100L.withPrefix(1).toList,
+          false,
+          true,
+          10L.withPrefix(1).toList,
+          true,
+          null
+        ),
+        Row(
+          200L.withPrefix(1).toList,
+          200L.withPrefix(1).toList,
+          false,
+          true,
+          40L.withPrefix(1).toList,
+          true,
+          null
+        ),
+        Row(
+          300L.withPrefix(1).toList,
+          300L.withPrefix(1).toList,
+          false,
+          true,
+          30L.withPrefix(1).toList,
+          true,
+          null
+        ),
+        Row(
+          400L.withPrefix(1).toList,
+          400L.withPrefix(1).toList,
+          false,
+          true,
+          20L.withPrefix(1).toList,
+          false,
+          null
+        )
+      )
+    )
 
   }
 }

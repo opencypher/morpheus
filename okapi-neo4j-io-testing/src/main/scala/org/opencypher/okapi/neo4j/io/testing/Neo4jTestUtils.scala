@@ -34,13 +34,17 @@ import scala.collection.JavaConverters._
 
 object Neo4jTestUtils {
 
-  case class Neo4jContext(driver: Driver, session: Session, config: Neo4jConfig) {
-
+  case class Neo4jContext(
+    driver: Driver,
+    session: Session,
+    config: Neo4jConfig
+  ) {
 
     private def dropConstraint(desc: String) = {
       val regexp = """CONSTRAINT ON (.+) ASSERT \(?(.+?)\)? IS NODE KEY""".r
       val constraint = desc match {
-        case regexp(label, keys) => s"CONSTRAINT ON $label ASSERT ($keys) IS NODE KEY"
+        case regexp(label, keys) =>
+          s"CONSTRAINT ON $label ASSERT ($keys) IS NODE KEY"
         case c => c
       }
       execute(s"DROP $constraint").consume()
@@ -50,10 +54,12 @@ object Neo4jTestUtils {
       execute("MATCH (n) DETACH DELETE n")
         .consume()
       execute("CALL db.constraints()")
-        .list(_.get("description").asString()).asScala
+        .list(_.get("description").asString())
+        .asScala
         .foreach(dropConstraint)
       execute("CALL db.indexes YIELD description")
-        .list(_.get(0).asString).asScala
+        .list(_.get(0).asString)
+        .asScala
         .foreach(index => execute(s"DROP $index").consume())
     }
 
@@ -72,10 +78,18 @@ object Neo4jTestUtils {
 
   }
 
-  def connectNeo4j(dataFixture: String = "", uri: String = "bolt://localhost:7687"): Neo4jContext = {
+  def connectNeo4j(
+    dataFixture: String = "",
+    uri: String = "bolt://localhost:7687"
+  ): Neo4jContext = {
     val neo4jURI = URI.create(uri)
 
-    val config = Neo4jConfig(neo4jURI, user = "neo4j", password = Some("password"), encrypted = false)
+    val config = Neo4jConfig(
+      neo4jURI,
+      user = "neo4j",
+      password = Some("password"),
+      encrypted = false
+    )
     val driver = config.driver()
     val session = driver.session()
     val neo4jContext = Neo4jContext(driver, session, config)

@@ -39,7 +39,8 @@ class normalizeReturnClausesTest extends BaseTestSuite with RewriterTestSupport 
       """.stripMargin,
       """MATCH (n)
         |RETURN n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("do not rewrite aliased return items of variables") {
@@ -49,7 +50,8 @@ class normalizeReturnClausesTest extends BaseTestSuite with RewriterTestSupport 
       """.stripMargin,
       """MATCH (n)
         |RETURN n AS foo
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("do no rewrite unaliased return item of properties") {
@@ -59,7 +61,8 @@ class normalizeReturnClausesTest extends BaseTestSuite with RewriterTestSupport 
       """.stripMargin,
       """MATCH (n)
         |RETURN n.prop
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("do no rewrite aliased return item of properties") {
@@ -98,7 +101,9 @@ class normalizeReturnClausesTest extends BaseTestSuite with RewriterTestSupport 
     )
   }
 
-  test("introduce WITH clause for unaliased primitive and non-primitive expressions") {
+  test(
+    "introduce WITH clause for unaliased primitive and non-primitive expressions"
+  ) {
     assertRewrite(
       """MATCH (n)
         |RETURN n, n.val, count(n.val)
@@ -110,7 +115,9 @@ class normalizeReturnClausesTest extends BaseTestSuite with RewriterTestSupport 
     )
   }
 
-  test("introduce WITH clause for unaliased, primitive and aliased, non-primitive expressions") {
+  test(
+    "introduce WITH clause for unaliased, primitive and aliased, non-primitive expressions"
+  ) {
     assertRewrite(
       """MATCH (n)
         |RETURN n, n.val, count(n.val) AS foo

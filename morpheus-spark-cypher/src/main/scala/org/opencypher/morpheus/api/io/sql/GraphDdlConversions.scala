@@ -79,7 +79,7 @@ object GraphDdlConversions {
         .map { case (label, (parents, propertyKeys)) =>
           val maybeKey = allKeys.get(label) match {
             case Some(s) => Some(label -> s)
-            case None => None
+            case None    => None
           }
           ElementType(label, parents, propertyKeys, maybeKey)
         }
@@ -89,11 +89,16 @@ object GraphDdlConversions {
           graphType.withElementType(elementType)
         }
         .foldLeftOver(schema.labelCombinations.combos) { case (graphType, labelCombo) =>
-          val nodeLabels = if (labelCombo.isEmpty) Set(NO_LABEL) else labelCombo
+          val nodeLabels =
+            if (labelCombo.isEmpty) Set(NO_LABEL) else labelCombo
           graphType.withNodeType(nodeLabels.toSeq: _*)
         }
         .foldLeftOver(schema.schemaPatterns) { case (graphType, pattern) =>
-          graphType.withRelationshipType(pattern.sourceLabelCombination, Set(pattern.relType), pattern.targetLabelCombination)
+          graphType.withRelationshipType(
+            pattern.sourceLabelCombination,
+            Set(pattern.relType),
+            pattern.targetLabelCombination
+          )
         }
     }
 
@@ -105,41 +110,55 @@ object GraphDdlConversions {
         output
       } else {
 
-        val sortedElementTypes = elementTypes.sortBy { case (name, keys) => (name, keys.size) }
+        val sortedElementTypes = elementTypes.sortBy { case (name, keys) =>
+          (name, keys.size)
+        }
 
         val (label, propertyKeys) = sortedElementTypes.head
         val propertyKeysSet = propertyKeys.toSet.filterNot(_._2.isNullable)
 
         val updatedOutput = sortedElementTypes.foldLeft(output) {
 
-          case (currentOutput, (currentLabel, _)) if currentLabel == label && currentOutput.contains(currentLabel) =>
+          case (currentOutput, (currentLabel, _))
+              if currentLabel == label && currentOutput.contains(
+                currentLabel
+              ) =>
             currentOutput
 
           case (currentOutput, (currentLabel, currentPropertyKeys)) if currentLabel == label =>
-            currentOutput.updated(currentLabel, Set.empty[String] -> currentPropertyKeys)
+            currentOutput.updated(
+              currentLabel,
+              Set.empty[String] -> currentPropertyKeys
+            )
 
           case (currentOutput, (currentLabel, currentPropertyKeys)) =>
             val currentPropertyKeysSet = currentPropertyKeys.toSet
-            val updatedPropertyKeys = if (propertyKeysSet.subsetOf(currentPropertyKeysSet)) {
-              (currentPropertyKeysSet -- propertyKeysSet).toMap
-            } else {
-              currentPropertyKeys
-            }
+            val updatedPropertyKeys =
+              if (propertyKeysSet.subsetOf(currentPropertyKeysSet)) {
+                (currentPropertyKeysSet -- propertyKeysSet).toMap
+              } else {
+                currentPropertyKeys
+              }
             val isSubType = updatedPropertyKeys.size < currentPropertyKeys.size
 
             val currentParents = currentOutput.get(currentLabel) match {
               case Some((parents, _)) => parents
-              case None => Set.empty[String]
+              case None               => Set.empty[String]
             }
             val updatedParents = if (isSubType) {
               currentParents + label
             } else {
               currentParents
             }
-            currentOutput.updated(currentLabel, updatedParents -> updatedPropertyKeys)
+            currentOutput.updated(
+              currentLabel,
+              updatedParents -> updatedPropertyKeys
+            )
         }
 
-        val remainingElementTypes = sortedElementTypes.tail.map { case (name, _) => name -> updatedOutput(name)._2 }
+        val remainingElementTypes = sortedElementTypes.tail.map { case (name, _) =>
+          name -> updatedOutput(name)._2
+        }
 
         extractInheritance(remainingElementTypes, updatedOutput)
       }
@@ -160,22 +179,29 @@ object GraphDdlConversions {
     }
 
     lazy val allPatterns: Set[SchemaPattern] =
-      graphType.relTypes.map(relType => SchemaPattern(
-        sourceLabelCombination = relType.startNodeType.labels,
-        relType = getSingleLabel(relType),
-        targetLabelCombination = relType.endNodeType.labels
-      ))
+      graphType.relTypes.map(relType =>
+        SchemaPattern(
+          sourceLabelCombination = relType.startNodeType.labels,
+          relType = getSingleLabel(relType),
+          targetLabelCombination = relType.endNodeType.labels
+        )
+      )
 
     def asOkapiSchema: PropertyGraphSchema = PropertyGraphSchema.empty
       .foldLeftOver(graphType.nodeTypes) { case (schema, nodeType) =>
-        val combo = if (nodeType.labels.contains(NO_LABEL)) Set.empty[String] else nodeType.labels
+        val combo =
+          if (nodeType.labels.contains(NO_LABEL)) Set.empty[String]
+          else nodeType.labels
         schema.withNodePropertyKeys(combo, graphType.nodePropertyKeys(nodeType))
       }
       .foldLeftOver(graphType.nodeElementTypes) { case (schema, eType) =>
         eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))
       }
       .foldLeftOver(graphType.relTypes) { case (schema, relType) =>
-        schema.withRelationshipPropertyKeys(getSingleLabel(relType), graphType.relationshipPropertyKeys(relType))
+        schema.withRelationshipPropertyKeys(
+          getSingleLabel(relType),
+          graphType.relationshipPropertyKeys(relType)
+        )
       }
       .foldLeftOver(graphType.relElementTypes) { case (schema, eType) =>
         eType.maybeKey.fold(schema)(key => schema.withNodeKey(eType.name, key._2))

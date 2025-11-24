@@ -65,13 +65,17 @@ object Neo4jBulkCSVDataSink {
   implicit class DataTypeOps(val dt: DataType) extends AnyVal {
     def toNeo4jBulkImportType: String = {
       dt match {
-        case StringType => "string"
-        case LongType => "int"
-        case BooleanType => "boolean"
-        case DoubleType => "double"
+        case StringType          => "string"
+        case LongType            => "int"
+        case BooleanType         => "boolean"
+        case DoubleType          => "double"
         case ArrayType(inner, _) => s"${inner.toNeo4jBulkImportType}[]"
-        case NullType => "string"
-        case other => throw IllegalArgumentException("supported Neo4j bulk import type", other)
+        case NullType            => "string"
+        case other =>
+          throw IllegalArgumentException(
+            "supported Neo4j bulk import type",
+            other
+          )
       }
     }
   }
@@ -79,28 +83,40 @@ object Neo4jBulkCSVDataSink {
 }
 
 /**
-  * This data sink writes a [[PropertyGraph]] into the Neo4j Bulk Import Format
-  * (see [[https://neo4j.com/docs/operations-manual/current/tools/import/]]).
+  * This data sink writes a [[PropertyGraph]] into the Neo4j Bulk Import Format (see
+  * [[https://neo4j.com/docs/operations-manual/current/tools/import/]]).
   *
-  * In addition, it generates an import shell script that is parameterized with the path to the Neo4j installation and
-  * runs the import.
+  * In addition, it generates an import shell script that is parameterized with the path to the
+  * Neo4j installation and runs the import.
   *
-  * @param rootPath       Directory where the graph is being stored in
-  * @param arrayDelimiter Delimiter for array properties
-  * @param morpheus       Morpheus session
+  * @param rootPath
+  *   Directory where the graph is being stored in
+  * @param arrayDelimiter
+  *   Delimiter for array properties
+  * @param morpheus
+  *   Morpheus session
   */
-class Neo4jBulkCSVDataSink(override val rootPath: String, arrayDelimiter: String = "|")(implicit morpheus: MorpheusSession)
-  extends CsvGraphSource(rootPath) {
+class Neo4jBulkCSVDataSink(
+  override val rootPath: String,
+  arrayDelimiter: String = "|"
+)(implicit morpheus: MorpheusSession)
+    extends CsvGraphSource(rootPath) {
 
   override protected def writeSchema(
     graphName: GraphName,
     schema: MorpheusSchema
   ): Unit = {
     val nodeArguments = schema.labelCombinations.combos.toSeq.map { labels =>
-      s"""--nodes:${labels.mkString(":")} "${schemaFileForNodes(graphName, labels)},${dataFileForNodes(graphName, labels)}""""
+      s"""--nodes:${labels.mkString(":")} "${schemaFileForNodes(
+          graphName,
+          labels
+        )},${dataFileForNodes(graphName, labels)}""""
     }
     val relArguments = schema.relationshipTypes.toSeq.map { relType =>
-      s"""--relationships:$relType "${schemaFileForRelationships(graphName, relType)},${dataFileForRelationships(graphName, relType)}""""
+      s"""--relationships:$relType "${schemaFileForRelationships(
+          graphName,
+          relType
+        )},${dataFileForRelationships(graphName, relType)}""""
     }
 
     val importScript = String.format(
@@ -108,30 +124,42 @@ class Neo4jBulkCSVDataSink(override val rootPath: String, arrayDelimiter: String
       graphName.value,
       arrayDelimiter,
       nodeArguments.mkString("  ", " \\\n  ", ""),
-      relArguments.mkString("  ", " \\\n  ", ""))
+      relArguments.mkString("  ", " \\\n  ", "")
+    )
 
-    fileSystem.writeFile(directoryStructure.pathToGraphDirectory(graphName) / SCRIPT_NAME, importScript)
+    fileSystem.writeFile(
+      directoryStructure.pathToGraphDirectory(graphName) / SCRIPT_NAME,
+      importScript
+    )
   }
 
   def schemaFileForNodes(
     graphName: GraphName,
     labels: Set[String]
-  ): String = directoryStructure.pathToNodeTable(graphName, labels).replaceFirst(SCHEME_REGEX, "") / "schema.csv"
+  ): String = directoryStructure
+    .pathToNodeTable(graphName, labels)
+    .replaceFirst(SCHEME_REGEX, "") / "schema.csv"
 
   def dataFileForNodes(
     graphName: GraphName,
     labels: Set[String]
-  ): String = directoryStructure.pathToNodeTable(graphName, labels).replaceFirst(SCHEME_REGEX, "") / "part(.*)\\.csv"
+  ): String = directoryStructure
+    .pathToNodeTable(graphName, labels)
+    .replaceFirst(SCHEME_REGEX, "") / "part(.*)\\.csv"
 
   def schemaFileForRelationships(
     graphName: GraphName,
     relType: String
-  ): String = directoryStructure.pathToRelationshipTable(graphName, relType).replaceFirst(SCHEME_REGEX, "") / "schema.csv"
+  ): String = directoryStructure
+    .pathToRelationshipTable(graphName, relType)
+    .replaceFirst(SCHEME_REGEX, "") / "schema.csv"
 
   def dataFileForRelationships(
     graphName: GraphName,
     relType: String
-  ): String = directoryStructure.pathToRelationshipTable(graphName, relType).replaceFirst(SCHEME_REGEX, "") / "part(.*)\\.csv"
+  ): String = directoryStructure
+    .pathToRelationshipTable(graphName, relType)
+    .replaceFirst(SCHEME_REGEX, "") / "part(.*)\\.csv"
 
   override protected def writeNodeTable(
     graphName: GraphName,
@@ -148,42 +176,69 @@ class Neo4jBulkCSVDataSink(override val rootPath: String, arrayDelimiter: String
     relKey: String,
     table: DataFrame
   ): Unit = {
-    val tableWithoutId = table.drop(table.schema.fieldNames.find(_ == GraphElement.sourceIdKey).get)
+    val tableWithoutId = table.drop(
+      table.schema.fieldNames.find(_ == GraphElement.sourceIdKey).get
+    )
 
-    super.writeRelationshipTable(graphName, relKey, stringifyArrayColumns(tableWithoutId))
+    super.writeRelationshipTable(
+      graphName,
+      relKey,
+      stringifyArrayColumns(tableWithoutId)
+    )
 
-    writeHeaderFile(schemaFileForRelationships(graphName, relKey), tableWithoutId.schema.fields)
+    writeHeaderFile(
+      schemaFileForRelationships(graphName, relKey),
+      tableWithoutId.schema.fields
+    )
   }
 
   private def stringifyArrayColumns(table: DataFrame): DataFrame = {
-    val arrayColumns = table.schema.fields.collect {
-      case StructField(name, _: ArrayType, _, _) => name
+    val arrayColumns = table.schema.fields.collect { case StructField(name, _: ArrayType, _, _) =>
+      name
     }
 
-    arrayColumns.foldLeft(table) {
-      case (acc, arrayColumn) => acc.withColumn(arrayColumn, functions.concat_ws(arrayDelimiter, acc.col(arrayColumn)))
-    }.select(table.columns.head, table.columns.tail: _*)
+    arrayColumns
+      .foldLeft(table) { case (acc, arrayColumn) =>
+        acc.withColumn(
+          arrayColumn,
+          functions.concat_ws(arrayDelimiter, acc.col(arrayColumn))
+        )
+      }
+      .select(table.columns.head, table.columns.tail: _*)
   }
 
-  private def writeHeaderFile(path: String, fields: Array[StructField]): Unit = {
-    val neoSchema = fields.map {
-      //TODO: use Neo4jDefaults here
-      case field if field.name == GraphElement.sourceIdKey => s"___morpheusID:ID"
-      case field if field.name == Relationship.sourceStartNodeKey => ":START_ID"
-      case field if field.name == Relationship.sourceEndNodeKey => ":END_ID"
-      case field if field.name.isPropertyColumnName => s"${field.name.toProperty}:${field.dataType.toNeo4jBulkImportType}"
-    }.mkString(",")
+  private def writeHeaderFile(
+    path: String,
+    fields: Array[StructField]
+  ): Unit = {
+    val neoSchema = fields
+      .map {
+        // TODO: use Neo4jDefaults here
+        case field if field.name == GraphElement.sourceIdKey =>
+          s"___morpheusID:ID"
+        case field if field.name == Relationship.sourceStartNodeKey =>
+          ":START_ID"
+        case field if field.name == Relationship.sourceEndNodeKey => ":END_ID"
+        case field if field.name.isPropertyColumnName =>
+          s"${field.name.toProperty}:${field.dataType.toNeo4jBulkImportType}"
+      }
+      .mkString(",")
 
     fileSystem.writeFile(path, neoSchema)
   }
 
   override def hasGraph(graphName: GraphName): Boolean = false
 
-  override def graphNames: Set[GraphName] = throw UnsupportedOperationException("Write-only PGDS")
+  override def graphNames: Set[GraphName] = throw UnsupportedOperationException(
+    "Write-only PGDS"
+  )
 
-  override def delete(graphName: GraphName): Unit = throw UnsupportedOperationException("Write-only PGDS")
+  override def delete(graphName: GraphName): Unit =
+    throw UnsupportedOperationException("Write-only PGDS")
 
-  override def graph(name: GraphName): PropertyGraph = throw UnsupportedOperationException("Write-only PGDS")
+  override def graph(name: GraphName): PropertyGraph =
+    throw UnsupportedOperationException("Write-only PGDS")
 
-  override def schema(graphName: GraphName): Option[MorpheusSchema] = throw UnsupportedOperationException("Write-only PGDS")
+  override def schema(graphName: GraphName): Option[MorpheusSchema] =
+    throw UnsupportedOperationException("Write-only PGDS")
 }

@@ -43,8 +43,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
   describe("GraphType to OKAPI schema") {
 
     it("converts a graph type with single element type references") {
-      GraphDdl(
-        """
+      GraphDdl("""
           |CREATE GRAPH myGraph (
           | Person ( name STRING, age INTEGER ),
           | Book   ( title STRING ) ,
@@ -53,16 +52,23 @@ class GraphDdlConversionsTest extends BaseTestSuite {
           | (Book),
           | (Person)-[READS]->(Book)
           |)
-        """.stripMargin).graphs(GraphName("myGraph")).graphType.asOkapiSchema should equal(PropertyGraphSchema.empty
-        .withNodePropertyKeys("Person")("name" -> CTString, "age" -> CTInteger)
-        .withNodePropertyKeys("Book")("title" -> CTString)
-        .withRelationshipPropertyKeys("READS")("rating" -> CTFloat)
-        .withSchemaPatterns(SchemaPattern("Person", "READS", "Book")))
+        """.stripMargin)
+        .graphs(GraphName("myGraph"))
+        .graphType
+        .asOkapiSchema should equal(
+        PropertyGraphSchema.empty
+          .withNodePropertyKeys("Person")(
+            "name" -> CTString,
+            "age" -> CTInteger
+          )
+          .withNodePropertyKeys("Book")("title" -> CTString)
+          .withRelationshipPropertyKeys("READS")("rating" -> CTFloat)
+          .withSchemaPatterns(SchemaPattern("Person", "READS", "Book"))
+      )
     }
 
     it("converts a graph type with multiple element type references") {
-      GraphDdl(
-        """
+      GraphDdl("""
           |CREATE GRAPH myGraph (
           |  A (x STRING),
           |  B (y STRING),
@@ -72,17 +78,21 @@ class GraphDdlConversionsTest extends BaseTestSuite {
           |  (A)-[R]->(A),
           |  (A, B)-[R]->(A)
           |)
-        """.stripMargin).graphs(GraphName("myGraph")).graphType.asOkapiSchema should equal(PropertyGraphSchema.empty
-        .withNodePropertyKeys("A")("x" -> CTString)
-        .withNodePropertyKeys("A", "B")("x" -> CTString, "y" -> CTString)
-        .withRelationshipPropertyKeys("R")("y" -> CTString)
-        .withSchemaPatterns(SchemaPattern("A", "R", "A"))
-        .withSchemaPatterns(SchemaPattern(Set("A", "B"), "R", Set("A"))))
+        """.stripMargin)
+        .graphs(GraphName("myGraph"))
+        .graphType
+        .asOkapiSchema should equal(
+        PropertyGraphSchema.empty
+          .withNodePropertyKeys("A")("x" -> CTString)
+          .withNodePropertyKeys("A", "B")("x" -> CTString, "y" -> CTString)
+          .withRelationshipPropertyKeys("R")("y" -> CTString)
+          .withSchemaPatterns(SchemaPattern("A", "R", "A"))
+          .withSchemaPatterns(SchemaPattern(Set("A", "B"), "R", Set("A")))
+      )
     }
 
     it("converts a graph type with element type inheritance") {
-      GraphDdl(
-        """
+      GraphDdl("""
           |CREATE GRAPH myGraph (
           |  A           (x STRING),
           |  B EXTENDS A (y STRING),
@@ -92,12 +102,17 @@ class GraphDdlConversionsTest extends BaseTestSuite {
           |  (A)-[R]->(A),
           |  (B)-[R]->(A)
           |)
-        """.stripMargin).graphs(GraphName("myGraph")).graphType.asOkapiSchema should equal(PropertyGraphSchema.empty
-        .withNodePropertyKeys("A")("x" -> CTString)
-        .withNodePropertyKeys("A", "B")("x" -> CTString, "y" -> CTString)
-        .withRelationshipPropertyKeys("R")("y" -> CTString)
-        .withSchemaPatterns(SchemaPattern("A", "R", "A"))
-        .withSchemaPatterns(SchemaPattern(Set("A", "B"), "R", Set("A"))))
+        """.stripMargin)
+        .graphs(GraphName("myGraph"))
+        .graphType
+        .asOkapiSchema should equal(
+        PropertyGraphSchema.empty
+          .withNodePropertyKeys("A")("x" -> CTString)
+          .withNodePropertyKeys("A", "B")("x" -> CTString, "y" -> CTString)
+          .withRelationshipPropertyKeys("R")("y" -> CTString)
+          .withSchemaPatterns(SchemaPattern("A", "R", "A"))
+          .withSchemaPatterns(SchemaPattern(Set("A", "B"), "R", Set("A")))
+      )
     }
 
     it("can construct schema with node label") {
@@ -151,7 +166,6 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |CREATE GRAPH $graphName OF $typeName ()
             |""".stripMargin
 
-
       GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema shouldEqual
         PropertyGraphSchema.empty
           .withNodePropertyKeys("Node1")("val" -> CTString)
@@ -173,9 +187,10 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |CREATE GRAPH $graphName OF $typeName ()
             |""".stripMargin
 
-
       GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
-        PropertyGraphSchema.empty.withNodePropertyKeys("Node")("foo" -> CTInteger)
+        PropertyGraphSchema.empty.withNodePropertyKeys("Node")(
+          "foo" -> CTInteger
+        )
       )
     }
 
@@ -191,7 +206,10 @@ class GraphDdlConversionsTest extends BaseTestSuite {
 
       GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
         PropertyGraphSchema.empty
-          .withNodePropertyKeys("Node")("val" -> CTString, "another" -> CTString)
+          .withNodePropertyKeys("Node")(
+            "val" -> CTString,
+            "another" -> CTString
+          )
           .withNodeKey("Node", Set("val"))
       )
     }
@@ -242,13 +260,26 @@ class GraphDdlConversionsTest extends BaseTestSuite {
 
       GraphDdl(ddl).graphs(graphName).graphType.asOkapiSchema should equal(
         PropertyGraphSchema.empty
-          .withNodePropertyKeys("MyLabel")("property" -> CTString, "data" -> CTInteger.nullable)
+          .withNodePropertyKeys("MyLabel")(
+            "property" -> CTString,
+            "data" -> CTInteger.nullable
+          )
           .withNodePropertyKeys("LocalLabel1")("property" -> CTString)
-          .withNodePropertyKeys("LocalLabel1", "LocalLabel2")("property" -> CTString)
+          .withNodePropertyKeys("LocalLabel1", "LocalLabel2")(
+            "property" -> CTString
+          )
           .withRelationshipPropertyKeys("REL_TYPE1")("property" -> CTBoolean)
           .withRelationshipPropertyKeys("REL_TYPE2")()
-          .withSchemaPatterns(SchemaPattern(Set("MyLabel"), "REL_TYPE1", Set("LocalLabel1")))
-          .withSchemaPatterns(SchemaPattern(Set("LocalLabel1", "LocalLabel2"), "REL_TYPE2", Set("MyLabel")))
+          .withSchemaPatterns(
+            SchemaPattern(Set("MyLabel"), "REL_TYPE1", Set("LocalLabel1"))
+          )
+          .withSchemaPatterns(
+            SchemaPattern(
+              Set("LocalLabel1", "LocalLabel2"),
+              "REL_TYPE2",
+              Set("MyLabel")
+            )
+          )
       )
     }
 
@@ -272,7 +303,9 @@ class GraphDdlConversionsTest extends BaseTestSuite {
       )
     }
 
-    it("merges property keys for label combination based on element type hierarchy") {
+    it(
+      "merges property keys for label combination based on element type hierarchy"
+    ) {
       // Given
       val ddl =
         s"""|CREATE ELEMENT TYPE A ( foo STRING )
@@ -292,7 +325,9 @@ class GraphDdlConversionsTest extends BaseTestSuite {
       )
     }
 
-    it("merges property keys for label combination based on element type with multi-inheritance") {
+    it(
+      "merges property keys for label combination based on element type with multi-inheritance"
+    ) {
       // Given
       val ddl =
         s"""|CREATE ELEMENT TYPE A ( a STRING )
@@ -317,9 +352,20 @@ class GraphDdlConversionsTest extends BaseTestSuite {
           .withNodePropertyKeys("A")("a" -> CTString)
           .withNodePropertyKeys("A", "B")("a" -> CTString, "b" -> CTString)
           .withNodePropertyKeys("A", "C")("a" -> CTString, "c" -> CTString)
-          .withNodePropertyKeys("A", "B", "C", "D")("a" -> CTString, "b" -> CTString, "c" -> CTString, "d" -> CTInteger)
+          .withNodePropertyKeys("A", "B", "C", "D")(
+            "a" -> CTString,
+            "b" -> CTString,
+            "c" -> CTString,
+            "d" -> CTInteger
+          )
           .withNodePropertyKeys("A", "E")("a" -> CTString, "e" -> CTFloat)
-          .withNodePropertyKeys("A", "B", "C", "D", "E")("a" -> CTString, "b" -> CTString, "c" -> CTString, "d" -> CTInteger, "e" -> CTFloat)
+          .withNodePropertyKeys("A", "B", "C", "D", "E")(
+            "a" -> CTString,
+            "b" -> CTString,
+            "c" -> CTString,
+            "d" -> CTInteger,
+            "e" -> CTFloat
+          )
       )
     }
 
@@ -344,8 +390,7 @@ class GraphDdlConversionsTest extends BaseTestSuite {
     }
 
     it("parses correct schema") {
-      val ddlDefinition: DdlDefinition = parseDdl(
-        s"""|SET SCHEMA foo.bar;
+      val ddlDefinition: DdlDefinition = parseDdl(s"""|SET SCHEMA foo.bar;
             |
             |CREATE ELEMENT TYPE A ( name STRING )
             |
@@ -380,48 +425,100 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |)
             |""".stripMargin)
       ddlDefinition should equalWithTracing(
-        DdlDefinition(List(
-          SetSchemaDefinition("foo", "bar"),
-          ElementTypeDefinition("A", properties = Map("name" -> CTString)),
-          ElementTypeDefinition("B", properties = Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
-          ElementTypeDefinition("TYPE_1"),
-          ElementTypeDefinition("TYPE_2", properties = Map("prop" -> CTBoolean.nullable)),
-          GraphTypeDefinition(
-            name = typeName,
-            statements = List(
-              ElementTypeDefinition("A", properties = Map("foo" -> CTInteger)),
-              ElementTypeDefinition("C"),
-              NodeTypeDefinition("A"),
-              NodeTypeDefinition("B"),
-              NodeTypeDefinition("A", "B"),
-              NodeTypeDefinition("C"),
-              RelationshipTypeDefinition("A", "TYPE_1", "B"),
-              RelationshipTypeDefinition("A", "B")("TYPE_2")("C")
-            )),
-          GraphDefinition(
-            name = graphName.value,
-            maybeGraphTypeName = Some(typeName),
-            statements = List(
-              NodeMappingDefinition(NodeTypeDefinition("A"), List(NodeToViewDefinition(List("foo")))),
-              RelationshipMappingDefinition(
+        DdlDefinition(
+          List(
+            SetSchemaDefinition("foo", "bar"),
+            ElementTypeDefinition("A", properties = Map("name" -> CTString)),
+            ElementTypeDefinition(
+              "B",
+              properties = Map(
+                "sequence" -> CTInteger,
+                "nationality" -> CTString.nullable,
+                "age" -> CTInteger.nullable
+              )
+            ),
+            ElementTypeDefinition("TYPE_1"),
+            ElementTypeDefinition(
+              "TYPE_2",
+              properties = Map("prop" -> CTBoolean.nullable)
+            ),
+            GraphTypeDefinition(
+              name = typeName,
+              statements = List(
+                ElementTypeDefinition(
+                  "A",
+                  properties = Map("foo" -> CTInteger)
+                ),
+                ElementTypeDefinition("C"),
+                NodeTypeDefinition("A"),
+                NodeTypeDefinition("B"),
+                NodeTypeDefinition("A", "B"),
+                NodeTypeDefinition("C"),
                 RelationshipTypeDefinition("A", "TYPE_1", "B"),
-                List(RelationshipTypeToViewDefinition(
-                  viewDef = ViewDefinition(List("baz"), "edge"),
-                  startNodeTypeToView = NodeTypeToViewDefinition(
-                    NodeTypeDefinition("A"),
-                    ViewDefinition(List("foo"), "alias_foo"),
-                    JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-                  endNodeTypeToView = NodeTypeToViewDefinition(
-                    NodeTypeDefinition("B"),
-                    ViewDefinition(List("bar"), "alias_bar"),
-                    JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
-                )))))
-        ))
+                RelationshipTypeDefinition("A", "B")("TYPE_2")("C")
+              )
+            ),
+            GraphDefinition(
+              name = graphName.value,
+              maybeGraphTypeName = Some(typeName),
+              statements = List(
+                NodeMappingDefinition(
+                  NodeTypeDefinition("A"),
+                  List(NodeToViewDefinition(List("foo")))
+                ),
+                RelationshipMappingDefinition(
+                  RelationshipTypeDefinition("A", "TYPE_1", "B"),
+                  List(
+                    RelationshipTypeToViewDefinition(
+                      viewDef = ViewDefinition(List("baz"), "edge"),
+                      startNodeTypeToView = NodeTypeToViewDefinition(
+                        NodeTypeDefinition("A"),
+                        ViewDefinition(List("foo"), "alias_foo"),
+                        JoinOnDefinition(
+                          List(
+                            (
+                              List("alias_foo", "COLUMN_A"),
+                              List("edge", "COLUMN_A")
+                            )
+                          )
+                        )
+                      ),
+                      endNodeTypeToView = NodeTypeToViewDefinition(
+                        NodeTypeDefinition("B"),
+                        ViewDefinition(List("bar"), "alias_bar"),
+                        JoinOnDefinition(
+                          List(
+                            (
+                              List("alias_bar", "COLUMN_A"),
+                              List("edge", "COLUMN_A")
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
       )
-      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual PropertyGraphSchema.empty
+      GraphDdl(ddlDefinition)
+        .graphs(graphName)
+        .graphType
+        .asOkapiSchema shouldEqual PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("foo" -> CTInteger)
-        .withNodePropertyKeys("B")("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
-        .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
+        .withNodePropertyKeys("B")(
+          "sequence" -> CTInteger,
+          "nationality" -> CTString.nullable,
+          "age" -> CTInteger.nullable
+        )
+        .withNodePropertyKeys("A", "B")(
+          "foo" -> CTInteger,
+          "sequence" -> CTInteger,
+          "nationality" -> CTString.nullable,
+          "age" -> CTInteger.nullable
+        )
         .withNodePropertyKeys(Set("C"))
         .withRelationshipType("TYPE_1")
         .withRelationshipPropertyKeys("TYPE_2")("prop" -> CTBoolean.nullable)
@@ -451,7 +548,10 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |)
             |""".stripMargin
       )
-      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual PropertyGraphSchema.empty
+      GraphDdl(ddlDefinition)
+        .graphs(graphName)
+        .graphType
+        .asOkapiSchema shouldEqual PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("foo" -> CTInteger)
         .withNodePropertyKeys("B")()
         .withNodePropertyKeys("A", "B")("foo" -> CTInteger)
@@ -483,7 +583,10 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |)
             |""".stripMargin
       )
-      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual PropertyGraphSchema.empty
+      GraphDdl(ddlDefinition)
+        .graphs(graphName)
+        .graphType
+        .asOkapiSchema shouldEqual PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("foo" -> CTInteger)
         .withNodePropertyKeys("B")()
         .withNodePropertyKeys("A", "B")("foo" -> CTInteger)
@@ -517,7 +620,10 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |)
             |""".stripMargin
       )
-      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual PropertyGraphSchema.empty
+      GraphDdl(ddlDefinition)
+        .graphs(graphName)
+        .graphType
+        .asOkapiSchema shouldEqual PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("bar" -> CTString)
         .withNodePropertyKeys("B")()
         .withNodePropertyKeys("A", "B")("bar" -> CTString)
@@ -542,7 +648,10 @@ class GraphDdlConversionsTest extends BaseTestSuite {
             |)
             |""".stripMargin
       )
-      GraphDdl(ddlDefinition).graphs(graphName).graphType.asOkapiSchema shouldEqual PropertyGraphSchema.empty
+      GraphDdl(ddlDefinition)
+        .graphs(graphName)
+        .graphType
+        .asOkapiSchema shouldEqual PropertyGraphSchema.empty
         .withNodePropertyKeys("X")("c" -> CTString)
     }
 
@@ -581,15 +690,55 @@ class GraphDdlConversionsTest extends BaseTestSuite {
       val schema = PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("a" -> CTString)
         .withNodePropertyKeys("A", "B")("a" -> CTString, "b" -> CTInteger)
-        .withNodePropertyKeys("A", "B", "C")("a" -> CTString, "b" -> CTInteger, "c" -> CTFloat)
-        .withNodePropertyKeys("A", "B", "D")("a" -> CTString, "b" -> CTInteger, "d" -> CTFloat)
-        .withNodePropertyKeys("A", "B", "C", "D", "E")("a" -> CTString, "b" -> CTInteger, "c" -> CTFloat, "d" -> CTFloat, "e" -> CTBoolean)
+        .withNodePropertyKeys("A", "B", "C")(
+          "a" -> CTString,
+          "b" -> CTInteger,
+          "c" -> CTFloat
+        )
+        .withNodePropertyKeys("A", "B", "D")(
+          "a" -> CTString,
+          "b" -> CTInteger,
+          "d" -> CTFloat
+        )
+        .withNodePropertyKeys("A", "B", "C", "D", "E")(
+          "a" -> CTString,
+          "b" -> CTInteger,
+          "c" -> CTFloat,
+          "d" -> CTFloat,
+          "e" -> CTBoolean
+        )
 
       val expected = GraphType.empty
-        .withElementType("A", "a" -> CTString, "b" -> CTInteger.nullable, "c" -> CTFloat.nullable, "d" -> CTFloat.nullable, "e" -> CTBoolean.nullable)
-        .withElementType("B", Set("A"), "b" -> CTInteger, "c" -> CTFloat.nullable, "d" -> CTFloat.nullable, "e" -> CTBoolean.nullable)
-        .withElementType("C", Set("B"), "c" -> CTFloat, "d" -> CTFloat.nullable, "e" -> CTBoolean.nullable)
-        .withElementType("D", Set("B"), "d" -> CTFloat, "c" -> CTFloat.nullable, "e" -> CTBoolean.nullable)
+        .withElementType(
+          "A",
+          "a" -> CTString,
+          "b" -> CTInteger.nullable,
+          "c" -> CTFloat.nullable,
+          "d" -> CTFloat.nullable,
+          "e" -> CTBoolean.nullable
+        )
+        .withElementType(
+          "B",
+          Set("A"),
+          "b" -> CTInteger,
+          "c" -> CTFloat.nullable,
+          "d" -> CTFloat.nullable,
+          "e" -> CTBoolean.nullable
+        )
+        .withElementType(
+          "C",
+          Set("B"),
+          "c" -> CTFloat,
+          "d" -> CTFloat.nullable,
+          "e" -> CTBoolean.nullable
+        )
+        .withElementType(
+          "D",
+          Set("B"),
+          "d" -> CTFloat,
+          "c" -> CTFloat.nullable,
+          "e" -> CTBoolean.nullable
+        )
         .withElementType("E", Set("C", "D"), "e" -> CTBoolean)
         .withNodeType("A")
         .withNodeType("A", "B")
@@ -602,14 +751,24 @@ class GraphDdlConversionsTest extends BaseTestSuite {
       actual shouldEqual expected
     }
 
-    it("converts multiple node types with overlapping labels but non-overlapping properties") {
+    it(
+      "converts multiple node types with overlapping labels but non-overlapping properties"
+    ) {
       PropertyGraphSchema.empty
         .withNodePropertyKeys("A")("a" -> CTString)
         .withNodePropertyKeys("B")("b" -> CTString)
         .withNodePropertyKeys("A", "B")("c" -> CTString)
         .asGraphType shouldEqual GraphType.empty
-        .withElementType("A", "a" -> CTString.nullable, "c" -> CTString.nullable)
-        .withElementType("B", "b" -> CTString.nullable, "c" -> CTString.nullable)
+        .withElementType(
+          "A",
+          "a" -> CTString.nullable,
+          "c" -> CTString.nullable
+        )
+        .withElementType(
+          "B",
+          "b" -> CTString.nullable,
+          "c" -> CTString.nullable
+        )
         .withNodeType("A")
         .withNodeType("B")
         .withNodeType("A", "B")

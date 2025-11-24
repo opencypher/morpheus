@@ -66,14 +66,15 @@ object Neo4jCustomSchemaExample extends App {
   // Convert the schema to a serializable JSON format
   val jsonString = schema.toJson
   // Get a filesystem to store the file on
-  val fileSystem = FileSystem.get(session.sparkSession.sparkContext.hadoopConfiguration)
+  val fileSystem =
+    FileSystem.get(session.sparkSession.sparkContext.hadoopConfiguration)
   // Write the file for future reading
   // Commented-out; this file already exists in the beginning of this example
 //  fileSystem.writeFile(getClass.getResource("/").getPath + "schema.json", jsonString)
 
   // run queries!
-  session.cypher(
-    """
+  session
+    .cypher("""
       |FROM GRAPH socialNetwork.graph
       |MATCH (a:Person)
       |WHERE a.age > 15

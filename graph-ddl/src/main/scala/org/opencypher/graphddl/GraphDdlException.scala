@@ -28,65 +28,95 @@ package org.opencypher.graphddl
 
 import org.opencypher.okapi.api.types.CypherType
 
-abstract class GraphDdlException(msg: String, cause: Option[Exception] = None) extends RuntimeException(msg, cause.orNull) with Serializable {
+abstract class GraphDdlException(msg: String, cause: Option[Exception] = None)
+    extends RuntimeException(msg, cause.orNull)
+    with Serializable {
   import GraphDdlException._
   def getFullMessage: String = causeChain(this).map(_.getMessage).mkString("\n")
 }
 
 private[graphddl] object GraphDdlException {
 
-  def unresolved(desc: String, reference: Any): Nothing = throw UnresolvedReferenceException(
-    s"$desc: $reference"
-  )
+  def unresolved(desc: String, reference: Any): Nothing =
+    throw UnresolvedReferenceException(
+      s"$desc: $reference"
+    )
 
-  def unresolved(desc: String, reference: Any, available: Traversable[Any]): Nothing = throw UnresolvedReferenceException(
+  def unresolved(
+    desc: String,
+    reference: Any,
+    available: Traversable[Any]
+  ): Nothing = throw UnresolvedReferenceException(
     s"""$desc: $reference
        |Expected one of: ${available.mkString(", ")}""".stripMargin
   )
 
-  def duplicate(desc: String, definition: Any): Nothing = throw DuplicateDefinitionException(
-    s"$desc: $definition"
-  )
+  def duplicate(desc: String, definition: Any): Nothing =
+    throw DuplicateDefinitionException(
+      s"$desc: $definition"
+    )
 
-  def illegalInheritance(desc: String, reference: Any): Nothing = throw IllegalInheritanceException(
-    s"$desc: $reference"
-  )
+  def illegalInheritance(desc: String, reference: Any): Nothing =
+    throw IllegalInheritanceException(
+      s"$desc: $reference"
+    )
 
-  def illegalConstraint(desc: String, reference: Any): Nothing = throw IllegalConstraintException(
-    s"$desc: $reference"
-  )
+  def illegalConstraint(desc: String, reference: Any): Nothing =
+    throw IllegalConstraintException(
+      s"$desc: $reference"
+    )
 
   def incompatibleTypes(msg: String): Nothing =
     throw TypeException(msg)
 
-  def incompatibleTypes(key: String, t1: CypherType, t2: CypherType): Nothing = throw TypeException(
-    s"""|Incompatible property types for property key: $key
+  def incompatibleTypes(key: String, t1: CypherType, t2: CypherType): Nothing =
+    throw TypeException(
+      s"""|Incompatible property types for property key: $key
         |Conflicting types: $t1 and $t2""".stripMargin
-  )
+    )
 
   def malformed(desc: String, identifier: String): Nothing =
     throw MalformedIdentifier(s"$desc: $identifier")
 
   def tryWithContext[T](msg: String)(block: => T): T =
-    try { block } catch { case e: Exception => throw ContextualizedException(msg, Some(e)) }
+    try { block }
+    catch { case e: Exception => throw ContextualizedException(msg, Some(e)) }
 
   def causeChain(e: Throwable): List[Throwable] = causeChain(e, Set.empty)
   def causeChain(e: Throwable, seen: Set[Throwable]): List[Throwable] = {
     val newSeen = seen + e
-    e :: Option(e.getCause).filterNot(newSeen).toList.flatMap(causeChain(_, newSeen))
+    e :: Option(e.getCause)
+      .filterNot(newSeen)
+      .toList
+      .flatMap(causeChain(_, newSeen))
   }
 }
 
-case class UnresolvedReferenceException(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
+case class UnresolvedReferenceException(
+  msg: String,
+  cause: Option[Exception] = None
+) extends GraphDdlException(msg, cause)
 
-case class DuplicateDefinitionException(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
+case class DuplicateDefinitionException(
+  msg: String,
+  cause: Option[Exception] = None
+) extends GraphDdlException(msg, cause)
 
-case class IllegalInheritanceException(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
+case class IllegalInheritanceException(
+  msg: String,
+  cause: Option[Exception] = None
+) extends GraphDdlException(msg, cause)
 
-case class IllegalConstraintException(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
+case class IllegalConstraintException(
+  msg: String,
+  cause: Option[Exception] = None
+) extends GraphDdlException(msg, cause)
 
-case class TypeException(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
+case class TypeException(msg: String, cause: Option[Exception] = None)
+    extends GraphDdlException(msg, cause)
 
-case class MalformedIdentifier(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
+case class MalformedIdentifier(msg: String, cause: Option[Exception] = None)
+    extends GraphDdlException(msg, cause)
 
-case class ContextualizedException(msg: String, cause: Option[Exception] = None) extends GraphDdlException(msg, cause)
+case class ContextualizedException(msg: String, cause: Option[Exception] = None)
+    extends GraphDdlException(msg, cause)

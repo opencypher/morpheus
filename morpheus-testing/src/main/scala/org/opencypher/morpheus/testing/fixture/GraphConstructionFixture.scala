@@ -39,6 +39,9 @@ trait GraphConstructionFixture {
 
   def graphFactory: TestGraphFactory = ScanGraphFactory
 
-  def initGraph(query: String, additionalPatterns: Seq[Pattern] = Seq.empty): RelationalCypherGraph[DataFrameTable] =
+  def initGraph(
+    query: String,
+    additionalPatterns: Seq[Pattern] = Seq.empty
+  ): RelationalCypherGraph[DataFrameTable] =
     ScanGraphFactory(CreateGraphFactory(query), additionalPatterns).asMorpheus
 }

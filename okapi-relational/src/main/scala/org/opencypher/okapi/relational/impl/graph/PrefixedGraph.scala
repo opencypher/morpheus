@@ -37,8 +37,11 @@ import org.opencypher.okapi.relational.impl.operators.RelationalOperator
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
 // TODO: This should be a planned tree of physical operators instead of a graph
-final case class PrefixedGraph[T <: Table[T]](graph: RelationalCypherGraph[T], prefix: GraphIdPrefix)
-  (implicit context: RelationalRuntimeContext[T]) extends RelationalCypherGraph[T] {
+final case class PrefixedGraph[T <: Table[T]](
+  graph: RelationalCypherGraph[T],
+  prefix: GraphIdPrefix
+)(implicit context: RelationalRuntimeContext[T])
+    extends RelationalCypherGraph[T] {
 
   override implicit val session: RelationalCypherSession[T] = context.session
 
@@ -56,8 +59,10 @@ final case class PrefixedGraph[T <: Table[T]](graph: RelationalCypherGraph[T], p
     searchPattern: Pattern,
     exactLabelMatch: Boolean
   ): RelationalOperator[T] = {
-    searchPattern.elements.foldLeft(graph.scanOperator(searchPattern, exactLabelMatch)) {
-      case (acc, patternElement) => acc.prefixVariableId(patternElement.toVar, prefix)
+    searchPattern.elements.foldLeft(
+      graph.scanOperator(searchPattern, exactLabelMatch)
+    ) { case (acc, patternElement) =>
+      acc.prefixVariableId(patternElement.toVar, prefix)
     }
 
   }

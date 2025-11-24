@@ -46,22 +46,42 @@ case class AcceptanceTestGenerator(
   private val escapeStringMarks = "\"\"\""
   private val packageNames = Map("white" -> "whiteList", "black" -> "blackList")
 
-  //generates test-cases for given scenario names
-  def generateGivenScenarios(outDir: File, resFiles: Array[File], keyWords: Array[String] = Array.empty): Unit = {
+  // generates test-cases for given scenario names
+  def generateGivenScenarios(
+    outDir: File,
+    resFiles: Array[File],
+    keyWords: Array[String] = Array.empty
+  ): Unit = {
     setUpDirectories(outDir)
     val scenarios = getScenarios(resFiles)
     val wantedWhiteScenarios = scenarios.whiteList.filter(scen =>
-      keyWords.map(keyWord =>
-        scen.name
-          .contains(keyWord))
-        .reduce(_ || _))
+      keyWords
+        .map(keyWord =>
+          scen.name
+            .contains(keyWord)
+        )
+        .reduce(_ || _)
+    )
     val wantedBlackScenarios = scenarios.blackList.filter(scen =>
-      keyWords.map(keyWord =>
-        scen.name
-          .contains(keyWord))
-        .reduce(_ || _))
-    generateClassFile("specialWhiteCases", wantedWhiteScenarios, black = false, outDir)
-    generateClassFile("specialBlackCases", wantedBlackScenarios, black = true, outDir)
+      keyWords
+        .map(keyWord =>
+          scen.name
+            .contains(keyWord)
+        )
+        .reduce(_ || _)
+    )
+    generateClassFile(
+      "specialWhiteCases",
+      wantedWhiteScenarios,
+      black = false,
+      outDir
+    )
+    generateClassFile(
+      "specialBlackCases",
+      wantedBlackScenarios,
+      black = true,
+      outDir
+    )
   }
 
   def generateAllScenarios(outDir: File, resFiles: Array[File]): Unit = {
@@ -78,11 +98,19 @@ case class AcceptanceTestGenerator(
     }
   }
 
-  private def generateClassFile(className: String, scenarios: Seq[Scenario], black: Boolean, outDir: File) = {
-    val packageName = if (black) packageNames.get("black") else packageNames.get("white")
+  private def generateClassFile(
+    className: String,
+    scenarios: Seq[Scenario],
+    black: Boolean,
+    outDir: File
+  ) = {
+    val packageName =
+      if (black) packageNames.get("black") else packageNames.get("white")
 
     val testCases = scenarios
-      .filterNot(_.name.equals("Failing on incorrect unicode literal")) //produced test couldn't be compiled
+      .filterNot(
+        _.name.equals("Failing on incorrect unicode literal")
+      ) // produced test couldn't be compiled
       .map(scenario => generateTest(scenario, black))
       .mkString("\n")
 
@@ -141,7 +169,7 @@ case class AcceptanceTestGenerator(
     file.createNewFile()
   }
 
-  //checks if package directories exists clears them or creates new
+  // checks if package directories exists clears them or creates new
   private def setUpDirectories(outDir: File): Unit = {
     if (outDir.exists() || outDir.mkdir())
       packageNames.values.map(packageName => {
@@ -149,8 +177,7 @@ case class AcceptanceTestGenerator(
         if (directory.exists()) {
           val files = directory.listFiles()
           files.map(_.delete())
-        }
-        else {
+        } else {
           directory.mkdir()
         }
         val gitIgnoreFile = new File(outDir + "/" + packageName + "/.gitignore")
@@ -158,25 +185,26 @@ case class AcceptanceTestGenerator(
         writer.println("*")
         writer.close()
         gitIgnoreFile.createNewFile()
-      }
-      )
+      })
   }
 
   private def getScenarios(resFiles: Array[File]): ScenariosFor = {
-    //todo: only take .txt or files with no suffix?
-    val resFileNames = resFiles.map(_.getPath).filterNot(name => name.contains(".feature") || name.contains(".scala"))
+    // todo: only take .txt or files with no suffix?
+    val resFileNames = resFiles
+      .map(_.getPath)
+      .filterNot(name => name.contains(".feature") || name.contains(".scala"))
     ScenariosFor(resFileNames: _*)
   }
 
   private def generateTest(scenario: Scenario, black: Boolean): String = {
     val (initSteps, execSteps) = scenario.steps.partition {
       case Execute(_, InitQuery, _) => true
-      case _ => false
+      case _                        => false
     }
 
-    //combine multiple initQueries into one
-    val initQueries = initSteps.collect {
-      case Execute(query, InitQuery, _) => s"${alignString(query)}"
+    // combine multiple initQueries into one
+    val initQueries = initSteps.collect { case Execute(query, InitQuery, _) =>
+      s"${alignString(query)}"
     }
 
     val initQueryString =
@@ -197,7 +225,7 @@ case class AcceptanceTestGenerator(
 
     val expectsError = scenario.steps.exists {
       case _: ExpectError => true
-      case _ => false
+      case _              => false
     }
 
     if (black)
@@ -206,7 +234,9 @@ case class AcceptanceTestGenerator(
          |     $alignedTestString
          |    }) match{
          |      case Success(_) =>
-         |        throw new RuntimeException("${if (expectsError) "False-positive as probably wrong error" else "A blacklisted scenario works"}")
+         |        throw new RuntimeException("${if (expectsError)
+          "False-positive as probably wrong error"
+        else "A blacklisted scenario works"}")
          |      case Failure(_) =>
          |    }
          |  }
@@ -219,80 +249,122 @@ case class AcceptanceTestGenerator(
   }
 
   private def stepsToString(steps: List[(Step, Int)]): String = {
-    case class stepContext(ExecQueryStepNr: Option[Int], ParameterStepNr: Option[Int], graphStateStepNr: Option[Int])
+    case class stepContext(
+      ExecQueryStepNr: Option[Int],
+      ParameterStepNr: Option[Int],
+      graphStateStepNr: Option[Int]
+    )
 
-    steps.foldLeft((stepContext(None, None, None), "")) {
-      case ((context, accString), (Parameters(p, _), stepNr)) =>
-        val stepString = s"val parameter$stepNr = ${tckCypherMapToOkapiCreateString(p)}"
-        stepContext(context.ExecQueryStepNr, Some(stepNr), context.graphStateStepNr) -> (accString + s"\n    $stepString")
-      case ((context, accString), (_: Measure, stepNr)) =>
-        if (checkSideEffects) {
-          val stepString = s"val beforeState$stepNr = SideEffectOps.measureState(TCKGraph($graphFactoryName,graph))"
-          stepContext(context.ExecQueryStepNr, context.ParameterStepNr, Some(stepNr)) -> (accString + s"\n    $stepString")
-        }
-        else context -> accString
-      case ((context, accString), (Execute(query, queryType, _), stepNr)) =>
-        queryType match {
-          case ExecQuery =>
-            val parameters = context.ParameterStepNr match {
-              case Some(pStepNr) => s", parameter$pStepNr"
-              case None => ""
-            }
+    steps
+      .foldLeft((stepContext(None, None, None), "")) {
+        case ((context, accString), (Parameters(p, _), stepNr)) =>
+          val stepString =
+            s"val parameter$stepNr = ${tckCypherMapToOkapiCreateString(p)}"
+          stepContext(
+            context.ExecQueryStepNr,
+            Some(stepNr),
+            context.graphStateStepNr
+          ) -> (accString + s"\n    $stepString")
+        case ((context, accString), (_: Measure, stepNr)) =>
+          if (checkSideEffects) {
             val stepString =
-              s"""|lazy val result$stepNr = graph.cypher(
+              s"val beforeState$stepNr = SideEffectOps.measureState(TCKGraph($graphFactoryName,graph))"
+            stepContext(
+              context.ExecQueryStepNr,
+              context.ParameterStepNr,
+              Some(stepNr)
+            ) -> (accString + s"\n    $stepString")
+          } else context -> accString
+        case ((context, accString), (Execute(query, queryType, _), stepNr)) =>
+          queryType match {
+            case ExecQuery =>
+              val parameters = context.ParameterStepNr match {
+                case Some(pStepNr) => s", parameter$pStepNr"
+                case None          => ""
+              }
+              val stepString =
+                s"""|lazy val result$stepNr = graph.cypher(
                   |$escapeStringMarks
                   |  ${alignString(query)}
                   |$escapeStringMarks$parameters
                   |)
            """
-            stepContext(Some(stepNr), context.ParameterStepNr, context.graphStateStepNr) -> (accString + s"\n    $stepString")
-          case _ =>
-            //currently no TCK-Tests with side effect queries
-            throw NotImplementedException("Side Effect Queries specified inside the scenario are not supported yet")
-        }
-      case ((context, accString), (ExpectResult(expectedResult: CypherValueRecords, _, sorted), _)) =>
-        val resultNumber = context.ExecQueryStepNr match {
-          case Some(stepNr) => stepNr
-          case None => throw new IllegalStateException(s"no query found to compare result $expectedResult")
-        }
+              stepContext(
+                Some(stepNr),
+                context.ParameterStepNr,
+                context.graphStateStepNr
+              ) -> (accString + s"\n    $stepString")
+            case _ =>
+              // currently no TCK-Tests with side effect queries
+              throw NotImplementedException(
+                "Side Effect Queries specified inside the scenario are not supported yet"
+              )
+          }
+        case (
+              (context, accString),
+              (ExpectResult(expectedResult: CypherValueRecords, _, sorted), _)
+            ) =>
+          val resultNumber = context.ExecQueryStepNr match {
+            case Some(stepNr) => stepNr
+            case None =>
+              throw new IllegalStateException(
+                s"no query found to compare result $expectedResult"
+              )
+          }
 
-        val equalMethod = if (sorted) "equals" else "equalsUnordered"
-        val stepString =
-          s"""|val result${resultNumber}ValueRecords = convertToTckStrings(result$resultNumber.records).asValueRecords
-              |val expected${resultNumber}ValueRecords = CypherValueRecords(List(${expectedResult.header.map(escapeString).mkString(",")}),
-              |  List(${expectedResult.rows.map(tckCypherMapToTCKCreateString).mkString(s", \n           ")}))
+          val equalMethod = if (sorted) "equals" else "equalsUnordered"
+          val stepString =
+            s"""|val result${resultNumber}ValueRecords = convertToTckStrings(result$resultNumber.records).asValueRecords
+              |val expected${resultNumber}ValueRecords = CypherValueRecords(List(${expectedResult.header
+                .map(escapeString)
+                .mkString(",")}),
+              |  List(${expectedResult.rows
+                .map(tckCypherMapToTCKCreateString)
+                .mkString(s", \n           ")}))
               |
               |result${resultNumber}ValueRecords.$equalMethod(expected${resultNumber}ValueRecords) shouldBe true
            """
-        context -> (accString + s"\n    $stepString")
-      case ((context, accString), (ExpectError(errorType, errorPhase, detail, _), _)) =>
-        val stepNumber = context.ExecQueryStepNr match {
-          case Some(stepNr) => stepNr
-          case None => throw new IllegalStateException(s"no query found to check for thrown error $detail")
-        }
-        //todo: check for errorType and detail (when corresponding errors exist in Morpheus like SyntaxError, TypeError, ParameterMissing, ...)
-        //todo: maybe check if they get imported? (or modify specificNamings case class with optional parameter
-        val stepString =
-        s"""
+          context -> (accString + s"\n    $stepString")
+        case (
+              (context, accString),
+              (ExpectError(errorType, errorPhase, detail, _), _)
+            ) =>
+          val stepNumber = context.ExecQueryStepNr match {
+            case Some(stepNr) => stepNr
+            case None =>
+              throw new IllegalStateException(
+                s"no query found to check for thrown error $detail"
+              )
+          }
+          // todo: check for errorType and detail (when corresponding errors exist in Morpheus like SyntaxError, TypeError, ParameterMissing, ...)
+          // todo: maybe check if they get imported? (or modify specificNamings case class with optional parameter
+          val stepString =
+            s"""
            |val errorMessage$stepNumber  = an[Exception] shouldBe thrownBy{result$stepNumber}
            """.stripMargin
-        context -> (accString + s"\n    $stepString")
-      case ((context, accString), (SideEffects(expected, _), _)) =>
-        val relevantSideEffects = expected.v.filter(_._2 > 0)
-        val stepString = if (checkSideEffects) {
-          val contextStep = context.graphStateStepNr match {
-            case Some(v) => v
-            case None => throw new IllegalStateException(s"no graph state found to check side effects")
-          }
-          s"""|val afterState$contextStep = SideEffectOps.measureState(TCKGraph($graphFactoryName,graph))
-              |(beforeState$contextStep diff afterState$contextStep) shouldEqual ${diffToCreateString(expected)}
+          context -> (accString + s"\n    $stepString")
+        case ((context, accString), (SideEffects(expected, _), _)) =>
+          val relevantSideEffects = expected.v.filter(_._2 > 0)
+          val stepString = if (checkSideEffects) {
+            val contextStep = context.graphStateStepNr match {
+              case Some(v) => v
+              case None =>
+                throw new IllegalStateException(
+                  s"no graph state found to check side effects"
+                )
+            }
+            s"""|val afterState$contextStep = SideEffectOps.measureState(TCKGraph($graphFactoryName,graph))
+              |(beforeState$contextStep diff afterState$contextStep) shouldEqual ${diffToCreateString(
+                 expected
+               )}
            """.stripMargin
-        }
-        else if (relevantSideEffects.nonEmpty) s"fail //due to ${relevantSideEffects.mkString(" ")} sideEffects expected"
-        else ""
-        context -> (accString + s"\n    $stepString")
-      case ((context, accString), _) => context -> accString
-    }._2
+          } else if (relevantSideEffects.nonEmpty)
+            s"fail //due to ${relevantSideEffects.mkString(" ")} sideEffects expected"
+          else ""
+          context -> (accString + s"\n    $stepString")
+        case ((context, accString), _) => context -> accString
+      }
+      ._2
   }
 
   private def alignString(query: String, tabsNumber: Int = 3): String = {

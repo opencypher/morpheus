@@ -47,14 +47,16 @@ private[morpheus] object Annotation {
     }
   }
 
-  def get[A <: StaticAnnotation: TypeTag, E: TypeTag]: Option[A] = synchronized {
-    val maybeAnnotation = staticClass[E].annotations.find(_.tree.tpe =:= typeOf[A])
-    maybeAnnotation.map { annotation =>
-      val tb = typeTag[E].mirror.mkToolBox()
-      val instance = tb.eval(tb.untypecheck(annotation.tree)).asInstanceOf[A]
-      instance
+  def get[A <: StaticAnnotation: TypeTag, E: TypeTag]: Option[A] =
+    synchronized {
+      val maybeAnnotation =
+        staticClass[E].annotations.find(_.tree.tpe =:= typeOf[A])
+      maybeAnnotation.map { annotation =>
+        val tb = typeTag[E].mirror.mkToolBox()
+        val instance = tb.eval(tb.untypecheck(annotation.tree)).asInstanceOf[A]
+        instance
+      }
     }
-  }
 
   private def runtimeClass[E: TypeTag]: Class[E] = synchronized {
     val tag = typeTag[E]

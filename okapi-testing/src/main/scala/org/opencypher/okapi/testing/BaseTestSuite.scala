@@ -40,7 +40,11 @@ import org.scalatest.matchers.should.Matchers
 import scala.collection.convert.DecorateAsJava
 import scala.util.Random
 
-abstract class BaseTestSuite extends AnyFunSpec with Matchers with MockitoSugar with DecorateAsJava {
+abstract class BaseTestSuite
+    extends AnyFunSpec
+    with Matchers
+    with MockitoSugar
+    with DecorateAsJava {
 
   /* Shared test objects */
   val testNamespace = Namespace("testNamespace")
@@ -48,20 +52,24 @@ abstract class BaseTestSuite extends AnyFunSpec with Matchers with MockitoSugar 
   val testGraphSchema: PropertyGraphSchema = PropertyGraphSchema.empty
   val testQualifiedGraphName = QualifiedGraphName(testNamespace, testGraphName)
   val qgnGenerator: QGNGenerator = new QGNGenerator {
-    override def generate: QualifiedGraphName = QualifiedGraphName(s"session.#${(Random.nextInt & Int.MaxValue) % 100}")
+    override def generate: QualifiedGraphName = QualifiedGraphName(
+      s"session.#${(Random.nextInt & Int.MaxValue) % 100}"
+    )
   }
 
-  def testGraphSource(graphsWithSchema: (GraphName, PropertyGraphSchema)*): PropertyGraphDataSource = {
+  def testGraphSource(
+    graphsWithSchema: (GraphName, PropertyGraphSchema)*
+  ): PropertyGraphDataSource = {
     val gs = mock[PropertyGraphDataSource]
-    graphsWithSchema.foreach {
-      case (graphName, schema) => when(gs.schema(graphName)).thenReturn(Some(schema))
+    graphsWithSchema.foreach { case (graphName, schema) =>
+      when(gs.schema(graphName)).thenReturn(Some(schema))
     }
     gs
   }
 
-  /**
-    * Wraps an 'it' call for convenience
-    */
-  def test(name: String, tags: Tag*)(testFun: => Any /* Assertion */ )(implicit pos: source.Position): Unit =
+  /** Wraps an 'it' call for convenience */
+  def test(name: String, tags: Tag*)(testFun: => Any /* Assertion */ )(implicit
+    pos: source.Position
+  ): Unit =
     it(name, tags: _*)(testFun)
 }

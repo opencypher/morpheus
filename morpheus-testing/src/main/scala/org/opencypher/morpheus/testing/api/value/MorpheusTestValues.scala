@@ -44,17 +44,40 @@ object MorpheusTestValues {
 
   implicit lazy val RELATIONSHIP_valueGroups: ValueGroups[CypherValue] = Seq(
     Seq[CypherValue](
-      MorpheusRelationship(1, 1, 1, "KNOWS", CypherMap("a" -> 1, "b" -> CypherNull)),
-      MorpheusRelationship(1, 2, 4, "FORGETS", CypherMap("a" -> 1.0, "b" -> CypherNull))
+      MorpheusRelationship(
+        1,
+        1,
+        1,
+        "KNOWS",
+        CypherMap("a" -> 1, "b" -> CypherNull)
+      ),
+      MorpheusRelationship(
+        1,
+        2,
+        4,
+        "FORGETS",
+        CypherMap("a" -> 1.0, "b" -> CypherNull)
+      )
     ),
-    Seq[CypherValue](MorpheusRelationship(10, 1, 1, "KNOWS", CypherMap("a" -> 1))),
     Seq[CypherValue](
-      MorpheusRelationship(20, 1, 1, "KNOWS", CypherMap("a" -> 1, "b" -> 1))),
+      MorpheusRelationship(10, 1, 1, "KNOWS", CypherMap("a" -> 1))
+    ),
     Seq[CypherValue](
-      MorpheusRelationship(21, 0, -1, "KNOWS", CypherMap("b" -> CypherNull))),
+      MorpheusRelationship(20, 1, 1, "KNOWS", CypherMap("a" -> 1, "b" -> 1))
+    ),
+    Seq[CypherValue](
+      MorpheusRelationship(21, 0, -1, "KNOWS", CypherMap("b" -> CypherNull))
+    ),
     Seq[CypherValue](MorpheusRelationship(30, 1, 1, "_-&", CypherMap.empty)),
     Seq[CypherValue](
-      MorpheusRelationship(40, 1, 1, "", CypherMap("c" -> 10, "b" -> CypherNull))),
+      MorpheusRelationship(
+        40,
+        1,
+        1,
+        "",
+        CypherMap("c" -> 10, "b" -> CypherNull)
+      )
+    ),
     Seq[CypherValue](CypherNull)
   )
 
@@ -65,11 +88,23 @@ object MorpheusTestValues {
     ),
     Seq[CypherValue](MorpheusNode(10L, Set.empty[String], CypherMap("a" -> 1))),
     Seq[CypherValue](
-      MorpheusNode(20L, Set("MathGuy"), CypherMap("a" -> 1, "b" -> 1))),
+      MorpheusNode(20L, Set("MathGuy"), CypherMap("a" -> 1, "b" -> 1))
+    ),
     Seq[CypherValue](
-      MorpheusNode(21L, Set("MathGuy", "FanOfNulls"), CypherMap("b" -> CypherNull))),
+      MorpheusNode(
+        21L,
+        Set("MathGuy", "FanOfNulls"),
+        CypherMap("b" -> CypherNull)
+      )
+    ),
     Seq[CypherValue](MorpheusNode(30L, Set("NoOne"), CypherMap.empty)),
-    Seq[CypherValue](MorpheusNode(40L, Set.empty[String], CypherMap("c" -> 10, "b" -> CypherNull))),
+    Seq[CypherValue](
+      MorpheusNode(
+        40L,
+        Set.empty[String],
+        CypherMap("c" -> 10, "b" -> CypherNull)
+      )
+    ),
     Seq[CypherValue](CypherNull)
   )
 
@@ -196,13 +231,15 @@ object MorpheusTestValues {
     val materials: ValueGroups[CypherValue] =
       allGroups.flatMap(_.materialValueGroups)
     val nulls: ValueGroups[CypherValue] = Seq(
-      allGroups.flatMap(_.CypherNullableValueGroups).flatten)
+      allGroups.flatMap(_.CypherNullableValueGroups).flatten
+    )
 
     materials ++ nulls
   }
 
   implicit final class CypherValueGroups[V <: CypherValue](
-    elements: ValueGroups[V]) {
+    elements: ValueGroups[V]
+  ) {
 
     def materialValueGroups: ValueGroups[V] =
       elements.map(_.filterNot(_.isNull)).filter(_.nonEmpty)

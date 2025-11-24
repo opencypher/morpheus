@@ -34,14 +34,17 @@ import org.opencypher.morpheus.impl.table.SparkTable.DataFrameTable
 import org.opencypher.morpheus.testing.MorpheusTestSuite
 import org.opencypher.morpheus.testing.support.creation.graphs.ScanGraphFactory
 
-trait MorpheusPGDSAcceptanceTest extends PGDSAcceptanceTest[MorpheusSession, ScanGraph[DataFrameTable]] {
+trait MorpheusPGDSAcceptanceTest
+    extends PGDSAcceptanceTest[MorpheusSession, ScanGraph[DataFrameTable]] {
   self: MorpheusTestSuite =>
 
   trait MorpheusTestContextFactory extends TestContextFactory {
     override def initSession: MorpheusSession = morpheus
   }
 
-  override def initGraph(createStatements: String): ScanGraph[DataFrameTable] = {
+  override def initGraph(
+    createStatements: String
+  ): ScanGraph[DataFrameTable] = {
     ScanGraphFactory(CreateGraphFactory(createStatements))
   }
 
