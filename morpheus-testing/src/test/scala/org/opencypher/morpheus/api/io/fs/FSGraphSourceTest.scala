@@ -26,8 +26,8 @@
  */
 package org.opencypher.morpheus.api.io.fs
 
+import org.apache.commons.io.FileUtils
 import org.apache.spark.sql.{AnalysisException, Row}
-import org.junit.rules.TemporaryFolder
 import org.opencypher.morpheus.api.GraphSources
 import org.opencypher.morpheus.api.io.FileFormat
 import org.opencypher.morpheus.api.io.util.HiveTableName
@@ -39,22 +39,23 @@ import org.opencypher.okapi.api.graph.{GraphName, Node, Relationship}
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
 import org.opencypher.okapi.testing.Bag
 
+import java.nio.file.{Files, Path}
+
 class FSGraphSourceTest extends MorpheusTestSuite with ScanGraphInit {
 
-  private var tempDir = new TemporaryFolder()
+  private var tempDir: Path = _
 
   private val testDatabaseName = "test"
 
   override protected def beforeEach(): Unit = {
     morpheus.sparkSession.sql(s"CREATE DATABASE IF NOT EXISTS $testDatabaseName")
-    tempDir.create()
+    tempDir = Files.createTempDirectory(getClass.getSimpleName)
     super.beforeEach()
   }
 
   override protected def afterEach(): Unit = {
     morpheus.sparkSession.sql(s"DROP DATABASE IF EXISTS $testDatabaseName CASCADE")
-    tempDir.delete()
-    tempDir = new TemporaryFolder()
+    FileUtils.deleteDirectory(tempDir.toFile)
     super.afterEach()
   }
 
@@ -68,7 +69,7 @@ class FSGraphSourceTest extends MorpheusTestSuite with ScanGraphInit {
     it("writes nodes and relationships to hive tables") {
       val given = testGraph
 
-      val fs = new FSGraphSource("file:///" + tempDir.getRoot.getAbsolutePath.replace("\\", "/"),
+      val fs = new FSGraphSource("file:///" + tempDir.toAbsolutePath.toString.replace("\\", "/"),
         FileFormat.parquet, Some(testDatabaseName), None)
       fs.store(graphName, given)
 
@@ -91,7 +92,7 @@ class FSGraphSourceTest extends MorpheusTestSuite with ScanGraphInit {
     it("deletes the hive database if the graph is deleted") {
       val given = testGraph
 
-      val fs = new FSGraphSource("file:///" + tempDir.getRoot.getAbsolutePath.replace("\\", "/"),
+      val fs = new FSGraphSource("file:///" + tempDir.toAbsolutePath.toString.replace("\\", "/"),
         FileFormat.parquet, Some(testDatabaseName), None)
       fs.store(graphName, given)
 
@@ -118,7 +119,7 @@ class FSGraphSourceTest extends MorpheusTestSuite with ScanGraphInit {
           |CREATE (:A {`foo@bar`: 42})
         """.stripMargin)
 
-      val fs = GraphSources.fs("file:///" + tempDir.getRoot.getAbsolutePath.replace("\\", "/")).orc
+      val fs = GraphSources.fs("file:///" + tempDir.toAbsolutePath.toString.replace("\\", "/")).orc
       fs.store(graphName, given)
 
       val graph = fs.graph(graphName)

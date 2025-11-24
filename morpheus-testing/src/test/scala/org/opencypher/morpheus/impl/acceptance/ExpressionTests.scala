@@ -26,7 +26,6 @@
  */
 package org.opencypher.morpheus.impl.acceptance
 
-import claimant.Claim
 import org.opencypher.morpheus.impl.SparkSQLMappingException
 import org.opencypher.morpheus.testing.MorpheusTestSuite
 import org.opencypher.morpheus.testing.support.creation.graphs.ScanGraphFactory
@@ -42,6 +41,7 @@ import org.opencypher.okapi.testing.Bag._
 import org.scalacheck.Prop
 import org.scalatestplus.scalacheck.Checkers
 import org.opencypher.morpheus.impl.MorpheusConverters._
+import org.typelevel.claimant.Claim
 
 class ExpressionTests extends MorpheusTestSuite with ScanGraphInit with Checkers {
 

@@ -147,9 +147,9 @@ object ScenariosFor {
 
 object Tags {
 
-  object WhiteList extends Tag("WhiteList Scenario")
+  object WhiteList extends Tag("WhiteListScenario")
 
-  object BlackList extends Tag("BlackList Scenario")
+  object BlackList extends Tag("BlackListScenario")
 
 }
 

@@ -2,28 +2,31 @@
 apache-commons-text = "1.14.0"
 bctls = "1.59"
 cats = "2.13.0"
-claimant = "0.0.2"
+claimant = "0.2.0"
 cypher-frontend = "9.0.20190305"
 cypher-tck = "1.0.0-M14"
-discipline = "0.11.0"
+discipline-core = "1.7.0"
+discipline-scalatest = "2.3.0"
 eff = "7.0.6"
 fastparse = "2.1.0"
 h2 = "2.4.240"
 # Note: has shared transitive dependencies with spark
 hadoop = "3.3.4"
-junit-main = "4.12"
-junit-runner = "1.0.2"
+junit-platform = "1.13.1"
 log4j-main = "2.25.2"
 log4j-scala = "13.1.0"
-mockito = "1.10.19"
+mockito = "5.18.0"
 neo4j-driver = "1.7.2"
 netty = "4.2.7.Final"
 # @pin - let's prevent automatic updates for the moment
 scala-full = "2.12.20"
 # @pin - let's prevent automatic updates for the moment
 scala-major = "2.12"
-scalacheck = "1.14.0"
-scalatest = "3.0.6"
+scalacheck = "1.19.0"
+scalatest = "3.2.19"
+scalatest-mockito = "3.2.19.0" # Note, connected to scalatest version
+scalatest-scalacheck = "3.2.19.0" # Note, connected to scalatest version
+scalatest-junit = "3.2.19.0" # Note, connected to scalatest version
 spark = "3.5.7"
 testcontainers = "2.0.2"
 upickle = "4.4.1"
@@ -47,7 +50,7 @@ opencypher-rewriting = { module = "org.opencypher:rewriting-9.0", version.ref = 
 opencypher-tck = { module = "org.opencypher:tck", version.ref = "cypher-tck" }
 opencypher-tck-api = { module = "org.opencypher:tck-api_2.12", version.ref = "cypher-tck" }
 opencypher-util = { module = "org.opencypher:util-9.0", version.ref = "cypher-frontend" }
-scala-claimant = { module = "org.spire-math:claimant_2.12", version.ref = "claimant" }
+scala-claimant = { module = "org.typelevel:claimant_2.12", version.ref = "claimant" }
 scala-eff = { module = "org.atnos:eff_2.12", version.ref = "eff" }
 scala-fastparse = { module = "com.lihaoyi:fastparse_2.12", version.ref = "fastparse" }
 # Seems we need to lock this down, otherwise we get runtime errors on reflection
@@ -63,14 +66,18 @@ scala-spark-hive = { module = "org.apache.spark:spark-hive_2.12", version.ref = 
 scala-spark-sql = { module = "org.apache.spark:spark-sql_2.12", version.ref = "spark" }
 scala-typelevel-cats-core = { module = "org.typelevel:cats-core_2.12", version.ref = "cats" }
 scala-typelevel-cats-laws = { module = "org.typelevel:cats-laws_2.12", version.ref = "cats" }
-scala-typelevel-discipline = { module = "org.typelevel:discipline_2.12", version.ref = "discipline" }
+scala-typelevel-discipline-core = { module = "org.typelevel:discipline-core_2.12", version.ref = "discipline-core" }
+scala-typelevel-discipline-scalatest = { module = "org.typelevel:discipline-scalatest_2.12", version.ref = "discipline-scalatest" }
 scala-upickle = { module = "com.lihaoyi:upickle_2.12", version.ref = "upickle" }
 testcontainers-neo4j = { module = "org.testcontainers:testcontainers-neo4j", version.ref = "testcontainers" }
-testing-junit = { module = "junit:junit", version.ref = "junit-main" }
-testing-junit-platform-runner = { module = "org.junit.platform:junit-platform-runner", version.ref = "junit-runner" }
-testing-mockito-all = { module = "org.mockito:mockito-all", version.ref = "mockito" }
+testing-junit-platform-engine = { module = "org.junit.platform:junit-platform-engine", version.ref = "junit-platform" }
+testing-junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher", version.ref = "junit-platform" }
+testing-mockito-core = { module = "org.mockito:mockito-core", version.ref = "mockito" }
 testing-scala-scalacheck = { module = "org.scalacheck:scalacheck_2.12", version.ref = "scalacheck" }
 testing-scala-scalatest = { module = "org.scalatest:scalatest_2.12", version.ref = "scalatest" }
+testing-scalatest-mockito = { module = "org.scalatestplus:mockito-5-18_2.12", version.ref = "scalatest-mockito" }
+testing-scalatest-scalacheck = { module = "org.scalatestplus:scalacheck-1-18_2.12", version.ref = "scalatest-scalacheck" }
+testing-scalatest-junit = { module = "org.scalatestplus:junit-5-13_2.12", version.ref = "scalatest-junit" }
 
 [plugins]
 champeau-jmh = "me.champeau.jmh:0.7.3"

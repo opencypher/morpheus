@@ -31,7 +31,6 @@ import org.opencypher.okapi.api.schema.PropertyKeys.PropertyKeys
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.impl.exception.SchemaException
 import org.opencypher.okapi.impl.util.Version
-import org.scalatest.{FunSpec, Matchers}
 
 class PropertyGraphSchemaTest extends ApiBaseTest {
 

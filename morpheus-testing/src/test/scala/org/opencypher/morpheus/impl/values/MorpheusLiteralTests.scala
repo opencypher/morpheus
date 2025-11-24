@@ -26,7 +26,6 @@
  */
 package org.opencypher.morpheus.impl.values
 
-import claimant.Claim
 import org.opencypher.morpheus.impl.acceptance.ScanGraphInit
 import org.opencypher.morpheus.testing.MorpheusTestSuite
 import org.opencypher.okapi.api.value.CypherValue.Format._
@@ -35,6 +34,7 @@ import org.opencypher.okapi.api.value.GenCypherValue._
 import org.scalacheck.Gen.const
 import org.scalacheck.{Gen, Prop}
 import org.scalatestplus.scalacheck.Checkers
+import org.typelevel.claimant.Claim
 
 class MorpheusLiteralTests extends MorpheusTestSuite with Checkers with ScanGraphInit {
 

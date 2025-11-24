@@ -6,7 +6,9 @@ dependencies {
 
     api libs.neo4j.java.driver
     api libs.bouncycastle
+    api libs.testing.mockito.core
     api libs.testing.scala.scalatest
+    api libs.testing.scalatest.mockito
     api libs.testcontainers.neo4j
 }
 

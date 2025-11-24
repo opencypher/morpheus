@@ -2,6 +2,4 @@ description = 'Okapi Trees - Tree rewriting framework for Okapi'
 
 dependencies {
     api libs.scala.typelevel.cats.core
-
-    testImplementation libs.testing.junit
 }

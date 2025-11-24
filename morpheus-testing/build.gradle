@@ -11,7 +11,8 @@ dependencies {
     api libs.hadoop.client.minicluster
 
     api libs.testing.scala.scalatest
-    api libs.testing.mockito.all
+    api libs.testing.mockito.core
+    testImplementation libs.testing.scalatest.mockito
 
     testImplementation project(':okapi-api').sourceSets.test.output
 

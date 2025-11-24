@@ -243,7 +243,7 @@ case class SqlPropertyGraphDataSource(
     }
 
     val inputTable = sqlDataSourceConfig match {
-      case hive@Hive => readSqlTable(viewId, hive)
+      case Hive => readSqlTable(viewId, Hive)
       case jdbc: Jdbc => readSqlTable(viewId, jdbc)
       case file: File => readFile(viewId, file)
     }

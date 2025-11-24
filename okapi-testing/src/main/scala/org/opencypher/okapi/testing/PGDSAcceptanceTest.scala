@@ -49,15 +49,13 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
   }
 
   case class Scenario(
-    override val name: String,
+    name: String,
     initGraphs: List[GraphName] = Nil
-  )(val test: TestContext => Unit) extends Tag(name)
+  )(val test: TestContext => Unit)
 
 
   abstract class TestContextFactory {
     self =>
-
-    val tag: Tag = new Tag(self.toString)
 
     def initializeContext(graphNames: List[GraphName]): TestContext = TestContext(initSession, initPgds(graphNames))
 
@@ -94,7 +92,7 @@ trait PGDSAcceptanceTest[Session <: CypherSession, Graph <: PropertyGraph] {
   def executeScenariosWithContext(scenarios: List[Scenario], contextFactory: TestContextFactory): Unit = {
     val scenarioTable = Table("Scenario", scenarios: _*)
     forAll(scenarioTable) { scenario =>
-      test(s"[$contextFactory] ${scenario.name}", contextFactory.tag, scenario) {
+      test(s"[$contextFactory] ${scenario.name}") {
         val ctx: TestContext = contextFactory.initializeContext(scenario.initGraphs)
         Try(scenario.test(ctx)) match {
           case Success(_) =>

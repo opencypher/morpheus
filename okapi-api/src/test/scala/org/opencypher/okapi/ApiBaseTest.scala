@@ -26,10 +26,8 @@
  */
 package org.opencypher.okapi
 
-import org.junit.runner.RunWith
-import org.scalatestplus.junit.JUnitRunner
+import org.scalatest.funspec.AnyFunSpec
+import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.mockito.MockitoSugar
-import org.scalatest.{FunSpec, Matchers}
 
-@RunWith(classOf[JUnitRunner])
-abstract class ApiBaseTest extends FunSpec with MockitoSugar with Matchers
+abstract class ApiBaseTest extends AnyFunSpec with MockitoSugar with Matchers

@@ -26,7 +26,6 @@
  */
 package org.opencypher.morpheus.impl.io.neo4j.external
 
-import org.junit.Assert.assertEquals
 import org.opencypher.morpheus.testing.fixture.SparkSessionFixture
 import org.opencypher.okapi.neo4j.io.testing.Neo4jServerFixture
 import org.opencypher.okapi.testing.BaseTestSuite
@@ -49,26 +48,26 @@ class Neo4jTest extends BaseTestSuite
 
   test("run Cypher Query With Params") {
     val result = neo4j.cypher("MATCH (n:Person) WHERE n.id <= {maxId} RETURN id(n)").param("maxId", 10)
-    assertEquals(10, result.loadRowRdd.count())
+    assertResult(10)(result.loadRowRdd.count())
   }
 
   test("run Cypher Node Query") {
     val result = neo4j.cypher("MATCH (n:Person) RETURN id(n)")
-    assertEquals(100, result.loadRowRdd.count())
+    assertResult(100)(result.loadRowRdd.count())
   }
 
   test("run Cypher Rel Query") {
     val result = neo4j.cypher("MATCH ()-[r:KNOWS]->() RETURN id(r)")
-    assertEquals(1000, result.loadRowRdd.count())
+    assertResult(1000)(result.loadRowRdd.count())
   }
 
   test("run Cypher Query With Partition") {
     val result = neo4j.cypher("MATCH (n:Person) RETURN id(n) SKIP {_skip} LIMIT {_limit}").partitions(4).batch(25)
-    assertEquals(100, result.loadRowRdd.count())
+    assertResult(100)(result.loadRowRdd.count())
   }
 
   test("run Cypher Rel Query WithPartition") {
     val result = neo4j.cypher("MATCH (n:Person)-[r:KNOWS]->(m:Person) RETURN id(n) as src,id(m) as dst,type(r) as value SKIP {_skip} LIMIT {_limit}").partitions(7).batch(200)
-    assertEquals(1000, result.loadRowRdd.count())
+    assertResult(1000)(result.loadRowRdd.count())
   }
 }

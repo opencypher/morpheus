@@ -27,6 +27,7 @@
 package org.opencypher.morpheus.api.io.sql
 
 import org.opencypher.morpheus.api.io.{FileFormat, HiveFormat, JdbcFormat, StorageFormat}
+import ujson.Obj
 import ujson.Value
 
 import scala.util.{Failure, Success, Try}
@@ -36,10 +37,10 @@ case class SqlDataSourceConfigException(msg: String, cause: Throwable = null) ex
 
 import org.opencypher.okapi.impl.util.JsonUtils.FlatOption._
 
-sealed abstract class SqlDataSourceConfig(
-  val format: StorageFormat,
-  val options: Map[String, String]
-)
+sealed trait SqlDataSourceConfig {
+  def format: StorageFormat
+  def options: Map[String, String]
+}
 
 object SqlDataSourceConfig {
   private implicit val jdbc: ReadWriter[Jdbc] = macroRW
@@ -52,14 +53,20 @@ object SqlDataSourceConfig {
 
   implicit val rw: ReadWriter[SqlDataSourceConfig] = readwriter[Value].bimap[SqlDataSourceConfig](
     // Rename discriminator key from ujson default, to a more friendly version
-    cfg => writeJs(cfg)(defaultMacroRW).obj.collect {
-      case (UJSON_TYPE_KEY, value) => MORPHEUS_TYPE_KEY -> value
-      case other => other
+    cfg => writeJs(cfg)(defaultMacroRW) match {
+      case Obj(obj) => obj.collect {
+        case (UJSON_TYPE_KEY, value) => MORPHEUS_TYPE_KEY -> value
+        case other => other
+      }
+      case other => other // Note, case objects are serialised as strings
     },
     // Revert name change so we can use the ujson reader
-    js => read[SqlDataSourceConfig](js.obj.map {
-      case (MORPHEUS_TYPE_KEY, value) => UJSON_TYPE_KEY -> value
-      case other => other
+    js => read[SqlDataSourceConfig](js match {
+      case Obj(obj) => obj.map {
+        case (MORPHEUS_TYPE_KEY, value) => UJSON_TYPE_KEY -> value
+        case other => other
+      }
+      case _ => js // Note, case objects are serialised as strings
     })(defaultMacroRW)
   )
 
@@ -87,13 +94,18 @@ object SqlDataSourceConfig {
     url: String,
     driver: String,
     override val options: Map[String, String] = Map.empty
-  ) extends SqlDataSourceConfig(JdbcFormat, options)
+  ) extends SqlDataSourceConfig {
+    override def format: StorageFormat = JdbcFormat
+  }
 
   /** Configures a data source that reads tables from Hive
     * @note The Spark session needs to be configured with `.enableHiveSupport()`
     */
   @upickle.implicits.key("hive")
-  case object Hive extends SqlDataSourceConfig(HiveFormat, Map.empty)
+  case object Hive extends SqlDataSourceConfig {
+    override def format: StorageFormat = HiveFormat
+    override def options: Map[String, String] = Map.empty
+  }
 
   /** Configures a data source that reads tables from files
     *
@@ -106,6 +118,5 @@ object SqlDataSourceConfig {
     override val format: FileFormat,
     basePath: Option[String] = None,
     override val options: Map[String, String] = Map.empty
-  ) extends SqlDataSourceConfig(format, options)
-
+  ) extends SqlDataSourceConfig
 }
