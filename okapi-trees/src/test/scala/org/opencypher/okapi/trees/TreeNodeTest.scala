@@ -27,8 +27,25 @@
 package org.opencypher.okapi.trees
 
 import cats.data.NonEmptyList
+import org.opencypher.okapi.trees.TreeNodeTest.Add
+import org.opencypher.okapi.trees.TreeNodeTest.AddList
+import org.opencypher.okapi.trees.TreeNodeTest.CalcExpr
+import org.opencypher.okapi.trees.TreeNodeTest.Dummy
+import org.opencypher.okapi.trees.TreeNodeTest.ListBeforeFixed
+import org.opencypher.okapi.trees.TreeNodeTest.Multi
+import org.opencypher.okapi.trees.TreeNodeTest.NoOp
+import org.opencypher.okapi.trees.TreeNodeTest.Number
+import org.opencypher.okapi.trees.TreeNodeTest.SimpleA
+import org.opencypher.okapi.trees.TreeNodeTest.SimpleB
+import org.opencypher.okapi.trees.TreeNodeTest.SimpleC
+import org.opencypher.okapi.trees.TreeNodeTest.SimpleD
+import org.opencypher.okapi.trees.TreeNodeTest.SimpleList
 import org.scalatest.funspec.AnyFunSpec
 import org.scalatest.matchers.should.Matchers
+
+import java.lang
+import java.lang
+import scala.collection.mutable
 
 class TreeNodeTest extends AnyFunSpec with Matchers {
 
@@ -183,60 +200,6 @@ class TreeNodeTest extends AnyFunSpec with Matchers {
     calculation.withNewChildren(Array(calculation.left, calculation.right)) should be theSameInstanceAs calculation
   }
 
-  abstract class UnsupportedTree extends AbstractTreeNode[UnsupportedTree]
-
-  case class Unsupported(elems: NonEmptyList[Object]) extends UnsupportedTree
-
-  case object UnsupportedLeaf extends UnsupportedTree
-
-  case class UnsupportedNode(
-    elems1: NonEmptyList[UnsupportedTree],
-    elems2: NonEmptyList[UnsupportedTree]
-  ) extends UnsupportedTree
-
-  abstract class UnsupportedTree2 extends AbstractTreeNode[UnsupportedTree2]
-
-  case object UnsupportedLeaf2 extends UnsupportedTree2
-
-  case class UnsupportedNode2(elems: NonEmptyList[UnsupportedTree2], elem: UnsupportedTree2) extends UnsupportedTree2
-
-  abstract class CalcExpr extends AbstractTreeNode[CalcExpr] {
-    def eval: Int
-  }
-
-  case class Dummy(
-    print1: Option[String],
-    print2: List[String],
-    dontPrint1: Option[CalcExpr],
-    dontPrint2: List[CalcExpr]
-  ) extends CalcExpr {
-    def eval = 0
-  }
-
-  case class AddList(
-    dummy1: NonEmptyList[Int],
-    first: CalcExpr,
-    dummy2: Int,
-    remaining: NonEmptyList[CalcExpr],
-    dummy3: NonEmptyList[Object]
-  )
-    extends CalcExpr {
-    def eval: Int = first.eval + remaining.map(_.eval).toList.sum
-  }
-
-  case class Add(left: CalcExpr, right: CalcExpr) extends CalcExpr {
-    def eval: Int = left.eval + right.eval
-  }
-
-  case class Number(v: Int) extends CalcExpr {
-    def eval: Int = v
-  }
-
-  case class NoOp(in: CalcExpr) extends CalcExpr {
-    def eval: Int = in.eval
-  }
-
-
   it("can infer children for complex case classes") {
     val instance = Multi(
       NonEmptyList.one(1),
@@ -296,6 +259,61 @@ class TreeNodeTest extends AnyFunSpec with Matchers {
       """|Could not assign children [SimpleB] to parameters of SimpleList
          |Inferred constructor parameters: SimpleList(List(SimpleA))""".stripMargin)
   }
+}
+
+object TreeNodeTest {
+  abstract class UnsupportedTree extends AbstractTreeNode[UnsupportedTree]
+
+  case class Unsupported(elems: NonEmptyList[Object]) extends UnsupportedTree
+
+  case object UnsupportedLeaf extends UnsupportedTree
+
+  case class UnsupportedNode(
+    elems1: NonEmptyList[UnsupportedTree],
+    elems2: NonEmptyList[UnsupportedTree]
+  ) extends UnsupportedTree
+
+  abstract class UnsupportedTree2 extends AbstractTreeNode[UnsupportedTree2]
+
+  case object UnsupportedLeaf2 extends UnsupportedTree2
+
+  case class UnsupportedNode2(elems: NonEmptyList[UnsupportedTree2], elem: UnsupportedTree2) extends UnsupportedTree2
+
+  abstract class CalcExpr extends AbstractTreeNode[CalcExpr] {
+    def eval: Int
+  }
+
+  case class Dummy(
+    print1: Option[String],
+    print2: List[String],
+    dontPrint1: Option[CalcExpr],
+    dontPrint2: List[CalcExpr]
+  ) extends CalcExpr {
+    def eval = 0
+  }
+
+  case class AddList(
+    dummy1: NonEmptyList[Int],
+    first: CalcExpr,
+    dummy2: Int,
+    remaining: NonEmptyList[CalcExpr],
+    dummy3: NonEmptyList[Object]
+  )
+    extends CalcExpr {
+    def eval: Int = first.eval + remaining.map(_.eval).toList.sum
+  }
+
+  case class Add(left: CalcExpr, right: CalcExpr) extends CalcExpr {
+    def eval: Int = left.eval + right.eval
+  }
+
+  case class Number(v: Int) extends CalcExpr {
+    def eval: Int = v
+  }
+
+  case class NoOp(in: CalcExpr) extends CalcExpr {
+    def eval: Int = in.eval
+  }
 
   abstract class ComplexExample extends AbstractTreeNode[ComplexExample]
 
@@ -322,5 +340,4 @@ class TreeNodeTest extends AnyFunSpec with Matchers {
     maybeC: Option[SimpleC],
     maybeD: Option[SimpleD]
   ) extends ComplexExample
-
 }
