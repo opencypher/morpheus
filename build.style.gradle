@@ -1,8 +1,9 @@
 subprojects {
-    apply plugin: 'com.github.alisiikh.scalastyle'
+    apply plugin: 'com.diffplug.spotless'
 
-    scalastyle {
-        scalaVersion = libs.versions.scala.major.get()
-        config = rootProject.file("etc/scalastyle_config.xml")
+    spotless {
+        scala {
+            scalafmt().configFile(rootProject.file('etc/.scalafmt.conf'))
+        }
     }
 }
