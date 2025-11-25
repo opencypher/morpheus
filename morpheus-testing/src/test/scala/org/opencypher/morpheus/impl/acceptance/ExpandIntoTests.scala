@@ -34,8 +34,7 @@ class ExpandIntoTests extends MorpheusTestSuite with ScanGraphInit {
 
   it("test expand into for dangling edge") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (p3:Person {name: "Eve"})
@@ -49,8 +48,7 @@ class ExpandIntoTests extends MorpheusTestSuite with ScanGraphInit {
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person),
         |(p2)-[e2:KNOWS]->(p3:Person),
         |(p1)-[e3:KNOWS]->(p3),
@@ -59,26 +57,27 @@ class ExpandIntoTests extends MorpheusTestSuite with ScanGraphInit {
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Bob",
-        "p3.name" -> "Eve",
-        "p4.name" -> "Carl"
-      ),
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Bob",
-        "p3.name" -> "Eve",
-        "p4.name" -> "Richard"
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Bob",
+          "p3.name" -> "Eve",
+          "p4.name" -> "Carl"
+        ),
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Bob",
+          "p3.name" -> "Eve",
+          "p4.name" -> "Richard"
+        )
       )
-    ))
+    )
   }
 
   it("test expand into for triangle") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (p3:Person {name: "Eve"})
@@ -88,8 +87,7 @@ class ExpandIntoTests extends MorpheusTestSuite with ScanGraphInit {
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person),
         |(p2)-[e2:KNOWS]->(p3:Person),
         |(p1)-[e3:KNOWS]->(p3)
@@ -97,19 +95,20 @@ class ExpandIntoTests extends MorpheusTestSuite with ScanGraphInit {
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Bob",
-        "p3.name" -> "Eve"
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Bob",
+          "p3.name" -> "Eve"
+        )
       )
-    ))
+    )
   }
 
   it("Expand into after var expand") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (comment:Comment)
@@ -134,12 +133,14 @@ class ExpandIntoTests extends MorpheusTestSuite with ScanGraphInit {
     )
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Bob",
-        "post.content" -> "foobar"
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Bob",
+          "post.content" -> "foobar"
+        )
       )
-    ))
+    )
   }
 }

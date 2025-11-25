@@ -41,11 +41,21 @@ abstract class AbstractNeo4jDataSource extends AbstractPropertyGraphDataSource {
 
   override def tableStorageFormat: StorageFormat = Neo4jFormat
 
-  override protected[io] def readSchema(graphName: GraphName): MorpheusSchema = {
+  override protected[io] def readSchema(
+    graphName: GraphName
+  ): MorpheusSchema = {
     SchemaFromProcedure(config, omitIncompatibleProperties).asMorpheus
   }
 
-  override protected def writeSchema(graphName: GraphName, schema: MorpheusSchema): Unit = ()
-  override protected def readMorpheusGraphMetaData(graphName: GraphName): MorpheusGraphMetaData = MorpheusGraphMetaData(tableStorageFormat.name)
-  override protected def writeMorpheusGraphMetaData(graphName: GraphName, morpheusGraphMetaData: MorpheusGraphMetaData): Unit = ()
+  override protected def writeSchema(
+    graphName: GraphName,
+    schema: MorpheusSchema
+  ): Unit = ()
+  override protected def readMorpheusGraphMetaData(
+    graphName: GraphName
+  ): MorpheusGraphMetaData = MorpheusGraphMetaData(tableStorageFormat.name)
+  override protected def writeMorpheusGraphMetaData(
+    graphName: GraphName,
+    morpheusGraphMetaData: MorpheusGraphMetaData
+  ): Unit = ()
 }

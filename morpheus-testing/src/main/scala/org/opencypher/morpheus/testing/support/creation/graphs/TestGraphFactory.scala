@@ -34,8 +34,12 @@ import org.opencypher.morpheus.impl.MorpheusConverters._
 import org.opencypher.morpheus.impl.table.SparkTable.DataFrameTable
 
 trait TestGraphFactory extends CypherTestGraphFactory[MorpheusSession] {
-  def initGraph(createQuery: String, additionalPatterns: Seq[Pattern] = Seq.empty)
-    (implicit morpheus: MorpheusSession): RelationalCypherGraph[DataFrameTable] = {
+  def initGraph(
+    createQuery: String,
+    additionalPatterns: Seq[Pattern] = Seq.empty
+  )(implicit
+    morpheus: MorpheusSession
+  ): RelationalCypherGraph[DataFrameTable] = {
     apply(CreateGraphFactory(createQuery), additionalPatterns).asMorpheus
   }
 }

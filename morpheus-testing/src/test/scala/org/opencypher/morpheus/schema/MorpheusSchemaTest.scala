@@ -38,30 +38,38 @@ class MorpheusSchemaTest extends MorpheusTestSuite with GraphConstructionFixture
   it("constructs schema correctly for unlabeled nodes") {
     val graph = initGraph("CREATE ({id: 1}), ({id: 2}), ({other: 'foo'}), ()")
 
-    graph.schema should equal(PropertyGraphSchema.empty
-      .withNodePropertyKeys(Set.empty[String], Map("id" -> CTInteger.nullable, "other" -> CTString.nullable))
-      .asMorpheus
+    graph.schema should equal(
+      PropertyGraphSchema.empty
+        .withNodePropertyKeys(
+          Set.empty[String],
+          Map("id" -> CTInteger.nullable, "other" -> CTString.nullable)
+        )
+        .asMorpheus
     )
   }
 
   it("constructs schema correctly for labeled nodes") {
-    val graph = initGraph("CREATE (:A {id: 1}), (:A {id: 2}), (:B {other: 'foo'})")
+    val graph =
+      initGraph("CREATE (:A {id: 1}), (:A {id: 2}), (:B {other: 'foo'})")
 
-    graph.schema should equal(PropertyGraphSchema.empty
-      .withNodePropertyKeys("A")("id" -> CTInteger)
-      .withNodePropertyKeys("B")("other" -> CTString)
-      .asMorpheus
+    graph.schema should equal(
+      PropertyGraphSchema.empty
+        .withNodePropertyKeys("A")("id" -> CTInteger)
+        .withNodePropertyKeys("B")("other" -> CTString)
+        .asMorpheus
     )
   }
 
   it("constructs schema correctly for multi-labeled nodes") {
-    val graph = initGraph("CREATE (:A {id: 1}), (:A:B {id: 2}), (:B {other: 'foo'})")
+    val graph =
+      initGraph("CREATE (:A {id: 1}), (:A:B {id: 2}), (:B {other: 'foo'})")
 
-    graph.schema should equal(PropertyGraphSchema.empty
-      .withNodePropertyKeys("A")("id" -> CTInteger)
-      .withNodePropertyKeys("B")("other" -> CTString)
-      .withNodePropertyKeys("A", "B")("id" -> CTInteger)
-      .asMorpheus
+    graph.schema should equal(
+      PropertyGraphSchema.empty
+        .withNodePropertyKeys("A")("id" -> CTInteger)
+        .withNodePropertyKeys("B")("other" -> CTString)
+        .withNodePropertyKeys("A", "B")("id" -> CTInteger)
+        .asMorpheus
     )
   }
 
@@ -74,11 +82,15 @@ class MorpheusSchemaTest extends MorpheusTestSuite with GraphConstructionFixture
       """.stripMargin
     )
 
-    graph.schema should equal(PropertyGraphSchema.empty
-      .withNodePropertyKeys(Set.empty[String], PropertyKeys.empty)
-      .withRelationshipPropertyKeys("FOO")("p" -> CTInteger)
-      .withRelationshipPropertyKeys("BAR")("p" -> CTInteger, "q" -> CTString.nullable)
-      .asMorpheus
+    graph.schema should equal(
+      PropertyGraphSchema.empty
+        .withNodePropertyKeys(Set.empty[String], PropertyKeys.empty)
+        .withRelationshipPropertyKeys("FOO")("p" -> CTInteger)
+        .withRelationshipPropertyKeys("BAR")(
+          "p" -> CTInteger,
+          "q" -> CTString.nullable
+        )
+        .asMorpheus
     )
   }
 
@@ -88,7 +100,9 @@ class MorpheusSchemaTest extends MorpheusTestSuite with GraphConstructionFixture
     val schema2 = PropertyGraphSchema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "bar" -> CTInteger)
 
-    the[SchemaException] thrownBy (schema1 ++ schema2).asMorpheus should have message
+    the[
+      SchemaException
+    ] thrownBy (schema1 ++ schema2).asMorpheus should have message
       "The property type 'UNION(INTEGER, STRING)' for property 'bar' can not be stored in a Spark column. The unsupported type is specified on label combination [A]."
   }
 
@@ -98,7 +112,9 @@ class MorpheusSchemaTest extends MorpheusTestSuite with GraphConstructionFixture
     val schema2 = PropertyGraphSchema.empty
       .withNodePropertyKeys("A")("foo" -> CTString, "baz" -> CTFloat)
 
-    the[SchemaException] thrownBy (schema1 ++ schema2).asMorpheus should have message
+    the[
+      SchemaException
+    ] thrownBy (schema1 ++ schema2).asMorpheus should have message
       "The property type 'NUMBER' for property 'baz' can not be stored in a Spark column. The unsupported type is specified on label combination [A]."
   }
 
@@ -109,7 +125,10 @@ class MorpheusSchemaTest extends MorpheusTestSuite with GraphConstructionFixture
   it("successfully verifies a valid schema") {
     val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
-      .withNodePropertyKeys("Employee")("name" -> CTString, "salary" -> CTInteger)
+      .withNodePropertyKeys("Employee")(
+        "name" -> CTString,
+        "salary" -> CTInteger
+      )
       .withNodePropertyKeys("Dog")("name" -> CTFloat)
       .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
 
@@ -119,7 +138,10 @@ class MorpheusSchemaTest extends MorpheusTestSuite with GraphConstructionFixture
   it("fails when verifying schema with conflict on implied labels") {
     val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
-      .withNodePropertyKeys("Employee", "Person")("name" -> CTString, "salary" -> CTInteger)
+      .withNodePropertyKeys("Employee", "Person")(
+        "name" -> CTString,
+        "salary" -> CTInteger
+      )
       .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
       .withNodePropertyKeys("Pet")("name" -> CTBoolean)
 
@@ -130,8 +152,14 @@ class MorpheusSchemaTest extends MorpheusTestSuite with GraphConstructionFixture
   it("fails when verifying schema with conflict on combined labels") {
     val schema = PropertyGraphSchema.empty
       .withNodePropertyKeys("Person")("name" -> CTString)
-      .withNodePropertyKeys("Employee", "Person")("name" -> CTInteger, "salary" -> CTInteger)
-      .withNodePropertyKeys("Employee")("name" -> CTInteger, "salary" -> CTInteger)
+      .withNodePropertyKeys("Employee", "Person")(
+        "name" -> CTInteger,
+        "salary" -> CTInteger
+      )
+      .withNodePropertyKeys("Employee")(
+        "name" -> CTInteger,
+        "salary" -> CTInteger
+      )
       .withNodePropertyKeys("Dog", "Pet")("name" -> CTFloat)
       .withNodePropertyKeys("Pet")("notName" -> CTBoolean)
 

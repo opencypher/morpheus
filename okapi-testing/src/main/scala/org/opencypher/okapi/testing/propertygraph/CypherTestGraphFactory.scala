@@ -32,7 +32,10 @@ import org.opencypher.okapi.api.types.CypherType._
 
 trait CypherTestGraphFactory[C <: CypherSession] {
 
-  def apply(propertyGraph: InMemoryTestGraph, additionalPattern: Seq[Pattern] = Seq.empty)(implicit session: C): PropertyGraph
+  def apply(
+    propertyGraph: InMemoryTestGraph,
+    additionalPattern: Seq[Pattern] = Seq.empty
+  )(implicit session: C): PropertyGraph
 
   def name: String
 
@@ -40,13 +43,13 @@ trait CypherTestGraphFactory[C <: CypherSession] {
 
   def computeSchema(propertyGraph: InMemoryTestGraph): PropertyGraphSchema = {
     def extractFromNode(n: InMemoryTestNode) =
-      n.labels -> n.properties.value.map {
-        case (name, prop) => name -> prop.cypherType
+      n.labels -> n.properties.value.map { case (name, prop) =>
+        name -> prop.cypherType
       }
 
     def extractFromRel(r: InMemoryTestRelationship) =
-      r.relType -> r.properties.value.map {
-        case (name, prop) => name -> prop.cypherType
+      r.relType -> r.properties.value.map { case (name, prop) =>
+        name -> prop.cypherType
       }
 
     val labelsAndProps = propertyGraph.nodes.map(extractFromNode)
@@ -56,8 +59,8 @@ trait CypherTestGraphFactory[C <: CypherSession] {
       case (acc, (labels, props)) => acc.withNodePropertyKeys(labels, props)
     }
 
-    typesAndProps.foldLeft(schemaWithLabels) {
-      case (acc, (t, props)) => acc.withRelationshipPropertyKeys(t)(props.toSeq: _*)
+    typesAndProps.foldLeft(schemaWithLabels) { case (acc, (t, props)) =>
+      acc.withRelationshipPropertyKeys(t)(props.toSeq: _*)
     }
   }
 }

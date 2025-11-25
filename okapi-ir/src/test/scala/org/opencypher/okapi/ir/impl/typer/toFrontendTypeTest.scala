@@ -64,8 +64,12 @@ class toFrontendTypeTest extends BaseTestSuite {
 
   test("should convert container types") {
     CTList(CTInteger) shouldBeConvertedTo frontend.CTList(frontend.CTInteger)
-    CTList(CTInteger).nullable shouldBeConvertedTo frontend.CTList(frontend.CTInteger)
-    CTList(CTInteger.nullable) shouldBeConvertedTo frontend.CTList(frontend.CTInteger)
+    CTList(CTInteger).nullable shouldBeConvertedTo frontend.CTList(
+      frontend.CTInteger
+    )
+    CTList(CTInteger.nullable) shouldBeConvertedTo frontend.CTList(
+      frontend.CTInteger
+    )
     CTMap shouldBeConvertedTo frontend.CTMap
     CTMap.nullable shouldBeConvertedTo frontend.CTMap
   }

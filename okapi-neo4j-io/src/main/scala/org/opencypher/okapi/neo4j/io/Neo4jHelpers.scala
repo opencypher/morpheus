@@ -32,29 +32,37 @@ import org.opencypher.okapi.api.value.CypherValue.CypherValue
 
 import scala.collection.JavaConverters._
 
-/**
-  * Inefficient convenience methods.
-  */
+/** Inefficient convenience methods. */
 object Neo4jHelpers {
 
   /**
     * Executes a Cypher query with a given implicit session and returns the result as a list of maps
     * that represent rows.
     *
-    * @note materializes the entire result in memory, only advisable for small results.
-    * @note has a lot of overhead per row, because it stores all the header names in each row map
+    * @note
+    *   materializes the entire result in memory, only advisable for small results.
+    * @note
+    *   has a lot of overhead per row, because it stores all the header names in each row map
     *
-    * @param query Cypher query to execute
-    * @param session session with which to execute the Cypher query
-    * @return list of result rows with each row represented as a map
+    * @param query
+    *   Cypher query to execute
+    * @param session
+    *   session with which to execute the Cypher query
+    * @return
+    *   list of result rows with each row represented as a map
     */
-  def cypher(query: String)(implicit session: Session): List[Map[String, CypherValue]] = {
-    session.run(query).list().asScala.map(_.asMap().asScala.mapValues(CypherValue(_)).toMap).toList
+  def cypher(
+    query: String
+  )(implicit session: Session): List[Map[String, CypherValue]] = {
+    session
+      .run(query)
+      .list()
+      .asScala
+      .map(_.asMap().asScala.mapValues(CypherValue(_)).toMap)
+      .toList
   }
 
-  /**
-    * This module defines constants that are used for interactions with the Neo4j database
-    */
+  /** This module defines constants that are used for interactions with the Neo4j database */
   object Neo4jDefaults {
     val metaPrefix: String = "___"
 
@@ -74,7 +82,8 @@ object Neo4jHelpers {
   }
 
   implicit class RichLabelSet(val labels: Set[String]) extends AnyVal {
-    def cypherLabelPredicate: String = if (labels.isEmpty) "" else labels.map(_.cypherLabelPredicate).mkString("")
+    def cypherLabelPredicate: String = if (labels.isEmpty) ""
+    else labels.map(_.cypherLabelPredicate).mkString("")
   }
 
   implicit class RichConfig(val config: Neo4jConfig) extends AnyVal {
@@ -91,16 +100,22 @@ object Neo4jHelpers {
     }
 
     /**
-      * Creates a new driver and session just for one Cypher query and returns the result as a list of maps
-      * that represent rows.
+      * Creates a new driver and session just for one Cypher query and returns the result as a list
+      * of maps that represent rows.
       *
-      * @note materializes the entire result in memory, only advisable for small results.
-      * @note has a lot of overhead per row, because it stores all the header names in each row map
-      * @note when executing several queries in sequence, it is advisable to use a [[RichConfig#withSession]] block
-      *       instead and make several [[RichConfig#cypher]] calls within it.
+      * @note
+      *   materializes the entire result in memory, only advisable for small results.
+      * @note
+      *   has a lot of overhead per row, because it stores all the header names in each row map
+      * @note
+      *   when executing several queries in sequence, it is advisable to use a
+      *   [[RichConfig#withSession]] block instead and make several [[RichConfig#cypher]] calls
+      *   within it.
       *
-      * @param query Cypher query to execute
-      * @return list of result rows with each row represented as a map
+      * @param query
+      *   Cypher query to execute
+      * @return
+      *   list of result rows with each row represented as a map
       */
     def cypherWithNewSession(query: String): List[Map[String, CypherValue]] = {
       withSession(session => cypher(query)(session))

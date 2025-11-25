@@ -34,7 +34,8 @@ import org.opencypher.okapi.trees.TreeNode
 
 case class QueryPlans[T <: Table[T]](
   logicalPlan: Option[TreeNode[LogicalOperator]],
-  relationalPlan: Option[TreeNode[RelationalOperator[T]]]) extends CypherQueryPlans {
+  relationalPlan: Option[TreeNode[RelationalOperator[T]]]
+) extends CypherQueryPlans {
 
   override def logical: String = logicalPlan.map(_.pretty).getOrElse("")
 

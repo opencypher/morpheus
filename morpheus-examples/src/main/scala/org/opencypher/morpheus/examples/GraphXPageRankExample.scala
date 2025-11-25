@@ -38,8 +38,9 @@ import org.opencypher.okapi.api.io.conversion.NodeMappingBuilder
 /**
   * Round trip Morpheus -> GraphX -> Morpheus
   *
-  * This example demonstrates how Morpheus results can be used to construct a GraphX graph and invoke a GraphX algorithm
-  * on it. The computed ranks are imported back into Morpheus and used in a Cypher query.
+  * This example demonstrates how Morpheus results can be used to construct a GraphX graph and
+  * invoke a GraphX algorithm on it. The computed ranks are imported back into Morpheus and used in
+  * a Cypher query.
   */
 object GraphXPageRankExample extends App {
 
@@ -47,11 +48,11 @@ object GraphXPageRankExample extends App {
   implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // 2) Load social network data via case class instances
-  val socialNetwork = morpheus.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  val socialNetwork =
+    morpheus.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
   // 3) Query graph with Cypher
-  val nodes = socialNetwork.cypher(
-    """|MATCH (n:Person)
+  val nodes = socialNetwork.cypher("""|MATCH (n:Person)
        |RETURN id(n), n.name""".stripMargin)
 
   val rels = socialNetwork.cypher(
@@ -61,29 +62,39 @@ object GraphXPageRankExample extends App {
   )
 
   // 4) Create GraphX compatible RDDs from nodes and relationships
-  val graphXNodeRDD = nodes.records.asDataFrame.rdd.map(row => decodeLong(row.getAs[Array[Byte]](0)) -> row.getString(1))
-  val graphXRelRDD = rels.records.asDataFrame.rdd.map(row => Edge(decodeLong(row.getAs[Array[Byte]](0)), decodeLong(row.getAs[Array[Byte]](1)), ()))
+  val graphXNodeRDD = nodes.records.asDataFrame.rdd.map(row =>
+    decodeLong(row.getAs[Array[Byte]](0)) -> row.getString(1)
+  )
+  val graphXRelRDD = rels.records.asDataFrame.rdd.map(row =>
+    Edge(
+      decodeLong(row.getAs[Array[Byte]](0)),
+      decodeLong(row.getAs[Array[Byte]](1)),
+      ()
+    )
+  )
 
   // 5) Compute Page Rank via GraphX
   val graph = Graph(graphXNodeRDD, graphXRelRDD)
   val ranks = graph.pageRank(0.0001).vertices
 
   // 6) Convert RDD to DataFrame
-  val rankTable = morpheus.sparkSession.createDataFrame(ranks)
+  val rankTable = morpheus.sparkSession
+    .createDataFrame(ranks)
     .withColumnRenamed("_1", "id")
     .withColumnRenamed("_2", "rank")
 
   // 7) Create property graph from rank data
-  val ranksNodeMapping = NodeMappingBuilder.on("id").withPropertyKey("rank").build
-  val rankNodes = morpheus.readFrom(MorpheusElementTable.create(ranksNodeMapping, rankTable))
+  val ranksNodeMapping =
+    NodeMappingBuilder.on("id").withPropertyKey("rank").build
+  val rankNodes =
+    morpheus.readFrom(MorpheusElementTable.create(ranksNodeMapping, rankTable))
 
   // 8) Mount both graphs in the session
   morpheus.catalog.store("ranks", rankNodes)
   morpheus.catalog.store("sn", socialNetwork)
 
   // 9) Query across both graphs to print names with corresponding ranks, sorted by rank
-  val result = morpheus.cypher(
-    """|FROM GRAPH ranks
+  val result = morpheus.cypher("""|FROM GRAPH ranks
        |MATCH (r)
        |WITH id(r) as id, r.rank as rank
        |FROM GRAPH sn
@@ -93,13 +104,13 @@ object GraphXPageRankExample extends App {
        |ORDER BY rank DESC""".stripMargin)
 
   result.show
-  //+---------------------------------------------+
-  //| name                 | rank                 |
-  //+---------------------------------------------+
-  //| 'Carol'              | 1.4232365145228216   |
-  //| 'Bob'                | 1.0235131396957122   |
-  //| 'Alice'              | 0.5532503457814661   |
-  //+---------------------------------------------+
+  // +---------------------------------------------+
+  // | name                 | rank                 |
+  // +---------------------------------------------+
+  // | 'Carol'              | 1.4232365145228216   |
+  // | 'Bob'                | 1.0235131396957122   |
+  // | 'Alice'              | 0.5532503457814661   |
+  // +---------------------------------------------+
 
 }
 // end::full-example[]

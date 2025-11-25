@@ -28,13 +28,18 @@ package org.opencypher.morpheus.impl
 
 import org.apache.spark.sql.Row
 import org.opencypher.morpheus.api.value.MorpheusElement._
-import org.opencypher.morpheus.testing.fixture.{GraphConstructionFixture, RecordsVerificationFixture, TeamDataFixture}
+import org.opencypher.morpheus.testing.fixture.{
+  GraphConstructionFixture,
+  RecordsVerificationFixture,
+  TeamDataFixture
+}
 import org.opencypher.okapi.testing.Bag
 
-class UnionGraphTest extends MorpheusGraphTest
-  with GraphConstructionFixture
-  with RecordsVerificationFixture
-  with TeamDataFixture {
+class UnionGraphTest
+    extends MorpheusGraphTest
+    with GraphConstructionFixture
+    with RecordsVerificationFixture
+    with TeamDataFixture {
 
   import MorpheusGraphTestData._
 
@@ -42,7 +47,11 @@ class UnionGraphTest extends MorpheusGraphTest
   def testGraph2 = initGraph("CREATE (:Person {name: 'Phil'})")
 
   it("supports UNION ALL") {
-    testGraph1.unionAll(testGraph2).cypher("""MATCH (n) RETURN DISTINCT id(n)""").records.size should equal(2)
+    testGraph1
+      .unionAll(testGraph2)
+      .cypher("""MATCH (n) RETURN DISTINCT id(n)""")
+      .records
+      .size should equal(2)
   }
 
   it("supports UNION ALL on identical graphs") {
@@ -79,8 +88,24 @@ class UnionGraphTest extends MorpheusGraphTest
       Row(2L.withPrefix(0).toList, false, true, 1337L, "Max", null, null),
       Row(3L.withPrefix(0).toList, false, true, 9L, "Stefan", null, null),
       Row(0L.withPrefix(1).toList, true, false, null, null, "1984", 1949L),
-      Row(1L.withPrefix(1).toList, true, false, null, null, "Cryptonomicon", 1999L),
-      Row(2L.withPrefix(1).toList, true, false, null, null, "The Eye of the World", 1990L),
+      Row(
+        1L.withPrefix(1).toList,
+        true,
+        false,
+        null,
+        null,
+        "Cryptonomicon",
+        1999L
+      ),
+      Row(
+        2L.withPrefix(1).toList,
+        true,
+        false,
+        null,
+        null,
+        "The Eye of the World",
+        1990L
+      ),
       Row(3L.withPrefix(1).toList, true, false, null, null, "The Circle", 2013L)
     )
 

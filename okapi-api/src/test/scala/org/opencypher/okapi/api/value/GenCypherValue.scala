@@ -52,11 +52,13 @@ object GenCypherValue {
   )
   private val bannedChars = Set("'") ++ reservedParboiledChars
 
-  private val stringWithoutBanned = arbitrary[String].map(s => s.filterNot(bannedChars.contains))
+  private val stringWithoutBanned =
+    arbitrary[String].map(s => s.filterNot(bannedChars.contains))
 
   val string: Gen[CypherString] = stringWithoutBanned.map(CypherString)
 
-  def oneOfSeq[T](gs: Seq[Gen[T]]): Gen[T] = choose(0, gs.size - 1).flatMap(gs(_))
+  def oneOfSeq[T](gs: Seq[Gen[T]]): Gen[T] =
+    choose(0, gs.size - 1).flatMap(gs(_))
 
   val boolean: Gen[CypherBoolean] = arbitrary[Boolean].map(CypherBoolean)
   val integer: Gen[CypherInteger] = arbitrary[Long].map(CypherInteger)
@@ -73,39 +75,56 @@ object GenCypherValue {
     labelElements <- listOfN(size, label)
   } yield labelElements.toSet
 
-  val scalarGenerators: Seq[Gen[CypherValue]] = List(string, boolean, integer, float)
+  val scalarGenerators: Seq[Gen[CypherValue]] =
+    List(string, boolean, integer, float)
 
   val scalar: Gen[CypherValue] = oneOfSeq(scalarGenerators)
 
-  val scalarOrNull: Gen[CypherValue] = oneOfSeq(scalarGenerators :+ const(CypherNull))
+  val scalarOrNull: Gen[CypherValue] = oneOfSeq(
+    scalarGenerators :+ const(CypherNull)
+  )
 
-  val homogeneousScalarList: Gen[CypherList] = oneOfSeq(scalarGenerators.map(listWithElementGenerator))
+  val homogeneousScalarList: Gen[CypherList] = oneOfSeq(
+    scalarGenerators.map(listWithElementGenerator)
+  )
 
-  def listWithElementGenerator(elementGeneratorGenerator: Gen[CypherValue]): Gen[CypherList] = lzy(for {
+  def listWithElementGenerator(
+    elementGeneratorGenerator: Gen[CypherValue]
+  ): Gen[CypherList] = lzy(for {
     size <- choose(min = 0, max = maxContainerSize)
     elementGenerator <- elementGeneratorGenerator
     listElements <- listOfN(size, elementGenerator)
   } yield listElements)
 
-  lazy val any: Gen[CypherValue] = lzy(oneOf(scalarOrNull, map, list, node, relationship))
+  lazy val any: Gen[CypherValue] = lzy(
+    oneOf(scalarOrNull, map, list, node, relationship)
+  )
 
   lazy val list: Gen[CypherList] = lzy(listWithElementGenerator(any))
 
-  lazy val propertyMap: Gen[CypherMap] = mapWithValueGenerator(oneOfSeq(scalarGenerators :+ homogeneousScalarList))
+  lazy val propertyMap: Gen[CypherMap] = mapWithValueGenerator(
+    oneOfSeq(scalarGenerators :+ homogeneousScalarList)
+  )
 
   lazy val map: Gen[CypherMap] = lzy(mapWithValueGenerator(any))
 
-  def mapWithValueGenerator(valueGenerator: Gen[CypherValue]): Gen[CypherMap] = lzy(for {
-    size <- choose(min = 0, max = maxContainerSize)
-    keyValuePairs <- mapOfN(size, for {
-      key <- label
-      value <- valueGenerator
-    } yield key -> value)
-  } yield keyValuePairs)
+  def mapWithValueGenerator(valueGenerator: Gen[CypherValue]): Gen[CypherMap] =
+    lzy(for {
+      size <- choose(min = 0, max = maxContainerSize)
+      keyValuePairs <- mapOfN(
+        size,
+        for {
+          key <- label
+          value <- valueGenerator
+        } yield key -> value
+      )
+    } yield keyValuePairs)
 
   def singlePropertyMap(
     keyGenerator: Gen[String] = const("singleProperty"),
-    valueGenerator: Gen[CypherValue] = oneOfSeq(scalarGenerators :+ homogeneousScalarList)
+    valueGenerator: Gen[CypherValue] = oneOfSeq(
+      scalarGenerators :+ homogeneousScalarList
+    )
   ): Gen[CypherMap] = lzy(for {
     key <- keyGenerator
     value <- valueGenerator
@@ -136,7 +155,8 @@ object GenCypherValue {
     } yield TestRelationship(id, start, end, relType, ps)
   }
 
-  val relationship: Gen[TestRelationship[CypherInteger]] = relationshipWithIdGenerators(integer, integer, integer)
+  val relationship: Gen[TestRelationship[CypherInteger]] =
+    relationshipWithIdGenerators(integer, integer, integer)
 
   // TODO: Add date and datetime generators
 
@@ -150,13 +170,19 @@ object GenCypherValue {
     }
   }
 
-  def nodeRelNodePattern(mapGenerator: Gen[CypherMap] = propertyMap): Gen[NodeRelNodePattern[_]] = {
+  def nodeRelNodePattern(
+    mapGenerator: Gen[CypherMap] = propertyMap
+  ): Gen[NodeRelNodePattern[_]] = {
     val n1Id = 0L
     val rId = 0L
     val n2Id = 1L
     for {
       startNode <- nodeWithCustomGenerators(const(n1Id), mapGenerator)
-      relationship <- relationshipWithIdGenerators(const(rId), const(n1Id), const(n2Id))
+      relationship <- relationshipWithIdGenerators(
+        const(rId),
+        const(n1Id),
+        const(n2Id)
+      )
       endNode <- nodeWithCustomGenerators(const(n2Id), mapGenerator)
     } yield NodeRelNodePattern(startNode, relationship, endNode)
   }
@@ -178,7 +204,8 @@ object GenCypherValue {
     override def productElement(n: Int): Any = n match {
       case 0 => labels
       case 1 => properties
-      case other => throw IllegalArgumentException("a valid product index", s"$other")
+      case other =>
+        throw IllegalArgumentException("a valid product index", s"$other")
     }
 
     override def toString = s"${getClass.getSimpleName}($labels, $properties)}"
@@ -206,14 +233,16 @@ object GenCypherValue {
       endId: Id,
       relType: String,
       properties: CypherMap
-    ): TestRelationship[Id] = TestRelationship(id, startId, endId, relType, properties)
+    ): TestRelationship[Id] =
+      TestRelationship(id, startId, endId, relType, properties)
 
     override def productArity: Int = 2
 
     override def productElement(n: Int): Any = n match {
       case 0 => relType
       case 1 => properties
-      case other => throw IllegalArgumentException("a valid product index", s"$other")
+      case other =>
+        throw IllegalArgumentException("a valid product index", s"$other")
     }
 
     override def toString = s"${getClass.getSimpleName}($relType, $properties)}"

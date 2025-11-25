@@ -36,7 +36,11 @@ trait MorpheusSessionFixture extends BaseTestFixture {
 
   abstract override protected def afterEach(): Unit = {
     // delete all session graphs via their qualified graph name
-    morpheus.catalog.source(morpheus.catalog.sessionNamespace).graphNames.map(_.value).foreach(morpheus.catalog.dropGraph)
+    morpheus.catalog
+      .source(morpheus.catalog.sessionNamespace)
+      .graphNames
+      .map(_.value)
+      .foreach(morpheus.catalog.dropGraph)
     morpheus.catalog.store(morpheus.emptyGraphQgn, morpheus.graphs.empty)
     super.afterEach()
   }

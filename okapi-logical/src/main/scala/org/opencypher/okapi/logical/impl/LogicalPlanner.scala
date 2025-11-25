@@ -27,7 +27,12 @@
 package org.opencypher.okapi.logical.impl
 
 import org.opencypher.okapi.api.types.{CTNode, CTRelationship}
-import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalStateException, NotImplementedException, UnsupportedOperationException}
+import org.opencypher.okapi.impl.exception.{
+  IllegalArgumentException,
+  IllegalStateException,
+  NotImplementedException,
+  UnsupportedOperationException
+}
 import org.opencypher.okapi.ir.api.block._
 import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.api.pattern._
@@ -36,15 +41,25 @@ import org.opencypher.okapi.ir.api.util.DirectCompilationStage
 import org.opencypher.okapi.ir.api.{Label, _}
 import org.opencypher.okapi.ir.impl.syntax.ExprSyntax._
 import org.opencypher.okapi.ir.impl.util.VarConverters._
-import org.opencypher.okapi.logical.impl.exception.{InvalidCypherTypeException, InvalidDependencyException, InvalidPatternException}
+import org.opencypher.okapi.logical.impl.exception.{
+  InvalidCypherTypeException,
+  InvalidDependencyException,
+  InvalidPatternException
+}
 import org.opencypher.v9_0.expressions.SemanticDirection.{INCOMING, OUTGOING}
 
 import scala.annotation.tailrec
 
 class LogicalPlanner(producer: LogicalOperatorProducer)
-  extends DirectCompilationStage[CypherQuery, LogicalOperator, LogicalPlannerContext] {
+    extends DirectCompilationStage[
+      CypherQuery,
+      LogicalOperator,
+      LogicalPlannerContext
+    ] {
 
-  override def process(ir: CypherQuery)(implicit context: LogicalPlannerContext): LogicalOperator = {
+  override def process(
+    ir: CypherQuery
+  )(implicit context: LogicalPlannerContext): LogicalOperator = {
     ir match {
       case sq: SingleQuery => planModel(sq.model.result, sq.model)
       case UnionQuery(left, right, distinct) =>
@@ -53,28 +68,34 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
         val isLeftGraph = leftOperator match {
           case _: ReturnGraph | _: GraphUnionAll => true
-          case _ => false
+          case _                                 => false
         }
 
         val isRightGraph = rightOperator match {
           case _: ReturnGraph | _: GraphUnionAll => true
-          case _ => false
+          case _                                 => false
         }
 
         (isLeftGraph, isRightGraph) match {
           case (true, true) =>
-            if (distinct) throw UnsupportedOperationException("Distinct Union between graphs")
+            if (distinct)
+              throw UnsupportedOperationException(
+                "Distinct Union between graphs"
+              )
             else GraphUnionAll(leftOperator, rightOperator)
           case (false, false) =>
             val union = TabularUnionAll(leftOperator, rightOperator)
             if (distinct) Distinct(union.fields, union, union.solved) else union
-          case _ => throw UnsupportedOperationException("Union between graph and table is not supported")
+          case _ =>
+            throw UnsupportedOperationException(
+              "Union between graph and table is not supported"
+            )
         }
     }
   }
 
-  def planModel(block: ResultBlock, model: QueryModel)(
-    implicit context: LogicalPlannerContext
+  def planModel(block: ResultBlock, model: QueryModel)(implicit
+    context: LogicalPlannerContext
   ): LogicalOperator = {
     val first = block.after.head // there should only be one, right?
 
@@ -86,12 +107,18 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         val fields = t.binds.orderedFields.map(f => Var(f.name)(f.cypherType))
         producer.planSelect(fields, plan)
       case g: GraphResultBlock =>
-        producer.planReturnGraph(producer.planFromGraph(resolveGraph(g.graph, plan.fields), plan))
+        producer.planReturnGraph(
+          producer.planFromGraph(resolveGraph(g.graph, plan.fields), plan)
+        )
     }
   }
 
-  final def planBlock(block: Block, model: QueryModel, plan: Option[LogicalOperator])(
-    implicit context: LogicalPlannerContext
+  final def planBlock(
+    block: Block,
+    model: QueryModel,
+    plan: Option[LogicalOperator]
+  )(implicit
+    context: LogicalPlannerContext
   ): LogicalOperator = {
     if (block.after.isEmpty) {
       // this is a leaf block, just plan it
@@ -111,31 +138,45 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           // TODO: refactor to remove illegal state
           block.after
             .find(r => !_plan.solved.contains(r))
-            .getOrElse(throw IllegalStateException("Found block with unsolved dependencies which cannot be solved."))
+            .getOrElse(
+              throw IllegalStateException(
+                "Found block with unsolved dependencies which cannot be solved."
+              )
+            )
       }
       val dependency = planBlock(depRef, model, plan)
       planBlock(block, model, Some(dependency))
     }
   }
 
-  def planLeaf(block: Block, model: QueryModel)(implicit context: LogicalPlannerContext): LogicalOperator = {
+  def planLeaf(block: Block, model: QueryModel)(implicit
+    context: LogicalPlannerContext
+  ): LogicalOperator = {
     block match {
       case SourceBlock(irGraph: IRCatalogGraph) =>
         val qualifiedGraphName = irGraph.qualifiedGraphName
-        val logicalGraph = LogicalCatalogGraph(qualifiedGraphName, context.resolveSchema(qualifiedGraphName))
+        val logicalGraph = LogicalCatalogGraph(
+          qualifiedGraphName,
+          context.resolveSchema(qualifiedGraphName)
+        )
 
         if (context.inputRecordFields.isEmpty) {
           producer.planStart(logicalGraph)
         } else {
-          producer.planStartWithDrivingTable(logicalGraph, context.inputRecordFields)
+          producer.planStartWithDrivingTable(
+            logicalGraph,
+            context.inputRecordFields
+          )
         }
       case x =>
-        throw NotImplementedException(s"Support for leaf planning of $x not yet implemented. Tree:\n${x.pretty}")
+        throw NotImplementedException(
+          s"Support for leaf planning of $x not yet implemented. Tree:\n${x.pretty}"
+        )
     }
   }
 
-  def planNonLeaf(block: Block, model: QueryModel, plan: LogicalOperator)(
-    implicit context: LogicalPlannerContext
+  def planNonLeaf(block: Block, model: QueryModel, plan: LogicalOperator)(implicit
+    context: LogicalPlannerContext
   ): LogicalOperator = {
     block match {
       case MatchBlock(_, pattern, where, optional, graph) =>
@@ -146,12 +187,14 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
           plan match {
             // If the inner plan is a start, simply rewrite it to start with the required graph
             case Start(_, solved) => Start(lg, solved)
-            case _ => planFromGraph(lg, plan)
+            case _                => planFromGraph(lg, plan)
           }
         }
         // this plans both pattern and filter for convenience -- TODO: split up
-        val patternPlan = planMatchPattern(inputGraphPlan, pattern, where, graph)
-        if (optional) producer.planOptional(inputGraphPlan, patternPlan) else patternPlan
+        val patternPlan =
+          planMatchPattern(inputGraphPlan, pattern, where, graph)
+        if (optional) producer.planOptional(inputGraphPlan, patternPlan)
+        else patternPlan
 
       case ProjectBlock(_, Fields(fields), where, _, distinct) =>
         val withFields = planFieldProjections(plan, fields)
@@ -163,16 +206,18 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         }
 
       case OrderAndSliceBlock(_, sortItems, skip, limit, _) =>
-        val orderOp = if (sortItems.nonEmpty) producer.planOrderBy(sortItems, plan) else plan
+        val orderOp =
+          if (sortItems.nonEmpty) producer.planOrderBy(sortItems, plan)
+          else plan
 
         val skipOp = skip match {
           case Some(expr) => producer.planSkip(expr, orderOp)
-          case None => orderOp
+          case None       => orderOp
         }
 
         limit match {
           case Some(expr) => producer.planLimit(expr, skipOp)
-          case None => skipOp
+          case None       => skipOp
         }
 
       case AggregationBlock(_, a, group, _) =>
@@ -182,43 +227,55 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
         producer.planUnwind(list, variable, plan)
 
       case GraphResultBlock(_, graph) =>
-        producer.planReturnGraph(producer.planFromGraph(resolveGraph(graph, plan.fields), plan))
+        producer.planReturnGraph(
+          producer.planFromGraph(resolveGraph(graph, plan.fields), plan)
+        )
 
       case x =>
-        throw NotImplementedException(s"Support for logical planning of $x not yet implemented. Tree:\n${x.pretty}")
+        throw NotImplementedException(
+          s"Support for logical planning of $x not yet implemented. Tree:\n${x.pretty}"
+        )
     }
   }
 
-  private def planFieldProjections(in: LogicalOperator, exprs: Map[IRField, Expr])(
-    implicit context: LogicalPlannerContext
+  private def planFieldProjections(
+    in: LogicalOperator,
+    exprs: Map[IRField, Expr]
+  )(implicit
+    context: LogicalPlannerContext
   ): LogicalOperator = {
     exprs.foldLeft(in) {
 
       case (acc, (f, ex: ExistsPatternExpr)) =>
-        val existsPlan = producer.planExistsSubQuery(ex, acc, this (ex.ir))
+        val existsPlan = producer.planExistsSubQuery(ex, acc, this(ex.ir))
         producer.projectField(existsPlan.expr.targetField, f, existsPlan)
 
       case (acc, (f, expr)) =>
         if (acc.solved.solves(f)) {
           acc
         } else {
-          producer.projectField(expr, f, expr.children.foldLeft(acc)((op, e) => planInnerSubquery(e, op)))
+          producer.projectField(
+            expr,
+            f,
+            expr.children.foldLeft(acc)((op, e) => planInnerSubquery(e, op))
+          )
         }
 
     }
   }
 
-  private def planFilter(in: LogicalOperator, where: Set[Expr])(
-    implicit context: LogicalPlannerContext
+  private def planFilter(in: LogicalOperator, where: Set[Expr])(implicit
+    context: LogicalPlannerContext
   ): LogicalOperator = {
     val filtersAndProjections = where.foldLeft(in) {
 
       case (acc, ex: ExistsPatternExpr) =>
-        val predicate = producer.planExistsSubQuery(ex, acc, this (ex.ir))
+        val predicate = producer.planExistsSubQuery(ex, acc, this(ex.ir))
         producer.planFilter(ex, predicate)
 
       case (acc, predicate) =>
-        val withInnerExpressions = predicate.children.foldLeft(acc)((acc, e) => planInnerSubquery(e, acc))
+        val withInnerExpressions =
+          predicate.children.foldLeft(acc)((acc, e) => planInnerSubquery(e, acc))
         producer.planFilter(predicate, withInnerExpressions)
 
     }
@@ -226,13 +283,13 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     filtersAndProjections
   }
 
-  private def planInnerSubquery(expr: Expr, in: LogicalOperator)(
-    implicit context: LogicalPlannerContext
+  private def planInnerSubquery(expr: Expr, in: LogicalOperator)(implicit
+    context: LogicalPlannerContext
   ): LogicalOperator = {
     expr match {
 
       case ex: ExistsPatternExpr =>
-        producer.planExistsSubQuery(ex, in, this (ex.ir))
+        producer.planExistsSubQuery(ex, in, this(ex.ir))
 
       case _ =>
         expr.children.foldLeft(in)((op, e) => planInnerSubquery(e, op))
@@ -240,8 +297,8 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
     }
   }
 
-  private def resolveGraph(graph: IRGraph, fieldsInScope: Set[Var])(
-    implicit context: LogicalPlannerContext
+  private def resolveGraph(graph: IRGraph, fieldsInScope: Set[Var])(implicit
+    context: LogicalPlannerContext
   ): LogicalGraph = {
 
     graph match {
@@ -256,58 +313,91 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
 
         val elementsToCreate = newPatternElements -- clonePatternElements
 
-        val clonedVarToInputVar: Map[Var, Var] = p.clones.map { case (clonedField, inputExpression) =>
-          val inputVar = inputExpression match {
-            case v: Var => v
-            case other => throw IllegalArgumentException("CLONED expression to be a variable", other)
-          }
-          clonedField.toVar -> inputVar
+        val clonedVarToInputVar: Map[Var, Var] = p.clones.map {
+          case (clonedField, inputExpression) =>
+            val inputVar = inputExpression match {
+              case v: Var => v
+              case other =>
+                throw IllegalArgumentException(
+                  "CLONED expression to be a variable",
+                  other
+                )
+            }
+            clonedField.toVar -> inputVar
         }
 
-        val newElements: Set[ConstructedElement] = elementsToCreate.map(e => extractConstructedElements(p.creates, e, baseElements.get(e)))
+        val newElements: Set[ConstructedElement] =
+          elementsToCreate.map(e => extractConstructedElements(p.creates, e, baseElements.get(e)))
 
         val setItems = {
-          val setPropertyItemsFromCreates = p.creates.properties.flatMap { case (irField, mapExpr) =>
-            val v = irField.toVar
-            mapExpr.items.map { case (propertyKey, expr) =>
-              SetPropertyItem(propertyKey, v, expr)
-            }
+          val setPropertyItemsFromCreates = p.creates.properties.flatMap {
+            case (irField, mapExpr) =>
+              val v = irField.toVar
+              mapExpr.items.map { case (propertyKey, expr) =>
+                SetPropertyItem(propertyKey, v, expr)
+              }
           }
           setPropertyItemsFromCreates ++ p.sets
         }.toList
 
-        LogicalPatternGraph(p.schema, clonedVarToInputVar, newElements, setItems, p.onGraphs, p.qualifiedGraphName)
+        LogicalPatternGraph(
+          p.schema,
+          clonedVarToInputVar,
+          newElements,
+          setItems,
+          p.onGraphs,
+          p.qualifiedGraphName
+        )
 
       case IRCatalogGraph(qgn, schema) => LogicalCatalogGraph(qgn, schema)
 
     }
   }
 
-  private def extractConstructedElements(pattern: Pattern, e: IRField, baseField: Option[Var]) = e.cypherType match {
+  private def extractConstructedElements(
+    pattern: Pattern,
+    e: IRField,
+    baseField: Option[Var]
+  ) = e.cypherType match {
     case CTRelationship(relTypes, _) if relTypes.size <= 1 =>
       val connection = pattern.topology(e)
-      ConstructedRelationship(e, connection.source, connection.target, relTypes.headOption, baseField)
+      ConstructedRelationship(
+        e,
+        connection.source,
+        connection.target,
+        relTypes.headOption,
+        baseField
+      )
     case CTNode(labels, _) =>
       ConstructedNode(e, labels.map(Label), baseField)
     case other =>
-      throw InvalidCypherTypeException(s"Expected an element type (CTNode, CTRelationship), got $other")
+      throw InvalidCypherTypeException(
+        s"Expected an element type (CTNode, CTRelationship), got $other"
+      )
   }
 
-  private def planStart(graph: IRGraph)(implicit context: LogicalPlannerContext): Start = {
+  private def planStart(
+    graph: IRGraph
+  )(implicit context: LogicalPlannerContext): Start = {
     val logicalGraph: LogicalGraph = resolveGraph(graph, Set.empty)
 
     producer.planStart(logicalGraph)
   }
 
-  private def planFromGraph(graph: LogicalGraph, prev: LogicalOperator)(
-    implicit context: LogicalPlannerContext
+  private def planFromGraph(graph: LogicalGraph, prev: LogicalOperator)(implicit
+    context: LogicalPlannerContext
   ): FromGraph = {
 
     producer.planFromGraph(graph, prev)
   }
 
-  private def planMatchPattern(plan: LogicalOperator, pattern: Pattern, where: Set[Expr], graph: IRGraph)(
-    implicit context: LogicalPlannerContext
+  private def planMatchPattern(
+    plan: LogicalOperator,
+    pattern: Pattern,
+    where: Set[Expr],
+    graph: IRGraph
+  )(implicit
+    context: LogicalPlannerContext
   ) = {
     val components = pattern.components.toSeq
     if (components.size == 1) {
@@ -315,18 +405,23 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       val filteredPlan = planFilter(patternPlan, where)
       filteredPlan
     } else {
-      components.foldLeft(plan) {
-        case (base, component) =>
-          val componentPlan = planComponentPattern(base, component, graph)
-          val predicates = where.filter(_.canEvaluate(componentPlan.fields)).filterNot(componentPlan.solved.predicates)
-          val filteredPlan = planFilter(componentPlan, predicates)
-          filteredPlan
+      components.foldLeft(plan) { case (base, component) =>
+        val componentPlan = planComponentPattern(base, component, graph)
+        val predicates = where
+          .filter(_.canEvaluate(componentPlan.fields))
+          .filterNot(componentPlan.solved.predicates)
+        val filteredPlan = planFilter(componentPlan, predicates)
+        filteredPlan
       }
     }
   }
 
-  private def planComponentPattern(plan: LogicalOperator, pattern: Pattern, graph: IRGraph)(
-    implicit context: LogicalPlannerContext
+  private def planComponentPattern(
+    plan: LogicalOperator,
+    pattern: Pattern,
+    graph: IRGraph
+  )(implicit
+    context: LogicalPlannerContext
   ): LogicalOperator = {
 
     // find all unsolved nodes from the pattern
@@ -346,16 +441,20 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       val solved = nodes.intersect(plan.solved.fields)
       val unsolved = nodes -- solved
 
-      val (firstPlan, remaining) = if (solved.isEmpty) { // there is no connection to the previous plan
-        val field = nodes.head
-        if (plan.fields.nonEmpty) { // there are already fields in the previous plan, we need to plan a cartesian product
-          producer.planCartesianProduct(plan, nodePlan(planStart(graph), field)) -> nodes.tail
-        } else { // there are no previous results, it's safe to plan a node scan
-          nodePlan(plan, field) -> nodes.tail
+      val (firstPlan, remaining) =
+        if (solved.isEmpty) { // there is no connection to the previous plan
+          val field = nodes.head
+          if (plan.fields.nonEmpty) { // there are already fields in the previous plan, we need to plan a cartesian product
+            producer.planCartesianProduct(
+              plan,
+              nodePlan(planStart(graph), field)
+            ) -> nodes.tail
+          } else { // there are no previous results, it's safe to plan a node scan
+            nodePlan(plan, field) -> nodes.tail
+          }
+        } else { // we can connect to the previous plan
+          plan -> unsolved
         }
-      } else { // we can connect to the previous plan
-        plan -> unsolved
-      }
 
       val nodePlans: Set[LogicalOperator] = remaining.map {
         nodePlan(planStart(graph), _)
@@ -374,34 +473,66 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
   ): LogicalOperator = {
     val allSolved = disconnectedPlans.map(_.solved).reduce(_ ++ _)
 
-    val (r, c) = pattern.topology.collectFirst {
-      case (rel, conn: Connection) if !allSolved.solves(rel) =>
-        rel -> conn
-    }.getOrElse(
-      // TODO: exclude case with type system
-      throw InvalidPatternException("Cannot plan an expansion that has already been solved")
-    )
+    val (r, c) = pattern.topology
+      .collectFirst {
+        case (rel, conn: Connection) if !allSolved.solves(rel) =>
+          rel -> conn
+      }
+      .getOrElse(
+        // TODO: exclude case with type system
+        throw InvalidPatternException(
+          "Cannot plan an expansion that has already been solved"
+        )
+      )
 
-    val sourcePlan = disconnectedPlans.collectFirst {
-      case p if p.solved.solves(c.source) => p
-    }.getOrElse(throw InvalidDependencyException("Cannot plan expansion for unsolved source plan"))
-    val targetPlan = disconnectedPlans.collectFirst {
-      case p if p.solved.solves(c.target) => p
-    }.getOrElse(throw InvalidDependencyException("Cannot plan expansion for unsolved target plan"))
+    val sourcePlan = disconnectedPlans
+      .collectFirst {
+        case p if p.solved.solves(c.source) => p
+      }
+      .getOrElse(
+        throw InvalidDependencyException(
+          "Cannot plan expansion for unsolved source plan"
+        )
+      )
+    val targetPlan = disconnectedPlans
+      .collectFirst {
+        case p if p.solved.solves(c.target) => p
+      }
+      .getOrElse(
+        throw InvalidDependencyException(
+          "Cannot plan expansion for unsolved target plan"
+        )
+      )
 
     val expand = c match {
       case v: VarLengthRelationship if v.upper.nonEmpty =>
         val direction = v match {
-          case rel: DirectedVarLengthRelationship if rel.semanticDirection == OUTGOING => Outgoing
-          case rel: DirectedVarLengthRelationship if rel.semanticDirection == INCOMING => Incoming
+          case rel: DirectedVarLengthRelationship if rel.semanticDirection == OUTGOING =>
+            Outgoing
+          case rel: DirectedVarLengthRelationship if rel.semanticDirection == INCOMING =>
+            Incoming
           case _: UndirectedVarLengthRelationship => Undirected
         }
 
         if (v.upper.getOrElse(Integer.MAX_VALUE) < v.lower) {
           val solved = sourcePlan.solved ++ targetPlan.solved.withField(r)
-          EmptyRecords(sourcePlan.fields ++ targetPlan.fields, Start(targetPlan.graph, solved), solved)
+          EmptyRecords(
+            sourcePlan.fields ++ targetPlan.fields,
+            Start(targetPlan.graph, solved),
+            solved
+          )
         } else {
-          producer.planBoundedVarLengthExpand(c.source, r, c.target, v.edgeType, direction, v.lower, v.upper.get, sourcePlan, targetPlan)
+          producer.planBoundedVarLengthExpand(
+            c.source,
+            r,
+            c.target,
+            v.edgeType,
+            direction,
+            v.lower,
+            v.upper.get,
+            sourcePlan,
+            targetPlan
+          )
         }
 
       case _: UndirectedConnection if sourcePlan == targetPlan =>
@@ -411,28 +542,58 @@ class LogicalPlanner(producer: LogicalOperatorProducer)
       case _: CyclicRelationship =>
         producer.planExpandInto(c.source, r, c.target, Outgoing, sourcePlan)
 
-      case rel: DirectedRelationship if sourcePlan == targetPlan && rel.semanticDirection == OUTGOING =>
+      case rel: DirectedRelationship
+          if sourcePlan == targetPlan && rel.semanticDirection == OUTGOING =>
         producer.planExpandInto(c.source, r, c.target, Outgoing, sourcePlan)
 
-      case rel: DirectedRelationship if sourcePlan == targetPlan && rel.semanticDirection == INCOMING =>
+      case rel: DirectedRelationship
+          if sourcePlan == targetPlan && rel.semanticDirection == INCOMING =>
         producer.planExpandInto(c.source, r, c.target, Incoming, sourcePlan)
 
       case rel: DirectedRelationship if rel.semanticDirection == OUTGOING =>
-        producer.planExpand(c.source, r, c.target, Outgoing, sourcePlan, targetPlan)
+        producer.planExpand(
+          c.source,
+          r,
+          c.target,
+          Outgoing,
+          sourcePlan,
+          targetPlan
+        )
 
       case rel: DirectedRelationship if rel.semanticDirection == INCOMING =>
-        producer.planExpand(c.source, r, c.target, Incoming, sourcePlan, targetPlan)
+        producer.planExpand(
+          c.source,
+          r,
+          c.target,
+          Incoming,
+          sourcePlan,
+          targetPlan
+        )
 
       case _: UndirectedConnection =>
-        producer.planExpand(c.source, r, c.target, Undirected, sourcePlan, targetPlan)
+        producer.planExpand(
+          c.source,
+          r,
+          c.target,
+          Undirected,
+          sourcePlan,
+          targetPlan
+        )
 
     }
 
     if (expand.solved.solves(pattern)) expand
-    else planExpansions((disconnectedPlans - sourcePlan - targetPlan) + expand, pattern, producer)
+    else
+      planExpansions(
+        (disconnectedPlans - sourcePlan - targetPlan) + expand,
+        pattern,
+        producer
+      )
   }
 
-  private def nodePlan(plan: LogicalOperator, field: IRField)(implicit context: LogicalPlannerContext) = {
+  private def nodePlan(plan: LogicalOperator, field: IRField)(implicit
+    context: LogicalPlannerContext
+  ) = {
     producer.planNodeScan(field, plan)
   }
 }

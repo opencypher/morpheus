@@ -44,7 +44,8 @@ object HadoopFSHelpers {
     def listDirectories(path: String): List[String] = {
       val p = new Path(path)
       createDirectoryIfNotExists(p)
-      fileSystem.listStatus(p)
+      fileSystem
+        .listStatus(p)
         .filter(_.isDirectory)
         .map(_.getPath.getName)
         .toList
@@ -55,8 +56,13 @@ object HadoopFSHelpers {
     }
 
     def readFile(path: String): String = {
-      using(new BufferedReader(new InputStreamReader(fileSystem.open(new Path(path)), "UTF-8"))) { reader =>
-        def readLines = Stream.cons(reader.readLine(), Stream.continually(reader.readLine))
+      using(
+        new BufferedReader(
+          new InputStreamReader(fileSystem.open(new Path(path)), "UTF-8")
+        )
+      ) { reader =>
+        def readLines =
+          Stream.cons(reader.readLine(), Stream.continually(reader.readLine))
         readLines.takeWhile(_ != null).mkString
       }
     }
@@ -66,7 +72,9 @@ object HadoopFSHelpers {
       val parentDirectory = p.getParent
       createDirectoryIfNotExists(parentDirectory)
       using(fileSystem.create(p)) { outputStream =>
-        using(new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"))) { bufferedWriter =>
+        using(
+          new BufferedWriter(new OutputStreamWriter(outputStream, "UTF-8"))
+        ) { bufferedWriter =>
           bufferedWriter.write(content)
         }
       }

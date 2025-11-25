@@ -41,11 +41,17 @@ class MorpheusRecordHeaderTest extends BaseTestSuite {
       .withExpr(Var("b")(CTString.nullable))
       .withExpr(Var("c")(CTList(CTString.nullable)))
 
-    header.toStructType.fields.toSet should equal(Set(
-      StructField(header.column(Var("a")()), StringType, nullable = false),
-      StructField(header.column(Var("b")()), StringType, nullable = true),
-      StructField(header.column(Var("c")()), ArrayType(StringType, containsNull = true), nullable = false)
-    ))
+    header.toStructType.fields.toSet should equal(
+      Set(
+        StructField(header.column(Var("a")()), StringType, nullable = false),
+        StructField(header.column(Var("b")()), StringType, nullable = true),
+        StructField(
+          header.column(Var("c")()),
+          ArrayType(StringType, containsNull = true),
+          nullable = false
+        )
+      )
+    )
   }
 
 }

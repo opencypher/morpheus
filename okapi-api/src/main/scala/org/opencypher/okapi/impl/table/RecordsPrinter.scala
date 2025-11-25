@@ -36,14 +36,15 @@ object RecordsPrinter {
   /**
     * Prints the given CypherRecords to stdout
     *
-    * @param records the records to be printed.
+    * @param records
+    *   the records to be printed.
     */
   def print(records: CypherRecords)(implicit options: PrintOptions): Unit = {
     val columns = records.logicalColumns.getOrElse(records.physicalColumns)
 
     val rows: Seq[Seq[CypherValue]] = records.collect.map { row =>
-      columns.foldLeft(Seq.empty[CypherValue]) {
-        case (currentSeq, column) => currentSeq :+ row(column)
+      columns.foldLeft(Seq.empty[CypherValue]) { case (currentSeq, column) =>
+        currentSeq :+ row(column)
       }
     }
 

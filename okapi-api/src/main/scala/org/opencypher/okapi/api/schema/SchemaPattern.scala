@@ -26,7 +26,7 @@
  */
 package org.opencypher.okapi.api.schema
 
-object SchemaPattern{
+object SchemaPattern {
   def apply(
     sourceLabel: String,
     relType: String,
@@ -35,26 +35,36 @@ object SchemaPattern{
 }
 
 /**
-  * Describes a (node)-[relationship]->(node) triple in a graph as part of the graph's schema.
-  * A pattern only applies to nodes with the exact label combination defined by `source/targetLabels`
+  * Describes a (node)-[relationship]->(node) triple in a graph as part of the graph's schema. A
+  * pattern only applies to nodes with the exact label combination defined by `source/targetLabels`
   * and relationships with the specified relationship type.
   *
-  * @example Given a graph that only contains the following patterns
-  *                        {{{(:A)-[r1:REL]->(:C),}}}
-  *                        {{{(:B)-[r2:REL]->(:C),}}}
-  *                        {{{(:A:B)-[r3:REL]->(:C)}}}
+  * @example
+  *   Given a graph that only contains the following patterns {{{(:A)-[r1:REL]->(:C),}}}
+  *   {{{(:B)-[r2:REL]->(:C),}}} {{{(:A:B)-[r3:REL]->(:C)}}}
   *
-  *          then the schema pattern `SchemaPattern(Set("A"), "REL", Set("C"))` would only apply to `r1`
-  *          and the schema pattern `SchemaPattern(Set("A", "B"), "REL", Set("C"))` would only apply to `r3`
+  * then the schema pattern `SchemaPattern(Set("A"), "REL", Set("C"))` would only apply to `r1` and
+  * the schema pattern `SchemaPattern(Set("A", "B"), "REL", Set("C"))` would only apply to `r3`
   *
-  * @param sourceLabelCombination label combination for source nodes
-  * @param relType relationship type
-  * @param targetLabelCombination label combination for target nodes
+  * @param sourceLabelCombination
+  *   label combination for source nodes
+  * @param relType
+  *   relationship type
+  * @param targetLabelCombination
+  *   label combination for target nodes
   */
-case class SchemaPattern(sourceLabelCombination: Set[String], relType: String, targetLabelCombination: Set[String]) {
+case class SchemaPattern(
+  sourceLabelCombination: Set[String],
+  relType: String,
+  targetLabelCombination: Set[String]
+) {
   override def toString: String = {
-    val sourceLabelString = if(sourceLabelCombination.isEmpty) "" else sourceLabelCombination.mkString(":", ":", "")
-    val targetLabelString = if(targetLabelCombination.isEmpty) "" else targetLabelCombination.mkString(":", ":", "")
+    val sourceLabelString =
+      if (sourceLabelCombination.isEmpty) ""
+      else sourceLabelCombination.mkString(":", ":", "")
+    val targetLabelString =
+      if (targetLabelCombination.isEmpty) ""
+      else targetLabelCombination.mkString(":", ":", "")
     s"($sourceLabelString)-[:$relType]->($targetLabelString)"
   }
 }

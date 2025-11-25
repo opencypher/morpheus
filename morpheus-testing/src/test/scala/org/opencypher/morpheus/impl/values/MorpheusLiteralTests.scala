@@ -39,35 +39,53 @@ import org.typelevel.claimant.Claim
 class MorpheusLiteralTests extends MorpheusTestSuite with Checkers with ScanGraphInit {
 
   val supportedLiteral: Gen[CypherValue] = Gen.oneOf(
-    homogeneousScalarList, propertyMap, string, boolean, integer, float, const(CypherNull)
+    homogeneousScalarList,
+    propertyMap,
+    string,
+    boolean,
+    integer,
+    float,
+    const(CypherNull)
   )
 
   it("round trip for supported literals") {
-    check(Prop.forAll(supportedLiteral) { v: CypherValue =>
-      val query = s"RETURN ${v.toCypherString} AS result"
-      val result = morpheus.cypher(query).records.collect.toList
-      val expected = List(CypherMap("result" -> v))
-      Claim(result == expected)
-    }, minSuccessful(10))
+    check(
+      Prop.forAll(supportedLiteral) { v: CypherValue =>
+        val query = s"RETURN ${v.toCypherString} AS result"
+        val result = morpheus.cypher(query).records.collect.toList
+        val expected = List(CypherMap("result" -> v))
+        Claim(result == expected)
+      },
+      minSuccessful(10)
+    )
   }
 
   it("round trip for nodes") {
-    check(Prop.forAll(node) { n: Node[CypherInteger] =>
-      val graph = initGraph(s"CREATE ${n.toCypherString}")
-      val query = s"MATCH (n) RETURN n"
-      val result = TestNode(graph.cypher(query).records.collect.head("n").cast[Node[_]])
-      Claim(result == n)
-    }, minSuccessful(10))
+    check(
+      Prop.forAll(node) { n: Node[CypherInteger] =>
+        val graph = initGraph(s"CREATE ${n.toCypherString}")
+        val query = s"MATCH (n) RETURN n"
+        val result =
+          TestNode(graph.cypher(query).records.collect.head("n").cast[Node[_]])
+        Claim(result == n)
+      },
+      minSuccessful(10)
+    )
   }
 
   // TODO: Diagnose and fix error "AnalysisException: Reference 'node_L __ BOOLEAN' is ambiguous, could be: node_L __ BOOLEAN, node_L __ BOOLEAN.;"
   ignore("round trip for relationships") {
-    check(Prop.forAll(nodeRelNodePattern()) { p: NodeRelNodePattern[_] =>
-      val graph = initGraph(p.toCreateQuery)
-      val query = s"MATCH ()-[r]->() RETURN r"
-      val result = TestRelationship(graph.cypher(query).records.collect.head("r").cast[Relationship[_]])
-      Claim(result == p.relationship)
-    }, minSuccessful(1000))
+    check(
+      Prop.forAll(nodeRelNodePattern()) { p: NodeRelNodePattern[_] =>
+        val graph = initGraph(p.toCreateQuery)
+        val query = s"MATCH ()-[r]->() RETURN r"
+        val result = TestRelationship(
+          graph.cypher(query).records.collect.head("r").cast[Relationship[_]]
+        )
+        Claim(result == p.relationship)
+      },
+      minSuccessful(1000)
+    )
   }
 
 }

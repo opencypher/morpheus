@@ -34,16 +34,20 @@ import scala.reflect.runtime.universe.TypeTag
 
 object RelationalOptimizer {
 
-  def process[T <: Table[T] : TypeTag](input: RelationalOperator[T]): RelationalOperator[T] = {
+  def process[T <: Table[T]: TypeTag](
+    input: RelationalOperator[T]
+  ): RelationalOperator[T] = {
     InsertCachingOperators(input)
   }
 
   object InsertCachingOperators {
 
-    def apply[T <: Table[T] : TypeTag](input: RelationalOperator[T]): RelationalOperator[T] = {
+    def apply[T <: Table[T]: TypeTag](
+      input: RelationalOperator[T]
+    ): RelationalOperator[T] = {
       val replacements = calculateReplacementMap(input).filterKeys {
         case _: Start[T] => false
-        case _ => true
+        case _           => true
       }
 
       val nodesToReplace = replacements.keySet
@@ -51,41 +55,50 @@ object RelationalOptimizer {
       TopDown[RelationalOperator[T]] {
         case cache: Cache[T] => cache
         case parent if (parent.childrenAsSet intersect nodesToReplace).nonEmpty =>
-          val newChildren = parent.children.map(c => replacements.getOrElse(c, c))
+          val newChildren =
+            parent.children.map(c => replacements.getOrElse(c, c))
           parent.withNewChildren(newChildren)
       }.transform(input)
     }
 
-    private def calculateReplacementMap[T <: Table[T] : TypeTag](input: RelationalOperator[T]): Map[RelationalOperator[T], RelationalOperator[T]] = {
+    private def calculateReplacementMap[T <: Table[T]: TypeTag](
+      input: RelationalOperator[T]
+    ): Map[RelationalOperator[T], RelationalOperator[T]] = {
       val opCounts = identifyDuplicates(input)
-      val opsByHeight = opCounts.keys.toSeq.sortWith((a, b) => a.height > b.height)
-      val (opsToCache, _) = opsByHeight.foldLeft(Set.empty[RelationalOperator[T]] -> opCounts) { (agg, currentOp) =>
-        agg match {
-          case (currentOpsToCache, currentCounts) =>
-            val currentOpCount = currentCounts(currentOp)
-            if (currentOpCount > 1) {
-              val updatedOps = currentOpsToCache + currentOp
-              // We're traversing `opsByHeight` from largest to smallest query sub-tree.
-              // We pick the trees with the largest height for caching first, and then reduce the duplicate count
-              // for the sub-trees of the cached tree by the number of times the parent tree appears.
-              // The idea behind this is that if the parent was already cached, there is no need to additionally
-              // cache all its children (unless they're used with a different parent somewhere else).
-              val updatedCounts = currentCounts.map {
-                case (op, count) => op -> (if (currentOp.containsTree(op)) count - currentOpCount else count)
+      val opsByHeight =
+        opCounts.keys.toSeq.sortWith((a, b) => a.height > b.height)
+      val (opsToCache, _) =
+        opsByHeight.foldLeft(Set.empty[RelationalOperator[T]] -> opCounts) { (agg, currentOp) =>
+          agg match {
+            case (currentOpsToCache, currentCounts) =>
+              val currentOpCount = currentCounts(currentOp)
+              if (currentOpCount > 1) {
+                val updatedOps = currentOpsToCache + currentOp
+                // We're traversing `opsByHeight` from largest to smallest query sub-tree.
+                // We pick the trees with the largest height for caching first, and then reduce the duplicate count
+                // for the sub-trees of the cached tree by the number of times the parent tree appears.
+                // The idea behind this is that if the parent was already cached, there is no need to additionally
+                // cache all its children (unless they're used with a different parent somewhere else).
+                val updatedCounts = currentCounts.map { case (op, count) =>
+                  op -> (if (currentOp.containsTree(op))
+                           count - currentOpCount
+                         else count)
+                }
+                updatedOps -> updatedCounts
+              } else {
+                currentOpsToCache -> currentCounts
               }
-              updatedOps -> updatedCounts
-            } else {
-              currentOpsToCache -> currentCounts
-            }
+          }
         }
-      }
       opsToCache.map(op => op -> Cache[T](op)).toMap
     }
 
-    private def identifyDuplicates[T <: Table[T]](input: RelationalOperator[T]): Map[RelationalOperator[T], Int] = {
+    private def identifyDuplicates[T <: Table[T]](
+      input: RelationalOperator[T]
+    ): Map[RelationalOperator[T], Int] = {
       input
-        .foldLeft(Map.empty[RelationalOperator[T], Int].withDefaultValue(0)) {
-          case (agg, op) => agg.updated(op, agg(op) + 1)
+        .foldLeft(Map.empty[RelationalOperator[T], Int].withDefaultValue(0)) { case (agg, op) =>
+          agg.updated(op, agg(op) + 1)
         }
         .filter(_._2 > 1)
     }

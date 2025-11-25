@@ -58,7 +58,14 @@ class MorpheusValueConversionTest extends MorpheusValueTestSuite {
     val newValues = scalaValues.map(CypherValue(_))
     assert(newValues == originalValues)
     originalValues.foreach { v =>
-      assert(v.isOrContainsNull == (v == CypherNull || v.as[CypherMap].get.unwrap.valuesIterator.contains(null)))
+      assert(
+        v.isOrContainsNull == (v == CypherNull || v
+          .as[CypherMap]
+          .get
+          .unwrap
+          .valuesIterator
+          .contains(null))
+      )
     }
   }
 
@@ -66,12 +73,18 @@ class MorpheusValueConversionTest extends MorpheusValueTestSuite {
     val originalValues = LIST_valueGroups.flatten
     val scalaValues = originalValues.map(_.unwrap)
     val newValues = scalaValues.map {
-      case null => CypherNull
+      case null       => CypherNull
       case l: List[_] => CypherList(l: _*)
     }
     assert(newValues == originalValues)
     originalValues.foreach { v =>
-      assert(v.isOrContainsNull == v.isNull || v.as[CypherList].get.unwrap.contains(null))
+      assert(
+        v.isOrContainsNull == v.isNull || v
+          .as[CypherList]
+          .get
+          .unwrap
+          .contains(null)
+      )
     }
   }
 
@@ -79,7 +92,7 @@ class MorpheusValueConversionTest extends MorpheusValueTestSuite {
     val originalValues = STRING_valueGroups.flatten
     val scalaValues = originalValues.map(_.unwrap)
     val newValues = scalaValues.map {
-      case null => CypherNull
+      case null                => CypherNull
       case s: java.lang.String => CypherString(s)
     }
     assert(newValues == originalValues)
@@ -92,7 +105,7 @@ class MorpheusValueConversionTest extends MorpheusValueTestSuite {
     val originalValues = BOOLEAN_valueGroups.flatten
     val scalaValues = originalValues.map(_.value)
     val newValues = scalaValues.map {
-      case null => CypherNull
+      case null       => CypherNull
       case b: Boolean => CypherBoolean(b)
     }
     assert(newValues == originalValues)
@@ -105,7 +118,7 @@ class MorpheusValueConversionTest extends MorpheusValueTestSuite {
     val originalValues = INTEGER_valueGroups.flatten
     val scalaValues = originalValues.map(_.value)
     val newValues = scalaValues.map {
-      case null => CypherNull
+      case null              => CypherNull
       case l: java.lang.Long => CypherInteger(l)
     }
     assert(newValues == originalValues)
@@ -118,7 +131,7 @@ class MorpheusValueConversionTest extends MorpheusValueTestSuite {
     val originalValues = FLOAT_valueGroups.flatten
     val scalaValues = originalValues.map(_.value)
     val newValues = scalaValues.map {
-      case null => CypherNull
+      case null                => CypherNull
       case d: java.lang.Double => CypherFloat(d)
     }
     assert(newValues.withoutNaNs == originalValues.withoutNaNs)
@@ -131,7 +144,7 @@ class MorpheusValueConversionTest extends MorpheusValueTestSuite {
     val originalValues = BIGDECIMAL_valueGroups.flatten
     val scalaValues = originalValues.map(_.value)
     val newValues = scalaValues.map {
-      case null => CypherNull
+      case null          => CypherNull
       case b: BigDecimal => CypherBigDecimal(b)
     }
     assert(newValues.withoutNaNs == originalValues.withoutNaNs)
@@ -144,10 +157,10 @@ class MorpheusValueConversionTest extends MorpheusValueTestSuite {
     val originalValues = NUMBER_valueGroups.flatten
     val scalaValues = originalValues.map(_.value)
     val newValues = scalaValues.map {
-      case null => CypherNull
-      case l: java.lang.Long => CypherInteger(l)
+      case null                => CypherNull
+      case l: java.lang.Long   => CypherInteger(l)
       case d: java.lang.Double => CypherFloat(d)
-      case b: BigDecimal => CypherBigDecimal(b)
+      case b: BigDecimal       => CypherBigDecimal(b)
     }
     assert(newValues.withoutNaNs == originalValues.withoutNaNs)
     originalValues.foreach { v =>

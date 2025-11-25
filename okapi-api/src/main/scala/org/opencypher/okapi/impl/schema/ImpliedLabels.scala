@@ -56,5 +56,6 @@ case class ImpliedLabels(m: Map[String, Set[String]]) {
     ImpliedLabels(filteredImplications)
   }
 
-  private def implicationsFor(source: String) = m.getOrElse(source, Set.empty) + source
+  private def implicationsFor(source: String) =
+    m.getOrElse(source, Set.empty) + source
 }

@@ -35,14 +35,19 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import scala.annotation.nowarn
 import scala.collection.mutable
 
-
 // As abs(percentile_rank() - given_percentage) inside min() is not allowed
 object PercentileUdafs extends Logging {
 
   @nowarn
   abstract class PercentileAggregation(percentile: Double) extends UserDefinedAggregateFunction {
-    def inputSchema: StructType = StructType(Array(StructField("value", DoubleType)))
-    def bufferSchema: StructType = StructType(Array(StructField("array_buffer", ArrayType(DoubleType, containsNull = false))))
+    def inputSchema: StructType = StructType(
+      Array(StructField("value", DoubleType))
+    )
+    def bufferSchema: StructType = StructType(
+      Array(
+        StructField("array_buffer", ArrayType(DoubleType, containsNull = false))
+      )
+    )
     def deterministic: Boolean = true
     def initialize(buffer: MutableAggregationBuffer): Unit = {
       buffer(0) = Array[DoubleType]()
@@ -53,23 +58,27 @@ object PercentileUdafs extends Logging {
       }
     }
     def merge(buffer1: MutableAggregationBuffer, buffer2: Row): Unit = {
-      buffer1(0) = buffer1(0).asInstanceOf[mutable.WrappedArray[Double]] ++ buffer2(0).asInstanceOf[mutable.WrappedArray[Double]]
+      buffer1(0) = buffer1(0).asInstanceOf[mutable.WrappedArray[Double]] ++ buffer2(0)
+        .asInstanceOf[mutable.WrappedArray[Double]]
     }
   }
 
-  class PercentileDisc(percentile: Double, numberType: DataType) extends PercentileAggregation(percentile) {
+  class PercentileDisc(percentile: Double, numberType: DataType)
+      extends PercentileAggregation(percentile) {
     def dataType: DataType = numberType
 
     def evaluate(buffer: Row): Any = {
-      val sortedValues = buffer(0).asInstanceOf[mutable.WrappedArray[Double]].sortWith(_ < _)
+      val sortedValues =
+        buffer(0).asInstanceOf[mutable.WrappedArray[Double]].sortWith(_ < _)
       if (sortedValues.isEmpty) return null
 
       val position = (sortedValues.length * percentile).round.toInt
-      val result = if (position == 0) sortedValues(0) else sortedValues(position - 1)
+      val result =
+        if (position == 0) sortedValues(0) else sortedValues(position - 1)
       dataType match {
-        case LongType => result.toLong
+        case LongType   => result.toLong
         case DoubleType => result
-        case e => throw IllegalArgumentException("a Integer or a Float", e)
+        case e          => throw IllegalArgumentException("a Integer or a Float", e)
       }
     }
 
@@ -79,7 +88,8 @@ object PercentileUdafs extends Logging {
     def dataType: DataType = DoubleType
 
     def evaluate(buffer: Row): Any = {
-      val sortedValues = buffer(0).asInstanceOf[mutable.WrappedArray[Double]].sortWith(_ < _)
+      val sortedValues =
+        buffer(0).asInstanceOf[mutable.WrappedArray[Double]].sortWith(_ < _)
       if (sortedValues.isEmpty) return null
 
       val exact_position = 1 + ((sortedValues.length - 1) * percentile)
@@ -87,9 +97,13 @@ object PercentileUdafs extends Logging {
       val succ = exact_position.ceil.toInt
       val weight = succ - exact_position
       exact_position match {
-        case pos if pos < 1 => (1 - weight) * sortedValues(succ) + weight * sortedValues(prec)
+        case pos if pos < 1 =>
+          (1 - weight) * sortedValues(succ) + weight * sortedValues(prec)
         case pos if pos == succ => sortedValues(prec - 1)
-        case _ => (1 - weight) * sortedValues(succ - 1) + weight * sortedValues(prec - 1)
+        case _ =>
+          (1 - weight) * sortedValues(succ - 1) + weight * sortedValues(
+            prec - 1
+          )
       }
     }
   }

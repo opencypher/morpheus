@@ -37,7 +37,8 @@ sealed trait Endpoints extends Traversable[IRField] {
 case object Endpoints {
 
   def apply(source: IRField, target: IRField): Endpoints =
-    if (source == target) OneSingleEndpoint(source) else TwoDifferentEndpoints(source, target)
+    if (source == target) OneSingleEndpoint(source)
+    else TwoDifferentEndpoints(source, target)
 
   implicit def one(field: IRField): IdenticalEndpoints =
     OneSingleEndpoint(field)
@@ -50,7 +51,8 @@ case object Endpoints {
   private case class OneSingleEndpoint(field: IRField) extends IdenticalEndpoints {
     override def contains(f: IRField): Boolean = field == f
   }
-  private case class TwoDifferentEndpoints(source: IRField, target: IRField) extends DifferentEndpoints {
+  private case class TwoDifferentEndpoints(source: IRField, target: IRField)
+      extends DifferentEndpoints {
     override def flip: TwoDifferentEndpoints = copy(target, source)
 
     override def contains(f: IRField): Boolean = f == source || f == target

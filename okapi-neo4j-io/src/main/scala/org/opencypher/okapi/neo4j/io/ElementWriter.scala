@@ -50,15 +50,18 @@ object ElementWriter extends Logging {
   )(rowToListValue: T => Value): Unit = {
     val labelString = labels.cypherLabelPredicate
 
-    val nodeKeyProperties = nodeKeys.map { nodeKey =>
-      val keyIndex = rowMapping.indexOf(nodeKey)
-      val parameterMapLookup = s"$ROW_IDENTIFIER[$keyIndex]"
-      s"`$nodeKey`: $parameterMapLookup"
-    }.mkString(", ")
+    val nodeKeyProperties = nodeKeys
+      .map { nodeKey =>
+        val keyIndex = rowMapping.indexOf(nodeKey)
+        val parameterMapLookup = s"$ROW_IDENTIFIER[$keyIndex]"
+        s"`$nodeKey`: $parameterMapLookup"
+      }
+      .mkString(", ")
 
-    val setStatements = rowMapping
-      .zipWithIndex
-      .filterNot { case (propertyKey, _) => propertyKey == null || nodeKeys.contains(propertyKey) }
+    val setStatements = rowMapping.zipWithIndex
+      .filterNot { case (propertyKey, _) =>
+        propertyKey == null || nodeKeys.contains(propertyKey)
+      }
       .map { case (key, i) => s"SET n.$key = $ROW_IDENTIFIER[$i]" }
       .mkString("\n")
 
@@ -69,7 +72,13 @@ object ElementWriter extends Logging {
          |$setStatements
          """.stripMargin
 
-    writeElements(nodes, rowMapping, createQ, config, config.mergeNodeBatchSize)(rowToListValue)
+    writeElements(
+      nodes,
+      rowMapping,
+      createQ,
+      config,
+      config.mergeNodeBatchSize
+    )(rowToListValue)
   }
 
   // TODO: Share more code with `createRelationships`
@@ -84,15 +93,18 @@ object ElementWriter extends Logging {
     relKeys: Set[String]
   )(rowToListValue: T => Value): Unit = {
 
-    val relKeyProperties = relKeys.map { relKey =>
-      val keyIndex = rowMapping.indexOf(relKey)
-      val parameterMapLookup = s"$ROW_IDENTIFIER[$keyIndex]"
-      s"`$relKey`: $parameterMapLookup"
-    }.mkString(", ")
+    val relKeyProperties = relKeys
+      .map { relKey =>
+        val keyIndex = rowMapping.indexOf(relKey)
+        val parameterMapLookup = s"$ROW_IDENTIFIER[$keyIndex]"
+        s"`$relKey`: $parameterMapLookup"
+      }
+      .mkString(", ")
 
-    val setStatements = rowMapping
-      .zipWithIndex
-      .filterNot { case (propertyKey, _) => propertyKey == null || relKeys.contains(propertyKey) }
+    val setStatements = rowMapping.zipWithIndex
+      .filterNot { case (propertyKey, _) =>
+        propertyKey == null || relKeys.contains(propertyKey)
+      }
       .map { case (key, i) => s"SET rel.$key = $ROW_IDENTIFIER[$i]" }
       .mkString("\n")
 
@@ -107,7 +119,13 @@ object ElementWriter extends Logging {
          |$setStatements
          """.stripMargin
 
-    writeElements(relationships, rowMapping, createQ, config, config.mergeRelationshipBatchSize)(rowToListValue)
+    writeElements(
+      relationships,
+      rowMapping,
+      createQ,
+      config,
+      config.mergeRelationshipBatchSize
+    )(rowToListValue)
   }
 
   def createNodes[T](
@@ -118,8 +136,7 @@ object ElementWriter extends Logging {
   )(rowToListValue: T => Value): Unit = {
     val labelString = labels.cypherLabelPredicate
 
-    val setStatements = rowMapping
-      .zipWithIndex
+    val setStatements = rowMapping.zipWithIndex
       .filterNot(_._1 == null)
       .map { case (key, i) => s"SET n.$key = $ROW_IDENTIFIER[$i]" }
       .mkString("\n")
@@ -131,7 +148,13 @@ object ElementWriter extends Logging {
          |$setStatements
          """.stripMargin
 
-    writeElements(nodes, rowMapping, createQ, config, config.createNodeBatchSize)(rowToListValue)
+    writeElements(
+      nodes,
+      rowMapping,
+      createQ,
+      config,
+      config.createNodeBatchSize
+    )(rowToListValue)
   }
 
   def createRelationships[T](
@@ -143,8 +166,7 @@ object ElementWriter extends Logging {
     relType: String,
     nodeLabel: Option[String]
   )(rowToListValue: T => Value): Unit = {
-    val setStatements = rowMapping
-      .zipWithIndex
+    val setStatements = rowMapping.zipWithIndex
       .filterNot(_._1 == null)
       .map { case (key, i) => s"SET rel.$key = $ROW_IDENTIFIER[$i]" }
       .mkString("\n")
@@ -160,7 +182,13 @@ object ElementWriter extends Logging {
          |$setStatements
          """.stripMargin
 
-    writeElements(relationships, rowMapping, createQ, config, config.createRelationshipBatchSize)(rowToListValue)
+    writeElements(
+      relationships,
+      rowMapping,
+      createQ,
+      config,
+      config.createRelationshipBatchSize
+    )(rowToListValue)
   }
 
   private def writeElements[T](
@@ -180,7 +208,9 @@ object ElementWriter extends Logging {
         val batch = batches.next()
         val rowParameters = new Array[Value](batch.size)
 
-        batch.zipWithIndex.foreach { case (row, i) => rowParameters(i) = rowToListValue(row) }
+        batch.zipWithIndex.foreach { case (row, i) =>
+          rowParameters(i) = rowToListValue(row)
+        }
 
         reuseMap.put("batch", Values.value(rowParameters: _*))
 
@@ -197,18 +227,22 @@ object ElementWriter extends Logging {
         } match {
           case Success(_) => ()
 
-          case Failure(exception: ClientException) if exception.getMessage.contains("already exists") =>
+          case Failure(exception: ClientException)
+              if exception.getMessage.contains("already exists") =>
             val originalMessage = exception.getMessage
 
-            val elementType = if (originalMessage.contains("Node(")) "nodes" else "relationships"
+            val elementType =
+              if (originalMessage.contains("Node(")) "nodes"
+              else "relationships"
 
             val duplicateIdRegex = """.+('[0-9a-fA-F]+')$""".r
             val duplicateId = originalMessage match {
               case duplicateIdRegex(idString) => idString
-              case _ => "UNKNOWN"
+              case _                          => "UNKNOWN"
             }
 
-            val message = s"Could not write the graph to Neo4j. The graph you are attempting to write contains at least two $elementType with Morpheus id $duplicateId"
+            val message =
+              s"Could not write the graph to Neo4j. The graph you are attempting to write contains at least two $elementType with Morpheus id $duplicateId"
             throw IllegalStateException(message, Some(exception))
 
           case Failure(e) => throw e

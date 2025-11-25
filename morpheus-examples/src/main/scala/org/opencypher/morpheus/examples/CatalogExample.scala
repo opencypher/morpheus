@@ -60,6 +60,9 @@ object CatalogExample extends App {
   morpheus.cypher(s"FROM GRAPH $namespace.$graphName MATCH (n) RETURN n").show
 
   // Access graph via API
-  morpheus.catalog.graph(QualifiedGraphName(namespace, graphName)).cypher("MATCH (n) RETURN n").show
+  morpheus.catalog
+    .graph(QualifiedGraphName(namespace, graphName))
+    .cypher("MATCH (n) RETURN n")
+    .show
 }
 // end::full-example[]

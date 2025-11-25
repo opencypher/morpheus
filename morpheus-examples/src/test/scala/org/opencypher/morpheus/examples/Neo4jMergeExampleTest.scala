@@ -33,7 +33,9 @@ class Neo4jMergeExampleTest extends ExampleTestBase with Neo4jServerFixture {
   override def dataFixture: String = ""
 
   it("should produce the correct output") {
-    validate(Neo4jMergeExample.main(Array("--bolt-url", boltUrl)),
-      getClass.getResource("/example_outputs/Neo4jMergeExample.out").toURI)
+    validate(
+      Neo4jMergeExample.main(Array("--bolt-url", boltUrl)),
+      getClass.getResource("/example_outputs/Neo4jMergeExample.out").toURI
+    )
   }
 }

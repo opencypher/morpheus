@@ -41,7 +41,9 @@ import org.opencypher.okapi.relational.impl.operators.{RelationalOperator, Start
 
 class RecordHeaderMismatch extends MorpheusTestSuite {
 
-  it("throws a schema exception when the physical record header does not match the one computed based on the schema") {
+  it(
+    "throws a schema exception when the physical record header does not match the one computed based on the schema"
+  ) {
     val buggyGraph: RelationalCypherGraph[DataFrameTable] {
       type Session = MorpheusSession
 
@@ -64,7 +66,10 @@ class RecordHeaderMismatch extends MorpheusTestSuite {
       override def tables: Seq[DataFrameTable] = Seq.empty
 
       // Always return empty records, which does not match what the schema promises
-      def scanOperator(searchPattern: Pattern, exactLabelMatch: Boolean): RelationalOperator[DataFrameTable] = {
+      def scanOperator(
+        searchPattern: Pattern,
+        exactLabelMatch: Boolean
+      ): RelationalOperator[DataFrameTable] = {
         Start.fromEmptyGraph(morpheus.records.empty())
       }
     }

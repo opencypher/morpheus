@@ -33,7 +33,11 @@ import org.opencypher.okapi.neo4j.io.Neo4jHelpers._
 
 object ElementReader {
 
-  def flatExactLabelQuery(labels: Set[String], schema: PropertyGraphSchema, maybeMetaLabel: Option[String] = None): String ={
+  def flatExactLabelQuery(
+    labels: Set[String],
+    schema: PropertyGraphSchema,
+    maybeMetaLabel: Option[String] = None
+  ): String = {
     val props = schema.nodePropertyKeys(labels).propertyExtractorString
     val allLabels = labels ++ maybeMetaLabel
     val labelCount = allLabels.size
@@ -43,7 +47,11 @@ object ElementReader {
         |RETURN id($elementVarName) AS $idPropertyKey$props""".stripMargin
   }
 
-  def flatRelTypeQuery(relType: String, schema: PropertyGraphSchema, maybeMetaLabel: Option[String] = None): String ={
+  def flatRelTypeQuery(
+    relType: String,
+    schema: PropertyGraphSchema,
+    maybeMetaLabel: Option[String] = None
+  ): String = {
     val props = schema.relationshipPropertyKeys(relType).propertyExtractorString
     val metaLabel = maybeMetaLabel.map(_.cypherLabelPredicate).getOrElse("")
 
@@ -53,10 +61,7 @@ object ElementReader {
 
   implicit class RichPropertyTypes(val properties: PropertyKeys) extends AnyVal {
     def propertyExtractorString: String = {
-      val propertyStrings = properties
-        .keys
-        .toList
-        .sorted
+      val propertyStrings = properties.keys.toList.sorted
         .map(k => s"$elementVarName.$k")
 
       if (propertyStrings.isEmpty) ""

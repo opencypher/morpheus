@@ -47,7 +47,8 @@ import scala.language.implicitConversions
 class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVerificationSupport {
 
   val emptySqm: SolvedQueryModel = SolvedQueryModel.empty
-  val logicalGraph = LogicalCatalogGraph(testQualifiedGraphName, PropertyGraphSchema.empty)
+  val logicalGraph =
+    LogicalCatalogGraph(testQualifiedGraphName, PropertyGraphSchema.empty)
   val emptySchema: PropertyGraphSchema = PropertyGraphSchema.empty
   val emptyGraph = TestGraph(emptySchema)
 
@@ -56,16 +57,23 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       """|MATCH (a:Animal)
          |RETURN a""".stripMargin
     val plan = logicalPlan(query, emptyGraph)
-    val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(emptyGraph))
+    val optimizedLogicalPlan =
+      LogicalOptimizer(plan)(plannerContext(emptyGraph))
 
     val expected = Select(
       List(Var("a")(CTNode(Set("Animal")))),
       EmptyRecords(
         Set(Var("a")(CTNode(Set("Animal")))),
         Start(logicalGraph, emptySqm),
-        SolvedQueryModel(Set(IRField("a")(CTNode(Set("Animal")))), Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal"))))
+        SolvedQueryModel(
+          Set(IRField("a")(CTNode(Set("Animal")))),
+          Set(HasLabel(Var("a")(CTNode(Set("Animal"))), Label("Animal")))
+        )
       ),
-      SolvedQueryModel(Set(IRField("a")(CTNode)), Set(HasLabel(Var("a")(CTNode), Label("Animal"))))
+      SolvedQueryModel(
+        Set(IRField("a")(CTNode)),
+        Set(HasLabel(Var("a")(CTNode), Label("Animal")))
+      )
     )
 
     optimizedLogicalPlan should equalWithTracing(expected)
@@ -75,11 +83,14 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
     val query =
       """|MATCH (a:Animal:Astronaut)
          |RETURN a""".stripMargin
-    val schema = PropertyGraphSchema.empty.withNodePropertyKeys("Animal")().withNodePropertyKeys("Astronaut")()
+    val schema = PropertyGraphSchema.empty
+      .withNodePropertyKeys("Animal")()
+      .withNodePropertyKeys("Astronaut")()
     val logicalGraph = LogicalCatalogGraph(testQualifiedGraphName, schema)
 
     val plan = logicalPlan(query, TestGraph(schema))
-    val optimizedLogicalPlan = LogicalOptimizer(plan)(plannerContext(TestGraph(schema)))
+    val optimizedLogicalPlan =
+      LogicalOptimizer(plan)(plannerContext(TestGraph(schema)))
 
     val expected = Select(
       List(Var("a")(CTNode(Set("Animal", "Astronaut")))),
@@ -89,8 +100,14 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
         SolvedQueryModel(
           Set(IRField("a")(CTNode(Set("Astronaut", "Animal")))),
           Set(
-            HasLabel(Var("a")(CTNode(Set("Astronaut", "Animal"))), Label("Astronaut")),
-            HasLabel(Var("a")(CTNode(Set("Astronaut", "Animal"))), Label("Animal"))
+            HasLabel(
+              Var("a")(CTNode(Set("Astronaut", "Animal"))),
+              Label("Astronaut")
+            ),
+            HasLabel(
+              Var("a")(CTNode(Set("Astronaut", "Animal"))),
+              Label("Animal")
+            )
           )
         )
       ),
@@ -98,7 +115,9 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
         Set(IRField("a")(CTNode)),
         Set(
           HasLabel(Var("a")(CTNode), Label("Animal")),
-          HasLabel(Var("a")(CTNode), Label("Astronaut"))))
+          HasLabel(Var("a")(CTNode), Label("Astronaut"))
+        )
+      )
     )
 
     optimizedLogicalPlan should equalWithTracing(expected)
@@ -107,8 +126,14 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
   describe("replace cartesian with ValueJoin") {
 
     it("should replace cross with value join if filter is present") {
-      val startA = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
-      val startB = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
+      val startA = Start(
+        LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema),
+        SolvedQueryModel.empty
+      )
+      val startB = Start(
+        LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema),
+        SolvedQueryModel.empty
+      )
       val varA = Var("a")(CTNode)
       val propA = expr.ElementProperty(varA, PropertyKey("name"))(CTString)
       val varB = Var("b")(CTNode)
@@ -117,24 +142,42 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       val irFieldA = IRField(varA.name)(varA.cypherType)
       val irFieldB = IRField(varB.name)(varB.cypherType)
 
-      val scanA = PatternScan.nodeScan(varA, startA, SolvedQueryModel(Set(irFieldA)))
-      val scanB = PatternScan.nodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
-      val cartesian = CartesianProduct(scanA, scanB, SolvedQueryModel(Set(irFieldA, irFieldB)))
-      val filter = Filter(equals, cartesian, SolvedQueryModel(Set(irFieldA, irFieldB)))
+      val scanA =
+        PatternScan.nodeScan(varA, startA, SolvedQueryModel(Set(irFieldA)))
+      val scanB =
+        PatternScan.nodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
+      val cartesian = CartesianProduct(
+        scanA,
+        scanB,
+        SolvedQueryModel(Set(irFieldA, irFieldB))
+      )
+      val filter =
+        Filter(equals, cartesian, SolvedQueryModel(Set(irFieldA, irFieldB)))
 
-      val optimizedPlan = BottomUp[LogicalOperator](LogicalOptimizer.replaceCartesianWithValueJoin).transform(filter)
+      val optimizedPlan = BottomUp[LogicalOperator](
+        LogicalOptimizer.replaceCartesianWithValueJoin
+      ).transform(filter)
 
       val projectA = Project(propA -> None, scanA, scanA.solved)
       val projectB = Project(propB -> None, scanB, scanB.solved)
-      val solved = SolvedQueryModel(Set(irFieldA, irFieldB)).withPredicate(equals)
+      val solved =
+        SolvedQueryModel(Set(irFieldA, irFieldB)).withPredicate(equals)
       val valueJoin = ValueJoin(projectA, projectB, Set(equals), solved)
 
       optimizedPlan should equalWithTracing(valueJoin)
     }
 
-    it("should replace cross with value join if filter with flipped predicate is present") {
-      val startA = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
-      val startB = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
+    it(
+      "should replace cross with value join if filter with flipped predicate is present"
+    ) {
+      val startA = Start(
+        LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema),
+        SolvedQueryModel.empty
+      )
+      val startB = Start(
+        LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema),
+        SolvedQueryModel.empty
+      )
       val varA = Var("a")(CTNode)
       val propA = expr.ElementProperty(varA, PropertyKey("name"))(CTString)
       val varB = Var("b")(CTNode)
@@ -143,17 +186,27 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       val irFieldA = IRField(varA.name)(varA.cypherType)
       val irFieldB = IRField(varB.name)(varB.cypherType)
 
-      val scanA = PatternScan.nodeScan(varA, startA, SolvedQueryModel(Set(irFieldA)))
-      val scanB = PatternScan.nodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
-      val cartesian = CartesianProduct(scanA, scanB, SolvedQueryModel(Set(irFieldA, irFieldB)))
-      val filter = Filter(equals, cartesian, SolvedQueryModel(Set(irFieldA, irFieldB)))
+      val scanA =
+        PatternScan.nodeScan(varA, startA, SolvedQueryModel(Set(irFieldA)))
+      val scanB =
+        PatternScan.nodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
+      val cartesian = CartesianProduct(
+        scanA,
+        scanB,
+        SolvedQueryModel(Set(irFieldA, irFieldB))
+      )
+      val filter =
+        Filter(equals, cartesian, SolvedQueryModel(Set(irFieldA, irFieldB)))
 
-      val optimizedPlan = BottomUp[LogicalOperator](LogicalOptimizer.replaceCartesianWithValueJoin).transform(filter)
+      val optimizedPlan = BottomUp[LogicalOperator](
+        LogicalOptimizer.replaceCartesianWithValueJoin
+      ).transform(filter)
 
       val flippedEquals = Equals(propA, propB)
       val projectA = Project(propA -> None, scanA, scanA.solved)
       val projectB = Project(propB -> None, scanB, scanB.solved)
-      val solved = SolvedQueryModel(Set(irFieldA, irFieldB)).withPredicate(flippedEquals)
+      val solved =
+        SolvedQueryModel(Set(irFieldA, irFieldB)).withPredicate(flippedEquals)
       val valueJoin = ValueJoin(projectA, projectB, Set(flippedEquals), solved)
 
       optimizedPlan should equalWithTracing(valueJoin)
@@ -161,25 +214,45 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
 
     it("should replace cross with value join for driving tables") {
       val nameField = 'name -> CTString
-      val startDrivingTable = impl.DrivingTable(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), Set(nameField), SolvedQueryModel.empty.withField(nameField))
+      val startDrivingTable = impl.DrivingTable(
+        LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema),
+        Set(nameField),
+        SolvedQueryModel.empty.withField(nameField)
+      )
 
-      val startB = Start(LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema), SolvedQueryModel.empty)
+      val startB = Start(
+        LogicalCatalogGraph(testQualifiedGraphName, testGraphSchema),
+        SolvedQueryModel.empty
+      )
       val varB = Var("b")(CTNode)
       val propB = expr.ElementProperty(varB, PropertyKey("name"))(CTString)
 
       val equals = Equals(nameField, propB)
       val irFieldB = IRField(varB.name)(varB.cypherType)
 
-      val scanB = PatternScan.nodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
-      val cartesian = CartesianProduct(startDrivingTable, scanB, SolvedQueryModel(Set(nameField, irFieldB)))
-      val filter = Filter(equals, cartesian, SolvedQueryModel(Set(nameField, irFieldB)))
+      val scanB =
+        PatternScan.nodeScan(varB, startB, SolvedQueryModel(Set(irFieldB)))
+      val cartesian = CartesianProduct(
+        startDrivingTable,
+        scanB,
+        SolvedQueryModel(Set(nameField, irFieldB))
+      )
+      val filter =
+        Filter(equals, cartesian, SolvedQueryModel(Set(nameField, irFieldB)))
 
-      val optimizedPlan = BottomUp[LogicalOperator](LogicalOptimizer.replaceCartesianWithValueJoin).transform(filter)
+      val optimizedPlan = BottomUp[LogicalOperator](
+        LogicalOptimizer.replaceCartesianWithValueJoin
+      ).transform(filter)
 
-      val projectName = Project(toVar(nameField) -> None, startDrivingTable, startDrivingTable.solved)
+      val projectName = Project(
+        toVar(nameField) -> None,
+        startDrivingTable,
+        startDrivingTable.solved
+      )
       val projectB = Project(propB -> None, scanB, scanB.solved)
 
-      val solved = SolvedQueryModel(Set(nameField, irFieldB)).withPredicate(equals)
+      val solved =
+        SolvedQueryModel(Set(nameField, irFieldB)).withPredicate(equals)
       val valueJoin = ValueJoin(projectName, projectB, Set(equals), solved)
 
       optimizedPlan should equalWithTracing(valueJoin)
@@ -193,7 +266,10 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       .withRelationshipPropertyKeys("B")()
 
     it("inserts NodeRelPatterns") {
-      val pattern = NodeRelPattern(CTNode(Set("A"), Some(testQualifiedGraphName)), CTRelationship(Set("B"), Some(testQualifiedGraphName)))
+      val pattern = NodeRelPattern(
+        CTNode(Set("A"), Some(testQualifiedGraphName)),
+        CTRelationship(Set("B"), Some(testQualifiedGraphName))
+      )
       val graph = TestGraph(schema, Set(pattern))
 
       val plan = logicalPlan(
@@ -208,19 +284,25 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
 
       optimizedPlan.exists {
         case _: Expand => true
-        case _ => false
+        case _         => false
       } should be(false)
 
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-          map == Map(Var("a")(CTNode) -> pattern.nodeElement, Var("b")(CTRelationship) -> pattern.relElement)
+          map == Map(
+            Var("a")(CTNode) -> pattern.nodeElement,
+            Var("b")(CTRelationship) -> pattern.relElement
+          )
         case _ => false
       } should be(true)
     }
 
     it("inserts connecting NodeRelPatterns") {
-      val pattern = NodeRelPattern(CTNode(Set("A"), Some(testQualifiedGraphName)), CTRelationship(Set("B"), Some(testQualifiedGraphName)))
+      val pattern = NodeRelPattern(
+        CTNode(Set("A"), Some(testQualifiedGraphName)),
+        CTRelationship(Set("B"), Some(testQualifiedGraphName))
+      )
       val graph = TestGraph(schema, Set(pattern))
 
       val plan = logicalPlan(
@@ -234,20 +316,26 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       optimizedPlan.occourences[PatternScan] should be(4)
       optimizedPlan.exists {
         case _: Expand => true
-        case _ => false
+        case _         => false
       } should be(false)
 
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-            map == Map(Var("a")(CTNode) -> pattern.nodeElement, Var("b1")(CTRelationship) -> pattern.relElement)
+          map == Map(
+            Var("a")(CTNode) -> pattern.nodeElement,
+            Var("b1")(CTRelationship) -> pattern.relElement
+          )
         case _ => false
       } should be(true)
 
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-            map == Map(Var("a")(CTNode) -> pattern.nodeElement, Var("b2")(CTRelationship) -> pattern.relElement)
+          map == Map(
+            Var("a")(CTNode) -> pattern.nodeElement,
+            Var("b2")(CTRelationship) -> pattern.relElement
+          )
         case _ => false
       } should be(true)
     }
@@ -273,13 +361,17 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
 
       optimizedPlan.exists {
         case _: Expand => true
-        case _ => false
+        case _         => false
       } should be(false)
 
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-            map == Map(Var("a")(CTNode) -> pattern.sourceElement, Var("b")(CTRelationship) -> pattern.relElement, Var("c")(CTNode) -> pattern.targetElement)
+          map == Map(
+            Var("a")(CTNode) -> pattern.sourceElement,
+            Var("b")(CTRelationship) -> pattern.relElement,
+            Var("c")(CTNode) -> pattern.targetElement
+          )
         case _ => false
       } should be(true)
     }
@@ -304,24 +396,34 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
 
       optimizedPlan.exists {
         case _: Expand => true
-        case _ => false
+        case _         => false
       } should be(false)
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-            map == Map(Var("a")(CTNode) -> pattern.sourceElement, Var("b1")(CTRelationship) -> pattern.relElement, Var("c1")(CTNode) -> pattern.targetElement)
+          map == Map(
+            Var("a")(CTNode) -> pattern.sourceElement,
+            Var("b1")(CTRelationship) -> pattern.relElement,
+            Var("c1")(CTNode) -> pattern.targetElement
+          )
         case _ => false
       } should be(true)
 
       optimizedPlan.exists {
         case PatternScan(otherPattern, map, _, _) =>
           pattern == otherPattern &&
-            map == Map(Var("a")(CTNode) -> pattern.sourceElement, Var("b2")(CTRelationship) -> pattern.relElement, Var("c2")(CTNode) -> pattern.targetElement)
+          map == Map(
+            Var("a")(CTNode) -> pattern.sourceElement,
+            Var("b2")(CTRelationship) -> pattern.relElement,
+            Var("c2")(CTNode) -> pattern.targetElement
+          )
         case _ => false
       } should be(true)
     }
 
-    it("does not insert node rel patterns if not all node label combos are covered") {
+    it(
+      "does not insert node rel patterns if not all node label combos are covered"
+    ) {
       val pattern = NodeRelPattern(CTNode("Person"), CTRelationship("KNOWS"))
       val schema = PropertyGraphSchema.empty
         .withNodePropertyKeys("Person")()
@@ -340,7 +442,7 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
 
       optimizedPlan.exists {
         case PatternScan(_: NodeRelPattern, _, _, _) => true
-        case _ => false
+        case _                                       => false
       } should be(false)
     }
 
@@ -363,8 +465,14 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
       optimizedPlan.occourences[ValueJoin] should be(0)
     }
 
-    it("does not insert triplet patterns if not all node label combos are covered") {
-      val pattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Person"))
+    it(
+      "does not insert triplet patterns if not all node label combos are covered"
+    ) {
+      val pattern = TripletPattern(
+        CTNode("Person"),
+        CTRelationship("KNOWS"),
+        CTNode("Person")
+      )
       val schema = PropertyGraphSchema.empty
         .withNodePropertyKeys("Person")()
         .withNodePropertyKeys("Person", "Employee")()
@@ -382,12 +490,16 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
 
       optimizedPlan.exists {
         case PatternScan(_: TripletPattern, _, _, _) => true
-        case _ => false
+        case _                                       => false
       } should be(false)
     }
 
     it("does not insert triplet patterns if not all rel types are covered") {
-      val pattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Person"))
+      val pattern = TripletPattern(
+        CTNode("Person"),
+        CTRelationship("KNOWS"),
+        CTNode("Person")
+      )
       val schema = PropertyGraphSchema.empty
         .withNodePropertyKeys("Person")()
         .withRelationshipPropertyKeys("KNOWS")()
@@ -405,14 +517,13 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
 
       optimizedPlan.exists {
         case PatternScan(_: TripletPattern, _, _, _) => true
-        case _ => false
+        case _                                       => false
       } should be(false)
     }
   }
 
   def plannerContext(graph: PropertyGraph): LogicalPlannerContext = {
-    val catalog = QueryLocalCatalog
-      .empty
+    val catalog = QueryLocalCatalog.empty
       .withGraph(testQualifiedGraphName, graph)
       .withSchema(testQualifiedGraphName, graph.schema)
 
@@ -424,7 +535,10 @@ class LogicalOptimizerTest extends BaseTestSuite with IrConstruction with TreeVe
     )
   }
 
-  private def logicalPlan(query: String, graph: PropertyGraph): LogicalOperator = {
+  private def logicalPlan(
+    query: String,
+    graph: PropertyGraph
+  ): LogicalOperator = {
     val producer = new LogicalOperatorProducer
     val logicalPlanner = new LogicalPlanner(producer)
     val ir = query.asCypherQuery(testGraphName -> graph.schema)(graph.schema)

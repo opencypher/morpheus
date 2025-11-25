@@ -43,26 +43,76 @@ import org.opencypher.okapi.relational.impl.table.RecordHeader
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 
-class MorpheusRecordsTest extends MorpheusTestSuite with GraphConstructionFixture with TeamDataFixture {
+class MorpheusRecordsTest
+    extends MorpheusTestSuite
+    with GraphConstructionFixture
+    with TeamDataFixture {
 
   describe("column naming") {
 
     it("creates column names for simple expressions") {
-      morpheus.cypher("RETURN 1").records.asMorpheus.df.columns should equal(Array("1"))
-      morpheus.cypher("RETURN '\u0099'").records.asMorpheus.df.columns should equal(Array("'\u0099'"))
-      morpheus.cypher("RETURN 1 AS foo").records.asMorpheus.df.columns should equal(Array("foo"))
-      morpheus.cypher("RETURN 1 AS foo, 2 AS bar").records.asMorpheus.df.columns.toSet should equal(Set("foo", "bar"))
-      morpheus.cypher("RETURN true AND false").records.asMorpheus.df.columns.toSet should equal(Set("true AND false"))
-      morpheus.cypher("RETURN true AND false AND false").records.asMorpheus.df.columns.toSet should equal(Set("true AND false AND false"))
-      morpheus.cypher("RETURN 'foo' STARTS WITH 'f'").records.asMorpheus.df.columns.toSet should equal(Set("'foo' STARTS WITH 'f'"))
+      morpheus.cypher("RETURN 1").records.asMorpheus.df.columns should equal(
+        Array("1")
+      )
+      morpheus
+        .cypher("RETURN '\u0099'")
+        .records
+        .asMorpheus
+        .df
+        .columns should equal(Array("'\u0099'"))
+      morpheus
+        .cypher("RETURN 1 AS foo")
+        .records
+        .asMorpheus
+        .df
+        .columns should equal(Array("foo"))
+      morpheus
+        .cypher("RETURN 1 AS foo, 2 AS bar")
+        .records
+        .asMorpheus
+        .df
+        .columns
+        .toSet should equal(Set("foo", "bar"))
+      morpheus
+        .cypher("RETURN true AND false")
+        .records
+        .asMorpheus
+        .df
+        .columns
+        .toSet should equal(Set("true AND false"))
+      morpheus
+        .cypher("RETURN true AND false AND false")
+        .records
+        .asMorpheus
+        .df
+        .columns
+        .toSet should equal(Set("true AND false AND false"))
+      morpheus
+        .cypher("RETURN 'foo' STARTS WITH 'f'")
+        .records
+        .asMorpheus
+        .df
+        .columns
+        .toSet should equal(Set("'foo' STARTS WITH 'f'"))
     }
 
     it("escapes property accessors") {
-      morpheus.cypher("MATCH (n) RETURN n.foo").records.asMorpheus.df.columns.toSet should equal(Set("n_foo"))
+      morpheus
+        .cypher("MATCH (n) RETURN n.foo")
+        .records
+        .asMorpheus
+        .df
+        .columns
+        .toSet should equal(Set("n_foo"))
     }
 
     it("creates column names for params") {
-      morpheus.cypher("RETURN $x", parameters = CypherMap("x" -> 1)).records.asMorpheus.df.columns should equal(Array("$x"))
+      morpheus
+        .cypher("RETURN $x", parameters = CypherMap("x" -> 1))
+        .records
+        .asMorpheus
+        .df
+        .columns should equal(Array("$x"))
     }
 
     it("creates column names for node expressions") {
@@ -71,23 +121,30 @@ class MorpheusRecordsTest extends MorpheusTestSuite with GraphConstructionFixtur
 
       val result = given.cypher("FROM GRAPH foo MATCH (n) RETURN n")
 
-      result.records.asMorpheus.df.columns.toSet should equal(Set("n", "n:L", "n_val"))
+      result.records.asMorpheus.df.columns.toSet should equal(
+        Set("n", "n:L", "n_val")
+      )
     }
 
     it("creates column names for relationship expressions") {
-      val given = initGraph("CREATE ({val: 'a'})-[:R {prop: 'b'}]->({val: 'c'})")
+      val given =
+        initGraph("CREATE ({val: 'a'})-[:R {prop: 'b'}]->({val: 'c'})")
       morpheus.catalog.store("foo", given)
 
       val result = given.cypher("FROM GRAPH foo MATCH (n)-[r]->(m) RETURN r")
 
-      result.records.asMorpheus.df.columns.toSet should equal(Set("r", "r:R", "source(r)", "target(r)", "r_prop"))
+      result.records.asMorpheus.df.columns.toSet should equal(
+        Set("r", "r:R", "source(r)", "target(r)", "r_prop")
+      )
     }
 
     it("retains user-specified order of return items") {
       val given = initGraph("CREATE (:L {val: 'a'})")
       morpheus.catalog.store("foo", given)
 
-      val result = given.cypher("FROM GRAPH foo MATCH (n) RETURN n.val AS bar, n, n.val AS foo")
+      val result = given.cypher(
+        "FROM GRAPH foo MATCH (n) RETURN n.val AS bar, n, n.val AS foo"
+      )
 
       val dfColumns = result.records.asMorpheus.df.columns
       dfColumns.head should equal("bar")
@@ -102,7 +159,9 @@ class MorpheusRecordsTest extends MorpheusTestSuite with GraphConstructionFixtur
       val result = given.cypher("FROM GRAPH foo MATCH (n) RETURN n, n.val")
 
       val dfColumns = result.records.asMorpheus.df.columns
-      dfColumns.collect { case col if col == "n_val" => col }.length should equal(1)
+      dfColumns.collect {
+        case col if col == "n_val" => col
+      }.length should equal(1)
       dfColumns.toSet should equal(Set("n", "n:L", "n_val"))
     }
   }
@@ -111,39 +170,50 @@ class MorpheusRecordsTest extends MorpheusTestSuite with GraphConstructionFixtur
     // Given (generally produced by a SQL query)
     val records = morpheus.records.wrap(personDF)
 
-    records.header.expressions.map(s => s -> s.cypherType) should equal(Set(
-      Var("ID")() -> CTInteger,
-      Var("NAME")() -> CTString.nullable,
-      Var("NUM")() -> CTInteger
-    ))
+    records.header.expressions.map(s => s -> s.cypherType) should equal(
+      Set(
+        Var("ID")() -> CTInteger,
+        Var("NAME")() -> CTString.nullable,
+        Var("NUM")() -> CTInteger
+      )
+    )
   }
 
   it("can be registered and queried from SQL") {
     // Given
-    morpheus.records.fromElementTable(personTable).df.createOrReplaceTempView("people")
+    morpheus.records
+      .fromElementTable(personTable)
+      .df
+      .createOrReplaceTempView("people")
 
     // When
     val df = sparkSession.sql("SELECT * FROM people")
 
     // Then
-    df.collect().toBag should equal(Bag(
-      Row(1L.encodeAsMorpheusId, "Mats", 23),
-      Row(2L.encodeAsMorpheusId, "Martin", 42),
-      Row(3L.encodeAsMorpheusId, "Max", 1337),
-      Row(4L.encodeAsMorpheusId, "Stefan", 9)
-    ))
+    df.collect().toBag should equal(
+      Bag(
+        Row(1L.encodeAsMorpheusId, "Mats", 23),
+        Row(2L.encodeAsMorpheusId, "Martin", 42),
+        Row(3L.encodeAsMorpheusId, "Max", 1337),
+        Row(4L.encodeAsMorpheusId, "Stefan", 9)
+      )
+    )
   }
 
   it("verify MorpheusRecords header") {
-    val givenDF = sparkSession.createDataFrame(
-      Seq(
-        (1L, "Mats"),
-        (2L, "Martin"),
-        (3L, "Max"),
-        (4L, "Stefan")
-      )).toDF("ID", "NAME")
+    val givenDF = sparkSession
+      .createDataFrame(
+        Seq(
+          (1L, "Mats"),
+          (2L, "Martin"),
+          (3L, "Max"),
+          (4L, "Stefan")
+        )
+      )
+      .toDF("ID", "NAME")
 
-    val givenMapping = NodeMappingBuilder.on("ID")
+    val givenMapping = NodeMappingBuilder
+      .on("ID")
       .withImpliedLabel("Person")
       .withPropertyKey("name" -> "NAME")
       .build
@@ -157,20 +227,25 @@ class MorpheusRecordsTest extends MorpheusTestSuite with GraphConstructionFixtur
       Set(
         elementVar,
         ElementProperty(elementVar, PropertyKey("name"))(CTString.nullable)
-      ))
+      )
+    )
   }
 
   it("verify MorpheusRecords header for relationship with a fixed type") {
 
-    val givenDF = sparkSession.createDataFrame(
-      Seq(
-        (10L, 1L, 2L, "red"),
-        (11L, 2L, 3L, "blue"),
-        (12L, 3L, 4L, "green"),
-        (13L, 4L, 1L, "yellow")
-      )).toDF("ID", "FROM", "TO", "COLOR")
+    val givenDF = sparkSession
+      .createDataFrame(
+        Seq(
+          (10L, 1L, 2L, "red"),
+          (11L, 2L, 3L, "blue"),
+          (12L, 3L, 4L, "green"),
+          (13L, 4L, 1L, "yellow")
+        )
+      )
+      .toDF("ID", "FROM", "TO", "COLOR")
 
-    val givenMapping = RelationshipMappingBuilder.on("ID")
+    val givenMapping = RelationshipMappingBuilder
+      .on("ID")
       .from("FROM")
       .to("TO")
       .relType("NEXT")
@@ -195,7 +270,9 @@ class MorpheusRecordsTest extends MorpheusTestSuite with GraphConstructionFixtur
 
   // Validation happens in operators instead
   ignore("can not construct records with data/header column name conflict") {
-    val data = sparkSession.createDataFrame(Seq((1, "foo"), (2, "bar"))).toDF("int", "string")
+    val data = sparkSession
+      .createDataFrame(Seq((1, "foo"), (2, "bar")))
+      .toDF("int", "string")
     val header = RecordHeader.from(Var("int")(), Var("notString")())
 
     a[InternalException] shouldBe thrownBy {
@@ -204,7 +281,9 @@ class MorpheusRecordsTest extends MorpheusTestSuite with GraphConstructionFixtur
   }
 
   it("can construct records with matching data/header") {
-    val data = sparkSession.createDataFrame(Seq((1L, "foo"), (2L, "bar"))).toDF("int", "string")
+    val data = sparkSession
+      .createDataFrame(Seq((1L, "foo"), (2L, "bar")))
+      .toDF("int", "string")
     val records = morpheus.records.wrap(data)
 
     val v = Var("int")(CTInteger)
@@ -223,6 +302,7 @@ class MorpheusRecordsTest extends MorpheusTestSuite with GraphConstructionFixtur
           "n" -> MorpheusNode(0L, Set("Foo"), CypherMap("p" -> 1)),
           "b" -> 5
         )
-      ))
+      )
+    )
   }
 }

@@ -35,7 +35,10 @@ import org.opencypher.okapi.impl.io.SessionGraphDataSource
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 
-class MorpheusSessionImplTest extends MorpheusTestSuite with TeamDataFixture with GraphConstructionFixture {
+class MorpheusSessionImplTest
+    extends MorpheusTestSuite
+    with TeamDataFixture
+    with GraphConstructionFixture {
 
   it("can use multiple session graph data sources") {
     morpheus.registerSource(Namespace("working"), new SessionGraphDataSource())
@@ -47,7 +50,9 @@ class MorpheusSessionImplTest extends MorpheusTestSuite with TeamDataFixture wit
 
     morpheus.catalog.store(QualifiedGraphName("session.a"), g1)
     morpheus.catalog.store(QualifiedGraphName("working.a"), g2)
-    morpheus.cypher("CATALOG CREATE GRAPH working.b { FROM GRAPH working.a RETURN GRAPH }")
+    morpheus.cypher(
+      "CATALOG CREATE GRAPH working.b { FROM GRAPH working.a RETURN GRAPH }"
+    )
     morpheus.catalog.store(QualifiedGraphName("foo.bar.baz.a"), g3)
 
     val r1 = morpheus.cypher("FROM GRAPH a MATCH (n) RETURN n")
@@ -55,40 +60,49 @@ class MorpheusSessionImplTest extends MorpheusTestSuite with TeamDataFixture wit
     val r3 = morpheus.cypher("FROM GRAPH working.b MATCH (n) RETURN n")
     val r4 = morpheus.cypher("FROM GRAPH foo.bar.baz.a MATCH (n) RETURN n")
 
-    r1.records.collect.toBag should equal(Bag(
-      CypherMap("n" -> MorpheusNode(0L, Set("A")))
-    ))
-    r2.records.collect.toBag should equal(Bag(
-      CypherMap("n" -> MorpheusNode(0L, Set("B")))
-    ))
-    r3.records.collect.toBag should equal(Bag(
-      CypherMap("n" -> MorpheusNode(0L, Set("B")))
-    ))
-    r4.records.collect.toBag should equal(Bag(
-      CypherMap("n" -> MorpheusNode(0L, Set("C")))
-    ))
+    r1.records.collect.toBag should equal(
+      Bag(
+        CypherMap("n" -> MorpheusNode(0L, Set("A")))
+      )
+    )
+    r2.records.collect.toBag should equal(
+      Bag(
+        CypherMap("n" -> MorpheusNode(0L, Set("B")))
+      )
+    )
+    r3.records.collect.toBag should equal(
+      Bag(
+        CypherMap("n" -> MorpheusNode(0L, Set("B")))
+      )
+    )
+    r4.records.collect.toBag should equal(
+      Bag(
+        CypherMap("n" -> MorpheusNode(0L, Set("C")))
+      )
+    )
   }
 
   it("can execute sql on registered tables") {
     morpheus.records.wrap(personDF).df.createOrReplaceTempView("people")
     morpheus.records.wrap(knowsDF).df.createOrReplaceTempView("knows")
 
-    val sqlResult = morpheus.sql(
-      """
+    val sqlResult = morpheus.sql("""
         |SELECT people.name AS me, knows.since AS since, p2.name AS you
         |FROM people
         |INNER JOIN knows ON knows.src = people.id
         |INNER JOIN people p2 ON knows.dst = p2.id
       """.stripMargin)
 
-    sqlResult.collect.toBag should equal(Bag(
-      CypherMap("me" -> "Mats", "since" -> 2017, "you" -> "Martin"),
-      CypherMap("me" -> "Mats", "since" -> 2016, "you" -> "Max"),
-      CypherMap("me" -> "Mats", "since" -> 2015, "you" -> "Stefan"),
-      CypherMap("me" -> "Martin", "since" -> 2016, "you" -> "Max"),
-      CypherMap("me" -> "Martin", "since" -> 2013, "you" -> "Stefan"),
-      CypherMap("me" -> "Max", "since" -> 2016, "you" -> "Stefan")
-    ))
+    sqlResult.collect.toBag should equal(
+      Bag(
+        CypherMap("me" -> "Mats", "since" -> 2017, "you" -> "Martin"),
+        CypherMap("me" -> "Mats", "since" -> 2016, "you" -> "Max"),
+        CypherMap("me" -> "Mats", "since" -> 2015, "you" -> "Stefan"),
+        CypherMap("me" -> "Martin", "since" -> 2016, "you" -> "Max"),
+        CypherMap("me" -> "Martin", "since" -> 2013, "you" -> "Stefan"),
+        CypherMap("me" -> "Max", "since" -> 2016, "you" -> "Stefan")
+      )
+    )
   }
 
 }

@@ -28,7 +28,15 @@ package org.opencypher.okapi.api.value
 
 import org.opencypher.okapi.ApiBaseTest
 import org.opencypher.okapi.api.value.CypherValue.Format._
-import org.opencypher.okapi.api.value.CypherValue.{CypherBigDecimal, CypherBoolean, CypherFloat, CypherInteger, CypherList, CypherMap, CypherString}
+import org.opencypher.okapi.api.value.CypherValue.{
+  CypherBigDecimal,
+  CypherBoolean,
+  CypherFloat,
+  CypherInteger,
+  CypherList,
+  CypherMap,
+  CypherString
+}
 import org.opencypher.okapi.api.value.GenCypherValue.{TestNode, TestRelationship}
 
 class CypherValueTest extends ApiBaseTest {
@@ -45,18 +53,24 @@ class CypherValueTest extends ApiBaseTest {
         new CypherBigDecimal(BigDecimal("1.2")) -> "1.2"
       )
 
-      mapping.foreach {
-        case (input, expected) => input.toCypherString should equal(expected)
+      mapping.foreach { case (input, expected) =>
+        input.toCypherString should equal(expected)
       }
     }
 
     it("converts a CypherList") {
-      CypherList("foo", 123, false).toCypherString should equal("['foo', 123, false]")
+      CypherList("foo", 123, false).toCypherString should equal(
+        "['foo', 123, false]"
+      )
       CypherList().toCypherString should equal("[]")
     }
 
     it("converts a CypherMap") {
-      CypherMap("foo" -> "bar", "foo\\bar" -> 42, "foo\"bar" -> false).toCypherString should equal(
+      CypherMap(
+        "foo" -> "bar",
+        "foo\\bar" -> 42,
+        "foo\"bar" -> false
+      ).toCypherString should equal(
         "{`foo`: 'bar', `foo\\\"bar`: false, `foo\\\\bar`: 42}"
       )
       CypherMap().toCypherString should equal("{}")
@@ -64,13 +78,25 @@ class CypherValueTest extends ApiBaseTest {
 
     it("converts a CypherRelationship") {
       val mapping = Map(
-        TestRelationship(1, 1, 2, "REL", CypherMap("foo" -> 42)) -> "[:`REL` {`foo`: 42}]",
+        TestRelationship(
+          1,
+          1,
+          2,
+          "REL",
+          CypherMap("foo" -> 42)
+        ) -> "[:`REL` {`foo`: 42}]",
         TestRelationship(1, 1, 2, "REL") -> "[:`REL`]",
-        TestRelationship(1, 1, 2, "My'Rel", CypherMap("foo" -> 42)) -> "[:`My\\'Rel` {`foo`: 42}]"
+        TestRelationship(
+          1,
+          1,
+          2,
+          "My'Rel",
+          CypherMap("foo" -> 42)
+        ) -> "[:`My\\'Rel` {`foo`: 42}]"
       )
 
-      mapping.foreach {
-        case (input, expected) => input.toCypherString should equal(expected)
+      mapping.foreach { case (input, expected) =>
+        input.toCypherString should equal(expected)
       }
     }
 
@@ -78,11 +104,15 @@ class CypherValueTest extends ApiBaseTest {
       val mapping = Map(
         TestNode(1, Set("A"), CypherMap("foo" -> 42)) -> "(:`A` {`foo`: 42})",
         TestNode(1) -> "()",
-        TestNode(1, Set("My\"Node", "My'Node"), CypherMap("foo" -> 42)) -> "(:`My\\\"Node`:`My\\\'Node` {`foo`: 42})"
+        TestNode(
+          1,
+          Set("My\"Node", "My'Node"),
+          CypherMap("foo" -> 42)
+        ) -> "(:`My\\\"Node`:`My\\\'Node` {`foo`: 42})"
       )
 
-      mapping.foreach {
-        case (input, expected) => input.toCypherString should equal(expected)
+      mapping.foreach { case (input, expected) =>
+        input.toCypherString should equal(expected)
       }
     }
   }

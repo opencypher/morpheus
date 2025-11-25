@@ -35,25 +35,28 @@ import org.opencypher.okapi.impl.graph.QGNGenerator
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 
 /**
-  * The Cypher Session is the main API for a Cypher-based application. It manages graphs which can be queried using
-  * Cypher. Graphs can be read from / written to different data sources (e.g. CSV) and also stored in / retrieved from
-  * the session-local storage.
+  * The Cypher Session is the main API for a Cypher-based application. It manages graphs which can
+  * be queried using Cypher. Graphs can be read from / written to different data sources (e.g. CSV)
+  * and also stored in / retrieved from the session-local storage.
   */
 trait CypherSession {
 
-  /**
-    * Back end specific query result type
-    */
+  /** Back end specific query result type */
   type Result <: CypherResult
 
   /**
     * Executes a Cypher query in this session on the current ambient graph.
     *
-    * @param query        Cypher query to execute
-    * @param parameters   parameters used by the Cypher query
-    * @param drivingTable seed data that can be accessed from within the query
-    * @param queryCatalog a map of query-local graphs, this allows to evaluate queries that produce graphs recursively
-    * @return result of the query
+    * @param query
+    *   Cypher query to execute
+    * @param parameters
+    *   parameters used by the Cypher query
+    * @param drivingTable
+    *   seed data that can be accessed from within the query
+    * @param queryCatalog
+    *   a map of query-local graphs, this allows to evaluate queries that produce graphs recursively
+    * @return
+    *   result of the query
     */
   def cypher(
     query: String,
@@ -63,65 +66,83 @@ trait CypherSession {
   ): Result
 
   /**
-    * Interface through which the user may (de-)register property graph datasources as well as read, write and delete property graphs.
+    * Interface through which the user may (de-)register property graph datasources as well as read,
+    * write and delete property graphs.
     *
-    * @return session catalog
+    * @return
+    *   session catalog
     */
   def catalog: PropertyGraphCatalog
 
   /**
-    * Register the given [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] under the specific [[org.opencypher.okapi.api.graph.Namespace]] within the session catalog.
+    * Register the given [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] under the specific
+    * [[org.opencypher.okapi.api.graph.Namespace]] within the session catalog.
     *
-    * This enables a user to refer to that [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] within a Cypher query.
+    * This enables a user to refer to that [[org.opencypher.okapi.api.io.PropertyGraphDataSource]]
+    * within a Cypher query.
     *
-    * Note, that it is not allowed to overwrite an already registered [[org.opencypher.okapi.api.graph.Namespace]].
-    * Use [[CypherSession#deregisterSource]] first.
+    * Note, that it is not allowed to overwrite an already registered
+    * [[org.opencypher.okapi.api.graph.Namespace]]. Use [[CypherSession#deregisterSource]] first.
     *
-    * @param namespace  namespace for lookup
-    * @param dataSource property graph data source
+    * @param namespace
+    *   namespace for lookup
+    * @param dataSource
+    *   property graph data source
     */
-  def registerSource(namespace: Namespace, dataSource: PropertyGraphDataSource): Unit =
+  def registerSource(
+    namespace: Namespace,
+    dataSource: PropertyGraphDataSource
+  ): Unit =
     catalog.register(namespace, dataSource)
 
   /**
-    * De-registers a [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] from the sessions catalog by its given [[org.opencypher.okapi.api.graph.Namespace]].
+    * De-registers a [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] from the sessions
+    * catalog by its given [[org.opencypher.okapi.api.graph.Namespace]].
     *
-    * @param namespace namespace for lookup
+    * @param namespace
+    *   namespace for lookup
     */
   def deregisterSource(namespace: Namespace): Unit =
     catalog.deregister(namespace)
 
   /**
-    * @return a new unique qualified graph name
+    * @return
+    *   a new unique qualified graph name
     */
   def generateQualifiedGraphName: QualifiedGraphName = qgnGenerator.generate
 
   /**
     * Executes a Cypher query in this session, using the argument graph as the ambient graph.
     *
-    * The ambient graph is the graph that is used for graph matching and updating,
-    * unless another graph is explicitly selected by the query.
+    * The ambient graph is the graph that is used for graph matching and updating, unless another
+    * graph is explicitly selected by the query.
     *
-    * @param graph      ambient graph for this query
-    * @param query      Cypher query to execute
-    * @param parameters parameters used by the Cypher query
-    * @return result of the query
+    * @param graph
+    *   ambient graph for this query
+    * @param query
+    *   Cypher query to execute
+    * @param parameters
+    *   parameters used by the Cypher query
+    * @return
+    *   result of the query
     */
   private[opencypher] def cypherOnGraph(
     graph: PropertyGraph,
     query: String,
     parameters: CypherMap = CypherMap.empty,
     drivingTable: Option[CypherRecords],
-    queryCatalog: Map[QualifiedGraphName, PropertyGraph]): Result
+    queryCatalog: Map[QualifiedGraphName, PropertyGraph]
+  ): Result
 
   private val maxSessionGraphId: AtomicLong = new AtomicLong(0)
 
-  /**
-    * A generator for qualified graph names
-    */
+  /** A generator for qualified graph names */
   private[opencypher] val qgnGenerator = new QGNGenerator {
     override def generate: QualifiedGraphName = {
-      QualifiedGraphName(SessionGraphDataSource.Namespace, GraphName(s"tmp${maxSessionGraphId.incrementAndGet}"))
+      QualifiedGraphName(
+        SessionGraphDataSource.Namespace,
+        GraphName(s"tmp${maxSessionGraphId.incrementAndGet}")
+      )
     }
   }
 

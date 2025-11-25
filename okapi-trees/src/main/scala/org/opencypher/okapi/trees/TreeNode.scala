@@ -36,13 +36,14 @@ import scala.reflect.runtime.universe._
 import scala.util.hashing.MurmurHash3
 
 /**
-  * This is the basic tree node class. Usually it makes more sense to use `AbstractTreeNode`, which uses reflection
-  * to generate the `children` and `withNewChildren` field/method. Our benchmarks show that manually implementing
-  * them can result in a speedup of a factor of ~3 for tree rewrites, so in performance critical places it might
-  * make sense to extend `TreeNode` instead.
+  * This is the basic tree node class. Usually it makes more sense to use `AbstractTreeNode`, which
+  * uses reflection to generate the `children` and `withNewChildren` field/method. Our benchmarks
+  * show that manually implementing them can result in a speedup of a factor of ~3 for tree
+  * rewrites, so in performance critical places it might make sense to extend `TreeNode` instead.
   *
-  * This class uses array operations instead of Scala collections, both for improved performance as well as to save
-  * stack frames during recursion, which allows it to operate on trees that are several thousand nodes high.
+  * This class uses array operations instead of Scala collections, both for improved performance as
+  * well as to save stack frames during recursion, which allows it to operate on trees that are
+  * several thousand nodes high.
   */
 abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
   self: T =>
@@ -91,21 +92,30 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
 
   def isLeaf: Boolean = children.isEmpty
 
-  def height: Int = transform[Int] { case (_, childHeights) => (0 :: childHeights).max + 1 }
-
-  override def size: Int = transform[Int] { case (_, childSizes) => childSizes.sum + 1 }
-
-  def map[O <: TreeNode[O] : ClassTag](f: T => O): O = transform[O] { case (node, transformedChildren) =>
-    f(node).withNewChildren(transformedChildren.toArray)
+  def height: Int = transform[Int] { case (_, childHeights) =>
+    (0 :: childHeights).max + 1
   }
 
-  override def foreach[O](f: T => O): Unit = transform[O] { case (node, _) => f(node) }
+  override def size: Int = transform[Int] { case (_, childSizes) =>
+    childSizes.sum + 1
+  }
+
+  def map[O <: TreeNode[O]: ClassTag](f: T => O): O = transform[O] {
+    case (node, transformedChildren) =>
+      f(node).withNewChildren(transformedChildren.toArray)
+  }
+
+  override def foreach[O](f: T => O): Unit = transform[O] { case (node, _) =>
+    f(node)
+  }
 
   /**
     * Checks if the parameter tree is contained within this tree. A tree always contains itself.
     *
-    * @param other other tree
-    * @return true, iff `other` is contained in that tree
+    * @param other
+    *   other tree
+    * @return
+    *   true, iff `other` is contained in that tree
     */
   def containsTree(other: T): Boolean = transform[Boolean] { case (node, childrenContain) =>
     (node == other) || childrenContain.contains(true)
@@ -114,8 +124,10 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
   /**
     * Checks if `other` is a direct child of this tree.
     *
-    * @param other other tree
-    * @return true, iff `other` is a direct child of this tree
+    * @param other
+    *   other tree
+    * @return
+    *   true, iff `other` is a direct child of this tree
     */
   def containsChild(other: T): Boolean = {
     children.contains(other)
@@ -124,13 +136,18 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
   /**
     * Returns a string-tree representation of the node.
     *
-    * @return tree-style representation of that node and all children
+    * @return
+    *   tree-style representation of that node and all children
     */
   def pretty: String = {
     val lines = new ArrayBuffer[String]
 
     @tailrec
-    def recTreeToString(toPrint: List[T], prefix: String, stack: List[List[T]]): Unit = {
+    def recTreeToString(
+      toPrint: List[T],
+      prefix: String,
+      stack: List[List[T]]
+    ): Unit = {
       toPrint match {
         case Nil =>
           stack match {
@@ -143,7 +160,11 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
           recTreeToString(last.children.toList, s"$prefix    ", Nil :: stack)
         case next :: siblings =>
           lines += s"$prefix╟──${next.toString}"
-          recTreeToString(next.children.toList, s"$prefix║   ", siblings :: stack)
+          recTreeToString(
+            next.children.toList,
+            s"$prefix║   ",
+            siblings :: stack
+          )
       }
     }
 
@@ -151,9 +172,7 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
     lines.mkString("\n")
   }
 
-  /**
-    * Prints a tree representation of the node.
-    */
+  /** Prints a tree representation of the node. */
   def show(): Unit = {
     println(pretty)
   }
@@ -161,16 +180,16 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
   /**
     * Turns all arguments in `args` into a string that describes the arguments.
     *
-    * @return argument string
+    * @return
+    *   argument string
     */
   def argString: String = args.mkString(", ")
 
-  /**
-    * Arguments that should be printed. The default implementation excludes children.
-    */
+  /** Arguments that should be printed. The default implementation excludes children. */
   def args: Iterator[Any] = {
     lazy val treeType = typeOf[T].erasure
-    currentMirror.reflect(this)
+    currentMirror
+      .reflect(this)
       .symbol
       .typeSignature
       .members
@@ -181,21 +200,23 @@ abstract class TreeNode[T <: TreeNode[T]] extends Product with Traversable[T] {
       .map(currentMirror.reflect(this).reflectField)
       .map(fieldMirror => fieldMirror -> fieldMirror.get)
       .filter { case (fieldMirror, value) =>
-        def containsChildren: Boolean = fieldMirror.symbol.typeSignature.typeArgs.head <:< treeType
+        def containsChildren: Boolean =
+          fieldMirror.symbol.typeSignature.typeArgs.head <:< treeType
         value match {
-          case c: T if containsChild(c) => false
-          case _: Option[_] if containsChildren => false
+          case c: T if containsChild(c)               => false
+          case _: Option[_] if containsChildren       => false
           case _: NonEmptyList[_] if containsChildren => false
-          case _: Iterable[_] if containsChildren => false
-          case _: Array[_] if containsChildren => false
-          case _ => true
+          case _: Iterable[_] if containsChildren     => false
+          case _: Array[_] if containsChildren        => false
+          case _                                      => true
         }
       }
-      .map { case (termSymbol, value) => s"${termSymbol.symbol.name.toString.trim}=$value" }
+      .map { case (termSymbol, value) =>
+        s"${termSymbol.symbol.name.toString.trim}=$value"
+      }
       .reverseIterator
   }
 
-  override def toString = s"${getClass.getSimpleName}${
-    if (args.isEmpty) "" else s"(${args.mkString(", ")})"
-  }"
+  override def toString = s"${getClass.getSimpleName}${if (args.isEmpty) ""
+    else s"(${args.mkString(", ")})"}"
 }

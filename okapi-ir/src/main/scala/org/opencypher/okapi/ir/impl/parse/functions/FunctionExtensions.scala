@@ -35,7 +35,8 @@ case object FunctionExtensions {
     Timestamp.name -> Timestamp,
     LocalDateTime.name -> LocalDateTime,
     Date.name -> Date,
-    Duration.name -> Duration)
+    Duration.name -> Duration
+  )
     .map(p => p._1.toLowerCase -> p._2)
 
   def get(name: String): Option[Function] =
@@ -65,4 +66,3 @@ object CTIdentity extends CypherType {
   override def parentType: CypherType = CTAny
   override def toNeoTypeString: String = "IDENTITY"
 }
-

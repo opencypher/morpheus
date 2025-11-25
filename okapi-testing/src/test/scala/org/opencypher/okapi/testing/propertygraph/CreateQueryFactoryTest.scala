@@ -33,127 +33,139 @@ import org.opencypher.okapi.testing.{Bag, BaseTestSuite}
 class CreateQueryFactoryTest extends BaseTestSuite {
 
   test("parse single node create statement") {
-    val graph = CreateGraphFactory(
-      """
+    val graph = CreateGraphFactory("""
         |CREATE (a:Person {name: "Alice"})
       """.stripMargin)
 
-    graph.nodes should equal(Seq(
-      InMemoryTestNode(0, Set("Person"), CypherMap("name" -> "Alice"))
-    ))
+    graph.nodes should equal(
+      Seq(
+        InMemoryTestNode(0, Set("Person"), CypherMap("name" -> "Alice"))
+      )
+    )
 
     graph.relationships should be(Seq.empty)
   }
 
   test("parse multiple nodes in single create statement") {
-    val graph: InMemoryTestGraph = CreateGraphFactory(
-      """
+    val graph: InMemoryTestGraph = CreateGraphFactory("""
         |CREATE (a:Person {name: "Alice"}), (b:Person {name: "Bob"})
       """.stripMargin)
 
-    graph.nodes.toBag should equal(Bag(
-      InMemoryTestNode(0, Set("Person"), CypherMap("name" -> "Alice")),
-      InMemoryTestNode(1, Set("Person"), CypherMap("name" -> "Bob"))
-    ))
+    graph.nodes.toBag should equal(
+      Bag(
+        InMemoryTestNode(0, Set("Person"), CypherMap("name" -> "Alice")),
+        InMemoryTestNode(1, Set("Person"), CypherMap("name" -> "Bob"))
+      )
+    )
 
     graph.relationships should be(Seq.empty)
   }
 
   test("parse multiple nodes in separate create statements") {
-    val graph = CreateGraphFactory(
-      """
+    val graph = CreateGraphFactory("""
         |CREATE (a:Person {name: "Alice"})
         |CREATE (b:Person {name: "Bob"})
       """.stripMargin)
 
-    graph.nodes.toBag should equal(Bag(
-      InMemoryTestNode(0, Set("Person"), CypherMap("name" -> "Alice")),
-      InMemoryTestNode(1, Set("Person"), CypherMap("name" -> "Bob"))
-    ))
+    graph.nodes.toBag should equal(
+      Bag(
+        InMemoryTestNode(0, Set("Person"), CypherMap("name" -> "Alice")),
+        InMemoryTestNode(1, Set("Person"), CypherMap("name" -> "Bob"))
+      )
+    )
 
     graph.relationships should be(Seq.empty)
   }
 
   test("parse multiple nodes connected by relationship") {
-    val graph = CreateGraphFactory(
-      """
+    val graph = CreateGraphFactory("""
         |CREATE (a:Person {name: "Alice"})-[:KNOWS {since: 42}]->(b:Person {name: "Bob"})
       """.stripMargin)
 
-    graph.nodes.toBag should equal(Bag(
-      InMemoryTestNode(0, Set("Person"), CypherMap("name" -> "Alice")),
-      InMemoryTestNode(1, Set("Person"), CypherMap("name" -> "Bob"))
-    ))
+    graph.nodes.toBag should equal(
+      Bag(
+        InMemoryTestNode(0, Set("Person"), CypherMap("name" -> "Alice")),
+        InMemoryTestNode(1, Set("Person"), CypherMap("name" -> "Bob"))
+      )
+    )
 
-    graph.relationships.toBag should be(Bag(
-      InMemoryTestRelationship(2, 0, 1, "KNOWS", CypherMap("since" -> 42))
-    ))
+    graph.relationships.toBag should be(
+      Bag(
+        InMemoryTestRelationship(2, 0, 1, "KNOWS", CypherMap("since" -> 42))
+      )
+    )
   }
 
   test("parse multiple nodes and relationship in separate create statements") {
-    val graph = CreateGraphFactory(
-      """
+    val graph = CreateGraphFactory("""
         |CREATE (a:Person {name: "Alice"})
         |CREATE (b:Person {name: "Bob"})
         |CREATE (a)-[:KNOWS {since: 42}]->(b)
       """.stripMargin)
 
-    graph.nodes.toBag should equal(Bag(
-      InMemoryTestNode(0, Set("Person"), CypherMap("name" -> "Alice")),
-      InMemoryTestNode(1, Set("Person"), CypherMap("name" -> "Bob"))
-    ))
+    graph.nodes.toBag should equal(
+      Bag(
+        InMemoryTestNode(0, Set("Person"), CypherMap("name" -> "Alice")),
+        InMemoryTestNode(1, Set("Person"), CypherMap("name" -> "Bob"))
+      )
+    )
 
-    graph.relationships.toBag should be(Bag(
-      InMemoryTestRelationship(2, 0, 1, "KNOWS", CypherMap("since" -> 42))
-    ))
+    graph.relationships.toBag should be(
+      Bag(
+        InMemoryTestRelationship(2, 0, 1, "KNOWS", CypherMap("since" -> 42))
+      )
+    )
   }
 
   test("simple unwind") {
-    val graph = CreateGraphFactory(
-      """
+    val graph = CreateGraphFactory("""
         |UNWIND [1,2,3] as i
         |CREATE (a {val: i})
       """.stripMargin)
 
-    graph.nodes.toBag should equal(Bag(
-      InMemoryTestNode(0, Set(), CypherMap("val" -> 1)),
-      InMemoryTestNode(1, Set(), CypherMap("val" -> 2)),
-      InMemoryTestNode(2, Set(), CypherMap("val" -> 3))
-    ))
+    graph.nodes.toBag should equal(
+      Bag(
+        InMemoryTestNode(0, Set(), CypherMap("val" -> 1)),
+        InMemoryTestNode(1, Set(), CypherMap("val" -> 2)),
+        InMemoryTestNode(2, Set(), CypherMap("val" -> 3))
+      )
+    )
 
     graph.relationships.toBag shouldBe empty
   }
 
   test("stacked unwind") {
-    val graph = CreateGraphFactory(
-      """
+    val graph = CreateGraphFactory("""
         |UNWIND [1,2,3] AS i
         |UNWIND [4] AS j
         |CREATE (a {val1: i, val2: j})
       """.stripMargin)
 
-    graph.nodes.toBag should equal(Bag(
-      InMemoryTestNode(0, Set(), CypherMap("val1" -> 1, "val2" -> 4)),
-      InMemoryTestNode(1, Set(), CypherMap("val1" -> 2, "val2" -> 4)),
-      InMemoryTestNode(2, Set(), CypherMap("val1" -> 3, "val2" -> 4))
-    ))
+    graph.nodes.toBag should equal(
+      Bag(
+        InMemoryTestNode(0, Set(), CypherMap("val1" -> 1, "val2" -> 4)),
+        InMemoryTestNode(1, Set(), CypherMap("val1" -> 2, "val2" -> 4)),
+        InMemoryTestNode(2, Set(), CypherMap("val1" -> 3, "val2" -> 4))
+      )
+    )
 
     graph.relationships.toBag shouldBe empty
   }
 
   test("unwind with variable reference") {
-    val graph = CreateGraphFactory(
-      """
+    val graph = CreateGraphFactory("""
         |UNWIND [[1,2,3]] AS i
         |UNWIND i AS j
         |CREATE (a {val: j})
       """.stripMargin)
 
-    graph.nodes.toBag should equal(Bag(
-      InMemoryTestNode(0, Set(), CypherMap("val" -> 1)),
-      InMemoryTestNode(1, Set(), CypherMap("val" -> 2)),
-      InMemoryTestNode(2, Set(), CypherMap("val" -> 3))
-    ))
+    graph.nodes.toBag should equal(
+      Bag(
+        InMemoryTestNode(0, Set(), CypherMap("val" -> 1)),
+        InMemoryTestNode(1, Set(), CypherMap("val" -> 2)),
+        InMemoryTestNode(2, Set(), CypherMap("val" -> 3))
+      )
+    )
 
     graph.relationships.toBag shouldBe empty
   }
@@ -163,47 +175,69 @@ class CreateQueryFactoryTest extends BaseTestSuite {
       """
         |UNWIND $i AS j
         |CREATE (a {val: j})
-      """.stripMargin, Map("i" -> List(1, 2, 3)))
+      """.stripMargin,
+      Map("i" -> List(1, 2, 3))
+    )
 
-    graph.nodes.toBag should equal(Bag(
-      InMemoryTestNode(0, Set(), CypherMap("val" -> 1)),
-      InMemoryTestNode(1, Set(), CypherMap("val" -> 2)),
-      InMemoryTestNode(2, Set(), CypherMap("val" -> 3))
-    ))
+    graph.nodes.toBag should equal(
+      Bag(
+        InMemoryTestNode(0, Set(), CypherMap("val" -> 1)),
+        InMemoryTestNode(1, Set(), CypherMap("val" -> 2)),
+        InMemoryTestNode(2, Set(), CypherMap("val" -> 3))
+      )
+    )
 
     graph.relationships.toBag shouldBe empty
   }
 
   test("create statement with property reference") {
-    val graph = CreateGraphFactory(
-      """
+    val graph = CreateGraphFactory("""
         |CREATE (a:Person {name: "Alice"})
         |CREATE (b:Person {name: a.name})
       """.stripMargin)
 
-    graph.nodes.toBag should equal(Bag(
-      InMemoryTestNode(0, Set("Person"), CypherMap("name" -> "Alice")),
-      InMemoryTestNode(1, Set("Person"), CypherMap("name" -> "Alice"))
-    ))
+    graph.nodes.toBag should equal(
+      Bag(
+        InMemoryTestNode(0, Set("Person"), CypherMap("name" -> "Alice")),
+        InMemoryTestNode(1, Set("Person"), CypherMap("name" -> "Alice"))
+      )
+    )
 
     graph.relationships should be(Seq.empty)
   }
 
   it("can create nodes with big decimal property") {
-    val graph = CreateGraphFactory(
-      """
+    val graph = CreateGraphFactory("""
         |CREATE ({val: bigdecimal("42", 2, 0)})
         |CREATE ({val: bigdecimal(42, 2, 0)})
         |CREATE ({val: bigdecimal("42.1", 3, 1)})
         |CREATE ({val: bigdecimal(42.1, 3, 1)})
       """.stripMargin)
 
-    graph.nodes.toBag should equal(Bag(
-      InMemoryTestNode(0, Set.empty, CypherMap("val" -> CypherBigDecimal("42", 2, 0))),
-      InMemoryTestNode(1, Set.empty, CypherMap("val" -> CypherBigDecimal("42", 2, 0))),
-      InMemoryTestNode(2, Set.empty, CypherMap("val" -> CypherBigDecimal("42.1", 3, 1))),
-      InMemoryTestNode(3, Set.empty, CypherMap("val" -> CypherBigDecimal("42.1", 3, 1)))
-    ))
+    graph.nodes.toBag should equal(
+      Bag(
+        InMemoryTestNode(
+          0,
+          Set.empty,
+          CypherMap("val" -> CypherBigDecimal("42", 2, 0))
+        ),
+        InMemoryTestNode(
+          1,
+          Set.empty,
+          CypherMap("val" -> CypherBigDecimal("42", 2, 0))
+        ),
+        InMemoryTestNode(
+          2,
+          Set.empty,
+          CypherMap("val" -> CypherBigDecimal("42.1", 3, 1))
+        ),
+        InMemoryTestNode(
+          3,
+          Set.empty,
+          CypherMap("val" -> CypherBigDecimal("42.1", 3, 1))
+        )
+      )
+    )
 
     graph.relationships should be(Seq.empty)
   }

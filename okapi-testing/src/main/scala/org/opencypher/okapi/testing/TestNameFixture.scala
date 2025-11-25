@@ -45,7 +45,6 @@ trait TestNameFixture extends BaseTestSuite {
     *
     * returns 'testName'.
     *
-    *
     * @return
     */
   protected def separator: String
@@ -59,7 +58,8 @@ trait TestNameFixture extends BaseTestSuite {
 
     val name = separatorIndex match {
       case -1 => testName
-      case _ => testName.substring(separatorIndex + separator.length).trim.stripMargin
+      case _ =>
+        testName.substring(separatorIndex + separator.length).trim.stripMargin
     }
     __testName = Some(name)
     try {

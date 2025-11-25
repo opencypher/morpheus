@@ -29,8 +29,10 @@ package org.opencypher.morpheus.examples
 class HiveSupportExampleTest extends ExampleTestBase {
 
   it("should produce the correct output") {
-    validate(HiveSupportExample.main(Array.empty),
-      getClass.getResource("/example_outputs/HiveSupportExample.out").toURI)
+    validate(
+      HiveSupportExample.main(Array.empty),
+      getClass.getResource("/example_outputs/HiveSupportExample.out").toURI
+    )
   }
 
 }

@@ -36,7 +36,12 @@ import org.opencypher.okapi.ir.api.expr.Var
 import org.opencypher.okapi.logical.impl.LogicalCatalogGraph
 import org.opencypher.okapi.relational.api.planning.RelationalRuntimeContext
 import org.opencypher.okapi.relational.api.table.Table
-import org.opencypher.okapi.relational.impl.operators.{Cache, Join, RelationalOperator, SwitchContext}
+import org.opencypher.okapi.relational.impl.operators.{
+  Cache,
+  Join,
+  RelationalOperator,
+  SwitchContext
+}
 import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 import org.opencypher.okapi.relational.impl.planning.{CrossJoin, RelationalOptimizer}
 
@@ -45,15 +50,15 @@ class RelationalOptimizerTest extends MorpheusTestSuite with GraphConstructionFi
   implicit class OpContainsCache[T <: Table[T]](op: RelationalOperator[T]) {
     def containsCache: Boolean = op.exists {
       case _: Cache[T] => true
-      case _ => false
+      case _           => false
     }
   }
 
   test("Test insert Cache operators") {
-    implicit val context: RelationalRuntimeContext[DataFrameTable] = morpheus.basicRuntimeContext()
+    implicit val context: RelationalRuntimeContext[DataFrameTable] =
+      morpheus.basicRuntimeContext()
 
-    val g = initGraph(
-      """
+    val g = initGraph("""
         |CREATE ()
       """.stripMargin)
 
@@ -68,34 +73,38 @@ class RelationalOptimizerTest extends MorpheusTestSuite with GraphConstructionFi
 
     val pattern = NodePattern(CTNode)
 
-    val aPlan = planScan(None, logicalGraph, pattern, Map(aVar -> pattern.nodeElement))
-    val bPlan = planScan(None, logicalGraph, pattern, Map(bVar -> pattern.nodeElement))
+    val aPlan =
+      planScan(None, logicalGraph, pattern, Map(aVar -> pattern.nodeElement))
+    val bPlan =
+      planScan(None, logicalGraph, pattern, Map(bVar -> pattern.nodeElement))
 
-    val cPlan = planScan(None, logicalGraph, pattern, Map(cVar -> pattern.nodeElement))
-    val dPlan = planScan(None, logicalGraph, pattern, Map(dVar -> pattern.nodeElement))
+    val cPlan =
+      planScan(None, logicalGraph, pattern, Map(cVar -> pattern.nodeElement))
+    val dPlan =
+      planScan(None, logicalGraph, pattern, Map(dVar -> pattern.nodeElement))
 
     val join1 = aPlan.join(bPlan, Seq.empty, CrossJoin)
     val join2 = cPlan.join(dPlan, Seq.empty, CrossJoin)
 
     val plan = join1.join(join2, Seq.empty, CrossJoin)
 
-
     val rewrittenPlan = RelationalOptimizer.process(plan)
 
     val eachSideOfAllJoinsContainsCache = rewrittenPlan.transform[Boolean] {
       case (Join(l, r, _, _), _) => l.containsCache && r.containsCache
-      case (_, childValues) => childValues.contains(true)
+      case (_, childValues)      => childValues.contains(true)
     }
 
-    withClue(s"Each side of each join should contain a Cache operator. Actual tree was:\n${rewrittenPlan.pretty}") {
+    withClue(
+      s"Each side of each join should contain a Cache operator. Actual tree was:\n${rewrittenPlan.pretty}"
+    ) {
       eachSideOfAllJoinsContainsCache should equal(true)
     }
   }
 
   it("caches expand into for triangle") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (p3:Person {name: "Eve"})
@@ -105,8 +114,7 @@ class RelationalOptimizerTest extends MorpheusTestSuite with GraphConstructionFi
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person),
         |(p2)-[e2:KNOWS]->(p3:Person),
         |(p1)-[e3:KNOWS]->(p3)
@@ -116,13 +124,13 @@ class RelationalOptimizerTest extends MorpheusTestSuite with GraphConstructionFi
     val optimizedRelationalPlan = result.asMorpheus.plans.relationalPlan.get
 
     val cachedScans = optimizedRelationalPlan.transform[Int] {
-      case (s: SwitchContext[DataFrameTable], _) => if (s.containsCache) 1 else 0
+      case (s: SwitchContext[DataFrameTable], _) =>
+        if (s.containsCache) 1 else 0
       case (_, childValues) => childValues.sum
     }
 
     // Then
-    withClue(
-      s"""Each scan should contain a Cache operator. Actual tree was:
+    withClue(s"""Each scan should contain a Cache operator. Actual tree was:
              ${optimizedRelationalPlan.pretty}""") {
       cachedScans shouldBe 6
     }
@@ -131,8 +139,7 @@ class RelationalOptimizerTest extends MorpheusTestSuite with GraphConstructionFi
   // Takes a long time to run with little extra info
   test("test caching expand into after var expand") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (comment:Comment)
@@ -157,15 +164,16 @@ class RelationalOptimizerTest extends MorpheusTestSuite with GraphConstructionFi
     )
 
     // Then
-    val cacheOps = result.asMorpheus.plans.relationalPlan.get.collect { case c: Cache[DataFrameTable] => c }
+    val cacheOps = result.asMorpheus.plans.relationalPlan.get.collect {
+      case c: Cache[DataFrameTable] => c
+    }
     cacheOps.size shouldBe 115
   }
 
   // Adds little extra info
   test("test caching optional match with duplicates") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (p3:Person {name: "Eve"})
@@ -176,15 +184,16 @@ class RelationalOptimizerTest extends MorpheusTestSuite with GraphConstructionFi
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (a:Person)-[e1:KNOWS]->(b:Person)
         |OPTIONAL MATCH (b)-[e2:KNOWS]->(c:Person)
         |RETURN b.name, c.name
       """.stripMargin)
 
     // Then
-    val cacheOps = result.asMorpheus.plans.relationalPlan.get.collect { case c: Cache[DataFrameTable] => c }
+    val cacheOps = result.asMorpheus.plans.relationalPlan.get.collect {
+      case c: Cache[DataFrameTable] => c
+    }
     cacheOps.size shouldBe 7
   }
 }

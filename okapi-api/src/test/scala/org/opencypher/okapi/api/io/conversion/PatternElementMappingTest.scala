@@ -34,11 +34,12 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 class PatternElementMappingTest extends ApiBaseTest {
   describe("NodeMappingBuilder") {
     it("Construct node mapping") {
-      val given = NodeMappingBuilder.on("id")
+      val given = NodeMappingBuilder
+        .on("id")
         .withImpliedLabel("Person")
         .withPropertyKey("name")
-        .withPropertyKey("age" -> "YEARS").build
-
+        .withPropertyKey("age" -> "YEARS")
+        .build
 
       val pattern = NodePattern(CTNode("Person"))
       val expected = ElementMapping(
@@ -55,18 +56,26 @@ class PatternElementMappingTest extends ApiBaseTest {
     }
 
     it("Refuses to overwrite a property with a different mapping") {
-      raisesIllegalArgument(NodeMappingBuilder.on("sourceKey").withPropertyKey("a" -> "foo").withPropertyKey("a" -> "bar").build)
+      raisesIllegalArgument(
+        NodeMappingBuilder
+          .on("sourceKey")
+          .withPropertyKey("a" -> "foo")
+          .withPropertyKey("a" -> "bar")
+          .build
+      )
     }
   }
 
   describe("RelationshipMappingBuilder") {
     it("Construct relationship mapping with static type") {
-      val given = RelationshipMappingBuilder.on("r")
+      val given = RelationshipMappingBuilder
+        .on("r")
         .from("src")
         .to("dst")
         .relType("KNOWS")
         .withPropertyKey("name")
-        .withPropertyKey("age" -> "YEARS").build
+        .withPropertyKey("age" -> "YEARS")
+        .build
 
       val pattern = RelationshipPattern(CTRelationship("KNOWS"))
       val actual = ElementMapping(
@@ -75,7 +84,11 @@ class PatternElementMappingTest extends ApiBaseTest {
           pattern.relElement -> Map("name" -> "name", "age" -> "YEARS")
         ),
         Map(
-          pattern.relElement -> Map(SourceIdKey -> "r", SourceStartNodeKey -> "src", SourceEndNodeKey -> "dst")
+          pattern.relElement -> Map(
+            SourceIdKey -> "r",
+            SourceStartNodeKey -> "src",
+            SourceEndNodeKey -> "dst"
+          )
         )
       )
 
@@ -89,19 +102,38 @@ class PatternElementMappingTest extends ApiBaseTest {
           .from("a")
           .to("b")
           .relType("KNOWS")
-          .withPropertyKey("a" -> "foo").withPropertyKey("a" -> "bar")
+          .withPropertyKey("a" -> "foo")
+          .withPropertyKey("a" -> "bar")
           .build
       )
     }
 
-    it("Refuses to use the same source key for incompatible types when constructing relationships") {
-      raisesIllegalArgument(RelationshipMappingBuilder.on("r").from("r").to("b").relType("KNOWS").build)
-      raisesIllegalArgument(RelationshipMappingBuilder.on("r").from("a").to("r").relType("KNOWS").build)
+    it(
+      "Refuses to use the same source key for incompatible types when constructing relationships"
+    ) {
+      raisesIllegalArgument(
+        RelationshipMappingBuilder
+          .on("r")
+          .from("r")
+          .to("b")
+          .relType("KNOWS")
+          .build
+      )
+      raisesIllegalArgument(
+        RelationshipMappingBuilder
+          .on("r")
+          .from("a")
+          .to("r")
+          .relType("KNOWS")
+          .build
+      )
     }
   }
 
   describe("validation") {
-    it("throws an error if relationship elements do not have exactly one type") {
+    it(
+      "throws an error if relationship elements do not have exactly one type"
+    ) {
       val pattern1 = RelationshipPattern(CTRelationship("Foo", "Bar"))
       raisesIllegalArgument(ElementMapping.empty(pattern1))
 

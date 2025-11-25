@@ -36,18 +36,27 @@ import org.opencypher.okapi.testing.BaseTestSuite
 class MorpheusStructTypeTest extends BaseTestSuite {
 
   it("computes a header from a given struct type") {
-    val structType = StructType(Seq(
-      StructField("a", LongType, nullable = true),
-      StructField("b", StringType, nullable = false),
-      StructField("c", ArrayType(StringType, containsNull = true), nullable = false)
-    ))
-
-    structType.toRecordHeader should equal(RecordHeader(Map(
-      Var("a")(CTInteger.nullable) -> "a",
-      Var("b")(CTString) -> "b",
-      Var("c")(CTList(CTString.nullable)) -> "c"
+    val structType = StructType(
+      Seq(
+        StructField("a", LongType, nullable = true),
+        StructField("b", StringType, nullable = false),
+        StructField(
+          "c",
+          ArrayType(StringType, containsNull = true),
+          nullable = false
+        )
+      )
     )
-    ))
+
+    structType.toRecordHeader should equal(
+      RecordHeader(
+        Map(
+          Var("a")(CTInteger.nullable) -> "a",
+          Var("b")(CTString) -> "b",
+          Var("c")(CTList(CTString.nullable)) -> "c"
+        )
+      )
+    )
   }
 
 }

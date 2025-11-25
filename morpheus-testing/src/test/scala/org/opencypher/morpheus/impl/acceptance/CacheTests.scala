@@ -36,21 +36,22 @@ class CacheTests extends MorpheusTestSuite with ScanGraphInit {
   describe("scan caching") {
 
     it("caches a reused scan") {
-      val g = initGraph("""CREATE (p:Person {firstName: "Alice", lastName: "Foo"})""")
-      val result: CypherResult = g.cypher(
-        """
+      val g =
+        initGraph("""CREATE (p:Person {firstName: "Alice", lastName: "Foo"})""")
+      val result: CypherResult = g.cypher("""
           |MATCH (n: Person)
           |MATCH (m: Person)
           |WHERE n.name = m.name
           |RETURN n.name
         """.stripMargin)
 
-      result.asMorpheus.plans.relationalPlan.get.collect { case c: Cache[_] => c } should have size 2
+      result.asMorpheus.plans.relationalPlan.get.collect { case c: Cache[_] =>
+        c
+      } should have size 2
     }
 
     it("caches all-node/relationship scans") {
-      val g = initGraph(
-        """
+      val g = initGraph("""
           |CREATE (a:Person {firstName: "Alice"})
           |CREATE (b:Person {firstName: "Bob"})
           |CREATE (c:Person {firstName: "Carol"})
@@ -60,18 +61,18 @@ class CacheTests extends MorpheusTestSuite with ScanGraphInit {
           |CREATE (book)-[:PUBLISHED_BY]->(publisher)
         """.stripMargin)
 
-      val result: CypherResult = g.cypher(
-        """
+      val result: CypherResult = g.cypher("""
           |MATCH (a)-->(b)-->(c)
           |RETURN a, b
         """.stripMargin)
 
-      result.asMorpheus.plans.relationalPlan.get.collect { case c: Cache[_] => c } should have size 5
+      result.asMorpheus.plans.relationalPlan.get.collect { case c: Cache[_] =>
+        c
+      } should have size 5
     }
 
     it("caches all-node/relationship scans across MATCH statements") {
-      val g = initGraph(
-        """
+      val g = initGraph("""
           |CREATE (a:Person {firstName: "Alice"})
           |CREATE (b:Person {firstName: "Bob"})
           |CREATE (c:Person {firstName: "Carol"})
@@ -81,14 +82,15 @@ class CacheTests extends MorpheusTestSuite with ScanGraphInit {
           |CREATE (book)-[:PUBLISHED_BY]->(publisher)
         """.stripMargin)
 
-      val result: CypherResult = g.cypher(
-        """
+      val result: CypherResult = g.cypher("""
           |MATCH (a)-->(b)
           |MATCH (b)-->(c)
           |RETURN a, b
         """.stripMargin)
 
-      result.asMorpheus.plans.relationalPlan.get.collect { case c: Cache[_] => c } should have size 5
+      result.asMorpheus.plans.relationalPlan.get.collect { case c: Cache[_] =>
+        c
+      } should have size 5
     }
   }
 }

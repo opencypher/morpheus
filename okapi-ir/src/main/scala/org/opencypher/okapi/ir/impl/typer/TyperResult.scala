@@ -26,4 +26,8 @@
  */
 package org.opencypher.okapi.ir.impl.typer
 
-case class TyperResult[A](value: A, recorder: TypeRecorder, tracker: TypeTracker)
+case class TyperResult[A](
+  value: A,
+  recorder: TypeRecorder,
+  tracker: TypeTracker
+)

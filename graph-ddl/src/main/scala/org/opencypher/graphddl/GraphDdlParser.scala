@@ -36,14 +36,14 @@ case class DdlParsingException(
   locationPointer: String,
   expected: String,
   tracedFailure: TracedFailure
-) extends RuntimeException(
-  s"""|Failed at index $index:
+) extends RuntimeException(s"""|Failed at index $index:
       |
       |Expected:\t$expected
       |
       |$locationPointer
       |
-      |${tracedFailure.msg}""".stripMargin) with Serializable
+      |${tracedFailure.msg}""".stripMargin)
+    with Serializable
 
 object GraphDdlParser {
 
@@ -54,10 +54,17 @@ object GraphDdlParser {
         val before = index - math.max(index - 20, 0)
         val after = math.min(index + 20, extra.input.length) - index
         val locationPointer =
-          s"""|\t${extra.input.slice(index - before, index + after).replace('\n', ' ')}
+          s"""|\t${extra.input
+               .slice(index - before, index + after)
+               .replace('\n', ' ')}
               |\t${"~" * before + "^" + "~" * after}
            """.stripMargin
-        throw DdlParsingException(index, locationPointer, expected, extra.trace())
+        throw DdlParsingException(
+          index,
+          locationPointer,
+          expected,
+          extra.trace()
+        )
     }
   }
 
@@ -81,7 +88,6 @@ object GraphDdlParser {
   private def SET[_: P]: P[Unit] = keyword("SET")
   private def SCHEMA[_: P]: P[Unit] = keyword("SCHEMA")
 
-
   // ==== Element types ====
 
   private def property[_: P]: P[(String, CypherType)] =
@@ -91,16 +97,24 @@ object GraphDdlParser {
     P("(" ~/ property.rep(min = 0, sep = ",").map(_.toMap) ~/ ")")
 
   private def keyDefinition[_: P]: P[(String, Set[String])] =
-    P(KEY ~/ identifier.! ~/ "(" ~/ identifier.!.rep(min = 1, sep = ",").map(_.toSet) ~/ ")")
+    P(
+      KEY ~/ identifier.! ~/ "(" ~/ identifier.!.rep(min = 1, sep = ",")
+        .map(_.toSet) ~/ ")"
+    )
 
   private def extendsDefinition[_: P]: P[Set[String]] =
     P(EXTENDS ~/ identifier.!.rep(min = 1, sep = ",").map(_.toSet))
 
   def elementTypeDefinition[_: P]: P[ElementTypeDefinition] =
-    P(identifier.! ~/ extendsDefinition.? ~/ properties.? ~/ keyDefinition.?).map {
-      case (id, maybeParents, maybeProps, maybeKey) =>
-        ElementTypeDefinition(id, maybeParents.getOrElse(Set.empty), maybeProps.getOrElse(Map.empty), maybeKey)
-    }
+    P(identifier.! ~/ extendsDefinition.? ~/ properties.? ~/ keyDefinition.?)
+      .map { case (id, maybeParents, maybeProps, maybeKey) =>
+        ElementTypeDefinition(
+          id,
+          maybeParents.getOrElse(Set.empty),
+          maybeProps.getOrElse(Map.empty),
+          maybeKey
+        )
+      }
 
   def globalElementTypeDefinition[_: P]: P[ElementTypeDefinition] =
     P(CREATE ~ ELEMENT ~/ TYPE ~/ elementTypeDefinition)
@@ -117,17 +131,23 @@ object GraphDdlParser {
     P("(" ~ elementTypes ~ ")").map(NodeTypeDefinition(_))
 
   def relTypeDefinition[_: P]: P[RelationshipTypeDefinition] =
-    P(nodeTypeDefinition ~ "-" ~ "[" ~ elementTypes ~ "]" ~ "->" ~ nodeTypeDefinition).map {
-      case (startNodeType, eType, endNodeType) => RelationshipTypeDefinition(startNodeType, eType, endNodeType)
+    P(
+      nodeTypeDefinition ~ "-" ~ "[" ~ elementTypes ~ "]" ~ "->" ~ nodeTypeDefinition
+    ).map { case (startNodeType, eType, endNodeType) =>
+      RelationshipTypeDefinition(startNodeType, eType, endNodeType)
     }
 
   def graphTypeStatements[_: P]: P[List[GraphDdlAst with GraphTypeStatement]] =
     // Note: Order matters here. relTypeDefinition must appear before nodeTypeDefinition since they parse the same prefix
-    P("(" ~/ (elementTypeDefinition | relTypeDefinition | nodeTypeDefinition ).rep(sep = "," ~/ Pass).map(_.toList) ~/ ")")
+    P(
+      "(" ~/ (elementTypeDefinition | relTypeDefinition | nodeTypeDefinition)
+        .rep(sep = "," ~/ Pass)
+        .map(_.toList) ~/ ")"
+    )
 
   def graphTypeDefinition[_: P]: P[GraphTypeDefinition] =
-    P(CREATE ~ GRAPH ~ TYPE ~/ identifier.! ~/ graphTypeStatements).map(GraphTypeDefinition.tupled)
-
+    P(CREATE ~ GRAPH ~ TYPE ~/ identifier.! ~/ graphTypeStatements)
+      .map(GraphTypeDefinition.tupled)
 
   // ==== Graph ====
 
@@ -135,7 +155,9 @@ object GraphDdlParser {
     P(escapedIdentifier.repX(min = 1, max = 3, sep = ".")).map(_.toList)
 
   private def propertyToColumn[_: P]: P[(String, String)] =
-    P(identifier.! ~ AS ~/ identifier.!).map { case (column, propertyKey) => propertyKey -> column }
+    P(identifier.! ~ AS ~/ identifier.!).map { case (column, propertyKey) =>
+      propertyKey -> column
+    }
 
   // TODO: avoid toMap to not accidentally swallow duplicate property keys
   def propertyMappingDefinition[_: P]: P[Map[String, String]] = {
@@ -143,10 +165,15 @@ object GraphDdlParser {
   }
 
   def nodeToViewDefinition[_: P]: P[NodeToViewDefinition] =
-    P(FROM ~/ viewId ~/ propertyMappingDefinition.?).map(NodeToViewDefinition.tupled)
+    P(FROM ~/ viewId ~/ propertyMappingDefinition.?)
+      .map(NodeToViewDefinition.tupled)
 
   def nodeMappingDefinition[_: P]: P[NodeMappingDefinition] = {
-    P(nodeTypeDefinition ~ nodeToViewDefinition.rep(min = 1, sep = ",".?).map(_.toList)).map(NodeMappingDefinition.tupled)
+    P(
+      nodeTypeDefinition ~ nodeToViewDefinition
+        .rep(min = 1, sep = ",".?)
+        .map(_.toList)
+    ).map(NodeMappingDefinition.tupled)
   }
 
   def nodeMappings[_: P]: P[List[NodeMappingDefinition]] =
@@ -159,40 +186,60 @@ object GraphDdlParser {
     P(columnIdentifier ~/ "=" ~/ columnIdentifier)
 
   private def joinOnDefinition[_: P]: P[JoinOnDefinition] =
-    P(JOIN ~/ ON ~/ joinTuple.rep(min = 1, sep = AND)).map(_.toList).map(JoinOnDefinition)
+    P(JOIN ~/ ON ~/ joinTuple.rep(min = 1, sep = AND))
+      .map(_.toList)
+      .map(JoinOnDefinition)
 
   private def viewDefinition[_: P]: P[ViewDefinition] =
     P(viewId ~/ identifier.!).map(ViewDefinition.tupled)
 
   private def nodeTypeToViewDefinition[_: P]: P[NodeTypeToViewDefinition] =
-    P(nodeTypeDefinition ~/ FROM ~/ viewDefinition ~/ joinOnDefinition).map(NodeTypeToViewDefinition.tupled)
+    P(nodeTypeDefinition ~/ FROM ~/ viewDefinition ~/ joinOnDefinition)
+      .map(NodeTypeToViewDefinition.tupled)
 
   private def relTypeToViewDefinition[_: P]: P[RelationshipTypeToViewDefinition] =
-    P(FROM ~/ viewDefinition ~/ propertyMappingDefinition.? ~/ START ~/ NODES ~/ nodeTypeToViewDefinition ~/ END ~/ NODES ~/ nodeTypeToViewDefinition).map(RelationshipTypeToViewDefinition.tupled)
+    P(
+      FROM ~/ viewDefinition ~/ propertyMappingDefinition.? ~/ START ~/ NODES ~/ nodeTypeToViewDefinition ~/ END ~/ NODES ~/ nodeTypeToViewDefinition
+    ).map(RelationshipTypeToViewDefinition.tupled)
 
   def relationshipMappingDefinition[_: P]: P[RelationshipMappingDefinition] = {
-    P(relTypeDefinition ~ relTypeToViewDefinition.rep(min = 1, sep = ",".?).map(_.toList)).map(RelationshipMappingDefinition.tupled)
+    P(
+      relTypeDefinition ~ relTypeToViewDefinition
+        .rep(min = 1, sep = ",".?)
+        .map(_.toList)
+    ).map(RelationshipMappingDefinition.tupled)
   }
 
   def relationshipMappings[_: P]: P[List[RelationshipMappingDefinition]] =
     P(relationshipMappingDefinition.rep(min = 1, sep = ",").map(_.toList))
 
   private def graphStatements[_: P]: P[List[GraphDdlAst with GraphStatement]] =
-  // Note: Order matters here
-    P("(" ~/ (relationshipMappingDefinition | nodeMappingDefinition | elementTypeDefinition | relTypeDefinition | nodeTypeDefinition ).rep(sep = "," ~/ Pass).map(_.toList) ~/ ")")
+    // Note: Order matters here
+    P(
+      "(" ~/ (relationshipMappingDefinition | nodeMappingDefinition | elementTypeDefinition | relTypeDefinition | nodeTypeDefinition)
+        .rep(sep = "," ~/ Pass)
+        .map(_.toList) ~/ ")"
+    )
 
   def graphDefinition[_: P]: P[GraphDefinition] = {
-    P(CREATE ~ GRAPH ~ identifier.! ~/ (OF ~/ identifier.!).? ~/ graphStatements)
-      .map { case (gName, graphTypeRef, statements) => GraphDefinition(gName, graphTypeRef, statements) }
+    P(
+      CREATE ~ GRAPH ~ identifier.! ~/ (OF ~/ identifier.!).? ~/ graphStatements
+    )
+      .map { case (gName, graphTypeRef, statements) =>
+        GraphDefinition(gName, graphTypeRef, statements)
+      }
   }
 
   // ==== DDL ====
 
   def setSchemaDefinition[_: P]: P[SetSchemaDefinition] =
-    P(SET ~/ SCHEMA ~ identifier.! ~/ "." ~/ identifier.! ~ ";".?).map(SetSchemaDefinition.tupled)
+    P(SET ~/ SCHEMA ~ identifier.! ~/ "." ~/ identifier.! ~ ";".?)
+      .map(SetSchemaDefinition.tupled)
 
   def ddlStatement[_: P]: P[GraphDdlAst with DdlStatement] =
-    P(setSchemaDefinition | globalElementTypeDefinition | graphTypeDefinition | graphDefinition)
+    P(
+      setSchemaDefinition | globalElementTypeDefinition | graphTypeDefinition | graphDefinition
+    )
 
   def ddlDefinitions[_: P]: P[DdlDefinition] =
     // allow for whitespace/comments at the start

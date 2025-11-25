@@ -36,28 +36,41 @@ import org.opencypher.morpheus.impl.table.SparkTable.{DataFrameTable, _}
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherMap, CypherValue}
 import org.opencypher.okapi.relational.api.io.ElementTable
-import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, RelationalCypherRecordsFactory}
+import org.opencypher.okapi.relational.api.table.{
+  RelationalCypherRecords,
+  RelationalCypherRecordsFactory
+}
 import org.opencypher.okapi.relational.impl.table._
 
 import scala.collection.JavaConverters._
 
-case class MorpheusRecordsFactory()(implicit morpheus: MorpheusSession) extends RelationalCypherRecordsFactory[DataFrameTable] {
+case class MorpheusRecordsFactory()(implicit morpheus: MorpheusSession)
+    extends RelationalCypherRecordsFactory[DataFrameTable] {
 
   override type Records = MorpheusRecords
 
   override def unit(): MorpheusRecords = {
-    val initialDataFrame = morpheus.sparkSession.createDataFrame(Seq(EmptyRow()))
+    val initialDataFrame =
+      morpheus.sparkSession.createDataFrame(Seq(EmptyRow()))
     MorpheusRecords(RecordHeader.empty, initialDataFrame)
   }
 
-  override def empty(initialHeader: RecordHeader = RecordHeader.empty): MorpheusRecords = {
+  override def empty(
+    initialHeader: RecordHeader = RecordHeader.empty
+  ): MorpheusRecords = {
     val initialSparkStructType = initialHeader.toStructType
-    val initialDataFrame = morpheus.sparkSession.createDataFrame(Collections.emptyList[Row](), initialSparkStructType)
+    val initialDataFrame = morpheus.sparkSession.createDataFrame(
+      Collections.emptyList[Row](),
+      initialSparkStructType
+    )
     MorpheusRecords(initialHeader, initialDataFrame)
   }
 
-  override def fromElementTable(elementTable: ElementTable[DataFrameTable]): MorpheusRecords = {
-    val withCypherCompatibleTypes = elementTable.table.df.withCypherCompatibleTypes
+  override def fromElementTable(
+    elementTable: ElementTable[DataFrameTable]
+  ): MorpheusRecords = {
+    val withCypherCompatibleTypes =
+      elementTable.table.df.withCypherCompatibleTypes
     MorpheusRecords(elementTable.header, withCypherCompatibleTypes)
   }
 
@@ -67,8 +80,8 @@ case class MorpheusRecordsFactory()(implicit morpheus: MorpheusSession) extends 
     maybeDisplayNames: Option[Seq[String]]
   ): MorpheusRecords = {
     val displayNames = maybeDisplayNames match {
-      case s@Some(_) => s
-      case None => Some(header.vars.map(_.withoutType).toSeq)
+      case s @ Some(_) => s
+      case None        => Some(header.vars.map(_.withoutType).toSeq)
     }
     MorpheusRecords(header, table, displayNames)
   }
@@ -76,11 +89,16 @@ case class MorpheusRecordsFactory()(implicit morpheus: MorpheusSession) extends 
   /**
     * Wraps a Spark SQL table (DataFrame) in a MorpheusRecords, making it understandable by Cypher.
     *
-    * @param df   table to wrap.
-    * @param morpheus session to which the resulting MorpheusRecords is tied.
-    * @return a Cypher table.
+    * @param df
+    *   table to wrap.
+    * @param morpheus
+    *   session to which the resulting MorpheusRecords is tied.
+    * @return
+    *   a Cypher table.
     */
-  private[morpheus] def wrap(df: DataFrame)(implicit morpheus: MorpheusSession): MorpheusRecords = {
+  private[morpheus] def wrap(
+    df: DataFrame
+  )(implicit morpheus: MorpheusSession): MorpheusRecords = {
     val compatibleDf = df.withCypherCompatibleTypes
     MorpheusRecords(compatibleDf.schema.toRecordHeader, compatibleDf)
   }
@@ -92,7 +110,9 @@ case class MorpheusRecords(
   header: RecordHeader,
   table: DataFrameTable,
   override val logicalColumns: Option[Seq[String]] = None
-)(implicit morpheus: MorpheusSession) extends RelationalCypherRecords[DataFrameTable] with RecordBehaviour {
+)(implicit morpheus: MorpheusSession)
+    extends RelationalCypherRecords[DataFrameTable]
+    with RecordBehaviour {
   override type Records = MorpheusRecords
 
   def df: DataFrame = table.df
@@ -133,7 +153,6 @@ trait RecordBehaviour extends RelationalCypherRecords[DataFrameTable] {
 
   override def collect: Array[CypherMap] =
     toCypherMaps.collect()
-
 
   def toCypherMaps: Dataset[CypherMap] = {
     import encoders._

@@ -41,8 +41,11 @@ abstract class MorpheusTestSuite
     with GraphMatchingTestSupport
     with RecordMatchingTestSupport {
 
-  def catalog(qgn: QualifiedGraphName): Option[RelationalCypherGraph[DataFrameTable]] = None
+  def catalog(
+    qgn: QualifiedGraphName
+  ): Option[RelationalCypherGraph[DataFrameTable]] = None
 
-  implicit val context: RelationalRuntimeContext[DataFrameTable] = RelationalRuntimeContext(catalog)
+  implicit val context: RelationalRuntimeContext[DataFrameTable] =
+    RelationalRuntimeContext(catalog)
 
 }

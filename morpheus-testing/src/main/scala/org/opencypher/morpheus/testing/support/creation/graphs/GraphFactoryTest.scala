@@ -47,7 +47,10 @@ import org.opencypher.okapi.ir.impl.util.VarConverters._
 import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.propertygraph.CreateGraphFactory
 
-abstract class GraphFactoryTest extends MorpheusTestSuite with GraphMatchingTestSupport with RecordsVerificationFixture  {
+abstract class GraphFactoryTest
+    extends MorpheusTestSuite
+    with GraphMatchingTestSupport
+    with RecordsVerificationFixture {
   def factory: TestGraphFactory
 
   val createQuery: String =
@@ -63,74 +66,98 @@ abstract class GraphFactoryTest extends MorpheusTestSuite with GraphMatchingTest
       |CREATE (martin)-[:SPEAKS]->(orbital)
     """.stripMargin
 
-  val personAstronautTable: MorpheusElementTable = MorpheusElementTable.create(NodeMappingBuilder
-    .on("ID")
-    .withImpliedLabels("Person", "Astronaut")
-    .withPropertyKey("name" -> "NAME")
-    .withPropertyKey("birthday" -> "BIRTHDAY")
-    .build, morpheus.sparkSession.createDataFrame(
-    Seq((0L, "Max", Date.valueOf("1991-07-10")))).toDF("ID", "NAME", "BIRTHDAY"))
+  val personAstronautTable: MorpheusElementTable = MorpheusElementTable.create(
+    NodeMappingBuilder
+      .on("ID")
+      .withImpliedLabels("Person", "Astronaut")
+      .withPropertyKey("name" -> "NAME")
+      .withPropertyKey("birthday" -> "BIRTHDAY")
+      .build,
+    morpheus.sparkSession
+      .createDataFrame(Seq((0L, "Max", Date.valueOf("1991-07-10"))))
+      .toDF("ID", "NAME", "BIRTHDAY")
+  )
 
-  val personMartianTable: MorpheusElementTable = MorpheusElementTable.create(NodeMappingBuilder
-    .on("ID")
-    .withImpliedLabels("Person", "Martian")
-    .withPropertyKey("name" -> "NAME")
-    .build, morpheus.sparkSession.createDataFrame(
-    Seq((1L, "Martin"))).toDF("ID", "NAME"))
+  val personMartianTable: MorpheusElementTable = MorpheusElementTable.create(
+    NodeMappingBuilder
+      .on("ID")
+      .withImpliedLabels("Person", "Martian")
+      .withPropertyKey("name" -> "NAME")
+      .build,
+    morpheus.sparkSession
+      .createDataFrame(Seq((1L, "Martin")))
+      .toDF("ID", "NAME")
+  )
 
-  val languageTable: MorpheusElementTable = MorpheusElementTable.create(NodeMappingBuilder
-    .on("ID")
-    .withImpliedLabel("Language")
-    .withPropertyKey("title" -> "TITLE")
-    .build, morpheus.sparkSession.createDataFrame(
-    Seq(
-      (2L, "Swedish"),
-      (3L, "German"),
-      (4L, "Orbital"))
-  ).toDF("ID", "TITLE"))
+  val languageTable: MorpheusElementTable = MorpheusElementTable.create(
+    NodeMappingBuilder
+      .on("ID")
+      .withImpliedLabel("Language")
+      .withPropertyKey("title" -> "TITLE")
+      .build,
+    morpheus.sparkSession
+      .createDataFrame(
+        Seq((2L, "Swedish"), (3L, "German"), (4L, "Orbital"))
+      )
+      .toDF("ID", "TITLE")
+  )
 
-  val knowsScan: MorpheusElementTable = MorpheusElementTable.create(RelationshipMappingBuilder
-    .on("ID")
-    .from("SRC").to("DST").relType("KNOWS").build, morpheus.sparkSession.createDataFrame(
-    Seq(
-      (0L, 5L, 2L),
-      (0L, 6L, 3L),
-      (1L, 7L, 3L),
-      (1L, 8L, 4L))
-  ).toDF("SRC", "ID", "DST"))
+  val knowsScan: MorpheusElementTable = MorpheusElementTable.create(
+    RelationshipMappingBuilder
+      .on("ID")
+      .from("SRC")
+      .to("DST")
+      .relType("KNOWS")
+      .build,
+    morpheus.sparkSession
+      .createDataFrame(
+        Seq((0L, 5L, 2L), (0L, 6L, 3L), (1L, 7L, 3L), (1L, 8L, 4L))
+      )
+      .toDF("SRC", "ID", "DST")
+  )
 
   test("testSchema") {
     val propertyGraph = CreateGraphFactory(createQuery)
-    factory(propertyGraph).schema should equal(PropertyGraphSchema.empty
-      .withNodePropertyKeys("Person", "Astronaut")("name" -> CTString, "birthday" -> CTDate)
-      .withNodePropertyKeys("Person", "Martian")("name" -> CTString)
-      .withNodePropertyKeys("Language")("title" -> CTString)
-      .withRelationshipType("SPEAKS")
-      .asMorpheus)
+    factory(propertyGraph).schema should equal(
+      PropertyGraphSchema.empty
+        .withNodePropertyKeys("Person", "Astronaut")(
+          "name" -> CTString,
+          "birthday" -> CTDate
+        )
+        .withNodePropertyKeys("Person", "Martian")("name" -> CTString)
+        .withNodePropertyKeys("Language")("title" -> CTString)
+        .withRelationshipType("SPEAKS")
+        .asMorpheus
+    )
   }
 
   test("testAsScanGraph") {
     val propertyGraph = CreateGraphFactory(createQuery)
     val g = factory(propertyGraph).asMorpheus
-    g shouldMatch morpheus.graphs.create(personAstronautTable, personMartianTable, languageTable, knowsScan)
+    g shouldMatch morpheus.graphs.create(
+      personAstronautTable,
+      personMartianTable,
+      languageTable,
+      knowsScan
+    )
   }
 
   it("can create graphs containing list properties") {
-    val propertyGraph = CreateGraphFactory(
-      """
+    val propertyGraph = CreateGraphFactory("""
         |CREATE ( {l: [1,2,3]} )
       """.stripMargin)
 
     val g = factory(propertyGraph).asMorpheus
 
-    g.cypher("MATCH (n) RETURN n.l as list").records.toMaps should equal(Bag(
-      CypherMap("list" -> List(1,2,3))
-    ))
+    g.cypher("MATCH (n) RETURN n.l as list").records.toMaps should equal(
+      Bag(
+        CypherMap("list" -> List(1, 2, 3))
+      )
+    )
   }
 
   it("can handle nodes with the same label but different properties") {
-    val propertyGraph = CreateGraphFactory(
-      """
+    val propertyGraph = CreateGraphFactory("""
         |CREATE ( { } )
         |CREATE ( {val1: 1} )
         |CREATE ( {val1: 1, val2: "foo"} )
@@ -138,19 +165,27 @@ abstract class GraphFactoryTest extends MorpheusTestSuite with GraphMatchingTest
 
     val g = factory(propertyGraph).asMorpheus
 
-    g.cypher("MATCH (n) RETURN n.val1, n.val2").records.toMaps should equal(Bag(
-      CypherMap("n.val1" -> 1,    "n.val2" -> "foo"),
-      CypherMap("n.val1" -> 1,    "n.val2" -> null),
-      CypherMap("n.val1" -> null, "n.val2" -> null)
-    ))
+    g.cypher("MATCH (n) RETURN n.val1, n.val2").records.toMaps should equal(
+      Bag(
+        CypherMap("n.val1" -> 1, "n.val2" -> "foo"),
+        CypherMap("n.val1" -> 1, "n.val2" -> null),
+        CypherMap("n.val1" -> null, "n.val2" -> null)
+      )
+    )
   }
 
-  it("extracts additional patterns"){
-    val nodeRelPattern = NodeRelPattern(CTNode("Person", "Martian"), CTRelationship("SPEAKS"))
-    val tripletPattern = TripletPattern(CTNode("Person", "Martian"), CTRelationship("SPEAKS"), CTNode("Language"))
+  it("extracts additional patterns") {
+    val nodeRelPattern =
+      NodeRelPattern(CTNode("Person", "Martian"), CTRelationship("SPEAKS"))
+    val tripletPattern = TripletPattern(
+      CTNode("Person", "Martian"),
+      CTRelationship("SPEAKS"),
+      CTNode("Language")
+    )
 
     val propertyGraph = CreateGraphFactory(createQuery)
-    val g = factory(propertyGraph, Seq(nodeRelPattern, tripletPattern)).asMorpheus
+    val g =
+      factory(propertyGraph, Seq(nodeRelPattern, tripletPattern)).asMorpheus
 
     g.patterns should contain(nodeRelPattern)
     g.patterns should contain(tripletPattern)
@@ -171,8 +206,26 @@ abstract class GraphFactoryTest extends MorpheusTestSuite with GraphMatchingTest
       )
 
       val data = Bag(
-        Row(1L.encodeAsMorpheusId.toList, true, true, "Martin", 7L.encodeAsMorpheusId.toList, true, 1L.encodeAsMorpheusId.toList, 3L.encodeAsMorpheusId.toList),
-        Row(1L.encodeAsMorpheusId.toList, true, true, "Martin", 8L.encodeAsMorpheusId.toList, true, 1L.encodeAsMorpheusId.toList, 4L.encodeAsMorpheusId.toList)
+        Row(
+          1L.encodeAsMorpheusId.toList,
+          true,
+          true,
+          "Martin",
+          7L.encodeAsMorpheusId.toList,
+          true,
+          1L.encodeAsMorpheusId.toList,
+          3L.encodeAsMorpheusId.toList
+        ),
+        Row(
+          1L.encodeAsMorpheusId.toList,
+          true,
+          true,
+          "Martin",
+          8L.encodeAsMorpheusId.toList,
+          true,
+          1L.encodeAsMorpheusId.toList,
+          4L.encodeAsMorpheusId.toList
+        )
       )
 
       val scan = g.scanOperator(nodeRelPattern)
@@ -200,9 +253,32 @@ abstract class GraphFactoryTest extends MorpheusTestSuite with GraphMatchingTest
       )
 
       val data = Bag(
-
-        Row(1L.encodeAsMorpheusId.toList, true, true, "Martin", 8L.encodeAsMorpheusId.toList, true, 1L.encodeAsMorpheusId.toList, 4L.encodeAsMorpheusId.toList, 4L.encodeAsMorpheusId.toList, true, "Orbital"),
-        Row(1L.encodeAsMorpheusId.toList, true, true, "Martin", 7L.encodeAsMorpheusId.toList, true, 1L.encodeAsMorpheusId.toList, 3L.encodeAsMorpheusId.toList, 3L.encodeAsMorpheusId.toList, true, "German")
+        Row(
+          1L.encodeAsMorpheusId.toList,
+          true,
+          true,
+          "Martin",
+          8L.encodeAsMorpheusId.toList,
+          true,
+          1L.encodeAsMorpheusId.toList,
+          4L.encodeAsMorpheusId.toList,
+          4L.encodeAsMorpheusId.toList,
+          true,
+          "Orbital"
+        ),
+        Row(
+          1L.encodeAsMorpheusId.toList,
+          true,
+          true,
+          "Martin",
+          7L.encodeAsMorpheusId.toList,
+          true,
+          1L.encodeAsMorpheusId.toList,
+          3L.encodeAsMorpheusId.toList,
+          3L.encodeAsMorpheusId.toList,
+          true,
+          "German"
+        )
       )
 
       val scan = g.scanOperator(tripletPattern)

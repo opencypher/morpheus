@@ -69,7 +69,8 @@ class MorpheusRecordsPrinterTest extends MorpheusTestSuite with GraphConstructio
     val header = RecordHeader.from(NodeVar("foo")(CTNode))
     val emptyDf = morpheus.sparkSession.createDataFrame(
       Collections.emptyList[Row](),
-      StructType(Seq(StructField(header.column(NodeVar("foo")()), LongType))))
+      StructType(Seq(StructField(header.column(NodeVar("foo")()), LongType)))
+    )
     val records = MorpheusRecords(header, emptyDf, Some(Seq("foo")))
 
     // When
@@ -87,7 +88,9 @@ class MorpheusRecordsPrinterTest extends MorpheusTestSuite with GraphConstructio
 
   it("prints a single column with three rows") {
     // Given
-    val df = sparkSession.createDataFrame(Seq(Row1("myString"), Row1("foo"), Row1(null))).toDF("foo")
+    val df = sparkSession
+      .createDataFrame(Seq(Row1("myString"), Row1("foo"), Row1(null)))
+      .toDF("foo")
     val records = morpheus.records.wrap(df)
 
     // When
@@ -109,11 +112,15 @@ class MorpheusRecordsPrinterTest extends MorpheusTestSuite with GraphConstructio
 
   it("prints three columns with three rows") {
     // Given
-    val df = sparkSession.createDataFrame(Seq(
-      Row3("myString", 4L, false),
-      Row3("foo", 99999999L, true),
-      Row3(null, -1L, true)
-    )).toDF("foo", "v", "veryLongColumnNameWithBoolean")
+    val df = sparkSession
+      .createDataFrame(
+        Seq(
+          Row3("myString", 4L, false),
+          Row3("foo", 99999999L, true),
+          Row3(null, -1L, true)
+        )
+      )
+      .toDF("foo", "v", "veryLongColumnNameWithBoolean")
     val records = morpheus.records.wrap(df)
 
     // When
@@ -136,8 +143,7 @@ class MorpheusRecordsPrinterTest extends MorpheusTestSuite with GraphConstructio
   it("prints return property values without alias") {
 
     val given =
-      initGraph(
-        """
+      initGraph("""
           |CREATE (a:Person {name: "Alice"})-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person {name: "Bob"})
         """.stripMargin)
 
@@ -145,12 +151,12 @@ class MorpheusRecordsPrinterTest extends MorpheusTestSuite with GraphConstructio
       """MATCH (a:Person)-[:LIVES_IN]->(city:City)<-[:LIVES_IN]-(b:Person)
         |RETURN a.name, b.name
         |ORDER BY a.name
-      """.stripMargin)
+      """.stripMargin
+    )
 
     print(when.records)
 
-    getString should equal(
-      """|╔═════════╤═════════╗
+    getString should equal("""|╔═════════╤═════════╗
          |║ a.name  │ b.name  ║
          |╠═════════╪═════════╣
          |║ 'Alice' │ 'Bob'   ║
@@ -169,11 +175,17 @@ class MorpheusRecordsPrinterTest extends MorpheusTestSuite with GraphConstructio
 
   private case class Row1(foo: String)
 
-  private case class Row3(foo: String, v: Long, veryLongColumnNameWithBoolean: Boolean)
+  private case class Row3(
+    foo: String,
+    v: Long,
+    veryLongColumnNameWithBoolean: Boolean
+  )
 
   private def getString =
     new String(baos.toByteArray, UTF_8)
 
   private def print(r: CypherRecords)(implicit options: PrintOptions): Unit =
-    RecordsPrinter.print(r)(options.stream(new PrintStream(baos, true, UTF_8.name())))
+    RecordsPrinter.print(r)(
+      options.stream(new PrintStream(baos, true, UTF_8.name()))
+    )
 }

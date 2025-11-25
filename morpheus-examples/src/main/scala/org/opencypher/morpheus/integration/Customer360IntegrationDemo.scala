@@ -38,16 +38,20 @@ import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.Neo4jConfig
 
 /**
-  * This demo shows the transformation from a single CSV file into a PropertyGraph that is eventually stored in Neo4j.
+  * This demo shows the transformation from a single CSV file into a PropertyGraph that is
+  * eventually stored in Neo4j.
   *
-  * The input is a de-normalized wide table containing interactions between customers and employees. Those interactions
-  * are normalized by splitting them into several views and registering them as Hive tables.
+  * The input is a de-normalized wide table containing interactions between customers and employees.
+  * Those interactions are normalized by splitting them into several views and registering them as
+  * Hive tables.
   *
-  * A Graph DDL file describes the PropertyGraph schema and the mapping between Hive views and PropertyGraph elements
-  * (i.e. nodes and relationships). After loading the graph via Spark, Cypher 10 Multiple Graph support is used to
-  * extend the graph with new relationships. The resulting graph is merged to Neo4j where it can be further analyzed.
+  * A Graph DDL file describes the PropertyGraph schema and the mapping between Hive views and
+  * PropertyGraph elements (i.e. nodes and relationships). After loading the graph via Spark, Cypher
+  * 10 Multiple Graph support is used to extend the graph with new relationships. The resulting
+  * graph is merged to Neo4j where it can be further analyzed.
   *
-  * This integration demo requires a running Neo4j Enterprise installation listening on bolt://localhost:7687.
+  * This integration demo requires a running Neo4j Enterprise installation listening on
+  * bolt://localhost:7687.
   */
 object Customer360IntegrationDemo extends App {
 
@@ -57,19 +61,21 @@ object Customer360IntegrationDemo extends App {
 
   implicit val spark: SparkSession = session.sparkSession
 
-  val inputSchema: StructType = StructType(Seq(
-    StructField("interactionId", LongType, nullable = false),
-    StructField("date", StringType, nullable = false),
-    StructField("customerIdx", LongType, nullable = false),
-    StructField("empNo", LongType, nullable = false),
-    StructField("empName", StringType, nullable = false),
-    StructField("type", StringType, nullable = false),
-    StructField("outcomeScore", StringType, nullable = false),
-    StructField("accountHolderId", StringType, nullable = false),
-    StructField("policyAccountNumber", StringType, nullable = false),
-    StructField("customerId", StringType, nullable = false),
-    StructField("customerName", StringType, nullable = false)
-  ))
+  val inputSchema: StructType = StructType(
+    Seq(
+      StructField("interactionId", LongType, nullable = false),
+      StructField("date", StringType, nullable = false),
+      StructField("customerIdx", LongType, nullable = false),
+      StructField("empNo", LongType, nullable = false),
+      StructField("empName", StringType, nullable = false),
+      StructField("type", StringType, nullable = false),
+      StructField("outcomeScore", StringType, nullable = false),
+      StructField("accountHolderId", StringType, nullable = false),
+      StructField("policyAccountNumber", StringType, nullable = false),
+      StructField("customerId", StringType, nullable = false),
+      StructField("customerName", StringType, nullable = false)
+    )
+  )
 
   // Import wide table from CSV file
   val importCsv = spark.read
@@ -89,17 +95,56 @@ object Customer360IntegrationDemo extends App {
   importCsv.write.saveAsTable(s"$inputTableName")
 
   // Create views for nodes
-  createView(inputTableName, "interactions", true, "interactionId", "date", "type", "outcomeScore")
-  createView(inputTableName, "customers", true, "customerIdx", "customerId", "customerName")
+  createView(
+    inputTableName,
+    "interactions",
+    true,
+    "interactionId",
+    "date",
+    "type",
+    "outcomeScore"
+  )
+  createView(
+    inputTableName,
+    "customers",
+    true,
+    "customerIdx",
+    "customerId",
+    "customerName"
+  )
   createView(inputTableName, "account_holders", true, "accountHolderId")
   createView(inputTableName, "policies", true, "policyAccountNumber")
   createView(inputTableName, "customer_reps", true, "empNo", "empName")
 
   // Create views for relationships
-  createView(inputTableName, "has_customer_reps", false, "interactionId", "empNo")
-  createView(inputTableName, "has_customers", false, "interactionId", "customerId")
-  createView(inputTableName, "has_policies", false, "interactionId", "policyAccountNumber")
-  createView(inputTableName, "has_account_holders", false, "interactionId", "accountHolderId")
+  createView(
+    inputTableName,
+    "has_customer_reps",
+    false,
+    "interactionId",
+    "empNo"
+  )
+  createView(
+    inputTableName,
+    "has_customers",
+    false,
+    "interactionId",
+    "customerId"
+  )
+  createView(
+    inputTableName,
+    "has_policies",
+    false,
+    "interactionId",
+    "policyAccountNumber"
+  )
+  createView(
+    inputTableName,
+    "has_account_holders",
+    false,
+    "interactionId",
+    "accountHolderId"
+  )
 
   // Create SQL PropertyGraph DataSource
   val sqlGraphSource = GraphSources
@@ -111,16 +156,18 @@ object Customer360IntegrationDemo extends App {
   val g = session.catalog.graph("c360.interactions")
   session.catalog.store("foo", g)
 
-  val c360Interactions = session.cypher(
-    """
+  val c360Interactions = session
+    .cypher("""
       |FROM GRAPH foo
       |MATCH (i:Interaction)-[rel]->(other)
       |CONSTRUCT ON foo
       | CREATE (other)-[:HAS_INTERACTION]->(i)
       |RETURN GRAPH
-    """.stripMargin).graph
+    """.stripMargin)
+    .graph
 
-  val neo4jConfig = Neo4jConfig(new URI("bolt://localhost:7687"), "neo4j", Some("admin"))
+  val neo4jConfig =
+    Neo4jConfig(new URI("bolt://localhost:7687"), "neo4j", Some("admin"))
 
   val nodeKeys = Map(
     "Interaction" -> Set("interactionId"),
@@ -134,13 +181,22 @@ object Customer360IntegrationDemo extends App {
   Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
 
   // Merge interaction graph into Neo4j database with "Customer 360" data
-  Neo4jGraphMerge.merge(entireGraphName, c360Interactions, neo4jConfig, Some(nodeKeys))
+  Neo4jGraphMerge.merge(
+    entireGraphName,
+    c360Interactions,
+    neo4jConfig,
+    Some(nodeKeys)
+  )
 
-  def createView(fromTable: String, viewName: String, distinct: Boolean, columns: String*): Unit = {
+  def createView(
+    fromTable: String,
+    viewName: String,
+    distinct: Boolean,
+    columns: String*
+  ): Unit = {
     val distinctString = if (distinct) "DISTINCT" else ""
 
-    spark.sql(
-      s"""
+    spark.sql(s"""
          |CREATE VIEW $databaseName.$viewName AS
          | SELECT $distinctString ${columns.mkString(", ")} FROM $fromTable
       """.stripMargin)

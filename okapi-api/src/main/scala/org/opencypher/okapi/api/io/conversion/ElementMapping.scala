@@ -35,20 +35,25 @@ object ElementMapping {
 }
 
 /**
-  * Represents a mapping from a source with key-based access of element components (e.g. a table definition) to a Pattern.
-  * The purpose of this class is to define a mapping from an external data source to a property graph.
+  * Represents a mapping from a source with key-based access of element components (e.g. a table
+  * definition) to a Pattern. The purpose of this class is to define a mapping from an external data
+  * source to a property graph.
   *
   * The [[pattern]] describes the shape of the pattern that is described by this mapping
   *
   * The [[idKeys]] describe the mappings for each pattern element, which map the element identifiers
   * to columns within the source data.
   *
-  * The [[properties]] represent mappings for every pattern element from property keys to keys in the source data.
-  * The retrieved value from the source is expected to be convertible to a valid [[org.opencypher.okapi.api.value.CypherValue]].
+  * The [[properties]] represent mappings for every pattern element from property keys to keys in
+  * the source data. The retrieved value from the source is expected to be convertible to a valid
+  * [[org.opencypher.okapi.api.value.CypherValue]].
   *
-  * @param pattern    the pattern described by this mapping
-  * @param properties mapping from property key to source property key
-  * @param idKeys     mapping for the key to access the element identifier in the source data
+  * @param pattern
+  *   the pattern described by this mapping
+  * @param properties
+  *   mapping from property key to source property key
+  * @param idKeys
+  *   mapping for the key to access the element identifier in the source data
   */
 case class ElementMapping(
   pattern: Pattern,
@@ -58,23 +63,29 @@ case class ElementMapping(
 
   validate()
 
-  lazy val allSourceIdKeys: Seq[String] = idKeys.values.flatMap(keyMapping => keyMapping.values).toSeq.sorted
+  lazy val allSourceIdKeys: Seq[String] =
+    idKeys.values.flatMap(keyMapping => keyMapping.values).toSeq.sorted
 
-  lazy val allSourcePropertyKeys: Seq[String] = properties.values.flatMap(keyMapping => keyMapping.values).toSeq.sorted
+  lazy val allSourcePropertyKeys: Seq[String] =
+    properties.values.flatMap(keyMapping => keyMapping.values).toSeq.sorted
 
-  lazy val allSourceKeys: Seq[String] = (allSourceIdKeys ++ allSourcePropertyKeys).sorted
+  lazy val allSourceKeys: Seq[String] =
+    (allSourceIdKeys ++ allSourcePropertyKeys).sorted
 
   protected def validate(): Unit = {
     val sourceKeys = allSourceKeys
     if (allSourceKeys.size != sourceKeys.toSet.size) {
-      val duplicateColumns = sourceKeys.groupBy(identity).filter { case (_, items) => items.size > 1 }
+      val duplicateColumns = sourceKeys.groupBy(identity).filter { case (_, items) =>
+        items.size > 1
+      }
       throw IllegalArgumentException(
         "One-to-one mapping from element elements to source keys",
-        s"Duplicate columns: $duplicateColumns")
+        s"Duplicate columns: $duplicateColumns"
+      )
     }
 
     pattern.elements.foreach {
-      case e@PatternElement(_, CTRelationship(types, _)) if types.size != 1 =>
+      case e @ PatternElement(_, CTRelationship(types, _)) if types.size != 1 =>
         throw IllegalArgumentException(
           s"A single implied type for element $e",
           types
@@ -83,4 +94,3 @@ case class ElementMapping(
     }
   }
 }
-

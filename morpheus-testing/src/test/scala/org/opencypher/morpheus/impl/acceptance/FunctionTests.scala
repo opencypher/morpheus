@@ -438,7 +438,8 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
       )
     }
     it("multiple characters") {
-      val result = morpheus.cypher("RETURN replace('hello', 'ell', 'ipp') AS res")
+      val result =
+        morpheus.cypher("RETURN replace('hello', 'ell', 'ipp') AS res")
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> "hippo")
@@ -458,7 +459,7 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
-      )
+        )
       )
     }
     it("on null to-be-replaced") {
@@ -478,7 +479,9 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
       )
     }
     it("on complex string expression") {
-      val result = morpheus.cypher("RETURN replace('he' + 'llo', 'l' + 'l', 'w' + 'w') AS res")
+      val result = morpheus.cypher(
+        "RETURN replace('he' + 'llo', 'l' + 'l', 'w' + 'w') AS res"
+      )
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> "hewwo")
@@ -486,7 +489,9 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
       )
     }
     it("on complex expression evaluating to null") {
-      val result = morpheus.cypher("WITH ['ll', 'ww'] AS stringList RETURN replace('hello', stringList[0], stringList[2]) AS res")
+      val result = morpheus.cypher(
+        "WITH ['ll', 'ww'] AS stringList RETURN replace('hello', stringList[0], stringList[2]) AS res"
+      )
       result.records.toMaps should equal(
         Bag(
           CypherMap("res" -> null)
@@ -549,8 +554,7 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
     it("trims more complex structures") {
       val given = initGraph("CREATE ({name: ' foo '})")
 
-      val result = given.cypher(
-        """
+      val result = given.cypher("""
           |MATCH (n)
           |WITH rtrim(n.name) AS name
           |RETURN rtrim(ltrim(name + '_bar ')) AS trimmed
@@ -570,14 +574,20 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
       val t1 = morpheus.cypher("RETURN timestamp()")
       val t2 = morpheus.cypher("RETURN timestamp()")
 
-      t1.records.toMaps.keys.map(_.value.head._2.value.asInstanceOf[Long]) should be <=
+      t1.records.toMaps.keys
+        .map(_.value.head._2.value.asInstanceOf[Long]) should be <=
         t2.records.toMaps.keys.map(_.value.head._2.value.asInstanceOf[Long])
     }
 
-    it("should return the same value when called multiple times inside the same query") {
+    it(
+      "should return the same value when called multiple times inside the same query"
+    ) {
       val given = initGraph("CREATE (), ()")
 
-      val result = given.cypher("WITH timestamp() AS t1 MATCH (n) RETURN t1, timestamp() AS t2").records.toMaps
+      val result = given
+        .cypher("WITH timestamp() AS t1 MATCH (n) RETURN t1, timestamp() AS t2")
+        .records
+        .toMaps
 
       val expected = result.head._1("t1")
 
@@ -604,7 +614,8 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
           CypherMap("exists" -> true),
           CypherMap("exists" -> false),
           CypherMap("exists" -> false)
-        ))
+        )
+      )
     }
 
     it("exists() on null property") {
@@ -615,7 +626,8 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
       result.records.toMaps should equal(
         Bag(
           CypherMap("exists" -> false)
-        ))
+        )
+      )
     }
 
     it("exists() on null map") {
@@ -626,7 +638,8 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
       result.records.toMaps should equal(
         Bag(
           CypherMap("exists" -> false)
-        ))
+        )
+      )
     }
   }
 
@@ -642,7 +655,8 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
           CypherMap("type(r)" -> "KNOWS"),
           CypherMap("type(r)" -> "HATES"),
           CypherMap("type(r)" -> "REL")
-        ))
+        )
+      )
     }
   }
 
@@ -653,7 +667,12 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
 
       val result = given.cypher("MATCH (n) RETURN id(n)")
 
-      result.records.toMaps should equal(Bag(CypherMap("id(n)" -> 0L.encodeAsMorpheusId), CypherMap("id(n)" -> 1L.encodeAsMorpheusId)))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("id(n)" -> 0L.encodeAsMorpheusId),
+          CypherMap("id(n)" -> 1L.encodeAsMorpheusId)
+        )
+      )
     }
 
     it("id for rel") {
@@ -661,7 +680,12 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
 
       val result = given.cypher("MATCH ()-[e]->() RETURN id(e)")
 
-      result.records.toMaps should equal(Bag(CypherMap("id(e)" -> 2L.encodeAsMorpheusId), CypherMap("id(e)" -> 4L.encodeAsMorpheusId)))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("id(e)" -> 2L.encodeAsMorpheusId),
+          CypherMap("id(e)" -> 4L.encodeAsMorpheusId)
+        )
+      )
     }
 
   }
@@ -677,7 +701,8 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
         Bag(
           CypherMap("labels(a)" -> List("A")),
           CypherMap("labels(a)" -> List("B"))
-        ))
+        )
+      )
     }
 
     it("get multiple labels") {
@@ -689,7 +714,8 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
         Bag(
           CypherMap("labels(a)" -> List("A", "B")),
           CypherMap("labels(a)" -> List("C", "D"))
-        ))
+        )
+      )
     }
 
     it("unlabeled nodes") {
@@ -702,7 +728,8 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
           CypherMap("labels(a)" -> List("A")),
           CypherMap("labels(a)" -> List("C", "D")),
           CypherMap("labels(a)" -> List.empty)
-        ))
+        )
+      )
     }
 
     it("handle null") {
@@ -727,7 +754,8 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
       result.records.toMaps should equal(
         Bag(
           CypherMap("s" -> 2)
-        ))
+        )
+      )
     }
 
     it("size() on literal string") {
@@ -738,7 +766,8 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
       result.records.toMaps should equal(
         Bag(
           CypherMap("s" -> 5)
-        ))
+        )
+      )
     }
 
     it("size() on retrieved string") {
@@ -749,7 +778,8 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
       result.records.toMaps should equal(
         Bag(
           CypherMap("s" -> 5)
-        ))
+        )
+      )
     }
 
     it("size() on constructed list") {
@@ -763,7 +793,8 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
           CypherMap("s" -> 2),
           CypherMap("s" -> 1),
           CypherMap("s" -> 0)
-        ))
+        )
+      )
     }
 
     it("size() on null") {
@@ -794,34 +825,37 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
     it("keys()") {
       val given = initGraph("CREATE ({name:'Alice', age: 64, eyes:'brown'})")
 
-      val result = given.cypher("MATCH (a) WHERE a.name = 'Alice' RETURN keys(a) AS k")
+      val result =
+        given.cypher("MATCH (a) WHERE a.name = 'Alice' RETURN keys(a) AS k")
 
       val keysAsMap = result.records.toMaps
 
       keysAsMap should equal(
         Bag(
           CypherMap("k" -> List("age", "eyes", "name"))
-        ))
+        )
+      )
     }
 
     it("keys() does not return keys of unset properties") {
-      val given = initGraph(
-        """
+      val given = initGraph("""
           |CREATE (:Person {name:'Alice', age: 64, eyes:'brown'})
           |CREATE (:Person {name:'Bob', eyes:'blue'})
         """.stripMargin)
 
-      val result = given.cypher("MATCH (a: Person) WHERE a.name = 'Bob' RETURN keys(a) AS k")
+      val result = given.cypher(
+        "MATCH (a: Person) WHERE a.name = 'Bob' RETURN keys(a) AS k"
+      )
 
       result.records.toMaps should equal(
         Bag(
           CypherMap("k" -> List("eyes", "name"))
-        ))
+        )
+      )
     }
 
     it("works with literal maps") {
-      val result = morpheus.cypher(
-        """
+      val result = morpheus.cypher("""
           |WITH {person: {name: 'Anne', age: 25}} AS p
           |RETURN keys(p) AS k1, keys(p["person"]) AS k2
         """.stripMargin)
@@ -829,38 +863,46 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
       result.records.toMaps should equal(
         Bag(
           CypherMap("k1" -> List("person"), "k2" -> List("name", "age"))
-        ))
+        )
+      )
     }
 
     it("works with literal maps2") {
-      val result = morpheus.cypher(
-        """
+      val result = morpheus.cypher("""
           |RETURN keys({name: 'Alice', age: 38, address: {city: 'London', residential: true}}) AS k
         """.stripMargin)
 
       result.records.toMaps should equal(
         Bag(
           CypherMap("k" -> List("name", "age", "address"))
-        ))
+        )
+      )
     }
 
     it("works with predicate maps") {
       val result = morpheus.cypher(
         """
           |RETURN keys($map) AS k
-        """.stripMargin, CypherMap("map" -> CypherMap("name" -> "Alice", "age" -> 38, "address" -> CypherMap("city" -> "London", "residential" -> true))))
+        """.stripMargin,
+        CypherMap(
+          "map" -> CypherMap(
+            "name" -> "Alice",
+            "age" -> 38,
+            "address" -> CypherMap("city" -> "London", "residential" -> true)
+          )
+        )
+      )
 
       result.records.toMaps should equal(
         Bag(
           CypherMap("k" -> List("name", "age", "address"))
-        ))
+        )
+      )
     }
-
 
     it("works with null keys in maps") {
 
-      val result = morpheus.cypher(
-        """
+      val result = morpheus.cypher("""
           |UNWIND [
           | 1,
           | null
@@ -875,37 +917,71 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
         Bag(
           CypherMap("k" -> List("key")),
           CypherMap("k" -> List())
-        ))
+        )
+      )
     }
   }
 
   describe("startNode") {
 
     it("startNode()") {
-      val given = initGraph("CREATE ()-[:FOO {val: 'a'}]->(),()-[:FOO {val: 'b'}]->()")
+      val given =
+        initGraph("CREATE ()-[:FOO {val: 'a'}]->(),()-[:FOO {val: 'b'}]->()")
 
-      val result = given.cypher("MATCH ()-[r:FOO]->() RETURN r.val, startNode(r)")
+      val result =
+        given.cypher("MATCH ()-[r:FOO]->() RETURN r.val, startNode(r)")
 
       result.records.toMaps should equal(
         Bag(
-          CypherMap("r.val" -> "a", "startNode(r)" -> MorpheusNode(0L.encodeAsMorpheusId.toSeq, Set.empty[String], CypherMap())),
-          CypherMap("r.val" -> "b", "startNode(r)" -> MorpheusNode(3L.encodeAsMorpheusId.toSeq, Set.empty[String], CypherMap()))
-        ))
+          CypherMap(
+            "r.val" -> "a",
+            "startNode(r)" -> MorpheusNode(
+              0L.encodeAsMorpheusId.toSeq,
+              Set.empty[String],
+              CypherMap()
+            )
+          ),
+          CypherMap(
+            "r.val" -> "b",
+            "startNode(r)" -> MorpheusNode(
+              3L.encodeAsMorpheusId.toSeq,
+              Set.empty[String],
+              CypherMap()
+            )
+          )
+        )
+      )
     }
   }
 
   describe("endNode") {
 
     it("endNode()") {
-      val given = initGraph("CREATE ()-[:FOO {val: 'a'}]->(),()-[:FOO {val: 'b'}]->()")
+      val given =
+        initGraph("CREATE ()-[:FOO {val: 'a'}]->(),()-[:FOO {val: 'b'}]->()")
 
       val result = given.cypher("MATCH (a)-[r]->() RETURN r.val, endNode(r)")
 
       result.records.toMaps should equal(
         Bag(
-          CypherMap("r.val" -> "a", "endNode(r)" -> MorpheusNode(1L.encodeAsMorpheusId.toSeq, Set.empty[String], CypherMap())),
-          CypherMap("r.val" -> "b", "endNode(r)" -> MorpheusNode(4L.encodeAsMorpheusId.toSeq, Set.empty[String], CypherMap()))
-        ))
+          CypherMap(
+            "r.val" -> "a",
+            "endNode(r)" -> MorpheusNode(
+              1L.encodeAsMorpheusId.toSeq,
+              Set.empty[String],
+              CypherMap()
+            )
+          ),
+          CypherMap(
+            "r.val" -> "b",
+            "endNode(r)" -> MorpheusNode(
+              4L.encodeAsMorpheusId.toSeq,
+              Set.empty[String],
+              CypherMap()
+            )
+          )
+        )
+      )
     }
   }
 
@@ -919,7 +995,8 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
       result.records.toMaps should equal(
         Bag(
           CypherMap("myFloat" -> 1.0)
-        ))
+        )
+      )
     }
 
     it("toFloat from float") {
@@ -930,7 +1007,8 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
       result.records.toMaps should equal(
         Bag(
           CypherMap("myFloat" -> 1.0)
-        ))
+        )
+      )
     }
 
     it("toFloat from string") {
@@ -941,7 +1019,8 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
       result.records.toMaps should equal(
         Bag(
           CypherMap("myFloat" -> 42.0)
-        ))
+        )
+      )
     }
   }
 
@@ -1071,7 +1150,9 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
     it("can evaluate coalesce") {
       val given = initGraph("CREATE ({valA: 1}), ({valB: 2}), ({valC: 3}), ()")
 
-      val result = given.cypher("MATCH (n) RETURN coalesce(n.valA, n.valB, n.valC) AS value")
+      val result = given.cypher(
+        "MATCH (n) RETURN coalesce(n.valA, n.valB, n.valC) AS value"
+      )
 
       result.records.collect.toBag should equal(
         Bag(
@@ -1079,20 +1160,23 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
           CypherMap("value" -> 2),
           CypherMap("value" -> 3),
           CypherMap("value" -> null)
-        ))
+        )
+      )
     }
 
     it("can evaluate coalesce on non-existing expressions") {
       val given = initGraph("CREATE ({valA: 1}), ({valB: 2}), ()")
 
-      val result = given.cypher("MATCH (n) RETURN coalesce(n.valD, n.valE) AS value")
+      val result =
+        given.cypher("MATCH (n) RETURN coalesce(n.valD, n.valE) AS value")
 
       result.records.collect.toBag should equal(
         Bag(
           CypherMap("value" -> null),
           CypherMap("value" -> null),
           CypherMap("value" -> null)
-        ))
+        )
+      )
     }
 
   }
@@ -1101,8 +1185,7 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
     it("toInteger() on a graph") {
       val given = initGraph("CREATE (:Person {age: '42'})")
 
-      val result = given.cypher(
-        """
+      val result = given.cypher("""
           |MATCH (n)
           |RETURN toInteger(n.age) AS age
         """.stripMargin)
@@ -1117,7 +1200,8 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
     it("toInteger() on float") {
       val given = initGraph("CREATE (:Person {weight: '82.9'})")
 
-      val result = given.cypher("MATCH (n) RETURN toInteger(n.weight) AS nWeight")
+      val result =
+        given.cypher("MATCH (n) RETURN toInteger(n.weight) AS nWeight")
 
       result.records.toMaps should equal(
         Bag(
@@ -1501,57 +1585,69 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
 
   describe("range") {
     it("can compute a range from literals") {
-      morpheus.cypher(
-        """UNWIND range(1, 3) AS x
-          |RETURN x""".stripMargin).records.toMaps should equal(Bag(
-        CypherMap("x" -> 1),
-        CypherMap("x" -> 2),
-        CypherMap("x" -> 3)
-      ))
+      morpheus
+        .cypher("""UNWIND range(1, 3) AS x
+          |RETURN x""".stripMargin)
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("x" -> 1),
+          CypherMap("x" -> 2),
+          CypherMap("x" -> 3)
+        )
+      )
     }
 
     it("can compute a range from literals with custom steps") {
-      morpheus.cypher(
-        """UNWIND range(1, 7, 3) AS x
-          |RETURN x""".stripMargin).records.toMaps should equal(Bag(
-        CypherMap("x" -> 1),
-        CypherMap("x" -> 4),
-        CypherMap("x" -> 7)
-      ))
+      morpheus
+        .cypher("""UNWIND range(1, 7, 3) AS x
+          |RETURN x""".stripMargin)
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("x" -> 1),
+          CypherMap("x" -> 4),
+          CypherMap("x" -> 7)
+        )
+      )
     }
 
     it("can compute a range from column values") {
-      val g = initGraph(
-        """
+      val g = initGraph("""
           |CREATE (:A {from: 1, to: 2})
           |CREATE (:A {from: 1, to: 3})
           |CREATE (:A {from: 1, to: 4})
         """.stripMargin)
 
-      g.cypher(
-        """
+      g.cypher("""
           |MATCH (n)
-          |RETURN range(n.from, n.to) AS x""".stripMargin).records.toMaps should equal(Bag(
-        CypherMap("x" -> List(1, 2)),
-        CypherMap("x" -> List(1, 2, 3)),
-        CypherMap("x" -> List(1, 2, 3, 4))
-      ))
+          |RETURN range(n.from, n.to) AS x""".stripMargin)
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("x" -> List(1, 2)),
+          CypherMap("x" -> List(1, 2, 3)),
+          CypherMap("x" -> List(1, 2, 3, 4))
+        )
+      )
     }
 
     it("can compute a range with varying step values") {
-      val g = initGraph(
-        """
+      val g = initGraph("""
           |CREATE (:A {step: 2})
           |CREATE (:A {step: 3})
         """.stripMargin)
 
-      g.cypher(
-        """
+      g.cypher("""
           |MATCH (n)
-          |RETURN range(1, 4, n.step) AS x""".stripMargin).records.toMaps should equal(Bag(
-        CypherMap("x" -> List(1, 3)),
-        CypherMap("x" -> List(1, 4))
-      ))
+          |RETURN range(1, 4, n.step) AS x""".stripMargin)
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("x" -> List(1, 3)),
+          CypherMap("x" -> List(1, 4))
+        )
+      )
     }
   }
 
@@ -1562,9 +1658,11 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
 
       val result = g.cypher("RETURN substring('foobar', 3) AS substring")
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("substring" -> "bar")
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("substring" -> "bar")
+        )
+      )
     }
 
     it("returns substring from literal with given length") {
@@ -1572,9 +1670,11 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
 
       val result = g.cypher("RETURN substring('foobar', 0, 3) AS substring")
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("substring" -> "foo")
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("substring" -> "foo")
+        )
+      )
     }
 
     it("returns substring from literal with exceeding given length") {
@@ -1582,9 +1682,11 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
 
       val result = g.cypher("RETURN substring('foobar', 3, 10) AS substring")
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("substring" -> "bar")
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("substring" -> "bar")
+        )
+      )
     }
 
     it("returns empty string for length 0") {
@@ -1592,9 +1694,11 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
 
       val result = g.cypher("RETURN substring('foobar', 0, 0) AS substring")
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("substring" -> "")
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("substring" -> "")
+        )
+      )
     }
 
     it("returns empty string for exceeding start") {
@@ -1602,9 +1706,11 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
 
       val result = g.cypher("RETURN substring('foobar', 10) AS substring")
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("substring" -> "")
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("substring" -> "")
+        )
+      )
     }
 
     it("returns null for null") {
@@ -1612,9 +1718,11 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
 
       val result = g.cypher("RETURN substring(null, 0, 0) AS substring")
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("substring" -> CypherNull)
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("substring" -> CypherNull)
+        )
+      )
     }
 
     it("throws for negative length") {
@@ -1622,126 +1730,140 @@ class FunctionTests extends MorpheusTestSuite with ScanGraphInit {
 
       val result = g.cypher("RETURN substring(null, 0, 0) AS substring")
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("substring" -> CypherNull)
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("substring" -> CypherNull)
+        )
+      )
     }
   }
 
   describe("list-access") {
     it("head") {
-      val result = morpheus.cypher(
-        """
+      val result = morpheus.cypher("""
           |WITH [1, 2, 3] AS things
           |Return head(things) as head
         """.stripMargin)
-      result.records.toMaps should equal(Bag(
-        CypherMap("head" -> 1)
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("head" -> 1)
+        )
+      )
     }
 
     it("head on empty list") {
-      val result = morpheus.cypher(
-        """
+      val result = morpheus.cypher("""
           |WITH [] AS things
           |Return head(things) as head
         """.stripMargin)
-      result.records.toMaps should equal(Bag(
-        CypherMap("head" -> null)
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("head" -> null)
+        )
+      )
     }
 
     it("tail") {
-      val result = morpheus.cypher(
-        """
+      val result = morpheus.cypher("""
           |WITH [1, 2, 3] AS things
           |Return tail(things) as tail
         """.stripMargin)
-      result.records.toMaps should equal(Bag(
-        CypherMap("tail" -> List(2, 3))
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("tail" -> List(2, 3))
+        )
+      )
     }
 
     it("tail on empty list") {
-      val result = morpheus.cypher(
-        """
+      val result = morpheus.cypher("""
           |WITH [] AS things
           |Return tail(things) as tail
         """.stripMargin)
-      result.records.toMaps should equal(Bag(
-        CypherMap("tail" -> null)
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("tail" -> null)
+        )
+      )
     }
 
     it("last") {
-      val result = morpheus.cypher(
-        """
+      val result = morpheus.cypher("""
           |WITH [1, 2, 3] AS things
           |Return last(things) as last
         """.stripMargin)
-      result.records.toMaps should equal(Bag(
-        CypherMap("last" -> 3)
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("last" -> 3)
+        )
+      )
     }
 
     it("last on empty list") {
-      val result = morpheus.cypher(
-        """
+      val result = morpheus.cypher("""
           |WITH [] AS things
           |Return last(things) as last
         """.stripMargin)
-      result.records.toMaps should equal(Bag(
-        CypherMap("last" -> null)
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("last" -> null)
+        )
+      )
     }
   }
 
   describe("reverse") {
     it("reverse on string") {
-      val result = morpheus.cypher(
-        """
+      val result = morpheus.cypher("""
           |RETURN reverse("anagram") as rev
         """.stripMargin)
-      result.records.toMaps should equal(Bag(
-        CypherMap("rev" -> "margana")
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("rev" -> "margana")
+        )
+      )
     }
 
     it("reverse on lists") {
-      val result = morpheus.cypher(
-        """
+      val result = morpheus.cypher("""
           |RETURN reverse([1, 2, 3]) as rev
         """.stripMargin)
-      result.records.toMaps should equal(Bag(
-        CypherMap("rev" -> List(3, 2, 1))
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("rev" -> List(3, 2, 1))
+        )
+      )
     }
   }
 
   describe("split") {
     it("split with constant delimiter") {
-      val result = morpheus.cypher(
-        """
+      val result = morpheus.cypher("""
           |RETURN split("1,2,3",",2,") as split
         """.stripMargin)
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("split" -> List("1", "3"))
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("split" -> List("1", "3"))
+        )
+      )
     }
 
     it("split with variable delimiter") {
-      val graph = ScanGraphFactory.initGraph(
-        """
+      val graph = ScanGraphFactory.initGraph("""
           |CREATE ({friends: 'Bob,Eve', delimiter:","}),
           |       ({friends: 'Eve;Bob', delimiter:";"})
         """.stripMargin)
 
-      val result = graph.cypher("""MATCH (n) RETURN split(n.friends, n.delimiter) as split""")
-      result.records.toMaps should equal(Bag(
-        CypherMap("split" -> List("Eve", "Bob")),
-        CypherMap("split" -> List("Bob", "Eve"))
-      ))
+      val result = graph.cypher(
+        """MATCH (n) RETURN split(n.friends, n.delimiter) as split"""
+      )
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("split" -> List("Eve", "Bob")),
+          CypherMap("split" -> List("Bob", "Eve"))
+        )
+      )
     }
   }
 

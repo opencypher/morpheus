@@ -32,26 +32,32 @@ import org.opencypher.morpheus.util.App
 import org.opencypher.okapi.api.graph.Namespace
 
 /**
-  * Demonstrates multiple graph capabilities by loading a social network from case class objects and a purchase network
-  * from CSV data and schema files. The example connects both networks via matching user and customer names. A Cypher
-  * query is then used to compute products that friends have bought.
+  * Demonstrates multiple graph capabilities by loading a social network from case class objects and
+  * a purchase network from CSV data and schema files. The example connects both networks via
+  * matching user and customer names. A Cypher query is then used to compute products that friends
+  * have bought.
   */
 object MultipleGraphExample extends App {
   // 1) Create Morpheus session
   implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // 2) Load social network data via case class instances
-  val socialNetwork = morpheus.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  val socialNetwork =
+    morpheus.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
   morpheus.catalog.store("socialNetwork", socialNetwork)
 
   // 3) Register a file system graph source to the catalog
   // Note: if files were stored in HDFS, the file path would indicate so by starting with hdfs://
   val csvFolder = getClass.getResource("/fs-graphsource/csv").getFile
-  morpheus.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = csvFolder).csv)
+  morpheus.registerSource(
+    Namespace("purchases"),
+    GraphSources.fs(rootPath = csvFolder).csv
+  )
 
   // 5) Create new edges between users and customers with the same name
-  val recommendationGraph = morpheus.cypher(
-    """|FROM GRAPH socialNetwork
+  val recommendationGraph = morpheus
+    .cypher(
+      """|FROM GRAPH socialNetwork
        |MATCH (p:Person)
        |FROM GRAPH purchases.products
        |MATCH (c:Customer)
@@ -60,7 +66,8 @@ object MultipleGraphExample extends App {
        |  CREATE (p)-[:IS]->(c)
        |RETURN GRAPH
     """.stripMargin
-  ).graph
+    )
+    .graph
 
   // 6) Query for product recommendations
   val recommendations = recommendationGraph.cypher(
@@ -69,7 +76,8 @@ object MultipleGraphExample extends App {
        |      (customer)-[:BOUGHT]->(product:Product)
        |RETURN DISTINCT product.title AS recommendation, person.name AS for
        |ORDER BY recommendation
-    """.stripMargin)
+    """.stripMargin
+  )
 
   recommendations.show
 }

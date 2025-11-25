@@ -32,9 +32,11 @@ import org.opencypher.morpheus.api.value.{MorpheusNode, MorpheusRelationship}
 import org.opencypher.okapi.api.value.CypherValue._
 
 trait CypherValueEncoders extends LowPriorityCypherValueEncoders {
-  implicit def cypherNodeEncoder: ExpressionEncoder[MorpheusNode] = kryo[MorpheusNode]
+  implicit def cypherNodeEncoder: ExpressionEncoder[MorpheusNode] =
+    kryo[MorpheusNode]
 
-  implicit def cypherRelationshipEncoder: ExpressionEncoder[MorpheusRelationship] = kryo[MorpheusRelationship]
+  implicit def cypherRelationshipEncoder: ExpressionEncoder[MorpheusRelationship] =
+    kryo[MorpheusRelationship]
 
   implicit def cypherMapEncoder: ExpressionEncoder[CypherMap] = kryo[CypherMap]
 }

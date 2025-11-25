@@ -36,52 +36,72 @@ import org.opencypher.okapi.trees.{BottomUp, BottomUpWithContext}
 
 import scala.util.Try
 
-object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalOperator, LogicalPlannerContext] {
+object LogicalOptimizer
+    extends DirectCompilationStage[
+      LogicalOperator,
+      LogicalOperator,
+      LogicalPlannerContext
+    ] {
 
-  override def process(input: LogicalOperator)(implicit context: LogicalPlannerContext): LogicalOperator = {
+  override def process(
+    input: LogicalOperator
+  )(implicit context: LogicalPlannerContext): LogicalOperator = {
     val optimizationRules = Seq(
       discardScansForNonexistentLabels,
       replaceCartesianWithValueJoin,
       replaceScansWithRecognizedPatterns
     )
-      optimizationRules.foldLeft(input) {
+    optimizationRules.foldLeft(input) {
       // TODO: Evaluate if multiple rewriters could be fused
-      case (tree: LogicalOperator, optimizationRule) => BottomUp[LogicalOperator](optimizationRule).transform(tree)
+      case (tree: LogicalOperator, optimizationRule) =>
+        BottomUp[LogicalOperator](optimizationRule).transform(tree)
     }
   }
 
   def replaceCartesianWithValueJoin: PartialFunction[LogicalOperator, LogicalOperator] = {
-    case filter@Filter(e @ CanOptimize(leftField, rightField), in, _) =>
-      val (newChild, rewritten) = BottomUpWithContext[LogicalOperator, Boolean] {
-        case (CartesianProduct(lhs, rhs, solved), false) if solved.solves(leftField) && solved.solves(rightField) =>
-          val (leftExpr, rightExpr) = if (lhs.solved.solves(leftField)) e.lhs -> e.rhs else e.rhs -> e.lhs
-          val joinExpr = Equals(leftExpr, rightExpr)
-          val leftProject = Project(leftExpr -> None, lhs, lhs.solved)
-          val rightProject = Project(rightExpr -> None, rhs, rhs.solved)
-          ValueJoin(leftProject, rightProject, Set(joinExpr), solved.withPredicate(joinExpr)) -> true
-      }.transform(in, context = false)
+    case filter @ Filter(e @ CanOptimize(leftField, rightField), in, _) =>
+      val (newChild, rewritten) =
+        BottomUpWithContext[LogicalOperator, Boolean] {
+          case (CartesianProduct(lhs, rhs, solved), false)
+              if solved.solves(leftField) && solved.solves(rightField) =>
+            val (leftExpr, rightExpr) =
+              if (lhs.solved.solves(leftField)) e.lhs -> e.rhs
+              else e.rhs -> e.lhs
+            val joinExpr = Equals(leftExpr, rightExpr)
+            val leftProject = Project(leftExpr -> None, lhs, lhs.solved)
+            val rightProject = Project(rightExpr -> None, rhs, rhs.solved)
+            ValueJoin(
+              leftProject,
+              rightProject,
+              Set(joinExpr),
+              solved.withPredicate(joinExpr)
+            ) -> true
+        }.transform(in, context = false)
 
       if (rewritten) newChild else filter
   }
 
-  def replaceScansWithRecognizedPatterns(implicit context: LogicalPlannerContext): PartialFunction[LogicalOperator, LogicalOperator] = {
-    case exp: Expand =>
-      exp.source.cypherType.graph.map { g =>
-
+  def replaceScansWithRecognizedPatterns(implicit
+    context: LogicalPlannerContext
+  ): PartialFunction[LogicalOperator, LogicalOperator] = { case exp: Expand =>
+    exp.source.cypherType.graph
+      .map { g =>
         val availablePatterns: Set[Pattern] =
           Try {
             context.resolveGraph(g)
           }.map { g =>
             g.patterns
               .collect {
-                case nr: NodeRelPattern => nr
+                case nr: NodeRelPattern  => nr
                 case nrn: TripletPattern => nrn
-              }.toList
+              }
+              .toList
               .sorted(Pattern.PatternOrdering)
               .reverse
-          }.getOrElse(Set.empty).toSet
+          }.getOrElse(Set.empty)
+            .toSet
 
-        if ( graphProvidesTripletPatternFor(exp, availablePatterns, g, context) ) {
+        if (graphProvidesTripletPatternFor(exp, availablePatterns, g, context)) {
           val sourceType = exp.source.cypherType.toCTNode
           val relType = exp.rel.cypherType.toCTRelationship
           val targetType = exp.target.cypherType.toCTNode
@@ -89,19 +109,38 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
           val pattern = TripletPattern(sourceType, relType, targetType)
 
           val withPatternScan = replaceScans(exp.rhs, exp.target, pattern) { parent =>
-            val map = Map(exp.source -> pattern.sourceElement, exp.rel -> pattern.relElement, exp.target -> pattern.targetElement)
-            PatternScan(pattern, map, parent, parent.solved.withFields(map.keySet.map(_.toField.get).toList:_ *))
+            val map = Map(
+              exp.source -> pattern.sourceElement,
+              exp.rel -> pattern.relElement,
+              exp.target -> pattern.targetElement
+            )
+            PatternScan(
+              pattern,
+              map,
+              parent,
+              parent.solved
+                .withFields(map.keySet.map(_.toField.get).toList: _*)
+            )
           }
-          replaceScans(exp.lhs, exp.source, pattern){_ => withPatternScan}
+          replaceScans(exp.lhs, exp.source, pattern) { _ => withPatternScan }
 
-        } else if ( graphProvidesNodeRelPatternFor(exp, availablePatterns, g, context) ){
+        } else if (graphProvidesNodeRelPatternFor(exp, availablePatterns, g, context)) {
           val nodeType = exp.source.cypherType.toCTNode
           val relType = exp.rel.cypherType.toCTRelationship
 
           val pattern = NodeRelPattern(nodeType, relType)
           val withPatternScan = replaceScans(exp.lhs, exp.source, pattern) { parent =>
-            val map = Map(exp.source -> pattern.nodeElement, exp.rel -> pattern.relElement)
-            PatternScan(pattern, map, parent, parent.solved.withFields(map.keySet.map(_.toField.get).toList:_ *))
+            val map = Map(
+              exp.source -> pattern.nodeElement,
+              exp.rel -> pattern.relElement
+            )
+            PatternScan(
+              pattern,
+              map,
+              parent,
+              parent.solved
+                .withFields(map.keySet.map(_.toField.get).toList: _*)
+            )
           }
 
           val joinExpr = Equals(EndNode(exp.rel)(CTNode), exp.target)
@@ -110,24 +149,49 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
         } else {
           exp
         }
-      }.getOrElse(exp)
+      }
+      .getOrElse(exp)
   }
 
-  def replaceScans(subtree: LogicalOperator, varToReplace: Var, pattern: Pattern)(f: LogicalOperator => LogicalOperator):LogicalOperator = {
-   def rewriter: PartialFunction[LogicalOperator, LogicalOperator] = {
-      case PatternScan(_: NodePattern, mapping, parent, _) if mapping.keySet.contains(varToReplace) => f(parent)
+  def replaceScans(
+    subtree: LogicalOperator,
+    varToReplace: Var,
+    pattern: Pattern
+  )(f: LogicalOperator => LogicalOperator): LogicalOperator = {
+    def rewriter: PartialFunction[LogicalOperator, LogicalOperator] = {
+      case PatternScan(_: NodePattern, mapping, parent, _)
+          if mapping.keySet.contains(varToReplace) =>
+        f(parent)
 
       case pScan: PatternScan if pScan.mapping.contains(varToReplace) =>
-        val renamedVarToReplace = Var(varToReplace.name + "_renamed")(varToReplace.cypherType)
+        val renamedVarToReplace =
+          Var(varToReplace.name + "_renamed")(varToReplace.cypherType)
 
         val replaceOp = f(pScan.in)
-        val withAliasedVar = Project(varToReplace -> Some(renamedVarToReplace), replaceOp, replaceOp.solved.withFields(renamedVarToReplace.toField.get))
+        val withAliasedVar = Project(
+          varToReplace -> Some(renamedVarToReplace),
+          replaceOp,
+          replaceOp.solved.withFields(renamedVarToReplace.toField.get)
+        )
         val toSelect = replaceOp.fields - varToReplace + renamedVarToReplace
-        val selectOp = Select(toSelect.toList, withAliasedVar, replaceOp.solved.withFields(renamedVarToReplace.toField.get))
+        val selectOp = Select(
+          toSelect.toList,
+          withAliasedVar,
+          replaceOp.solved.withFields(renamedVarToReplace.toField.get)
+        )
 
         val joinExpr = Equals(varToReplace, renamedVarToReplace)
-        val joinOp = ValueJoin(pScan, selectOp, Set(joinExpr), pScan.solved ++ selectOp.solved)
-        Select((pScan.mapping.keySet ++ selectOp.fields).toList, joinOp, joinOp.solved)
+        val joinOp = ValueJoin(
+          pScan,
+          selectOp,
+          Set(joinExpr),
+          pScan.solved ++ selectOp.solved
+        )
+        Select(
+          (pScan.mapping.keySet ++ selectOp.fields).toList,
+          joinOp,
+          joinOp.solved
+        )
     }
 
     BottomUp[LogicalOperator](rewriter).transform(subtree)
@@ -142,26 +206,30 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
   private implicit class RichExpr(val expr: Expr) extends AnyVal {
     @scala.annotation.tailrec
     final def toField: Option[IRField] = expr match {
-      case v: Var => Some(IRField(v.name)(v.cypherType))
+      case v: Var      => Some(IRField(v.name)(v.cypherType))
       case p: Property => p.propertyOwner.toField
-      case _ => None
+      case _           => None
     }
   }
 
   def discardScansForNonexistentLabels: PartialFunction[LogicalOperator, LogicalOperator] = {
-    case scan@PatternScan(NodePattern(CTNode(labels, _)), mapping, in, _) =>
+    case scan @ PatternScan(NodePattern(CTNode(labels, _)), mapping, in, _) =>
       def graphSchema = in.graph.schema
 
       def emptyRecords = {
         val fields = mapping.keySet.flatMap {
           case v: Var => Set(v)
-          case _ => Set.empty[Var]
+          case _      => Set.empty[Var]
         }
         EmptyRecords(fields, in, scan.solved)
       }
 
-      if ((labels.size == 1 && !graphSchema.labels.contains(labels.head)) ||
-        (labels.size > 1 && !graphSchema.labelCombinations.combos.exists(labels.subsetOf(_)))) {
+      if (
+        (labels.size == 1 && !graphSchema.labels.contains(labels.head)) ||
+        (labels.size > 1 && !graphSchema.labelCombinations.combos.exists(
+          labels.subsetOf(_)
+        ))
+      ) {
         emptyRecords
       } else {
         scan
@@ -188,13 +256,18 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
       targetCombo <- targetCombos
     } yield (sourceCombo, relType, targetCombo)
 
-    combos.forall {
-      case(sourceCombo, relType, targetCombo) =>
-        availablePatterns.exists {
-          case TripletPattern(CTNode(source, _), CTRelationship(rel, _), CTNode(target, _)) =>
-            source == sourceCombo && rel.contains(relType) && target == targetCombo
-          case _ => false
-        }
+    combos.forall { case (sourceCombo, relType, targetCombo) =>
+      availablePatterns.exists {
+        case TripletPattern(
+              CTNode(source, _),
+              CTRelationship(rel, _),
+              CTNode(target, _)
+            ) =>
+          source == sourceCombo && rel.contains(
+            relType
+          ) && target == targetCombo
+        case _ => false
+      }
     } && combos.nonEmpty
   }
 
@@ -214,12 +287,12 @@ object LogicalOptimizer extends DirectCompilationStage[LogicalOperator, LogicalO
       relType <- relTypes
     } yield (sourceCombo, relType)
 
-    combos.forall {
-      case(sourceCombo, relType) =>
-        availablePatterns.exists {
-          case NodeRelPattern(CTNode(labels, _), CTRelationship(rel, _)) => labels == sourceCombo && rel.contains(relType)
-          case _ => false
-        }
+    combos.forall { case (sourceCombo, relType) =>
+      availablePatterns.exists {
+        case NodeRelPattern(CTNode(labels, _), CTRelationship(rel, _)) =>
+          labels == sourceCombo && rel.contains(relType)
+        case _ => false
+      }
     } && combos.nonEmpty
   }
 

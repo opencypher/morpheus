@@ -40,18 +40,32 @@ class ConnectionTest extends BaseTestSuite {
   val relType = CTRelationship("FOO")
 
   test("SimpleConnection.equals") {
-    DirectedRelationship(field_a, field_b) shouldNot equal(DirectedRelationship(field_b, field_a))
-    DirectedRelationship(field_a, field_a) should equal(DirectedRelationship(field_a, field_a))
-    DirectedRelationship(field_a, field_a, OUTGOING) should equal(DirectedRelationship(field_a, field_a, OUTGOING))
-    DirectedRelationship(field_a, field_a) shouldNot equal(DirectedRelationship(field_a, field_b))
+    DirectedRelationship(field_a, field_b) shouldNot equal(
+      DirectedRelationship(field_b, field_a)
+    )
+    DirectedRelationship(field_a, field_a) should equal(
+      DirectedRelationship(field_a, field_a)
+    )
+    DirectedRelationship(field_a, field_a, OUTGOING) should equal(
+      DirectedRelationship(field_a, field_a, OUTGOING)
+    )
+    DirectedRelationship(field_a, field_a) shouldNot equal(
+      DirectedRelationship(field_a, field_b)
+    )
   }
 
   test("UndirectedConnection.equals") {
-    UndirectedRelationship(field_a, field_b) should equal(UndirectedRelationship(field_b, field_a))
-    UndirectedRelationship(field_c, field_c) should equal(UndirectedRelationship(field_c, field_c))
+    UndirectedRelationship(field_a, field_b) should equal(
+      UndirectedRelationship(field_b, field_a)
+    )
+    UndirectedRelationship(field_c, field_c) should equal(
+      UndirectedRelationship(field_c, field_c)
+    )
   }
 
   test("Mixed equals") {
-    DirectedRelationship(field_a, field_a) should equal(UndirectedRelationship(field_a, field_a))
+    DirectedRelationship(field_a, field_a) should equal(
+      UndirectedRelationship(field_a, field_a)
+    )
   }
 }

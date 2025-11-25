@@ -33,8 +33,10 @@ class Neo4jReadWriteExampleTest extends ExampleTestBase with Neo4jServerFixture 
   override def dataFixture: String = ""
 
   it("should produce the correct output") {
-    validate(Neo4jReadWriteExample.main(Array("--bolt-url", boltUrl)),
-      getClass.getResource("/example_outputs/Neo4jReadWriteExample.out").toURI)
+    validate(
+      Neo4jReadWriteExample.main(Array("--bolt-url", boltUrl)),
+      getClass.getResource("/example_outputs/Neo4jReadWriteExample.out").toURI
+    )
   }
 
 }

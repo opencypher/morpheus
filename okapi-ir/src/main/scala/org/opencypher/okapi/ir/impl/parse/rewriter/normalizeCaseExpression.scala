@@ -50,14 +50,14 @@ case object normalizeCaseExpression extends Rewriter {
 
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 
-  private val instance = topDown(Rewriter.lift {
-    case c: CaseExpression => rewriteCase(c)
+  private val instance = topDown(Rewriter.lift { case c: CaseExpression =>
+    rewriteCase(c)
   })
 
   private def rewriteCase: CaseExpression => CaseExpression = {
-    case expr@CaseExpression(Some(inputExpr), alternatives, default) =>
-      val inlineAlternatives = alternatives.map {
-        case (predicate, action) => Equals(inputExpr, predicate)(predicate.position) -> action
+    case expr @ CaseExpression(Some(inputExpr), alternatives, default) =>
+      val inlineAlternatives = alternatives.map { case (predicate, action) =>
+        Equals(inputExpr, predicate)(predicate.position) -> action
       }
       CaseExpression(None, inlineAlternatives, default)(expr.position)
 

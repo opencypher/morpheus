@@ -43,8 +43,10 @@ import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 import scala.reflect.runtime.universe.TypeTag
 
 // TODO: This should be a planned tree of physical operators instead of a graph
-final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCypherGraph[T]])
-  (implicit context: RelationalRuntimeContext[T]) extends RelationalCypherGraph[T] {
+final case class UnionGraph[T <: Table[T]: TypeTag](
+  graphs: List[RelationalCypherGraph[T]]
+)(implicit context: RelationalRuntimeContext[T])
+    extends RelationalCypherGraph[T] {
 
   // TODO: We could be better here by also keeping patterns for which we know that they cover parts of the schema
   //  that only the respective subgraph supplies
@@ -63,7 +65,8 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCyph
 
   override def tables: Seq[T] = graphs.flatMap(_.tables)
 
-  override lazy val schema: PropertyGraphSchema = graphs.map(g => g.schema).foldLeft(PropertyGraphSchema.empty)(_ ++ _)
+  override lazy val schema: PropertyGraphSchema =
+    graphs.map(g => g.schema).foldLeft(PropertyGraphSchema.empty)(_ ++ _)
 
   override def toString = s"UnionGraph(graphs=[${graphs.mkString(",")}])"
 
@@ -73,7 +76,6 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCyph
   ): RelationalOperator[T] = {
 
     val alignedElementTableOps = graphs.flatMap { graph =>
-
       val isEmptyScan = searchPattern.elements.map(_.cypherType).exists {
         case CTNode(knownLabels, _) if knownLabels.isEmpty =>
           graph.schema.allCombinations.isEmpty
@@ -83,20 +85,23 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCyph
           graph.schema.relationshipTypes.isEmpty
         case CTRelationship(types, _) =>
           graph.schema.relTypePropertyMap.filterForRelTypes(types).isEmpty
-        case other => throw UnsupportedOperationException(s"Cannot scan on $other")
+        case other =>
+          throw UnsupportedOperationException(s"Cannot scan on $other")
       }
 
       if (isEmptyScan) {
         None
       } else {
         val selectedScan = graph.scanOperator(searchPattern, exactLabelMatch)
-        val alignedScanOp = searchPattern.elements.foldLeft(selectedScan) {
+        val alignedScanOp = searchPattern.elements.foldLeft(selectedScan) { case (acc, element) =>
+          val inputElementExpressions =
+            selectedScan.header.expressionsFor(element.toVar)
+          val targetHeader =
+            acc.header -- inputElementExpressions ++ schema.headerForElement(
+              element.toVar
+            )
 
-          case (acc, element) =>
-            val inputElementExpressions = selectedScan.header.expressionsFor(element.toVar)
-            val targetHeader = acc.header -- inputElementExpressions ++ schema.headerForElement(element.toVar)
-
-            acc.alignWith(element.toVar, element.toVar, targetHeader)
+          acc.alignWith(element.toVar, element.toVar, targetHeader)
         }
         Some(alignedScanOp)
       }
@@ -104,8 +109,7 @@ final case class UnionGraph[T <: Table[T] : TypeTag](graphs: List[RelationalCyph
 
     alignedElementTableOps match {
       case Nil =>
-        val scanHeader = searchPattern
-          .elements
+        val scanHeader = searchPattern.elements
           .map { e => schema.headerForElement(e.toVar) }
           .reduce(_ ++ _)
         Start.fromEmptyGraph(session.records.empty(scanHeader))

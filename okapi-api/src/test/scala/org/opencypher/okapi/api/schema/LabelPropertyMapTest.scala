@@ -37,7 +37,11 @@ class LabelPropertyMapTest extends ApiBaseTest {
 
   it("|+|") {
     val map1 = LabelPropertyMap.empty
-      .register("A")("name" -> CTString, "age" -> CTInteger, "gender" -> CTString)
+      .register("A")(
+        "name" -> CTString,
+        "age" -> CTInteger,
+        "gender" -> CTString
+      )
       .register("B")("p" -> CTBoolean)
 
     val map2 = LabelPropertyMap.empty
@@ -46,7 +50,11 @@ class LabelPropertyMapTest extends ApiBaseTest {
 
     map1 |+| map2 should equal(
       LabelPropertyMap.empty
-        .register("A")("name" -> CTString, "age" -> CTInteger, "gender" -> CTUnion(CTString, CTTrue, CTFalse))
+        .register("A")(
+          "name" -> CTString,
+          "age" -> CTInteger,
+          "gender" -> CTUnion(CTString, CTTrue, CTFalse)
+        )
         .register("B")("p" -> CTBoolean)
         .register("C")("name" -> CTString)
     )
@@ -59,12 +67,14 @@ class LabelPropertyMapTest extends ApiBaseTest {
       .register("B", "A")("foo" -> CTInteger)
       .register("C")("bar" -> CTInteger)
 
-    map.filterForLabels("A") should equal(LabelPropertyMap.empty
-      .register("A")("name" -> CTString)
-      .register("A", "B")("foo" -> CTInteger)
+    map.filterForLabels("A") should equal(
+      LabelPropertyMap.empty
+        .register("A")("name" -> CTString)
+        .register("A", "B")("foo" -> CTInteger)
     )
-    map.filterForLabels("C") should equal(LabelPropertyMap.empty
-      .register("C")("bar" -> CTInteger)
+    map.filterForLabels("C") should equal(
+      LabelPropertyMap.empty
+        .register("C")("bar" -> CTInteger)
     )
     map.filterForLabels("X") should equal(LabelPropertyMap.empty)
     map.filterForLabels("A", "B", "C") should equal(map)

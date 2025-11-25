@@ -53,7 +53,9 @@ class SqlDataSourceConfigTest extends AnyFunSpec with Matchers {
     }
 
     it("parses multiple SQL data sources") {
-      val jsonString = Source.fromURL(getClass.getResource("/sql/sql-data-sources.json")).mkString
+      val jsonString = Source
+        .fromURL(getClass.getResource("/sql/sql-data-sources.json"))
+        .mkString
       val config = Map(
         "CENSUS_ORACLE" -> Jdbc(
           url = "jdbc:h2:mem:CENSUS.db;INIT=CREATE SCHEMA IF NOT EXISTS CENSUS;DB_CLOSE_DELAY=30;",

@@ -31,7 +31,11 @@ import org.opencypher.morpheus.api.MorpheusSession
 import org.opencypher.morpheus.impl.table.SparkTable.{DataFrameTable, _}
 import org.opencypher.morpheus.impl.util.Annotation
 import org.opencypher.morpheus.impl.{MorpheusRecords, RecordBehaviour}
-import org.opencypher.okapi.api.io.conversion.{ElementMapping, NodeMappingBuilder, RelationshipMappingBuilder}
+import org.opencypher.okapi.api.io.conversion.{
+  ElementMapping,
+  NodeMappingBuilder,
+  RelationshipMappingBuilder
+}
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.relational.api.io.ElementTable
 import org.opencypher.okapi.relational.api.table.RelationalElementTableFactory
@@ -47,14 +51,17 @@ case object MorpheusElementTableFactory extends RelationalElementTableFactory[Da
   }
 }
 
-case class MorpheusElementTable private[morpheus](
+case class MorpheusElementTable private[morpheus] (
   override val mapping: ElementMapping,
   override val table: DataFrameTable
-) extends ElementTable[DataFrameTable] with RecordBehaviour {
+) extends ElementTable[DataFrameTable]
+    with RecordBehaviour {
 
   override type Records = MorpheusElementTable
 
-  private[morpheus] def records(implicit morpheus: MorpheusSession): MorpheusRecords = morpheus.records.fromElementTable(elementTable = this)
+  private[morpheus] def records(implicit
+    morpheus: MorpheusSession
+  ): MorpheusRecords = morpheus.records.fromElementTable(elementTable = this)
 
   override def cache(): MorpheusElementTable = {
     table.cache()
@@ -63,7 +70,10 @@ case class MorpheusElementTable private[morpheus](
 }
 
 object MorpheusElementTable {
-  def create(mapping: ElementMapping, table: DataFrameTable): MorpheusElementTable = {
+  def create(
+    mapping: ElementMapping,
+    table: DataFrameTable
+  ): MorpheusElementTable = {
     val sourceIdColumns = mapping.allSourceIdKeys
     val idCols = table.df.encodeIdColumns(sourceIdColumns: _*)
     val remainingCols = mapping.allSourcePropertyKeys.map(table.df.col)
@@ -75,25 +85,39 @@ object MorpheusElementTable {
 
 object MorpheusNodeTable {
 
-  def apply[E <: Node : TypeTag](nodes: Seq[E])(implicit morpheus: MorpheusSession): MorpheusElementTable = {
+  def apply[E <: Node: TypeTag](
+    nodes: Seq[E]
+  )(implicit morpheus: MorpheusSession): MorpheusElementTable = {
     val nodeLabels = Annotation.labels[E]
     val nodeDF = morpheus.sparkSession.createDataFrame(nodes)
-    val nodeProperties = nodeDF.columns.filter(_ != GraphElement.sourceIdKey).toSet
-    val nodeMapping = NodeMappingBuilder.create(nodeIdKey = GraphElement.sourceIdKey, impliedLabels = nodeLabels, propertyKeys = nodeProperties)
+    val nodeProperties =
+      nodeDF.columns.filter(_ != GraphElement.sourceIdKey).toSet
+    val nodeMapping = NodeMappingBuilder.create(
+      nodeIdKey = GraphElement.sourceIdKey,
+      impliedLabels = nodeLabels,
+      propertyKeys = nodeProperties
+    )
     MorpheusElementTable.create(nodeMapping, nodeDF)
   }
 
   /**
-    * Creates a node table from the given [[DataFrame]]. By convention, there needs to be one column storing node
-    * identifiers and named after [[GraphElement.sourceIdKey]]. All remaining columns are interpreted as node property columns, the column name is used as property
-    * key.
+    * Creates a node table from the given [[DataFrame]]. By convention, there needs to be one column
+    * storing node identifiers and named after [[GraphElement.sourceIdKey]]. All remaining columns
+    * are interpreted as node property columns, the column name is used as property key.
     *
-    * @param impliedLabels  implied node labels
-    * @param nodeDF         node data
-    * @return a node table with inferred node mapping
+    * @param impliedLabels
+    *   implied node labels
+    * @param nodeDF
+    *   node data
+    * @return
+    *   a node table with inferred node mapping
     */
-  def apply(impliedLabels: Set[String], nodeDF: DataFrame): MorpheusElementTable = {
-    val propertyColumnNames = nodeDF.columns.filter(_ != GraphElement.sourceIdKey).toSet
+  def apply(
+    impliedLabels: Set[String],
+    nodeDF: DataFrame
+  ): MorpheusElementTable = {
+    val propertyColumnNames =
+      nodeDF.columns.filter(_ != GraphElement.sourceIdKey).toSet
     val propertyKeyMapping = propertyColumnNames.map(p => p.toProperty -> p)
 
     val mapping = NodeMappingBuilder
@@ -108,36 +132,52 @@ object MorpheusNodeTable {
 
 object MorpheusRelationshipTable {
 
-  def apply[E <: Relationship : TypeTag](relationships: Seq[E])(implicit morpheus: MorpheusSession): MorpheusElementTable = {
+  def apply[E <: Relationship: TypeTag](
+    relationships: Seq[E]
+  )(implicit morpheus: MorpheusSession): MorpheusElementTable = {
     val relationshipType: String = Annotation.relType[E]
     val relationshipDF = morpheus.sparkSession.createDataFrame(relationships)
-    val relationshipProperties = relationshipDF.columns.filter(!Relationship.nonPropertyAttributes.contains(_)).toSet
+    val relationshipProperties = relationshipDF.columns
+      .filter(!Relationship.nonPropertyAttributes.contains(_))
+      .toSet
 
-    val relationshipMapping = RelationshipMappingBuilder.create(GraphElement.sourceIdKey,
+    val relationshipMapping = RelationshipMappingBuilder.create(
+      GraphElement.sourceIdKey,
       Relationship.sourceStartNodeKey,
       Relationship.sourceEndNodeKey,
       relationshipType,
-      relationshipProperties)
+      relationshipProperties
+    )
 
     MorpheusElementTable.create(relationshipMapping, relationshipDF)
   }
 
   /**
-    * Creates a relationship table from the given [[DataFrame]]. By convention, there needs to be one column storing
-    * relationship identifiers and named after [[GraphElement.sourceIdKey]], one column storing source node identifiers
-    * and named after [[Relationship.sourceStartNodeKey]] and one column storing target node identifiers and named after
-    * [[Relationship.sourceEndNodeKey]]. All remaining columns are interpreted as relationship property columns, the
-    * column name is used as property key.
+    * Creates a relationship table from the given [[DataFrame]]. By convention, there needs to be
+    * one column storing relationship identifiers and named after [[GraphElement.sourceIdKey]], one
+    * column storing source node identifiers and named after [[Relationship.sourceStartNodeKey]] and
+    * one column storing target node identifiers and named after [[Relationship.sourceEndNodeKey]].
+    * All remaining columns are interpreted as relationship property columns, the column name is
+    * used as property key.
     *
-    * Column names prefixed with `property#` are decoded by [[org.opencypher.okapi.impl.util.StringEncodingUtilities]] to
-    * recover the original property name.
+    * Column names prefixed with `property#` are decoded by
+    * [[org.opencypher.okapi.impl.util.StringEncodingUtilities]] to recover the original property
+    * name.
     *
-    * @param relationshipType relationship type
-    * @param relationshipDF   relationship data
-    * @return a relationship table with inferred relationship mapping
+    * @param relationshipType
+    *   relationship type
+    * @param relationshipDF
+    *   relationship data
+    * @return
+    *   a relationship table with inferred relationship mapping
     */
-  def apply(relationshipType: String, relationshipDF: DataFrame): MorpheusElementTable = {
-    val propertyColumnNames = relationshipDF.columns.filter(!Relationship.nonPropertyAttributes.contains(_)).toSet
+  def apply(
+    relationshipType: String,
+    relationshipDF: DataFrame
+  ): MorpheusElementTable = {
+    val propertyColumnNames = relationshipDF.columns
+      .filter(!Relationship.nonPropertyAttributes.contains(_))
+      .toSet
     val propertyKeyMapping = propertyColumnNames.map(p => p.toProperty -> p)
 
     val mapping = RelationshipMappingBuilder
@@ -151,5 +191,3 @@ object MorpheusRelationshipTable {
     MorpheusElementTable.create(mapping, relationshipDF)
   }
 }
-
-

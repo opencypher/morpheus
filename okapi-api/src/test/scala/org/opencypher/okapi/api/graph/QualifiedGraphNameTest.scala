@@ -31,20 +31,32 @@ import org.opencypher.okapi.impl.io.SessionGraphDataSource.{Namespace => Session
 
 class QualifiedGraphNameTest extends ApiBaseTest {
 
-  it("apply with string representation containing single namespace and single graph name") {
+  it(
+    "apply with string representation containing single namespace and single graph name"
+  ) {
     val string = "testNamespace.testGraphName"
-    QualifiedGraphName(string) should be(QualifiedGraphName(Namespace("testNamespace"), GraphName("testGraphName")))
+    QualifiedGraphName(string) should be(
+      QualifiedGraphName(Namespace("testNamespace"), GraphName("testGraphName"))
+    )
   }
 
-  it("apply with string representation containing single namespace and multiple graph name") {
+  it(
+    "apply with string representation containing single namespace and multiple graph name"
+  ) {
     val string = "testNamespace.test.Graph.Name"
-    QualifiedGraphName(string) should be(QualifiedGraphName(Namespace("testNamespace"), GraphName("test.Graph.Name")))
+    QualifiedGraphName(string) should be(
+      QualifiedGraphName(
+        Namespace("testNamespace"),
+        GraphName("test.Graph.Name")
+      )
+    )
   }
 
   it("apply with string representation containing single grap name") {
     val string = "testGraphName"
-    QualifiedGraphName(string) should be(QualifiedGraphName(SessionNamespace, GraphName("testGraphName")))
+    QualifiedGraphName(string) should be(
+      QualifiedGraphName(SessionNamespace, GraphName("testGraphName"))
+    )
   }
-
 
 }

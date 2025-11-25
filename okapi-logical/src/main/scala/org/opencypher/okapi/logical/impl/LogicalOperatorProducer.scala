@@ -38,49 +38,92 @@ import org.opencypher.okapi.ir.impl.util.VarConverters._
 // TODO: Align names with other producers
 class LogicalOperatorProducer {
 
-  def planCartesianProduct(lhs: LogicalOperator, rhs: LogicalOperator): CartesianProduct = {
+  def planCartesianProduct(
+    lhs: LogicalOperator,
+    rhs: LogicalOperator
+  ): CartesianProduct = {
     CartesianProduct(lhs, rhs, lhs.solved ++ rhs.solved)
   }
 
   def planValueJoin(
-      lhs: LogicalOperator,
-      rhs: LogicalOperator,
-      predicates: Set[org.opencypher.okapi.ir.api.expr.Equals]): ValueJoin = {
-    ValueJoin(lhs, rhs, predicates, predicates.foldLeft(lhs.solved ++ rhs.solved) {
-      case (solved, predicate) => solved.withPredicate(predicate)
-    })
+    lhs: LogicalOperator,
+    rhs: LogicalOperator,
+    predicates: Set[org.opencypher.okapi.ir.api.expr.Equals]
+  ): ValueJoin = {
+    ValueJoin(
+      lhs,
+      rhs,
+      predicates,
+      predicates.foldLeft(lhs.solved ++ rhs.solved) { case (solved, predicate) =>
+        solved.withPredicate(predicate)
+      }
+    )
   }
 
   def planBoundedVarLengthExpand(
-      source: IRField,
-      r: IRField,
-      target: IRField,
-      edgeType: CTRelationship,
-      direction: Direction,
-      lower: Int,
-      upper: Int,
-      sourcePlan: LogicalOperator,
-      targetPlan: LogicalOperator): BoundedVarLengthExpand = {
+    source: IRField,
+    r: IRField,
+    target: IRField,
+    edgeType: CTRelationship,
+    direction: Direction,
+    lower: Int,
+    upper: Int,
+    sourcePlan: LogicalOperator,
+    targetPlan: LogicalOperator
+  ): BoundedVarLengthExpand = {
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
 
-    BoundedVarLengthExpand(source, r, target, edgeType, direction, lower, upper, sourcePlan, targetPlan, prevSolved.withField(r))
+    BoundedVarLengthExpand(
+      source,
+      r,
+      target,
+      edgeType,
+      direction,
+      lower,
+      upper,
+      sourcePlan,
+      targetPlan,
+      prevSolved.withField(r)
+    )
   }
 
   def planExpand(
-      source: IRField,
-      rel: IRField,
-      target: IRField,
-      direction: Direction,
-      sourcePlan: LogicalOperator,
-      targetPlan: LogicalOperator): Expand = {
+    source: IRField,
+    rel: IRField,
+    target: IRField,
+    direction: Direction,
+    sourcePlan: LogicalOperator,
+    targetPlan: LogicalOperator
+  ): Expand = {
 
     val prevSolved = sourcePlan.solved ++ targetPlan.solved
 
-    Expand(source, rel, target, direction, sourcePlan, targetPlan, prevSolved.solveRelationship(rel))
+    Expand(
+      source,
+      rel,
+      target,
+      direction,
+      sourcePlan,
+      targetPlan,
+      prevSolved.solveRelationship(rel)
+    )
   }
 
-  def planExpandInto(source: IRField, rel: IRField, target: IRField, direction: Direction, sourcePlan: LogicalOperator): ExpandInto = {
-    ExpandInto(source, rel, target, direction, sourcePlan, sourcePlan.solved.solveRelationship(rel))
+  def planExpandInto(
+    source: IRField,
+    rel: IRField,
+    target: IRField,
+    direction: Direction,
+    sourcePlan: LogicalOperator
+  ): ExpandInto = {
+    ExpandInto(
+      source,
+      rel,
+      target,
+      direction,
+      sourcePlan,
+      sourcePlan.solved.solveRelationship(rel)
+    )
   }
 
   def planNodeScan(node: IRField, prev: LogicalOperator): PatternScan = {
@@ -89,11 +132,19 @@ class LogicalOperatorProducer {
     val nodeType = node.cypherType.toCTNode
 
     val solvedWithPredicates = node.cypherType match {
-      case CTNode(labels, _) => solvedWithField.withPredicates(labels.map(l => HasLabel(node, Label(l))).toSeq:_*)
+      case CTNode(labels, _) =>
+        solvedWithField.withPredicates(
+          labels.map(l => HasLabel(node, Label(l))).toSeq: _*
+        )
       case _ => solvedWithField
     }
     val pattern = NodePattern(nodeType)
-    PatternScan(pattern, Map(node.toVar -> pattern.nodeElement), prev, solvedWithPredicates)
+    PatternScan(
+      pattern,
+      Map(node.toVar -> pattern.nodeElement),
+      prev,
+      solvedWithPredicates
+    )
   }
 
   def planFilter(expr: Expr, prev: LogicalOperator): Filter = {
@@ -104,28 +155,51 @@ class LogicalOperatorProducer {
     Distinct(fields.map(toVar), prev, prev.solved)
   }
 
-  def planOptional(nonOptionalPlan: LogicalOperator, optionalPlan: LogicalOperator): Optional = {
+  def planOptional(
+    nonOptionalPlan: LogicalOperator,
+    optionalPlan: LogicalOperator
+  ): Optional = {
     Optional(nonOptionalPlan, optionalPlan, optionalPlan.solved)
   }
 
   def planExistsSubQuery(
-      expr: ExistsPatternExpr,
-      matchPlan: LogicalOperator,
-      patternPlan: LogicalOperator): ExistsSubQuery = {
+    expr: ExistsPatternExpr,
+    matchPlan: LogicalOperator,
+    patternPlan: LogicalOperator
+  ): ExistsSubQuery = {
     ExistsSubQuery(expr, matchPlan, patternPlan, matchPlan.solved)
   }
 
-  def aggregate(aggregations: Aggregations, group: Set[IRField], prev: LogicalOperator): Aggregate = {
-    val transformed: Set[(Var, Aggregator)] = aggregations.pairs.collect { case (field, aggregator: Aggregator) => toVar(field) -> aggregator }
+  def aggregate(
+    aggregations: Aggregations,
+    group: Set[IRField],
+    prev: LogicalOperator
+  ): Aggregate = {
+    val transformed: Set[(Var, Aggregator)] = aggregations.pairs.collect {
+      case (field, aggregator: Aggregator) => toVar(field) -> aggregator
+    }
 
-    Aggregate(transformed, group.map(toVar), prev, prev.solved.withFields(aggregations.fields.toSeq: _*))
+    Aggregate(
+      transformed,
+      group.map(toVar),
+      prev,
+      prev.solved.withFields(aggregations.fields.toSeq: _*)
+    )
   }
 
-  def projectField(expr: Expr, field: IRField, prev: LogicalOperator): Project = {
+  def projectField(
+    expr: Expr,
+    field: IRField,
+    prev: LogicalOperator
+  ): Project = {
     Project(expr -> Some(field), prev, prev.solved.withField(field))
   }
 
-  def planUnwind(list: Expr, variable: IRField, withList: LogicalOperator): Unwind = {
+  def planUnwind(
+    list: Expr,
+    variable: IRField,
+    withList: LogicalOperator
+  ): Unwind = {
     Unwind(list, variable, withList, withList.solved.withField(variable))
   }
 
@@ -145,7 +219,10 @@ class LogicalOperatorProducer {
     Start(graph, SolvedQueryModel.empty)
   }
 
-  def planStartWithDrivingTable(graph: LogicalGraph, fields: Set[Var]): DrivingTable = {
+  def planStartWithDrivingTable(
+    graph: LogicalGraph,
+    fields: Set[Var]
+  ): DrivingTable = {
     val irFields = fields.map { v =>
       IRField(v.name)(v.cypherType)
     }

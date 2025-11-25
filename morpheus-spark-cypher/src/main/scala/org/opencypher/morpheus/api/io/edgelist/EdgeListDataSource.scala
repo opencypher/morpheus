@@ -53,34 +53,44 @@ object EdgeListDataSource {
 }
 
 /**
-  * A read-only data source that is able to read graphs from edge list files. Input files are expected to contain one
-  * edge per row, e.g.
+  * A read-only data source that is able to read graphs from edge list files. Input files are
+  * expected to contain one edge per row, e.g.
   *
-  * 0 1
-  * 1 2
+  * 0 1 1 2
   *
   * describes a graph with two edges (one from vertex 0 to 1 and one from vertex 1 to 2).
   *
   * The data source can be parameterized with options used by the underlying Spark Csv reader.
   *
-  * @param path     path to the edge list file
-  * @param options  Spark Csv reader options
-  * @param morpheus Morpheus session
+  * @param path
+  *   path to the edge list file
+  * @param options
+  *   Spark Csv reader options
+  * @param morpheus
+  *   Morpheus session
   */
-case class EdgeListDataSource(path: String, options: Map[String, String] = Map.empty)(implicit morpheus: MorpheusSession)
-  extends PropertyGraphDataSource {
+case class EdgeListDataSource(
+  path: String,
+  options: Map[String, String] = Map.empty
+)(implicit morpheus: MorpheusSession)
+    extends PropertyGraphDataSource {
 
   override def hasGraph(name: GraphName): Boolean = name == GRAPH_NAME
 
   override def graph(name: GraphName): PropertyGraph = {
-    val reader = options.foldLeft(morpheus.sparkSession.read) {
-      case (current, (key, value)) => current.option(key, value)
+    val reader = options.foldLeft(morpheus.sparkSession.read) { case (current, (key, value)) =>
+      current.option(key, value)
     }
 
     val rawRels = reader
-      .schema(StructType(Seq(
-        StructField(sourceStartNodeKey, LongType),
-        StructField(sourceEndNodeKey, LongType))))
+      .schema(
+        StructType(
+          Seq(
+            StructField(sourceStartNodeKey, LongType),
+            StructField(sourceEndNodeKey, LongType)
+          )
+        )
+      )
       .csv(path)
       .withColumn(sourceIdKey, functions.monotonically_increasing_id())
       .select(sourceIdKey, sourceStartNodeKey, sourceEndNodeKey)
@@ -90,16 +100,23 @@ case class EdgeListDataSource(path: String, options: Map[String, String] = Map.e
       .union(rawRels.select(rawRels.col(sourceEndNodeKey).as(sourceIdKey)))
       .distinct()
 
-    morpheus.graphs.create(MorpheusNodeTable(Set(NODE_LABEL), rawNodes), MorpheusRelationshipTable(REL_TYPE, rawRels))
+    morpheus.graphs.create(
+      MorpheusNodeTable(Set(NODE_LABEL), rawNodes),
+      MorpheusRelationshipTable(REL_TYPE, rawRels)
+    )
   }
 
-  override def schema(name: GraphName): Option[PropertyGraphSchema] = Some(SCHEMA)
+  override def schema(name: GraphName): Option[PropertyGraphSchema] = Some(
+    SCHEMA
+  )
 
   override def store(name: GraphName, graph: PropertyGraph): Unit =
     throw UnsupportedOperationException("Storing an edge list is not supported")
 
   override def delete(name: GraphName): Unit =
-    throw UnsupportedOperationException("Deleting an edge list is not supported")
+    throw UnsupportedOperationException(
+      "Deleting an edge list is not supported"
+    )
 
   override val graphNames: Set[GraphName] = Set(GRAPH_NAME)
 }

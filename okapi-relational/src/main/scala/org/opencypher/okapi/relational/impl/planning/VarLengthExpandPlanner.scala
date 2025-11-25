@@ -42,7 +42,7 @@ sealed trait ExpandDirection
 case object Outbound extends ExpandDirection
 case object Inbound extends ExpandDirection
 
-abstract class VarLengthExpandPlanner[T <: Table[T] : TypeTag] {
+abstract class VarLengthExpandPlanner[T <: Table[T]: TypeTag] {
 
   def source: Var
 
@@ -77,7 +77,8 @@ abstract class VarLengthExpandPlanner[T <: Table[T] : TypeTag] {
   /**
     * Performs the initial expand from the start node
     *
-    * @param dir expand direction
+    * @param dir
+    *   expand direction
     */
   protected def init(dir: ExpandDirection): RelationalOperator[T] = {
     val startEdgeScanOp: RelationalOperator[T] = physicalEdgeScanOp
@@ -87,22 +88,30 @@ abstract class VarLengthExpandPlanner[T <: Table[T] : TypeTag] {
     // Execute the first expand
     val edgeJoinExpr = dir match {
       case Outbound => startEdgeScanOp.header.startNodeFor(startEdgeScan)
-      case Inbound => startEdgeScanOp.header.endNodeFor(startEdgeScan)
+      case Inbound  => startEdgeScanOp.header.endNodeFor(startEdgeScan)
     }
 
-    physicalSourceOp.join(startEdgeScanOp,
-      Seq(source -> edgeJoinExpr),
-      InnerJoin
-    ).filter(isomorphismFilter(startEdgeScan, physicalSourceOp.header.relationshipElements))
+    physicalSourceOp
+      .join(startEdgeScanOp, Seq(source -> edgeJoinExpr), InnerJoin)
+      .filter(
+        isomorphismFilter(
+          startEdgeScan,
+          physicalSourceOp.header.relationshipElements
+        )
+      )
   }
 
   /**
     * Performs the ith expand.
     *
-    * @param i              number of the iteration
-    * @param iterationTable result of the i-1th iteration
-    * @param directions     expansion directions
-    * @param edgeVars       edges already traversed
+    * @param i
+    *   number of the iteration
+    * @param iterationTable
+    *   result of the i-1th iteration
+    * @param directions
+    *   expansion directions
+    * @param edgeVars
+    *   edges already traversed
     */
   def expand(
     i: Int,
@@ -110,21 +119,30 @@ abstract class VarLengthExpandPlanner[T <: Table[T] : TypeTag] {
     directions: (ExpandDirection, ExpandDirection),
     edgeVars: Seq[Var]
   ): (RelationalOperator[T], Var) = {
-    val nextEdgeCT = if (i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
+    val nextEdgeCT =
+      if (i > lower) edgeScan.cypherType.nullable else edgeScan.cypherType
     val nextEdge = ListSegment(i, list)
 
-    val aliasedEdgeScanOp = physicalEdgeScanOp.
-      alias(edgeScan as nextEdge)
+    val aliasedEdgeScanOp = physicalEdgeScanOp
+      .alias(edgeScan as nextEdge)
       .select(nextEdge)
 
     val iterationTableHeader = iterationTable.header
     val nextEdgeScanHeader = aliasedEdgeScanOp.header
 
     val joinExpr = directions match {
-      case (Outbound, Outbound) => iterationTableHeader.endNodeFor(edgeVars.last) -> nextEdgeScanHeader.startNodeFor(nextEdge)
-      case (Outbound, Inbound) => iterationTableHeader.endNodeFor(edgeVars.last) -> nextEdgeScanHeader.endNodeFor(nextEdge)
-      case (Inbound, Outbound) => iterationTableHeader.startNodeFor(edgeVars.last) -> nextEdgeScanHeader.endNodeFor(nextEdge)
-      case (Inbound, Inbound) => iterationTableHeader.startNodeFor(edgeVars.last) -> nextEdgeScanHeader.startNodeFor(nextEdge)
+      case (Outbound, Outbound) =>
+        iterationTableHeader.endNodeFor(edgeVars.last) -> nextEdgeScanHeader
+          .startNodeFor(nextEdge)
+      case (Outbound, Inbound) =>
+        iterationTableHeader.endNodeFor(edgeVars.last) -> nextEdgeScanHeader
+          .endNodeFor(nextEdge)
+      case (Inbound, Outbound) =>
+        iterationTableHeader.startNodeFor(edgeVars.last) -> nextEdgeScanHeader
+          .endNodeFor(nextEdge)
+      case (Inbound, Inbound) =>
+        iterationTableHeader.startNodeFor(edgeVars.last) -> nextEdgeScanHeader
+          .startNodeFor(nextEdge)
     }
 
     val expandedOp = iterationTable
@@ -136,44 +154,55 @@ abstract class VarLengthExpandPlanner[T <: Table[T] : TypeTag] {
 
   /**
     * Finalize the expansions
-    *   1. adds paths of length zero if needed
-    *   2. fills empty columns with null values
-    *   3. unions paths of different lengths
+    *   1. adds paths of length zero if needed 2. fills empty columns with null values 3. unions
+    *      paths of different lengths
     *
-    * @param paths valid paths
+    * @param paths
+    *   valid paths
     */
-  protected def finalize(paths: Seq[RelationalOperator[T]]): RelationalOperator[T] = {
+  protected def finalize(
+    paths: Seq[RelationalOperator[T]]
+  ): RelationalOperator[T] = {
     val targetHeader = paths.maxBy(_.header.columns.size).header
 
     // check whether to include paths of length 0
     val unalignedOps: Seq[RelationalOperator[T]] = if (lower == 0) {
-      val zeroLengthExpand: RelationalOperator[T] = copyElement(source, target, targetHeader, physicalSourceOp)
+      val zeroLengthExpand: RelationalOperator[T] =
+        copyElement(source, target, targetHeader, physicalSourceOp)
       if (upper == 0) Seq(zeroLengthExpand) else paths :+ zeroLengthExpand
     } else paths
 
     // fill shorter paths with nulls
     val alignedOps = unalignedOps.map { expansion =>
-      val nullExpressions = targetHeader.expressions -- expansion.header.expressions
+      val nullExpressions =
+        targetHeader.expressions -- expansion.header.expressions
 
-      val expWithNullLits = expansion.addInto(nullExpressions.map(expr => NullLit -> expr).toSeq: _*)
+      val expWithNullLits = expansion.addInto(
+        nullExpressions.map(expr => NullLit -> expr).toSeq: _*
+      )
       val exprsToRename = nullExpressions.filterNot(expr =>
         expWithNullLits.header.column(expr) == targetHeader.column(expr)
       )
-      val renameTuples = exprsToRename.map(expr => expr -> targetHeader.column(expr))
+      val renameTuples =
+        exprsToRename.map(expr => expr -> targetHeader.column(expr))
       expWithNullLits.renameColumns(renameTuples.toMap)
     }
 
     // union expands of different lengths
     alignedOps
       .map(op => op.alignColumnNames(targetHeader))
-      .reduce((agg: RelationalOperator[T], next: RelationalOperator[T]) => relational.TabularUnionAll(agg, next))
+      .reduce((agg: RelationalOperator[T], next: RelationalOperator[T]) =>
+        relational.TabularUnionAll(agg, next)
+      )
   }
 
   /**
     * Creates the isomorphism filter for the given edge list
     *
-    * @param rel        new edge
-    * @param candidates candidate edges
+    * @param rel
+    *   new edge
+    * @param candidates
+    *   candidate edges
     */
   protected def isomorphismFilter(rel: Var, candidates: Set[Var]): Expr =
     Ands(candidates.map(e => Not(Equals(e, rel))).toSeq: _*)
@@ -181,10 +210,14 @@ abstract class VarLengthExpandPlanner[T <: Table[T] : TypeTag] {
   /**
     * Copies the content of a variable into another variable
     *
-    * @param from         source variable
-    * @param to           target variable
-    * @param targetHeader target header
-    * @param physicalOp   base operation
+    * @param from
+    *   source variable
+    * @param to
+    *   target variable
+    * @param targetHeader
+    *   target header
+    * @param physicalOp
+    *   base operation
     */
   protected def copyElement(
     from: Var,
@@ -198,12 +231,17 @@ abstract class VarLengthExpandPlanner[T <: Table[T] : TypeTag] {
     val sourceChildren = targetHeader.expressionsFor(from)
     val targetChildren = targetHeader.expressionsFor(correctTarget)
 
-    val childMapping: Set[(Expr, Expr)] = sourceChildren.map(expr => expr -> expr.withOwner(correctTarget))
-    val missingMapping = (targetChildren -- childMapping.map(_._2) - correctTarget).map {
-      case l: HasLabel => FalseLit -> l
-      case p: Property => NullLit -> p
-      case other => throw RecordHeaderException(s"$correctTarget can only own HasLabel and Property but found $other")
-    }
+    val childMapping: Set[(Expr, Expr)] =
+      sourceChildren.map(expr => expr -> expr.withOwner(correctTarget))
+    val missingMapping =
+      (targetChildren -- childMapping.map(_._2) - correctTarget).map {
+        case l: HasLabel => FalseLit -> l
+        case p: Property => NullLit -> p
+        case other =>
+          throw RecordHeaderException(
+            s"$correctTarget can only own HasLabel and Property but found $other"
+          )
+      }
 
     physicalOp.addInto((childMapping ++ missingMapping).toSeq: _*)
   }
@@ -211,14 +249,21 @@ abstract class VarLengthExpandPlanner[T <: Table[T] : TypeTag] {
   /**
     * Joins a given path with it's target node
     *
-    * @param path the path
-    * @param edge the paths last edge
-    * @param dir  expand direction
+    * @param path
+    *   the path
+    * @param edge
+    *   the paths last edge
+    * @param dir
+    *   expand direction
     */
-  protected def addTargetOps(path: RelationalOperator[T], edge: Var, dir: ExpandDirection): RelationalOperator[T] = {
+  protected def addTargetOps(
+    path: RelationalOperator[T],
+    edge: Var,
+    dir: ExpandDirection
+  ): RelationalOperator[T] = {
     val expr = dir match {
       case Outbound => path.header.endNodeFor(edge)
-      case Inbound => path.header.startNodeFor(edge)
+      case Inbound  => path.header.startNodeFor(edge)
     }
 
     if (isExpandInto) {
@@ -230,7 +275,7 @@ abstract class VarLengthExpandPlanner[T <: Table[T] : TypeTag] {
 }
 
 // TODO: use object instead
-class DirectedVarLengthExpandPlanner[T <: Table[T] : TypeTag](
+class DirectedVarLengthExpandPlanner[T <: Table[T]: TypeTag](
   override val source: Var,
   override val list: Var,
   override val edgeScan: Var,
@@ -241,19 +286,23 @@ class DirectedVarLengthExpandPlanner[T <: Table[T] : TypeTag](
   override val relEdgeScanOp: RelationalOperator[T],
   override val targetOp: LogicalOperator,
   override val isExpandInto: Boolean
-)(override implicit val context: RelationalRuntimeContext[T]) extends VarLengthExpandPlanner[T] {
+)(override implicit val context: RelationalRuntimeContext[T])
+    extends VarLengthExpandPlanner[T] {
 
   override def plan: RelationalOperator[T] = {
     // Iteratively expand beginning from startOp with cacheOp
-    val expandOps = (2 to upper).foldLeft(Seq(init(Outbound) -> Seq(startEdgeScan))) {
-      case (acc, i) =>
+    val expandOps = (2 to upper)
+      .foldLeft(Seq(init(Outbound) -> Seq(startEdgeScan))) { case (acc, i) =>
         val (last, edgeVars) = acc.last
         val (next, nextEdge) = expand(i, last, Outbound -> Outbound, edgeVars)
         acc :+ (next -> (edgeVars :+ nextEdge))
-    }.filter(_._2.size >= lower)
+      }
+      .filter(_._2.size >= lower)
 
     // Join target nodes on expand ops
-    val withTargetOps = expandOps.map { case (op, edges) => addTargetOps(op, edges.last, Outbound) }
+    val withTargetOps = expandOps.map { case (op, edges) =>
+      addTargetOps(op, edges.last, Outbound)
+    }
 
     finalize(withTargetOps)
   }
@@ -261,7 +310,7 @@ class DirectedVarLengthExpandPlanner[T <: Table[T] : TypeTag](
 }
 
 // TODO: use object instead
-class UndirectedVarLengthExpandPlanner[T <: Table[T] : TypeTag](
+class UndirectedVarLengthExpandPlanner[T <: Table[T]: TypeTag](
   override val source: Var,
   override val list: Var,
   override val edgeScan: Var,
@@ -272,7 +321,8 @@ class UndirectedVarLengthExpandPlanner[T <: Table[T] : TypeTag](
   override val relEdgeScanOp: RelationalOperator[T],
   override val targetOp: LogicalOperator,
   override val isExpandInto: Boolean
-)(override implicit val context: RelationalRuntimeContext[T]) extends VarLengthExpandPlanner[T] {
+)(override implicit val context: RelationalRuntimeContext[T])
+    extends VarLengthExpandPlanner[T] {
 
   override def plan: RelationalOperator[T] = {
 
@@ -280,27 +330,28 @@ class UndirectedVarLengthExpandPlanner[T <: Table[T] : TypeTag](
     val inStartOp = init(Inbound)
 
     // Iteratively expand beginning from startOp with cacheOp
-    val expandOps = (2 to upper).foldLeft(Seq((outStartOp -> inStartOp) -> Seq(startEdgeScan))) {
-      case (acc, i) =>
+    val expandOps = (2 to upper)
+      .foldLeft(Seq((outStartOp -> inStartOp) -> Seq(startEdgeScan))) { case (acc, i) =>
         val ((last, lastRevered), edgeVars) = acc.last
 
-        val (outOut, nextEdge) = expand(i, last, Outbound -> Outbound, edgeVars)
+        val (outOut, nextEdge) =
+          expand(i, last, Outbound -> Outbound, edgeVars)
         val (outIn, _) = expand(i, last, Outbound -> Inbound, edgeVars)
         val (inOut, _) = expand(i, lastRevered, Inbound -> Outbound, edgeVars)
         val (inIn, _) = expand(i, lastRevered, Inbound -> Inbound, edgeVars)
-        val nextOps = relational.TabularUnionAll(outOut, inOut) -> relational.TabularUnionAll(outIn, inIn)
+        val nextOps = relational.TabularUnionAll(outOut, inOut) -> relational
+          .TabularUnionAll(outIn, inIn)
 
         acc :+ nextOps -> (edgeVars :+ nextEdge)
-    }.filter(_._2.size >= lower)
-
+      }
+      .filter(_._2.size >= lower)
 
     // Join target nodes on expand ops
-    val withTargetOps = expandOps.map {
-      case ((out, in), edges) =>
-        relational.TabularUnionAll(
-          addTargetOps(out, edges.last, Outbound),
-          addTargetOps(in, edges.last, Inbound)
-        )
+    val withTargetOps = expandOps.map { case ((out, in), edges) =>
+      relational.TabularUnionAll(
+        addTargetOps(out, edges.last, Outbound),
+        addTargetOps(in, edges.last, Inbound)
+      )
     }
 
     finalize(withTargetOps)

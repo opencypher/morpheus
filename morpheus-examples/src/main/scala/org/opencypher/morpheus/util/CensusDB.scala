@@ -47,68 +47,80 @@ object CensusDB {
   val townInput = Input(
     table = "TOWN",
     csvPath = "/census/csv/town.csv",
-    dfSchema = toStructType(Seq(
-      "CITY_NAME" -> StringType,
-      "REGION" -> StringType))
+    dfSchema = toStructType(Seq("CITY_NAME" -> StringType, "REGION" -> StringType))
   )
 
   val residentsInput = Input(
     table = "RESIDENTS",
     csvPath = "/census/csv/residents.csv",
-    dfSchema = toStructType(Seq(
-      "CITY_NAME" -> StringType,
-      "FIRST_NAME" -> StringType,
-      "LAST_NAME" -> StringType,
-      "PERSON_NUMBER" -> StringType,
-      "REGION" -> StringType))
+    dfSchema = toStructType(
+      Seq(
+        "CITY_NAME" -> StringType,
+        "FIRST_NAME" -> StringType,
+        "LAST_NAME" -> StringType,
+        "PERSON_NUMBER" -> StringType,
+        "REGION" -> StringType
+      )
+    )
   )
 
   val visitorsInput = Input(
     table = "VISITORS",
     csvPath = "/census/csv/visitors.csv",
-    dfSchema = toStructType(Seq(
-      "AGE" -> LongType,
-      "CITY_NAME" -> StringType,
-      "COUNTRY" -> StringType,
-      "DATE_OF_ENTRY" -> StringType,
-      "ENTRY_SEQUENCE" -> LongType,
-      "FIRST_NAME" -> StringType,
-      "ISO3166" -> StringType,
-      "LAST_NAME" -> StringType,
-      "PASSPORT_NUMBER" -> LongType,
-      "REGION" -> StringType))
+    dfSchema = toStructType(
+      Seq(
+        "AGE" -> LongType,
+        "CITY_NAME" -> StringType,
+        "COUNTRY" -> StringType,
+        "DATE_OF_ENTRY" -> StringType,
+        "ENTRY_SEQUENCE" -> LongType,
+        "FIRST_NAME" -> StringType,
+        "ISO3166" -> StringType,
+        "LAST_NAME" -> StringType,
+        "PASSPORT_NUMBER" -> LongType,
+        "REGION" -> StringType
+      )
+    )
   )
 
   val licensedDogsInput = Input(
     table = "LICENSED_DOGS",
     csvPath = "/census/csv/licensed_dogs.csv",
-    dfSchema = toStructType(Seq(
-      "CITY_NAME" -> StringType,
-      "LICENCE_DATE" -> StringType,
-      "LICENCE_NUMBER" -> LongType,
-      "NAME" -> StringType,
-      "PERSON_NUMBER" -> StringType,
-      "REGION" -> StringType))
+    dfSchema = toStructType(
+      Seq(
+        "CITY_NAME" -> StringType,
+        "LICENCE_DATE" -> StringType,
+        "LICENCE_NUMBER" -> LongType,
+        "NAME" -> StringType,
+        "PERSON_NUMBER" -> StringType,
+        "REGION" -> StringType
+      )
+    )
   )
 
   def toStructType(columns: Seq[(String, DataType)]): StructType = {
-    val structFields = columns.map {
-      case (columnName, dataType: DataType) => StructField(columnName, dataType, nullable = false)
+    val structFields = columns.map { case (columnName, dataType: DataType) =>
+      StructField(columnName, dataType, nullable = false)
     }
     StructType(structFields.toList)
   }
 
   private def readResourceAsString(name: String): String =
-    Source.fromFile(getClass.getResource(name).toURI)
+    Source
+      .fromFile(getClass.getResource(name).toURI)
       .getLines()
       .filterNot(line => line.startsWith("#") || line.startsWith("CREATE INDEX"))
       .mkString(Properties.lineSeparator)
 
   val databaseName: String = "CENSUS"
 
-  val createViewsSql: String = readResourceAsString("/census/sql/census_views.sql")
+  val createViewsSql: String = readResourceAsString(
+    "/census/sql/census_views.sql"
+  )
 
-  def createJdbcData(sqlDataSourceConfig: SqlDataSourceConfig.Jdbc)(implicit sparkSession: SparkSession): Unit = {
+  def createJdbcData(
+    sqlDataSourceConfig: SqlDataSourceConfig.Jdbc
+  )(implicit sparkSession: SparkSession): Unit = {
 
     // Populate the data
     populateData(townInput, sqlDataSourceConfig)
@@ -123,7 +135,9 @@ object CensusDB {
     }
   }
 
-  def createHiveData(sqlDataSourceConfig: SqlDataSourceConfig)(implicit sparkSession: SparkSession): Unit = {
+  def createHiveData(
+    sqlDataSourceConfig: SqlDataSourceConfig
+  )(implicit sparkSession: SparkSession): Unit = {
 
     // Create the database
     sparkSession.sql(s"DROP DATABASE IF EXISTS CENSUS CASCADE").count
@@ -133,17 +147,23 @@ object CensusDB {
     populateData(townInput, sqlDataSourceConfig, Some(FileFormat.parquet))
     populateData(residentsInput, sqlDataSourceConfig, Some(FileFormat.parquet))
     populateData(visitorsInput, sqlDataSourceConfig, Some(FileFormat.parquet))
-    populateData(licensedDogsInput, sqlDataSourceConfig, Some(FileFormat.parquet))
+    populateData(
+      licensedDogsInput,
+      sqlDataSourceConfig,
+      Some(FileFormat.parquet)
+    )
 
     // Create the views
     createViewsSql.split(";").foreach(sparkSession.sql)
   }
 
   // TODO: Can we use our data sources to populate data?
-  private def populateData(input: Input, cfg: SqlDataSourceConfig, format: Option[StorageFormat] = None)
-    (implicit sparkSession: SparkSession): Unit = {
-    val writer = sparkSession
-      .read
+  private def populateData(
+    input: Input,
+    cfg: SqlDataSourceConfig,
+    format: Option[StorageFormat] = None
+  )(implicit sparkSession: SparkSession): Unit = {
+    val writer = sparkSession.read
       .option("header", "true")
       .schema(input.dfSchema)
       .csv(getClass.getResource(s"${input.csvPath}").getPath)

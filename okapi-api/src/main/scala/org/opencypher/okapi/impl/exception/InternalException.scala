@@ -29,37 +29,74 @@ package org.opencypher.okapi.impl.exception
 import scala.compat.Platform.EOL
 
 /**
-  * Exceptions that are not covered by the TCK. They are related to limitations of a specific Cypher implementation
-  * or to session or property graph interactions that are not covered by the TCK.
+  * Exceptions that are not covered by the TCK. They are related to limitations of a specific Cypher
+  * implementation or to session or property graph interactions that are not covered by the TCK.
   */
 //TODO: Either: 1. Convert to CypherException; 2. Create categories that makes sense in the API module for them; or 3. Move to the internals of the system to which they belong.
-abstract class InternalException(msg: String, cause: Option[Throwable] = None) extends RuntimeException(msg, cause.orNull) with Serializable
+abstract class InternalException(msg: String, cause: Option[Throwable] = None)
+    extends RuntimeException(msg, cause.orNull)
+    with Serializable
 
-final case class SchemaException(msg: String, cause: Option[Throwable] = None) extends InternalException(msg, cause)
+final case class SchemaException(msg: String, cause: Option[Throwable] = None)
+    extends InternalException(msg, cause)
 
-final case class CypherValueException(msg: String, cause: Option[Throwable] = None) extends InternalException(msg, cause)
+final case class CypherValueException(
+  msg: String,
+  cause: Option[Throwable] = None
+) extends InternalException(msg, cause)
 
-final case class NotImplementedException(msg: String, cause: Option[Throwable] = None) extends InternalException(msg, cause)
+final case class NotImplementedException(
+  msg: String,
+  cause: Option[Throwable] = None
+) extends InternalException(msg, cause)
 
-final case class IllegalStateException(msg: String, cause: Option[Throwable] = None) extends InternalException(msg, cause)
+final case class IllegalStateException(
+  msg: String,
+  cause: Option[Throwable] = None
+) extends InternalException(msg, cause)
 
-final case class IllegalArgumentException(expected: Any, actual: Any = "none", explanation: String = "", cause: Option[Throwable] = None)
-  extends InternalException(
-    s"""
-       |${if (explanation.nonEmpty) s"Explanation:$EOL\t$explanation$EOL" else ""}
+final case class IllegalArgumentException(
+  expected: Any,
+  actual: Any = "none",
+  explanation: String = "",
+  cause: Option[Throwable] = None
+) extends InternalException(
+      s"""
+       |${if (explanation.nonEmpty) s"Explanation:$EOL\t$explanation$EOL"
+        else ""}
        |Expected:
        |\t$expected
        |Found:
-       |\t$actual""".stripMargin, cause)
+       |\t$actual""".stripMargin,
+      cause
+    )
 
-final case class UnsupportedOperationException(msg: String, cause: Option[Throwable] = None) extends InternalException(msg, cause)
+final case class UnsupportedOperationException(
+  msg: String,
+  cause: Option[Throwable] = None
+) extends InternalException(msg, cause)
 
-final case class NoSuitableSignatureForExpr(msg: String, cause: Option[Throwable] = None) extends InternalException(msg, cause)
+final case class NoSuitableSignatureForExpr(
+  msg: String,
+  cause: Option[Throwable] = None
+) extends InternalException(msg, cause)
 
-final case class GraphNotFoundException(msg: String, cause: Option[Throwable] = None) extends InternalException(msg, cause)
+final case class GraphNotFoundException(
+  msg: String,
+  cause: Option[Throwable] = None
+) extends InternalException(msg, cause)
 
-final case class InvalidGraphException(msg: String, cause: Option[Throwable] = None) extends InternalException(msg, cause)
+final case class InvalidGraphException(
+  msg: String,
+  cause: Option[Throwable] = None
+) extends InternalException(msg, cause)
 
-final case class GraphAlreadyExistsException(msg: String, cause: Option[Throwable] = None) extends InternalException(msg, cause)
+final case class GraphAlreadyExistsException(
+  msg: String,
+  cause: Option[Throwable] = None
+) extends InternalException(msg, cause)
 
-final case class ViewAlreadyExistsException(msg: String, cause: Option[Throwable] = None) extends InternalException(msg, cause)
+final case class ViewAlreadyExistsException(
+  msg: String,
+  cause: Option[Throwable] = None
+) extends InternalException(msg, cause)

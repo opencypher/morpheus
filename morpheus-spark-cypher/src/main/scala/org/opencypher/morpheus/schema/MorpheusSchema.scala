@@ -41,41 +41,51 @@ object MorpheusSchema {
   implicit class MorpheusSchemaConverter(schema: PropertyGraphSchema) {
 
     /**
-      * Converts a given schema into a Morpheus specific schema. The conversion fails if the schema specifies property types
-      * that cannot be represented in Morpheus and throws a [[org.opencypher.okapi.impl.exception.SchemaException]].
+      * Converts a given schema into a Morpheus specific schema. The conversion fails if the schema
+      * specifies property types that cannot be represented in Morpheus and throws a
+      * [[org.opencypher.okapi.impl.exception.SchemaException]].
       */
     def asMorpheus: MorpheusSchema = {
       schema match {
         case s: MorpheusSchema => s
         case s: PropertyGraphSchema =>
-          val combosByLabel = schema.labels.map(label => label -> s.labelCombinations.combos.filter(_.contains(label)))
+          val combosByLabel = schema.labels.map(label =>
+            label -> s.labelCombinations.combos.filter(_.contains(label))
+          )
 
-          combosByLabel.foreach {
-            case (_, combos) =>
-              val keysForAllCombosOfLabel = combos.map(combo => combo -> schema.nodePropertyKeys(combo))
-              for {
-                (combo1, keys1) <- keysForAllCombosOfLabel
-                (combo2, keys2) <- keysForAllCombosOfLabel
-              } yield {
-                (keys1.keySet intersect keys2.keySet).foreach { k =>
-                  val t1 = keys1(k)
-                  val t2 = keys2(k)
-                  val join = t1.join(t2)
-                  if (!join.isSparkCompatible) {
-                    val explanation = if (combo1 == combo2) {
-                      s"The unsupported type is specified on label combination ${combo1.mkString("[", ", ", "]")}."
-                    } else {
-                      s"The conflict appears between label combinations ${combo1.mkString("[", ", ", "]")} and ${combo2.mkString("[", ", ", "]")}."
-                    }
-                    throw SchemaException(s"The property type '$join' for property '$k' can not be stored in a Spark column. " + explanation)
+          combosByLabel.foreach { case (_, combos) =>
+            val keysForAllCombosOfLabel =
+              combos.map(combo => combo -> schema.nodePropertyKeys(combo))
+            for {
+              (combo1, keys1) <- keysForAllCombosOfLabel
+              (combo2, keys2) <- keysForAllCombosOfLabel
+            } yield {
+              (keys1.keySet intersect keys2.keySet).foreach { k =>
+                val t1 = keys1(k)
+                val t2 = keys2(k)
+                val join = t1.join(t2)
+                if (!join.isSparkCompatible) {
+                  val explanation = if (combo1 == combo2) {
+                    s"The unsupported type is specified on label combination ${combo1
+                        .mkString("[", ", ", "]")}."
+                  } else {
+                    s"The conflict appears between label combinations ${combo1
+                        .mkString("[", ", ", "]")} and ${combo2.mkString("[", ", ", "]")}."
                   }
+                  throw SchemaException(
+                    s"The property type '$join' for property '$k' can not be stored in a Spark column. " + explanation
+                  )
                 }
               }
+            }
           }
 
           new MorpheusSchema(s)
 
-        case other => throw UnsupportedOperationException(s"${other.getClass.getSimpleName} does not have Tag support")
+        case other =>
+          throw UnsupportedOperationException(
+            s"${other.getClass.getSimpleName} does not have Tag support"
+          )
 
       }
     }
@@ -83,7 +93,8 @@ object MorpheusSchema {
 
 }
 
-case class MorpheusSchema private[schema](schema: PropertyGraphSchema) extends PropertyGraphSchema {
+case class MorpheusSchema private[schema] (schema: PropertyGraphSchema)
+    extends PropertyGraphSchema {
 
   override def labels: Set[String] = schema.labels
 
@@ -91,65 +102,117 @@ case class MorpheusSchema private[schema](schema: PropertyGraphSchema) extends P
 
   override def relationshipTypes: Set[String] = schema.relationshipTypes
 
-  override def relationshipKeys: Map[String, Set[String]] = schema.relationshipKeys
+  override def relationshipKeys: Map[String, Set[String]] =
+    schema.relationshipKeys
 
   override def labelPropertyMap: LabelPropertyMap = schema.labelPropertyMap
 
-  override def relTypePropertyMap: RelTypePropertyMap = schema.relTypePropertyMap
+  override def relTypePropertyMap: RelTypePropertyMap =
+    schema.relTypePropertyMap
 
   override def schemaPatterns: Set[SchemaPattern] = schema.schemaPatterns
 
-  override def withSchemaPatterns(patterns: SchemaPattern*): PropertyGraphSchema = schema.withSchemaPatterns(patterns: _*)
+  override def withSchemaPatterns(
+    patterns: SchemaPattern*
+  ): PropertyGraphSchema = schema.withSchemaPatterns(patterns: _*)
 
   override def impliedLabels: ImpliedLabels = schema.impliedLabels
 
   override def labelCombinations: LabelCombinations = schema.labelCombinations
 
-  override def impliedLabels(knownLabels: Set[String]): Set[String] = schema.impliedLabels(knownLabels)
+  override def impliedLabels(knownLabels: Set[String]): Set[String] =
+    schema.impliedLabels(knownLabels)
 
-  override def nodePropertyKeys(labels: Set[String]): PropertyKeys = schema.nodePropertyKeys(labels)
+  override def nodePropertyKeys(labels: Set[String]): PropertyKeys =
+    schema.nodePropertyKeys(labels)
 
   override def allCombinations: Set[Set[String]] = schema.allCombinations
 
-  override def combinationsFor(knownLabels: Set[String]): Set[Set[String]] = schema.combinationsFor(knownLabels)
+  override def combinationsFor(knownLabels: Set[String]): Set[Set[String]] =
+    schema.combinationsFor(knownLabels)
 
-  override def nodePropertyKeyType(labels: Set[String], key: String): Option[CypherType] = schema.nodePropertyKeyType(labels, key)
+  override def nodePropertyKeyType(
+    labels: Set[String],
+    key: String
+  ): Option[CypherType] = schema.nodePropertyKeyType(labels, key)
 
-  override def nodePropertyKeysForCombinations(labelCombinations: Set[Set[String]]): PropertyKeys = schema.nodePropertyKeysForCombinations(labelCombinations)
+  override def nodePropertyKeysForCombinations(
+    labelCombinations: Set[Set[String]]
+  ): PropertyKeys = schema.nodePropertyKeysForCombinations(labelCombinations)
 
-  override def relationshipPropertyKeyType(types: Set[String], key: String): Option[CypherType] = schema.relationshipPropertyKeyType(types, key)
+  override def relationshipPropertyKeyType(
+    types: Set[String],
+    key: String
+  ): Option[CypherType] = schema.relationshipPropertyKeyType(types, key)
 
-  override def relationshipPropertyKeys(typ: String): PropertyKeys = schema.relationshipPropertyKeys(typ)
+  override def relationshipPropertyKeys(typ: String): PropertyKeys =
+    schema.relationshipPropertyKeys(typ)
 
-  override def relationshipPropertyKeysForTypes(knownTypes: Set[String]): PropertyKeys = schema.relationshipPropertyKeysForTypes(knownTypes)
+  override def relationshipPropertyKeysForTypes(
+    knownTypes: Set[String]
+  ): PropertyKeys = schema.relationshipPropertyKeysForTypes(knownTypes)
 
-  override def withNodePropertyKeys(nodeLabels: Set[String], keys: PropertyKeys): PropertyGraphSchema = schema.withNodePropertyKeys(nodeLabels, keys)
+  override def withNodePropertyKeys(
+    nodeLabels: Set[String],
+    keys: PropertyKeys
+  ): PropertyGraphSchema = schema.withNodePropertyKeys(nodeLabels, keys)
 
-  override def withRelationshipPropertyKeys(typ: String, keys: PropertyKeys): PropertyGraphSchema = schema.withRelationshipPropertyKeys(typ, keys)
+  override def withRelationshipPropertyKeys(
+    typ: String,
+    keys: PropertyKeys
+  ): PropertyGraphSchema = schema.withRelationshipPropertyKeys(typ, keys)
 
-  override def ++(other: PropertyGraphSchema): PropertyGraphSchema = schema ++ other
+  override def ++(other: PropertyGraphSchema): PropertyGraphSchema =
+    schema ++ other
 
   override def pretty: String = schema.pretty
 
   override def isEmpty: Boolean = schema.isEmpty
 
-  override def forNode(labelConstraints: Set[String]): PropertyGraphSchema = schema.forNode(labelConstraints)
+  override def forNode(labelConstraints: Set[String]): PropertyGraphSchema =
+    schema.forNode(labelConstraints)
 
-  override def forRelationship(relType: CTRelationship): PropertyGraphSchema = schema.forRelationship(relType)
+  override def forRelationship(relType: CTRelationship): PropertyGraphSchema =
+    schema.forRelationship(relType)
 
-  override def dropPropertiesFor(combo: Set[String]): PropertyGraphSchema = schema.dropPropertiesFor(combo)
+  override def dropPropertiesFor(combo: Set[String]): PropertyGraphSchema =
+    schema.dropPropertiesFor(combo)
 
-  override def withOverwrittenNodePropertyKeys(nodeLabels: Set[String], propertyKeys: PropertyKeys): PropertyGraphSchema = schema.withOverwrittenNodePropertyKeys(nodeLabels, propertyKeys)
+  override def withOverwrittenNodePropertyKeys(
+    nodeLabels: Set[String],
+    propertyKeys: PropertyKeys
+  ): PropertyGraphSchema =
+    schema.withOverwrittenNodePropertyKeys(nodeLabels, propertyKeys)
 
-  override def withOverwrittenRelationshipPropertyKeys(relType: String, propertyKeys: PropertyKeys): PropertyGraphSchema = schema.withOverwrittenRelationshipPropertyKeys(relType, propertyKeys)
+  override def withOverwrittenRelationshipPropertyKeys(
+    relType: String,
+    propertyKeys: PropertyKeys
+  ): PropertyGraphSchema =
+    schema.withOverwrittenRelationshipPropertyKeys(relType, propertyKeys)
 
   override def toJson: String = schema.toJson
 
-  override def explicitSchemaPatterns: Set[SchemaPattern] = schema.explicitSchemaPatterns
+  override def explicitSchemaPatterns: Set[SchemaPattern] =
+    schema.explicitSchemaPatterns
 
-  override def schemaPatternsFor(knownSourceLabels: Set[String], knownRelTypes: Set[String], knownTargetLabels: Set[String]): Set[SchemaPattern] = schema.schemaPatternsFor(knownSourceLabels, knownRelTypes, knownTargetLabels)
+  override def schemaPatternsFor(
+    knownSourceLabels: Set[String],
+    knownRelTypes: Set[String],
+    knownTargetLabels: Set[String]
+  ): Set[SchemaPattern] = schema.schemaPatternsFor(
+    knownSourceLabels,
+    knownRelTypes,
+    knownTargetLabels
+  )
 
-  override def withNodeKey(label: String, nodeKey: Set[String]): PropertyGraphSchema = schema.withNodeKey(label, nodeKey)
+  override def withNodeKey(
+    label: String,
+    nodeKey: Set[String]
+  ): PropertyGraphSchema = schema.withNodeKey(label, nodeKey)
 
-  override def withRelationshipKey(relationshipType: String, relationshipKey: Set[String]): PropertyGraphSchema = schema.withRelationshipKey(relationshipType, relationshipKey)
+  override def withRelationshipKey(
+    relationshipType: String,
+    relationshipKey: Set[String]
+  ): PropertyGraphSchema =
+    schema.withRelationshipKey(relationshipType, relationshipKey)
 }

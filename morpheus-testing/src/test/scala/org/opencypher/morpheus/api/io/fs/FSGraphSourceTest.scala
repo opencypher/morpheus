@@ -48,13 +48,17 @@ class FSGraphSourceTest extends MorpheusTestSuite with ScanGraphInit {
   private val testDatabaseName = "test"
 
   override protected def beforeEach(): Unit = {
-    morpheus.sparkSession.sql(s"CREATE DATABASE IF NOT EXISTS $testDatabaseName")
+    morpheus.sparkSession.sql(
+      s"CREATE DATABASE IF NOT EXISTS $testDatabaseName"
+    )
     tempDir = Files.createTempDirectory(getClass.getSimpleName)
     super.beforeEach()
   }
 
   override protected def afterEach(): Unit = {
-    morpheus.sparkSession.sql(s"DROP DATABASE IF EXISTS $testDatabaseName CASCADE")
+    morpheus.sparkSession.sql(
+      s"DROP DATABASE IF EXISTS $testDatabaseName CASCADE"
+    )
     FileUtils.deleteDirectory(tempDir.toFile)
     super.afterEach()
   }
@@ -62,18 +66,26 @@ class FSGraphSourceTest extends MorpheusTestSuite with ScanGraphInit {
   describe("Hive support") {
 
     val graphName = GraphName("foo")
-    val nodeTableName = HiveTableName(testDatabaseName, graphName, Node, Set("L"))
-    val relTableName = HiveTableName(testDatabaseName, graphName, Relationship, Set("R"))
-    val testGraph = initGraph("CREATE (:L {prop: 'a'})-[:R {prop: 'b'}]->(:L {prop: 'c'})")
+    val nodeTableName =
+      HiveTableName(testDatabaseName, graphName, Node, Set("L"))
+    val relTableName =
+      HiveTableName(testDatabaseName, graphName, Relationship, Set("R"))
+    val testGraph =
+      initGraph("CREATE (:L {prop: 'a'})-[:R {prop: 'b'}]->(:L {prop: 'c'})")
 
     it("writes nodes and relationships to hive tables") {
       val given = testGraph
 
-      val fs = new FSGraphSource("file:///" + tempDir.toAbsolutePath.toString.replace("\\", "/"),
-        FileFormat.parquet, Some(testDatabaseName), None)
+      val fs = new FSGraphSource(
+        "file:///" + tempDir.toAbsolutePath.toString.replace("\\", "/"),
+        FileFormat.parquet,
+        Some(testDatabaseName),
+        None
+      )
       fs.store(graphName, given)
 
-      val nodeResult = morpheus.sparkSession.sql(s"SELECT * FROM $nodeTableName")
+      val nodeResult =
+        morpheus.sparkSession.sql(s"SELECT * FROM $nodeTableName")
       nodeResult.collect().toSet should equal(
         Set(
           Row(1.encodeAsMorpheusId, "c"),
@@ -84,7 +96,12 @@ class FSGraphSourceTest extends MorpheusTestSuite with ScanGraphInit {
       val relResult = morpheus.sparkSession.sql(s"SELECT * FROM $relTableName")
       relResult.collect().toSet should equal(
         Set(
-          Row(2.encodeAsMorpheusId, 0.encodeAsMorpheusId, 1.encodeAsMorpheusId, "b")
+          Row(
+            2.encodeAsMorpheusId,
+            0.encodeAsMorpheusId,
+            1.encodeAsMorpheusId,
+            "b"
+          )
         )
       )
     }
@@ -92,18 +109,28 @@ class FSGraphSourceTest extends MorpheusTestSuite with ScanGraphInit {
     it("deletes the hive database if the graph is deleted") {
       val given = testGraph
 
-      val fs = new FSGraphSource("file:///" + tempDir.toAbsolutePath.toString.replace("\\", "/"),
-        FileFormat.parquet, Some(testDatabaseName), None)
+      val fs = new FSGraphSource(
+        "file:///" + tempDir.toAbsolutePath.toString.replace("\\", "/"),
+        FileFormat.parquet,
+        Some(testDatabaseName),
+        None
+      )
       fs.store(graphName, given)
 
-      morpheus.sparkSession.sql(s"SELECT * FROM $nodeTableName").collect().toSet should not be empty
-      morpheus.sparkSession.sql(s"SELECT * FROM $relTableName").collect().toSet should not be empty
+      morpheus.sparkSession
+        .sql(s"SELECT * FROM $nodeTableName")
+        .collect()
+        .toSet should not be empty
+      morpheus.sparkSession
+        .sql(s"SELECT * FROM $relTableName")
+        .collect()
+        .toSet should not be empty
 
       fs.delete(graphName)
-      an [AnalysisException] shouldBe thrownBy {
+      an[AnalysisException] shouldBe thrownBy {
         morpheus.sparkSession.sql(s"SELECT * FROM $nodeTableName")
       }
-      an [AnalysisException] shouldBe thrownBy {
+      an[AnalysisException] shouldBe thrownBy {
         morpheus.sparkSession.sql(s"SELECT * FROM $relTableName")
       }
     }
@@ -114,19 +141,24 @@ class FSGraphSourceTest extends MorpheusTestSuite with ScanGraphInit {
     it("encodes unsupported charaters") {
       val graphName = GraphName("orcGraph")
 
-      val given = initGraph(
-        """
+      val given = initGraph("""
           |CREATE (:A {`foo@bar`: 42})
         """.stripMargin)
 
-      val fs = GraphSources.fs("file:///" + tempDir.toAbsolutePath.toString.replace("\\", "/")).orc
+      val fs = GraphSources
+        .fs("file:///" + tempDir.toAbsolutePath.toString.replace("\\", "/"))
+        .orc
       fs.store(graphName, given)
 
       val graph = fs.graph(graphName)
 
-      graph.nodes("n").toMaps should equal(Bag(
-        CypherMap("n" -> MorpheusNode(0, Set("A"), CypherMap("foo@bar" -> 42)))
-      ))
+      graph.nodes("n").toMaps should equal(
+        Bag(
+          CypherMap(
+            "n" -> MorpheusNode(0, Set("A"), CypherMap("foo@bar" -> 42))
+          )
+        )
+      )
     }
   }
 

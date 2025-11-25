@@ -56,34 +56,49 @@ object SparkTable {
 
     override def physicalColumns: Seq[String] = df.columns
 
-    override def columnType: Map[String, CypherType] = physicalColumns.map(c => c -> df.cypherTypeForColumn(c)).toMap
+    override def columnType: Map[String, CypherType] =
+      physicalColumns.map(c => c -> df.cypherTypeForColumn(c)).toMap
 
-    override def rows: Iterator[String => CypherValue] = df.toLocalIterator.asScala.map { row =>
-      physicalColumns.map(c => c -> CypherValue(row.get(row.fieldIndex(c)))).toMap
-    }
+    override def rows: Iterator[String => CypherValue] =
+      df.toLocalIterator.asScala.map { row =>
+        physicalColumns
+          .map(c => c -> CypherValue(row.get(row.fieldIndex(c))))
+          .toMap
+      }
 
     override def size: Long = df.count()
 
-    override def select(col: (String, String), cols: (String, String)*): DataFrameTable = {
+    override def select(
+      col: (String, String),
+      cols: (String, String)*
+    ): DataFrameTable = {
       val columns = col +: cols
       if (df.columns.toSeq == columns.map { case (_, alias) => alias }) {
         df
       } else {
         // Spark interprets dots in column names as struct accessors. Hence, we need to escape column names by default.
-        df.select(columns.map { case (colName, alias) => df.col(s"`$colName`").as(alias) }: _*)
+        df.select(columns.map { case (colName, alias) =>
+          df.col(s"`$colName`").as(alias)
+        }: _*)
       }
     }
 
-    override def filter(expr: Expr)(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
+    override def filter(
+      expr: Expr
+    )(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
       df.where(expr.asSparkSQLExpr(header, df, parameters))
     }
 
-    override def withColumns(columns: (Expr, String)*)
-      (implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
-      val initialColumnNameToColumn: Map[String, Column] = df.columns.map(c => c -> df.col(c)).toMap
-      val updatedColumns = columns.foldLeft(initialColumnNameToColumn) { case (columnMap, (expr, columnName)) =>
-        val column = expr.asSparkSQLExpr(header, df, parameters).as(columnName)
-        columnMap + (columnName -> column)
+    override def withColumns(
+      columns: (Expr, String)*
+    )(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
+      val initialColumnNameToColumn: Map[String, Column] =
+        df.columns.map(c => c -> df.col(c)).toMap
+      val updatedColumns = columns.foldLeft(initialColumnNameToColumn) {
+        case (columnMap, (expr, columnName)) =>
+          val column =
+            expr.asSparkSQLExpr(header, df, parameters).as(columnName)
+          columnMap + (columnName -> column)
       }
       // TODO: Re-enable this check as soon as types (and their nullability) are correctly inferred in typing phase
       //      if (!expr.cypherType.isNullable) {
@@ -103,12 +118,13 @@ object SparkTable {
       df.drop(cols: _*)
     }
 
-    override def orderBy(sortItems: (Expr, Order)*)
-      (implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
+    override def orderBy(
+      sortItems: (Expr, Order)*
+    )(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
       val mappedSortItems = sortItems.map { case (expr, order) =>
         val mappedExpr = expr.asSparkSQLExpr(header, df, parameters)
         order match {
-          case Ascending => mappedExpr.asc
+          case Ascending  => mappedExpr.asc
           case Descending => mappedExpr.desc
         }
       }
@@ -127,12 +143,15 @@ object SparkTable {
     }
 
     override def limit(items: Long): DataFrameTable = {
-      if (items > Int.MaxValue) throw IllegalArgumentException("an integer", items)
+      if (items > Int.MaxValue)
+        throw IllegalArgumentException("an integer", items)
       df.limit(items.toInt)
     }
 
-    override def group(by: Set[Var], aggregations: Map[String, Aggregator])
-      (implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
+    override def group(
+      by: Set[Var],
+      aggregations: Map[String, Aggregator]
+    )(implicit header: RecordHeader, parameters: CypherMap): DataFrameTable = {
 
       def withInnerExpr(expr: Expr)(f: Column => Column) =
         f(expr.asSparkSQLExpr(header, df, parameters))
@@ -148,8 +167,8 @@ object SparkTable {
           Right(df)
         }
 
-      val sparkAggFunctions = aggregations.map {
-        case (columnName, aggFunc) => aggFunc.asSparkSQLExpr(header, df, parameters).as(columnName)
+      val sparkAggFunctions = aggregations.map { case (columnName, aggFunc) =>
+        aggFunc.asSparkSQLExpr(header, df, parameters).as(columnName)
       }
 
       data.fold(
@@ -166,20 +185,26 @@ object SparkTable {
         case (leftType, rightType) if !leftType.nullable.couldBeSameTypeAs(rightType.nullable) =>
           throw IllegalArgumentException(
             "Equal column data types for union all (differing nullability is OK)",
-            s"Left fields:  ${df.schema.fields.mkString(", ")}\n\tRight fields: ${other.df.schema.fields.mkString(", ")}")
+            s"Left fields:  ${df.schema.fields
+                .mkString(", ")}\n\tRight fields: ${other.df.schema.fields.mkString(", ")}"
+          )
         case _ =>
       }
 
       df.union(other.df)
     }
 
-    override def join(other: DataFrameTable, joinType: JoinType, joinCols: (String, String)*): DataFrameTable = {
+    override def join(
+      other: DataFrameTable,
+      joinType: JoinType,
+      joinCols: (String, String)*
+    ): DataFrameTable = {
       val joinTypeString = joinType match {
-        case InnerJoin => "inner"
-        case LeftOuterJoin => "left_outer"
+        case InnerJoin      => "inner"
+        case LeftOuterJoin  => "left_outer"
         case RightOuterJoin => "right_outer"
-        case FullOuterJoin => "full_outer"
-        case CrossJoin => "cross"
+        case FullOuterJoin  => "full_outer"
+        case CrossJoin      => "cross"
       }
 
       joinType match {
@@ -187,8 +212,13 @@ object SparkTable {
           df.crossJoin(other.df)
 
         case LeftOuterJoin
-          if joinCols.isEmpty && df.sparkSession.conf.get("spark.sql.crossJoin.enabled", "false") == "false" =>
-          throw UnsupportedOperationException("OPTIONAL MATCH support requires spark.sql.crossJoin.enabled=true")
+            if joinCols.isEmpty && df.sparkSession.conf.get(
+              "spark.sql.crossJoin.enabled",
+              "false"
+            ) == "false" =>
+          throw UnsupportedOperationException(
+            "OPTIONAL MATCH support requires spark.sql.crossJoin.enabled=true"
+          )
 
         case _ =>
           df.safeJoin(other.df, joinCols, joinTypeString)
@@ -197,12 +227,18 @@ object SparkTable {
 
     override def distinct: DataFrameTable = df.dropDuplicates()
 
-    override def distinct(cols: String*): DataFrameTable = df.dropDuplicates(cols.toSeq)
+    override def distinct(cols: String*): DataFrameTable =
+      df.dropDuplicates(cols.toSeq)
 
     override def cache(): DataFrameTable = {
       val planToCache = df.queryExecution.analyzed
-      if (df.sparkSession.sharedState.cacheManager.lookupCachedData(planToCache).nonEmpty) {
-        df.sparkSession.sharedState.cacheManager.cacheQuery(df, None, StorageLevel.MEMORY_ONLY)
+      if (
+        df.sparkSession.sharedState.cacheManager
+          .lookupCachedData(planToCache)
+          .nonEmpty
+      ) {
+        df.sparkSession.sharedState.cacheManager
+          .cacheQuery(df, None, StorageLevel.MEMORY_ONLY)
       }
       this
     }
@@ -220,28 +256,41 @@ object SparkTable {
   }
 
   implicit class DataFrameMeta(val df: DataFrame) extends AnyVal {
+
     /**
       * Returns the corresponding Cypher type for the given column name in the data frame.
       *
-      * @param columnName column name
-      * @return Cypher type for column
+      * @param columnName
+      *   column name
+      * @return
+      *   Cypher type for column
       */
     def cypherTypeForColumn(columnName: String): CypherType = {
       val structField = structFieldForColumn(columnName)
-      val compatibleCypherType = structField.dataType.cypherCompatibleDataType.flatMap(_.toCypherType(structField.nullable))
+      val compatibleCypherType = structField.dataType.cypherCompatibleDataType
+        .flatMap(_.toCypherType(structField.nullable))
       compatibleCypherType.getOrElse(
-        throw IllegalArgumentException("a supported Spark DataType that can be converted to CypherType", structField.dataType))
+        throw IllegalArgumentException(
+          "a supported Spark DataType that can be converted to CypherType",
+          structField.dataType
+        )
+      )
     }
 
     /**
       * Returns the struct field for the given column.
       *
-      * @param columnName column name
-      * @return struct field
+      * @param columnName
+      *   column name
+      * @return
+      *   struct field
       */
     def structFieldForColumn(columnName: String): StructField = {
       if (df.schema.fieldIndex(columnName) < 0) {
-        throw IllegalArgumentException(s"column with name $columnName", s"columns with names ${df.columns.mkString("[", ", ", "]")}")
+        throw IllegalArgumentException(
+          s"column with name $columnName",
+          s"columns with names ${df.columns.mkString("[", ", ", "]")}"
+        )
       }
       df.schema.fields(df.schema.fieldIndex(columnName))
     }
@@ -249,8 +298,11 @@ object SparkTable {
 
   implicit class DataFrameValidation(val df: DataFrame) extends AnyVal {
 
-    def validateColumnTypes(expectedColsWithType: Map[String, CypherType]): Unit = {
-      val missingColumns = expectedColsWithType.keySet -- df.schema.fieldNames.toSet
+    def validateColumnTypes(
+      expectedColsWithType: Map[String, CypherType]
+    ): Unit = {
+      val missingColumns =
+        expectedColsWithType.keySet -- df.schema.fieldNames.toSet
 
       if (missingColumns.nonEmpty) {
         throw IllegalArgumentException(
@@ -262,24 +314,27 @@ object SparkTable {
         )
       }
 
-      val structFields = df.schema.fields.map(field => field.name -> field).toMap
+      val structFields =
+        df.schema.fields.map(field => field.name -> field).toMap
 
-      expectedColsWithType.foreach {
-        case (column, cypherType) =>
-          val structField = structFields(column)
+      expectedColsWithType.foreach { case (column, cypherType) =>
+        val structField = structFields(column)
 
-          val structFieldType = structField.toCypherType match {
-            case Some(cType) => cType
-            case None => throw IllegalArgumentException(
-              expected = s"Cypher-compatible DataType for column $column",
-              actual = structField.dataType)
-          }
-
-          if (!structFieldType.material.subTypeOf(cypherType.material)) {
+        val structFieldType = structField.toCypherType match {
+          case Some(cType) => cType
+          case None =>
             throw IllegalArgumentException(
-              expected = s"Sub-type of $cypherType for column: $column",
-              actual = structFieldType)
-          }
+              expected = s"Cypher-compatible DataType for column $column",
+              actual = structField.dataType
+            )
+        }
+
+        if (!structFieldType.material.subTypeOf(cypherType.material)) {
+          throw IllegalArgumentException(
+            expected = s"Sub-type of $cypherType for column: $column",
+            actual = structFieldType
+          )
+        }
       }
     }
   }
@@ -287,9 +342,11 @@ object SparkTable {
   implicit class DataFrameTransformation(val df: DataFrame) extends AnyVal {
 
     def safeAddColumn(name: String, col: Column): DataFrame = {
-      require(!df.columns.contains(name),
+      require(
+        !df.columns.contains(name),
         s"Cannot add column `$name`. A column with that name exists already. " +
-          s"Use `safeReplaceColumn` if you intend to replace that column.")
+          s"Use `safeReplaceColumn` if you intend to replace that column."
+      )
       df.withColumn(name, col)
     }
 
@@ -300,8 +357,11 @@ object SparkTable {
     }
 
     def safeReplaceColumn(name: String, newColumn: Column): DataFrame = {
-      require(df.columns.contains(name), s"Cannot replace column `$name`. No column with that name exists. " +
-        s"Use `safeAddColumn` if you intend to add that column.")
+      require(
+        df.columns.contains(name),
+        s"Cannot replace column `$name`. No column with that name exists. " +
+          s"Use `safeAddColumn` if you intend to add that column."
+      )
       df.safeAddColumn(name, newColumn)
     }
 
@@ -310,15 +370,23 @@ object SparkTable {
     }
 
     def safeRenameColumns(renames: Map[String, String]): DataFrame = {
-      if (renames.isEmpty || renames.forall { case (oldColumn, newColumn) => oldColumn == newColumn }) {
+      if (
+        renames.isEmpty || renames.forall { case (oldColumn, newColumn) =>
+          oldColumn == newColumn
+        }
+      ) {
         df
       } else {
-        renames.foreach { case (oldName, newName) => if (oldName != newName) require(!df.columns.contains(newName),
-          s"Cannot rename column `$oldName` to `$newName`. A column with name `$newName` exists already.")
+        renames.foreach { case (oldName, newName) =>
+          if (oldName != newName)
+            require(
+              !df.columns.contains(newName),
+              s"Cannot rename column `$oldName` to `$newName`. A column with name `$newName` exists already."
+            )
         }
         val newColumns = df.columns.map {
           case col if renames.contains(col) => renames(col)
-          case col => col
+          case col                          => col
         }
         df.toDF(newColumns: _*)
       }
@@ -326,19 +394,27 @@ object SparkTable {
 
     def safeDropColumns(names: String*): DataFrame = {
       val nonExistentColumns = names.toSet -- df.columns
-      require(nonExistentColumns.isEmpty,
-        s"Cannot drop column(s) ${nonExistentColumns.map(c => s"`$c`").mkString(", ")}. They do not exist.")
+      require(
+        nonExistentColumns.isEmpty,
+        s"Cannot drop column(s) ${nonExistentColumns.map(c => s"`$c`").mkString(", ")}. They do not exist."
+      )
       df.drop(names: _*)
     }
 
-    def safeJoin(other: DataFrame, joinCols: Seq[(String, String)], joinType: String): DataFrame = {
+    def safeJoin(
+      other: DataFrame,
+      joinCols: Seq[(String, String)],
+      joinType: String
+    ): DataFrame = {
       require(joinCols.map(_._1).forall(col => !other.columns.contains(col)))
       require(joinCols.map(_._2).forall(col => !df.columns.contains(col)))
 
       val joinExpr = if (joinCols.nonEmpty) {
-        joinCols.map {
-          case (l, r) => df.col(l) === other.col(r)
-        }.reduce((acc, expr) => acc && expr)
+        joinCols
+          .map { case (l, r) =>
+            df.col(l) === other.col(r)
+          }
+          .reduce((acc, expr) => acc && expr)
       } else {
         functions.lit(true)
       }
@@ -346,18 +422,22 @@ object SparkTable {
     }
 
     def prefixColumns(prefix: String): DataFrame =
-      df.safeRenameColumns(df.columns.map(column => column -> s"$prefix$column").toMap)
+      df.safeRenameColumns(
+        df.columns.map(column => column -> s"$prefix$column").toMap
+      )
 
     def removePrefix(prefix: String): DataFrame = {
       val columnRenames = df.columns.collect {
-        case column if column.startsWith(prefix) => column -> column.substring(prefix.length)
+        case column if column.startsWith(prefix) =>
+          column -> column.substring(prefix.length)
       }
       df.safeRenameColumns(columnRenames.toMap)
     }
 
     def encodeBinaryToHexString: DataFrame = {
       val columnsToSelect = df.schema.map {
-        case sf: StructField if sf.dataType == BinaryType => functions.hex(df.col(sf.name)).as(sf.name)
+        case sf: StructField if sf.dataType == BinaryType =>
+          functions.hex(df.col(sf.name)).as(sf.name)
         case sf: StructField => df.col(sf.name)
       }
       df.select(columnsToSelect: _*)
@@ -366,7 +446,7 @@ object SparkTable {
     def transformColumns(cols: String*)(f: Column => Column): DataFrame = {
       val columnsToSelect = df.columns.map {
         case c if cols.contains(c) => f(df.col(c))
-        case c => df.col(c)
+        case c                     => df.col(c)
       }
       df.select(columnsToSelect: _*)
     }
@@ -374,7 +454,10 @@ object SparkTable {
     def decodeHexStringToBinary(hexColumns: Set[String]): DataFrame = {
       val columnsToSelect = df.schema.map {
         case sf: StructField if hexColumns.contains(sf.name) =>
-          assert(sf.dataType == StringType, "Can only decode hex columns of StringType to BinaryType")
+          assert(
+            sf.dataType == StringType,
+            "Can only decode hex columns of StringType to BinaryType"
+          )
           functions.unhex(df.col(sf.name)).as(sf.name)
         case sf: StructField => df.col(sf.name)
       }
@@ -385,13 +468,16 @@ object SparkTable {
       idColumns.map { key =>
         df.structFieldForColumn(key).dataType match {
           case LongType => df.col(key).encodeLongAsMorpheusId(key)
-          case IntegerType => df.col(key).cast(LongType).encodeLongAsMorpheusId(key)
+          case IntegerType =>
+            df.col(key).cast(LongType).encodeLongAsMorpheusId(key)
           case StringType => df.col(key).cast(BinaryType)
           case BinaryType => df.col(key)
-          case unsupportedType => throw IllegalArgumentException(
-            expected = s"Column `$key` should have a valid identifier data type, such as [`$BinaryType`, `$StringType`, `$LongType`, `$IntegerType`]",
-            actual = s"Unsupported column type `$unsupportedType`"
-          )
+          case unsupportedType =>
+            throw IllegalArgumentException(
+              expected =
+                s"Column `$key` should have a valid identifier data type, such as [`$BinaryType`, `$StringType`, `$LongType`, `$IntegerType`]",
+              actual = s"Unsupported column type `$unsupportedType`"
+            )
         }
       }
     }
@@ -399,115 +485,146 @@ object SparkTable {
     /**
       * Cast all integer columns in a DataFrame to long.
       *
-      * @return a DataFrame with all integer values cast to long
+      * @return
+      *   a DataFrame with all integer values cast to long
       */
     def castToLong: DataFrame = {
       def convertColumns(field: StructField, col: Column): Column = {
         val convertedCol = field.dataType match {
           case StructType(inner) =>
-            val columns = inner.map(i => convertColumns(i, col.getField(i.name)).as(i.name))
+            val columns =
+              inner.map(i => convertColumns(i, col.getField(i.name)).as(i.name))
             functions.struct(columns: _*)
-          case ArrayType(IntegerType, nullable) => col.cast(ArrayType(LongType, nullable))
+          case ArrayType(IntegerType, nullable) =>
+            col.cast(ArrayType(LongType, nullable))
           case IntegerType => col.cast(LongType)
-          case _ => col
+          case _           => col
         }
         if (col == convertedCol) col else convertedCol.as(field.name)
       }
 
-      val convertedColumns = df.schema.fields.map { field => convertColumns(field, df.col(field.name)) }
-      if (df.columns.map(df.col).sameElements(convertedColumns)) df else df.select(convertedColumns: _*)
+      val convertedColumns = df.schema.fields.map { field =>
+        convertColumns(field, df.col(field.name))
+      }
+      if (df.columns.map(df.col).sameElements(convertedColumns)) df
+      else df.select(convertedColumns: _*)
     }
 
     /**
       * Adds a new column `hashColumn` containing the hash value of the given input columns.
       *
-      * The hash is generated using [[org.apache.spark.sql.catalyst.expressions.Murmur3Hash]] based on the given column
-      * sequence. To decrease collision probability, we:
+      * The hash is generated using [[org.apache.spark.sql.catalyst.expressions.Murmur3Hash]] based
+      * on the given column sequence. To decrease collision probability, we:
       *
-      * 1) generate a first hash for the given column sequence
-      * 2) shift the hash into the upper bits of a 64 bit long
-      * 3) generate a second hash using the reversed input column sequence
-      * 4) store the hash in the lower 32 bits of the final id
+      * 1) generate a first hash for the given column sequence 2) shift the hash into the upper bits
+      * of a 64 bit long 3) generate a second hash using the reversed input column sequence 4) store
+      * the hash in the lower 32 bits of the final id
       *
-      * @param columns    input columns for the hash function
-      * @param hashColumn column storing the result of the hash function
-      * @return DataFrame with an additional column that contains the hash ID
+      * @param columns
+      *   input columns for the hash function
+      * @param hashColumn
+      *   column storing the result of the hash function
+      * @return
+      *   DataFrame with an additional column that contains the hash ID
       */
     def withHashColumn(columns: Seq[Column], hashColumn: String): DataFrame = {
-      require(columns.nonEmpty, "Hash function requires a non-empty sequence of columns as input.")
-      df.safeAddColumn(hashColumn, MorpheusFunctions.hash64(columns: _*).encodeLongAsMorpheusId)
+      require(
+        columns.nonEmpty,
+        "Hash function requires a non-empty sequence of columns as input."
+      )
+      df.safeAddColumn(
+        hashColumn,
+        MorpheusFunctions.hash64(columns: _*).encodeLongAsMorpheusId
+      )
     }
 
     /**
-      * Adds a new column `serializedColumn` containing the serialized values of the given input columns.
+      * Adds a new column `serializedColumn` containing the serialized values of the given input
+      * columns.
       *
-      * @param columns          input columns for the serialization function
-      * @param serializedColumn column storing the result of the serialization function
-      * @return DataFrame with an additional column that contains the serialized ID
+      * @param columns
+      *   input columns for the serialization function
+      * @param serializedColumn
+      *   column storing the result of the serialization function
+      * @return
+      *   DataFrame with an additional column that contains the serialized ID
       */
-    def withSerializedIdColumn(columns: Seq[Column], serializedColumn: String): DataFrame = {
-      require(columns.nonEmpty, "Serialized ID function requires a non-empty sequence of columns as input.")
+    def withSerializedIdColumn(
+      columns: Seq[Column],
+      serializedColumn: String
+    ): DataFrame = {
+      require(
+        columns.nonEmpty,
+        "Serialized ID function requires a non-empty sequence of columns as input."
+      )
       df.safeAddColumn(serializedColumn, serialize(columns: _*))
     }
 
-    /**
-      * Normalises the DataFrame by lifting numeric fields to Long and similar ops.
-      */
+    /** Normalises the DataFrame by lifting numeric fields to Long and similar ops. */
     def withCypherCompatibleTypes: DataFrame = {
       val toCast = df.schema.fields.filter(f => f.toCypherType.isEmpty)
-      val dfWithCompatibleTypes: DataFrame = toCast.foldLeft(df) {
-        case (currentDf, field) =>
-          val castType = field.dataType.cypherCompatibleDataType.getOrElse(
-            throw IllegalArgumentException(
-              s"a Spark type supported by Cypher.",
-              s"type ${field.dataType} of field $field"))
-          currentDf.withColumn(field.name, currentDf.col(field.name).cast(castType))
+      val dfWithCompatibleTypes: DataFrame = toCast.foldLeft(df) { case (currentDf, field) =>
+        val castType = field.dataType.cypherCompatibleDataType.getOrElse(
+          throw IllegalArgumentException(
+            s"a Spark type supported by Cypher.",
+            s"type ${field.dataType} of field $field"
+          )
+        )
+        currentDf.withColumn(
+          field.name,
+          currentDf.col(field.name).cast(castType)
+        )
       }
       dfWithCompatibleTypes
     }
   }
 
   implicit class DataFrameSequence(val dataFrames: Seq[DataFrame]) extends AnyVal {
+
     /**
-      * Takes a sequence of DataFrames and adds long identifiers to all of them. Identifiers are guaranteed to be unique
-      * across all given DataFrames. The DataFrames are returned in the same order as the input.
+      * Takes a sequence of DataFrames and adds long identifiers to all of them. Identifiers are
+      * guaranteed to be unique across all given DataFrames. The DataFrames are returned in the same
+      * order as the input.
       *
-      * @param idColumnName column name for the generated id
-      * @return a sequence of DataFrames with unique long identifiers
+      * @param idColumnName
+      *   column name for the generated id
+      * @return
+      *   a sequence of DataFrames with unique long identifiers
       */
     def addUniqueIds(idColumnName: String): Seq[DataFrame] = {
       // We need to know how many partitions a DF has in order to avoid writing into the id space of another DF.
       // This is why require a running sum of number of partitions because we add the DF-specific sum to the offset that
       // Sparks monotonically_increasing_id adds.
       val dfPartitionCounts = dataFrames.map(_.rdd.getNumPartitions)
-      val dfPartitionStartDeltas = dfPartitionCounts.scan(0)(_ + _).dropRight(1) // drop last delta, as we don't need it
+      val dfPartitionStartDeltas = dfPartitionCounts
+        .scan(0)(_ + _)
+        .dropRight(1) // drop last delta, as we don't need it
 
-      dataFrames.zip(dfPartitionStartDeltas).map {
-        case (df, partitionStartDelta) =>
-          df.safeAddColumn(idColumnName, partitioned_id_assignment(partitionStartDelta))
+      dataFrames.zip(dfPartitionStartDeltas).map { case (df, partitionStartDelta) =>
+        df.safeAddColumn(
+          idColumnName,
+          partitioned_id_assignment(partitionStartDelta)
+        )
       }
     }
   }
 
   implicit class DataFrameDebug(val df: DataFrame) extends AnyVal {
-    /**
-      * Prints timing of Spark computation for DF.
-      */
+
+    /** Prints timing of Spark computation for DF. */
     def printExecutionTiming(description: String): Unit = {
       printTiming(s"$description") {
         df.count() // Force computation of DF
       }
     }
 
-    /**
-      * Prints Spark physical plan.
-      */
+    /** Prints Spark physical plan. */
     def printPhysicalPlan(): Unit = {
       println("Spark plan:")
       implicit val sc: SparkContext = df.sparkSession.sparkContext
       val sparkPlan: SparkPlan = df.queryExecution.executedPlan
       val planString = sparkPlan.treeString(verbose = false).flatMap {
-        case '\n' => Seq('\n', '\t')
+        case '\n'  => Seq('\n', '\t')
         case other => Seq(other)
       }
       println(s"\t$planString")

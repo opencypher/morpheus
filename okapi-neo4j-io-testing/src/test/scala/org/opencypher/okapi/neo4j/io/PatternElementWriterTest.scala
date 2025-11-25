@@ -56,7 +56,12 @@ class PatternElementWriterTest extends BaseTestSuite with Neo4jServerFixture wit
       )
     }.toBag
 
-    val result = neo4jConfig.cypherWithNewSession(s"MATCH (n) RETURN n.$metaPropertyKey, n.val1, n.val2, n.val3").map(CypherMap).toBag
+    val result = neo4jConfig
+      .cypherWithNewSession(
+        s"MATCH (n) RETURN n.$metaPropertyKey, n.val1, n.val2, n.val3"
+      )
+      .map(CypherMap)
+      .toBag
     result should equal(expected)
   }
 
@@ -78,31 +83,39 @@ class PatternElementWriterTest extends BaseTestSuite with Neo4jServerFixture wit
       )
     }.toBag
 
-    val result = neo4jConfig.cypherWithNewSession(s"MATCH ()-[r]->() RETURN r.$metaPropertyKey, r.val3").map(CypherMap).toBag
+    val result = neo4jConfig
+      .cypherWithNewSession(
+        s"MATCH ()-[r]->() RETURN r.$metaPropertyKey, r.val3"
+      )
+      .map(CypherMap)
+      .toBag
     result should equal(expected)
   }
 
   override def dataFixture: String = ""
 
-  private def rowToListValue(data: Array[AnyRef]) = Values.value(data.map(Values.value): _*)
+  private def rowToListValue(data: Array[AnyRef]) =
+    Values.value(data.map(Values.value): _*)
 
   private val numberOfNodes = 10
-  val inputNodes: immutable.IndexedSeq[Array[AnyRef]] = (1 to numberOfNodes).map { i =>
-    Array[AnyRef](
-      i.asInstanceOf[AnyRef],
-      i.asInstanceOf[AnyRef],
-      i.toString.asInstanceOf[AnyRef],
-      (i % 2 == 0).asInstanceOf[AnyRef],
-      (i+1).asInstanceOf[AnyRef]
-    )
-  }
+  val inputNodes: immutable.IndexedSeq[Array[AnyRef]] =
+    (1 to numberOfNodes).map { i =>
+      Array[AnyRef](
+        i.asInstanceOf[AnyRef],
+        i.asInstanceOf[AnyRef],
+        i.toString.asInstanceOf[AnyRef],
+        (i % 2 == 0).asInstanceOf[AnyRef],
+        (i + 1).asInstanceOf[AnyRef]
+      )
+    }
 
-  val inputRels: immutable.IndexedSeq[Array[AnyRef]] = (2 to numberOfNodes).map { i =>
-    Array[AnyRef](
-      i.asInstanceOf[AnyRef],
-      (i - 1).asInstanceOf[AnyRef],
-      i.asInstanceOf[AnyRef],
-      (i % 2 == 0).asInstanceOf[AnyRef]
-    )
-  }
+  val inputRels: immutable.IndexedSeq[Array[AnyRef]] =
+    (2 to numberOfNodes).map { i =>
+      Array[AnyRef](
+        i.asInstanceOf[AnyRef],
+        (i - 1).asInstanceOf[AnyRef],
+        i.asInstanceOf[AnyRef],
+        (i % 2 == 0).asInstanceOf[AnyRef]
+      )
+    }
 }

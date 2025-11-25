@@ -45,10 +45,19 @@ import scala.language.implicitConversions
 class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   val baseTypes: Seq[CypherType] = Seq[CypherType](
-    CTAny, CTUnion(CTInteger, CTFloat), CTNull, CTVoid,
-    CTBoolean, CTInteger, CTFloat, CTString,
-    CTDate, CTLocalDateTime, CTDuration,
-    CTIdentity, CTPath
+    CTAny,
+    CTUnion(CTInteger, CTFloat),
+    CTNull,
+    CTVoid,
+    CTBoolean,
+    CTInteger,
+    CTFloat,
+    CTString,
+    CTDate,
+    CTLocalDateTime,
+    CTDuration,
+    CTIdentity,
+    CTPath
   )
 
   val simple: Seq[(String, CypherType)] =
@@ -73,12 +82,12 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     lists.map { case (n, t) => s"${n}_OR_NULL" -> t.nullable },
     maps,
     maps.map { case (n, t) => s"${n}_OR_NULL" -> t.nullable }
-  ).flatten.map {
-    case (name, typ) => Var(name)(typ)
+  ).flatten.map { case (name, typ) =>
+    Var(name)(typ)
   }.toSet
 
-  private val properties  =
-    simple ++ Seq("name" -> CTString,  "age" -> CTInteger)
+  private val properties =
+    simple ++ Seq("name" -> CTString, "age" -> CTInteger)
 
   private val properties2 =
     simple ++ Seq("name" -> CTBoolean, "age" -> CTFloat)
@@ -87,9 +96,9 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     simple ++ Seq("name" -> CTAny, "age" -> CTUnion(CTInteger, CTFloat))
 
   private val schema: PropertyGraphSchema = PropertyGraphSchema.empty
-    .withNodePropertyKeys("Node")(properties : _*)
+    .withNodePropertyKeys("Node")(properties: _*)
     .withRelationshipPropertyKeys("REL")(properties: _*)
-    .withNodePropertyKeys("Node2")(properties2 : _*)
+    .withNodePropertyKeys("Node2")(properties2: _*)
     .withRelationshipPropertyKeys("REL2")(properties2: _*)
 
   val testContext: IRBuilderContext = IRBuilderContext.initial(
@@ -110,32 +119,57 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     }
 
     it("should convert bigdecimal addition") {
-      val result = convert(parseExpr("bigdecimal(INTEGER, 4, 2) + bigdecimal(INTEGER, 10, 6)"))
-      result shouldEqual Add(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))
+      val result = convert(
+        parseExpr("bigdecimal(INTEGER, 4, 2) + bigdecimal(INTEGER, 10, 6)")
+      )
+      result shouldEqual Add(
+        BigDecimal('INTEGER, 4, 2),
+        BigDecimal('INTEGER, 10, 6)
+      )
       result.cypherType shouldEqual CTBigDecimal(11, 6)
     }
 
     it("should convert bigdecimal subtraction") {
-      val result = convert(parseExpr("bigdecimal(INTEGER, 4, 2) - bigdecimal(INTEGER, 10, 6)"))
-      result shouldEqual Subtract(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))
+      val result = convert(
+        parseExpr("bigdecimal(INTEGER, 4, 2) - bigdecimal(INTEGER, 10, 6)")
+      )
+      result shouldEqual Subtract(
+        BigDecimal('INTEGER, 4, 2),
+        BigDecimal('INTEGER, 10, 6)
+      )
       result.cypherType shouldEqual CTBigDecimal(11, 6)
     }
 
     it("should convert bigdecimal multiplication") {
-      val result = convert(parseExpr("bigdecimal(INTEGER, 4, 2) * bigdecimal(INTEGER, 10, 6)"))
-      result shouldEqual Multiply(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))
+      val result = convert(
+        parseExpr("bigdecimal(INTEGER, 4, 2) * bigdecimal(INTEGER, 10, 6)")
+      )
+      result shouldEqual Multiply(
+        BigDecimal('INTEGER, 4, 2),
+        BigDecimal('INTEGER, 10, 6)
+      )
       result.cypherType shouldEqual CTBigDecimal(15, 8)
     }
 
     it("should convert bigdecimal division") {
-      val result = convert(parseExpr("bigdecimal(INTEGER, 4, 2) / bigdecimal(INTEGER, 10, 6)"))
-      result shouldEqual Divide(BigDecimal('INTEGER, 4, 2), BigDecimal('INTEGER, 10, 6))
+      val result = convert(
+        parseExpr("bigdecimal(INTEGER, 4, 2) / bigdecimal(INTEGER, 10, 6)")
+      )
+      result shouldEqual Divide(
+        BigDecimal('INTEGER, 4, 2),
+        BigDecimal('INTEGER, 10, 6)
+      )
       result.cypherType shouldEqual CTBigDecimal(21, 13)
     }
 
     it("should convert bigdecimal division (magic number 6)") {
-      val result = convert(parseExpr("bigdecimal(INTEGER, 3, 1) / bigdecimal(INTEGER, 2, 1)"))
-      result shouldEqual Divide(BigDecimal('INTEGER, 3, 1), BigDecimal('INTEGER, 2, 1))
+      val result = convert(
+        parseExpr("bigdecimal(INTEGER, 3, 1) / bigdecimal(INTEGER, 2, 1)")
+      )
+      result shouldEqual Divide(
+        BigDecimal('INTEGER, 3, 1),
+        BigDecimal('INTEGER, 2, 1)
+      )
       result.cypherType shouldEqual CTBigDecimal(9, 6)
     }
 
@@ -164,38 +198,58 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     }
 
     it("should not allow scale to be greater than precision") {
-      val a = the [IllegalArgumentException] thrownBy convert(parseExpr("bigdecimal(INTEGER, 2, 3)"))
-      a.getMessage should(include("Greater precision than scale") and include("precision: 2") and include("scale: 3"))
+      val a = the[IllegalArgumentException] thrownBy convert(
+        parseExpr("bigdecimal(INTEGER, 2, 3)")
+      )
+      a.getMessage should (include("Greater precision than scale") and include(
+        "precision: 2"
+      ) and include("scale: 3"))
     }
   }
 
   it("should convert CASE") {
-    convert(parseExpr("CASE WHEN INTEGER > INTEGER THEN INTEGER ELSE FLOAT END")) should equal(
-      CaseExpr(List((GreaterThan('INTEGER, 'INTEGER), 'INTEGER)), Some('FLOAT))(CTUnion(CTInteger, CTFloat))
+    convert(
+      parseExpr("CASE WHEN INTEGER > INTEGER THEN INTEGER ELSE FLOAT END")
+    ) should equal(
+      CaseExpr(List((GreaterThan('INTEGER, 'INTEGER), 'INTEGER)), Some('FLOAT))(
+        CTUnion(CTInteger, CTFloat)
+      )
     )
-    convert(parseExpr("CASE WHEN STRING > STRING_OR_NULL THEN NODE END")) should equal(
-      CaseExpr(List((GreaterThan('STRING, 'STRING_OR_NULL), 'NODE)), None)(CTNode("Node").nullable)
+    convert(
+      parseExpr("CASE WHEN STRING > STRING_OR_NULL THEN NODE END")
+    ) should equal(
+      CaseExpr(List((GreaterThan('STRING, 'STRING_OR_NULL), 'NODE)), None)(
+        CTNode("Node").nullable
+      )
     )
   }
 
   describe("coalesce") {
     it("should convert coalesce") {
-      convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE)")) shouldEqual
+      convert(
+        parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE)")
+      ) shouldEqual
         Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE))
     }
 
     it("should become nullable if nothing is non-null") {
-      convert(parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE_OR_NULL)")) shouldEqual
+      convert(
+        parseExpr("coalesce(INTEGER_OR_NULL, STRING_OR_NULL, NODE_OR_NULL)")
+      ) shouldEqual
         Coalesce(List('INTEGER_OR_NULL, 'STRING_OR_NULL, 'NODE_OR_NULL))
     }
 
     it("should not consider arguments past the first non-nullable coalesce") {
-      convert(parseExpr("coalesce(INTEGER_OR_NULL, FLOAT, NODE, STRING)")) shouldEqual
+      convert(
+        parseExpr("coalesce(INTEGER_OR_NULL, FLOAT, NODE, STRING)")
+      ) shouldEqual
         Coalesce(List('INTEGER_OR_NULL, 'FLOAT))
     }
 
     it("should remove coalesce if the first arg is non-nullable") {
-      convert(parseExpr("coalesce(INTEGER, STRING_OR_NULL, NODE)")) shouldEqual(
+      convert(
+        parseExpr("coalesce(INTEGER, STRING_OR_NULL, NODE)")
+      ) shouldEqual (
         toVar('INTEGER), CTInteger
       )
     }
@@ -205,7 +259,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     // NOTE: pattern version of exists((:A)-->(:B)) is rewritten before IR building
 
     it("can convert") {
-      convert(parseExpr("exists(NODE.name)")) shouldEqual(
+      convert(parseExpr("exists(NODE.name)")) shouldEqual (
         Exists(ElementProperty('NODE, PropertyKey("name"))(CTString)), CTBoolean
       )
     }
@@ -213,13 +267,18 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   describe("IN") {
     it("can convert in predicate and literal list") {
-      convert(parseExpr("INTEGER IN [INTEGER, INTEGER_OR_NULL, FLOAT]")) shouldEqual(
-        In('INTEGER, ListLit(List('INTEGER, 'INTEGER_OR_NULL, 'FLOAT))), CTBoolean.nullable
+      convert(
+        parseExpr("INTEGER IN [INTEGER, INTEGER_OR_NULL, FLOAT]")
+      ) shouldEqual (
+        In(
+          'INTEGER,
+          ListLit(List('INTEGER, 'INTEGER_OR_NULL, 'FLOAT))
+        ), CTBoolean.nullable
       )
     }
 
     it("can convert IN for single-element lists") {
-      convert(parseExpr("STRING IN ['foo']")) shouldEqual(
+      convert(parseExpr("STRING IN ['foo']")) shouldEqual (
         In('STRING, ListLit(List(StringLit("foo")))), CTBoolean
       )
     }
@@ -228,7 +287,12 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   it("can convert or predicate") {
     convert(parseExpr("NODE = NODE_OR_NULL OR STRING_OR_NULL > STRING")) match {
       case ors @ Ors(inner) =>
-        inner.toSet should equal(Set(GreaterThan('STRING_OR_NULL, 'STRING), Equals('NODE, 'NODE_OR_NULL)))
+        inner.toSet should equal(
+          Set(
+            GreaterThan('STRING_OR_NULL, 'STRING),
+            Equals('NODE, 'NODE_OR_NULL)
+          )
+        )
         ors.cypherType should equal(CTBoolean.nullable)
 
       case other => fail(s"Expected an `Ors` Expr, got `$other`")
@@ -237,11 +301,11 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   describe("type()") {
     it("can convert") {
-      convert(parseExpr("type(REL)")) shouldEqual(Type('REL), CTString)
+      convert(parseExpr("type(REL)")) shouldEqual (Type('REL), CTString)
     }
 
     it("can convert nullable") {
-      convert(parseExpr("type(REL_OR_NULL)")) shouldEqual(
+      convert(parseExpr("type(REL_OR_NULL)")) shouldEqual (
         Type('REL_OR_NULL), CTString.nullable
       )
     }
@@ -249,17 +313,17 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
 
   describe("count()") {
     it("can convert") {
-      convert(parseExpr("count(NODE)")) shouldEqual(
+      convert(parseExpr("count(NODE)")) shouldEqual (
         Count('NODE, distinct = false), CTInteger
       )
     }
     it("can convert distinct") {
-      convert(parseExpr("count(distinct INTEGER)")) shouldEqual(
+      convert(parseExpr("count(distinct INTEGER)")) shouldEqual (
         Count('INTEGER, distinct = true), CTInteger
       )
     }
     it("can convert star") {
-      convert(parseExpr("count(*)")) shouldEqual(
+      convert(parseExpr("count(*)")) shouldEqual (
         CountStar, CTInteger
       )
     }
@@ -268,13 +332,15 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   describe("range") {
 
     it("can convert range") {
-      convert(parseExpr("range(0, 10, 2)")) shouldEqual(
-        Range(IntegerLit(0), IntegerLit(10), Some(IntegerLit(2))), CTList(CTInteger)
+      convert(parseExpr("range(0, 10, 2)")) shouldEqual (
+        Range(IntegerLit(0), IntegerLit(10), Some(IntegerLit(2))), CTList(
+          CTInteger
+        )
       )
     }
 
     it("can convert range with missing step size") {
-      convert(parseExpr("range(0, 10)")) shouldEqual(
+      convert(parseExpr("range(0, 10)")) shouldEqual (
         Range(IntegerLit(0), IntegerLit(10), None), CTList(CTInteger)
       )
     }
@@ -283,38 +349,42 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   describe("substring") {
 
     it("can convert substring") {
-      convert(parseExpr("substring('foobar', 0, 3)")) shouldEqual(
-        Substring(StringLit("foobar"), IntegerLit(0), Some(IntegerLit(3))), CTString
+      convert(parseExpr("substring('foobar', 0, 3)")) shouldEqual (
+        Substring(
+          StringLit("foobar"),
+          IntegerLit(0),
+          Some(IntegerLit(3))
+        ), CTString
       )
     }
 
     it("can convert substring with missing length") {
-      convert(parseExpr("substring('foobar', 0)")) shouldEqual(
+      convert(parseExpr("substring('foobar', 0)")) shouldEqual (
         Substring(StringLit("foobar"), IntegerLit(0), None), CTString
       )
     }
   }
 
   it("can convert less than") {
-    convert(parseExpr("INTEGER < FLOAT_OR_NULL")) shouldEqual(
+    convert(parseExpr("INTEGER < FLOAT_OR_NULL")) shouldEqual (
       LessThan('INTEGER, 'FLOAT_OR_NULL), CTBoolean.nullable
     )
   }
 
   it("can convert less than or equal") {
-    convert(parseExpr("INTEGER <= FLOAT_OR_NULL")) shouldEqual(
+    convert(parseExpr("INTEGER <= FLOAT_OR_NULL")) shouldEqual (
       LessThanOrEqual('INTEGER, 'FLOAT_OR_NULL), CTBoolean.nullable
     )
   }
 
   it("can convert greater than") {
-    convert(parseExpr("INTEGER > FLOAT_OR_NULL")) shouldEqual(
+    convert(parseExpr("INTEGER > FLOAT_OR_NULL")) shouldEqual (
       GreaterThan('INTEGER, 'FLOAT_OR_NULL), CTBoolean.nullable
     )
   }
 
   it("can convert greater than or equal") {
-    convert(parseExpr("INTEGER >= INTEGER")) shouldEqual(
+    convert(parseExpr("INTEGER >= INTEGER")) shouldEqual (
       GreaterThanOrEqual('INTEGER, 'INTEGER), CTBoolean
     )
   }
@@ -344,7 +414,7 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   }
 
   it("can convert type function calls used as predicates") {
-    convert(parseExpr("type(REL) = 'REL_TYPE'")) shouldEqual(
+    convert(parseExpr("type(REL) = 'REL_TYPE'")) shouldEqual (
       HasType('REL, RelType("REL_TYPE")), CTBoolean
     )
   }
@@ -366,28 +436,47 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   it("can convert property access") {
     val convertedNodeProperty = convert(prop("NODE", "age"))
     convertedNodeProperty.cypherType shouldEqual CTInteger
-    convertedNodeProperty shouldEqual ElementProperty('NODE, PropertyKey("age"))(CTInteger)
+    convertedNodeProperty shouldEqual ElementProperty(
+      'NODE,
+      PropertyKey("age")
+    )(CTInteger)
 
     val convertedMapProperty = convert(prop(mapOf("age" -> literal(40)), "age"))
     convertedMapProperty.cypherType shouldEqual CTInteger
     convertedMapProperty shouldEqual
-      MapProperty(MapExpression(Map("age" -> IntegerLit(40))), PropertyKey("age"))
+      MapProperty(
+        MapExpression(Map("age" -> IntegerLit(40))),
+        PropertyKey("age")
+      )
 
     val convertedDateProperty = convert(prop(function("date"), "year"))
     convertedDateProperty.cypherType shouldEqual CTInteger
-    convertedDateProperty shouldEqual DateProperty(Date(None),PropertyKey("year"))
+    convertedDateProperty shouldEqual DateProperty(
+      Date(None),
+      PropertyKey("year")
+    )
 
-    val convertedLocalDateTimeProperty = convert(prop(function("localdatetime"), "year"))
+    val convertedLocalDateTimeProperty =
+      convert(prop(function("localdatetime"), "year"))
     convertedLocalDateTimeProperty.cypherType shouldEqual CTInteger
-    convertedLocalDateTimeProperty shouldEqual LocalDateTimeProperty(LocalDateTime(None),PropertyKey("year"))
+    convertedLocalDateTimeProperty shouldEqual LocalDateTimeProperty(
+      LocalDateTime(None),
+      PropertyKey("year")
+    )
 
-    val convertedDurationProperty = convert(prop(function("duration", literal("PT1M")), "minutes"))
+    val convertedDurationProperty =
+      convert(prop(function("duration", literal("PT1M")), "minutes"))
     convertedDurationProperty.cypherType shouldEqual CTInteger
-    convertedDurationProperty shouldEqual DurationProperty(Duration(StringLit("PT1M")), PropertyKey("minutes"))
+    convertedDurationProperty shouldEqual DurationProperty(
+      Duration(StringLit("PT1M")),
+      PropertyKey("minutes")
+    )
   }
 
   it("can convert equals") {
-    convert(ast.Equals(varFor("STRING"), varFor("STRING_OR_NULL")) _) shouldEqual(
+    convert(
+      ast.Equals(varFor("STRING"), varFor("STRING_OR_NULL")) _
+    ) shouldEqual (
       Equals('STRING, 'STRING_OR_NULL), CTBoolean.nullable
     )
   }
@@ -401,14 +490,20 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
       val given = parseExpr("NODE:Person:Duck")
       convert(given) match {
         case ands @ Ands(inner) =>
-          inner.toSet should equal( Set(HasLabel('NODE, Label("Person")), HasLabel('NODE, Label("Duck"))))
+          inner.toSet should equal(
+            Set(
+              HasLabel('NODE, Label("Person")),
+              HasLabel('NODE, Label("Duck"))
+            )
+          )
           ands.cypherType should equal(CTBoolean)
         case other => fail(s"Expected an `Ands` Expr, but got `$other`")
       }
     }
 
     it("can convert single has-labels") {
-      val given = ast.HasLabels(varFor("NODE"), Seq(ast.LabelName("Person") _)) _
+      val given =
+        ast.HasLabels(varFor("NODE"), Seq(ast.LabelName("Person") _)) _
       convert(given) shouldEqual HasLabel('NODE, Label("Person"))
     }
   }
@@ -417,24 +512,35 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     val given = ast.Ands(
       Set(
         ast.HasLabels(varFor("NODE"), Seq(ast.LabelName("Person") _)) _,
-        ast.Equals(prop("NODE", "name"), ast.StringLiteral("Mats") _) _)) _
+        ast.Equals(prop("NODE", "name"), ast.StringLiteral("Mats") _) _
+      )
+    ) _
 
     convert(given) match {
       case ands @ Ands(inner) =>
-        inner.toSet should equal( Set(HasLabel('NODE, Label("Person")),  Equals(ElementProperty('NODE, PropertyKey("name"))(CTAnyMaterial), StringLit("Mats"))))
+        inner.toSet should equal(
+          Set(
+            HasLabel('NODE, Label("Person")),
+            Equals(
+              ElementProperty('NODE, PropertyKey("name"))(CTAnyMaterial),
+              StringLit("Mats")
+            )
+          )
+        )
         ands.cypherType should equal(CTBoolean)
       case other => fail(s"Expected an `Ands` Expr, but got `$other`")
     }
   }
 
   it("can convert negation") {
-    val given = ast.Not(ast.HasLabels(varFor("NODE"), Seq(ast.LabelName("Person") _)) _) _
+    val given =
+      ast.Not(ast.HasLabels(varFor("NODE"), Seq(ast.LabelName("Person") _)) _) _
 
     convert(given) shouldEqual Not(HasLabel('NODE, Label("Person")))
   }
 
   it("can convert id function") {
-    convert("id(REL_OR_NULL)") shouldEqual(
+    convert("id(REL_OR_NULL)") shouldEqual (
       Id('REL_OR_NULL), CTIdentity.nullable
     )
   }
@@ -442,7 +548,12 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
   describe("list comprehension") {
     val intVar = LambdaVar("x")(CTInteger)
     it("can convert list comprehension with static mapping") {
-      convert("[x IN [1,2] | 1]") shouldEqual ListComprehension(intVar, None, Some(IntegerLit(1)), ListLit(List(IntegerLit(1), IntegerLit(2))))
+      convert("[x IN [1,2] | 1]") shouldEqual ListComprehension(
+        intVar,
+        None,
+        Some(IntegerLit(1)),
+        ListLit(List(IntegerLit(1), IntegerLit(2)))
+      )
     }
 
     it("can convert list comprehension with unary mapping") {
@@ -450,28 +561,41 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     }
 
     it("can convert list comprehension with 2 var-calls") {
-      convert("[x IN [1,2] | x + x * 2]") shouldEqual ListComprehension(intVar, None, Some(Add(intVar, Multiply(intVar, IntegerLit(2)))), ListLit(List(IntegerLit(1), IntegerLit(2))))
+      convert("[x IN [1,2] | x + x * 2]") shouldEqual ListComprehension(
+        intVar,
+        None,
+        Some(Add(intVar, Multiply(intVar, IntegerLit(2)))),
+        ListLit(List(IntegerLit(1), IntegerLit(2)))
+      )
     }
 
     it("can convert list comprehension with inner predicate") {
-      convert("[x IN [1,2] WHERE x < 1 | 1]") shouldEqual ListComprehension(intVar, Some(LessThan(intVar, IntegerLit(1))), Some(IntegerLit(1)), ListLit(List(IntegerLit(1), IntegerLit(2))))
+      convert("[x IN [1,2] WHERE x < 1 | 1]") shouldEqual ListComprehension(
+        intVar,
+        Some(LessThan(intVar, IntegerLit(1))),
+        Some(IntegerLit(1)),
+        ListLit(List(IntegerLit(1), IntegerLit(2)))
+      )
     }
   }
 
   describe("list-access functions") {
     it("can convert tail()") {
-      convert("tail([1])") shouldEqual ListSliceFrom(ListLit(List(IntegerLit(1))), IntegerLit(1))
+      convert("tail([1])") shouldEqual ListSliceFrom(
+        ListLit(List(IntegerLit(1))),
+        IntegerLit(1)
+      )
     }
-    it("can convert head()"){
+    it("can convert head()") {
       convert("head([1])") shouldEqual Head(ListLit(List(IntegerLit(1))))
     }
-    it("can convert last()"){
+    it("can convert last()") {
       convert("last([1])") shouldEqual Last(ListLit(List(IntegerLit(1))))
     }
-    it("cannot convert list-access functions with non-list argument"){
-      a[NoSuitableSignatureForExpr]  shouldBe thrownBy(convert("head(1)"))
-      a[NoSuitableSignatureForExpr]  shouldBe thrownBy(convert("tail(1)"))
-      a[NoSuitableSignatureForExpr]  shouldBe thrownBy(convert("last(1)"))
+    it("cannot convert list-access functions with non-list argument") {
+      a[NoSuitableSignatureForExpr] shouldBe thrownBy(convert("head(1)"))
+      a[NoSuitableSignatureForExpr] shouldBe thrownBy(convert("tail(1)"))
+      a[NoSuitableSignatureForExpr] shouldBe thrownBy(convert("last(1)"))
     }
   }
 
@@ -479,19 +603,35 @@ class ExpressionConverterTest extends BaseTestSuite with Neo4jAstTestSupport {
     val intVar = LambdaVar("x")(CTInteger)
 
     it("can convert none()") {
-      convert("none(x IN [1] WHERE x < 1)") shouldEqual ListNone(intVar, LessThan(intVar, IntegerLit(1)), ListLit(List(IntegerLit(1))))
+      convert("none(x IN [1] WHERE x < 1)") shouldEqual ListNone(
+        intVar,
+        LessThan(intVar, IntegerLit(1)),
+        ListLit(List(IntegerLit(1)))
+      )
     }
 
     it("can convert all()") {
-      convert("all(x IN [1] WHERE x < 1)") shouldEqual ListAll(intVar, LessThan(intVar, IntegerLit(1)), ListLit(List(IntegerLit(1))))
+      convert("all(x IN [1] WHERE x < 1)") shouldEqual ListAll(
+        intVar,
+        LessThan(intVar, IntegerLit(1)),
+        ListLit(List(IntegerLit(1)))
+      )
     }
 
     it("can convert any()") {
-      convert("any(x IN [1] WHERE x < 1)") shouldEqual ListAny(intVar, LessThan(intVar, IntegerLit(1)), ListLit(List(IntegerLit(1))))
+      convert("any(x IN [1] WHERE x < 1)") shouldEqual ListAny(
+        intVar,
+        LessThan(intVar, IntegerLit(1)),
+        ListLit(List(IntegerLit(1)))
+      )
     }
 
     it("can convert single()") {
-      convert("single(x IN [1] WHERE x < 1)") shouldEqual ListSingle(intVar, LessThan(intVar, IntegerLit(1)), ListLit(List(IntegerLit(1))))
+      convert("single(x IN [1] WHERE x < 1)") shouldEqual ListSingle(
+        intVar,
+        LessThan(intVar, IntegerLit(1)),
+        ListLit(List(IntegerLit(1)))
+      )
     }
   }
 

@@ -32,5 +32,6 @@ import org.opencypher.okapi.ir.api.IRCatalogGraph
 import scala.language.implicitConversions
 
 package object test {
-  implicit def toGraph(s: Symbol): IRCatalogGraph = IRCatalogGraph(s.name, PropertyGraphSchema.empty)
+  implicit def toGraph(s: Symbol): IRCatalogGraph =
+    IRCatalogGraph(s.name, PropertyGraphSchema.empty)
 }

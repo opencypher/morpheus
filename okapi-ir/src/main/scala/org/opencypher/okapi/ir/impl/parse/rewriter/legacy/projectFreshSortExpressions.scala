@@ -33,34 +33,45 @@ import org.opencypher.v9_0.util.{Rewriter, bottomUp}
 case object projectFreshSortExpressions extends Rewriter {
   override def apply(that: AnyRef): AnyRef = instance(that)
   private val clauseRewriter: Clause => Seq[Clause] = {
-    case clause@With(_, _, None, _, _, None) =>
+    case clause @ With(_, _, None, _, _, None) =>
       Seq(clause)
-    case clause@With(_, ri: ReturnItems, orderBy, skip, limit, where) =>
+    case clause @ With(_, ri: ReturnItems, orderBy, skip, limit, where) =>
       val allAliases = ri.aliases
       val passedThroughAliases = ri.passedThrough
       val evaluatedAliases = allAliases -- passedThroughAliases
       if (evaluatedAliases.isEmpty) {
         Seq(clause)
       } else {
-        val nonItemDependencies = orderBy.map(_.dependencies).getOrElse(Set.empty) ++
-          skip.map(_.dependencies).getOrElse(Set.empty) ++
-          limit.map(_.dependencies).getOrElse(Set.empty) ++
-          where.map(_.dependencies).getOrElse(Set.empty)
+        val nonItemDependencies =
+          orderBy.map(_.dependencies).getOrElse(Set.empty) ++
+            skip.map(_.dependencies).getOrElse(Set.empty) ++
+            limit.map(_.dependencies).getOrElse(Set.empty) ++
+            where.map(_.dependencies).getOrElse(Set.empty)
         val dependenciesFromPreviousScope = nonItemDependencies -- allAliases
-        val passedItems = dependenciesFromPreviousScope.map(AliasedReturnItem(_))
+        val passedItems =
+          dependenciesFromPreviousScope.map(AliasedReturnItem(_))
         val outputItems = allAliases.toIndexedSeq.map(AliasedReturnItem(_))
         val result = Seq(
-          clause.copy(returnItems = ri.mapItems(originalItems => originalItems ++ passedItems), orderBy = None, skip = None, limit = None, where = None)(clause.position),
-          clause.copy(distinct = false, returnItems = ri.mapItems(_ => outputItems))(clause.position)
+          clause.copy(
+            returnItems = ri.mapItems(originalItems => originalItems ++ passedItems),
+            orderBy = None,
+            skip = None,
+            limit = None,
+            where = None
+          )(clause.position),
+          clause.copy(
+            distinct = false,
+            returnItems = ri.mapItems(_ => outputItems)
+          )(clause.position)
         )
         result
       }
     case clause =>
       Seq(clause)
   }
-  private val rewriter = Rewriter.lift {
-    case query@SingleQuery(clauses) =>
-      query.copy(clauses = clauses.flatMap(clauseRewriter))(query.position)
+  private val rewriter = Rewriter.lift { case query @ SingleQuery(clauses) =>
+    query.copy(clauses = clauses.flatMap(clauseRewriter))(query.position)
   }
-  private val instance: Rewriter = bottomUp(rewriter, _.isInstanceOf[Expression])
+  private val instance: Rewriter =
+    bottomUp(rewriter, _.isInstanceOf[Expression])
 }

@@ -44,14 +44,18 @@ class EdgeListDataSourceTest extends MorpheusTestSuite with BeforeAndAfterAll wi
        |1 3
      """.stripMargin
 
-  private val tempFile = File.createTempFile(s"morpheus_edgelist_${System.currentTimeMillis()}", "edgelist")
+  private val tempFile = File.createTempFile(
+    s"morpheus_edgelist_${System.currentTimeMillis()}",
+    "edgelist"
+  )
 
-  private val dataSource = EdgeListDataSource(
-    tempFile.getAbsolutePath,
-    Map("delimiter" -> " "))
+  private val dataSource =
+    EdgeListDataSource(tempFile.getAbsolutePath, Map("delimiter" -> " "))
 
   it("should return a static schema") {
-    dataSource.schema(EdgeListDataSource.GRAPH_NAME) should equal(Some(EdgeListDataSource.SCHEMA))
+    dataSource.schema(EdgeListDataSource.GRAPH_NAME) should equal(
+      Some(EdgeListDataSource.SCHEMA)
+    )
   }
 
   it("should contain only one graph named 'graph'") {

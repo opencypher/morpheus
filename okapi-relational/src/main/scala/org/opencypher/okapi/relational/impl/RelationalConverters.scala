@@ -37,18 +37,28 @@ import scala.reflect.runtime.universe.TypeTag
 object RelationalConverters {
 
   implicit class RichPropertyGraph(val graph: PropertyGraph) extends AnyVal {
-    def asRelational[T <: Table[T] : TypeTag]: RelationalCypherGraph[T] = graph.asInstanceOf[RelationalCypherGraph[_]] match {
-      // The cast is necessary since okapi-API does not expose the underlying table types
-      case relationalGraph: RelationalCypherGraph[_] => relationalGraph.asInstanceOf[RelationalCypherGraph[T]]
-      case _ => throw UnsupportedOperationException(s"can only handle relational graphs, got $graph")
-    }
+    def asRelational[T <: Table[T]: TypeTag]: RelationalCypherGraph[T] =
+      graph.asInstanceOf[RelationalCypherGraph[_]] match {
+        // The cast is necessary since okapi-API does not expose the underlying table types
+        case relationalGraph: RelationalCypherGraph[_] =>
+          relationalGraph.asInstanceOf[RelationalCypherGraph[T]]
+        case _ =>
+          throw UnsupportedOperationException(
+            s"can only handle relational graphs, got $graph"
+          )
+      }
   }
 
   implicit class RichCypherRecords(val records: CypherRecords) extends AnyVal {
-    def asRelational[T <: Table[T] : TypeTag]: RelationalCypherRecords[T] = records.asInstanceOf[RelationalCypherRecords[_]] match {
-      // The cast is necessary since okapi-API does not expose the underlying table types
-      case relationalRecords: RelationalCypherRecords[_] => relationalRecords.asInstanceOf[RelationalCypherRecords[T]]
-      case _ => throw UnsupportedOperationException(s"can only handle relational records, got $records")
-    }
+    def asRelational[T <: Table[T]: TypeTag]: RelationalCypherRecords[T] =
+      records.asInstanceOf[RelationalCypherRecords[_]] match {
+        // The cast is necessary since okapi-API does not expose the underlying table types
+        case relationalRecords: RelationalCypherRecords[_] =>
+          relationalRecords.asInstanceOf[RelationalCypherRecords[T]]
+        case _ =>
+          throw UnsupportedOperationException(
+            s"can only handle relational records, got $records"
+          )
+      }
   }
 }

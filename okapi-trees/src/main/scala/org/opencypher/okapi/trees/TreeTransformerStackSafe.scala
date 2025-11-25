@@ -31,35 +31,25 @@ import cats.data.NonEmptyList
 import scala.annotation.tailrec
 import scala.reflect.ClassTag
 
-/**
-  * Common trait of all classes that represent tree operations for off-stack transformations.
-  */
+/** Common trait of all classes that represent tree operations for off-stack transformations. */
 sealed trait TreeOperation[T <: TreeNode[T], O]
 
-/**
-  * Represents a child transformation operation during off-stack transformations.
-  */
+/** Represents a child transformation operation during off-stack transformations. */
 case class TransformChildren[I <: TreeNode[I], O](
   node: I,
   transformedChildren: List[O] = List.empty[O]
 ) extends TreeOperation[I, O]
 
-/**
-  * Represents a node transformation operation during off-stack transformations.
-  */
+/** Represents a node transformation operation during off-stack transformations. */
 case class TransformNode[I <: TreeNode[I], O](
   node: I,
   transformedChildren: List[O] = List.empty[O]
 ) extends TreeOperation[I, O]
 
-/**
-  * Represents a finished transformation during off-stack transformations.
-  */
+/** Represents a finished transformation during off-stack transformations. */
 case class Done[I <: TreeNode[I], O](transformedChildren: List[O]) extends TreeOperation[I, O]
 
-/**
-  * This is the base-class for stack-safe tree transformations.
-  */
+/** This is the base-class for stack-safe tree transformations. */
 trait TransformerStackSafe[I <: TreeNode[I], O] extends TreeTransformer[I, O] {
 
   type NonEmptyStack = NonEmptyList[TreeOperation[I, O]]
@@ -84,18 +74,14 @@ trait TransformerStackSafe[I <: TreeNode[I], O] extends TreeTransformer[I, O] {
 
   }
 
-  /**
-    * Called on each node when going down the tree.
-    */
+  /** Called on each node when going down the tree. */
   def transformChildren(
     node: I,
     transformedChildren: List[O],
     stack: Stack
   ): NonEmptyStack
 
-  /**
-    * Called on each node when going up the tree.
-    */
+  /** Called on each node when going up the tree. */
   def transformNode(
     node: I,
     transformedChildren: List[O],
@@ -103,28 +89,46 @@ trait TransformerStackSafe[I <: TreeNode[I], O] extends TreeTransformer[I, O] {
   ): NonEmptyStack
 
   @tailrec
-  protected final def run(stack: NonEmptyList[TreeOperation[I, O]]): O = stack match {
-    case NonEmptyList(TransformChildren(node, transformedChildren), tail) => run(transformChildren(node, transformedChildren, tail))
-    case NonEmptyList(TransformNode(node, transformedChildren), tail) => run(transformNode(node, transformedChildren, tail))
-    case NonEmptyList(Done(transformed), tail) =>
-      tail match {
-        case Nil => transformed match {
-          case result :: Nil => result
-          case invalid => throw new IllegalStateException(s"Invalid transformation produced $invalid instead of a single final value.")
+  protected final def run(stack: NonEmptyList[TreeOperation[I, O]]): O =
+    stack match {
+      case NonEmptyList(TransformChildren(node, transformedChildren), tail) =>
+        run(transformChildren(node, transformedChildren, tail))
+      case NonEmptyList(TransformNode(node, transformedChildren), tail) =>
+        run(transformNode(node, transformedChildren, tail))
+      case NonEmptyList(Done(transformed), tail) =>
+        tail match {
+          case Nil =>
+            transformed match {
+              case result :: Nil => result
+              case invalid =>
+                throw new IllegalStateException(
+                  s"Invalid transformation produced $invalid instead of a single final value."
+                )
+            }
+          case Done(nextNodes) :: nextTail =>
+            run(nextTail.push(Done(transformed ::: nextNodes)))
+          case TransformChildren(nextNode, transformedChildren) :: nextTail =>
+            run(
+              nextTail.push(
+                TransformChildren(nextNode, transformed ::: transformedChildren)
+              )
+            )
+          case TransformNode(nextNode, transformedChildren) :: nextTail =>
+            run(
+              nextTail.push(
+                TransformNode(nextNode, transformed ::: transformedChildren)
+              )
+            )
         }
-        case Done(nextNodes) :: nextTail => run(nextTail.push(Done(transformed ::: nextNodes)))
-        case TransformChildren(nextNode, transformedChildren) :: nextTail => run(nextTail.push(TransformChildren(nextNode, transformed ::: transformedChildren)))
-        case TransformNode(nextNode, transformedChildren) :: nextTail => run(nextTail.push(TransformNode(nextNode, transformed ::: transformedChildren)))
-      }
-  }
+    }
 
-  @inline final override def transform(tree: I): O = run(Stack(TransformChildren(tree)))
+  @inline final override def transform(tree: I): O = run(
+    Stack(TransformChildren(tree))
+  )
 
 }
 
-/**
-  * Common parent of [[BottomUpStackSafe]] and [[TopDownStackSafe]]
-  */
+/** Common parent of [[BottomUpStackSafe]] and [[TopDownStackSafe]] */
 trait SameTypeTransformerStackSafe[T <: TreeNode[T]] extends TransformerStackSafe[T, T] {
 
   protected val partial: PartialFunction[T, T]
@@ -136,25 +140,39 @@ trait SameTypeTransformerStackSafe[T <: TreeNode[T]] extends TransformerStackSaf
 /**
   * Applies the given partial function starting from the leafs of this tree.
   *
-  * @note This is a stack-safe version of [[BottomUp]].
+  * @note
+  *   This is a stack-safe version of [[BottomUp]].
   */
-case class BottomUpStackSafe[T <: TreeNode[T] : ClassTag](
+case class BottomUpStackSafe[T <: TreeNode[T]: ClassTag](
   partial: PartialFunction[T, T]
 ) extends SameTypeTransformerStackSafe[T] {
 
-  @inline final override def transformChildren(node: T, rewrittenChildren: List[T], stack: Stack): NonEmptyStack = {
+  @inline final override def transformChildren(
+    node: T,
+    rewrittenChildren: List[T],
+    stack: Stack
+  ): NonEmptyStack = {
     if (node.children.isEmpty) {
       stack.push(Done(rule(node) :: rewrittenChildren))
     } else {
-      node.children.foldLeft(stack.push(TransformNode(node, rewrittenChildren))) { case (currentStack, child) =>
+      node.children.foldLeft(
+        stack.push(TransformNode(node, rewrittenChildren))
+      ) { case (currentStack, child) =>
         currentStack.push(TransformChildren(child))
       }
     }
   }
 
-  @inline final override def transformNode(node: T, rewrittenChildren: List[T], stack: Stack): NonEmptyStack = {
-    val (currentRewrittenChildren, rewrittenForAncestors) = rewrittenChildren.splitAt(node.children.length)
-    val rewrittenNode = rule(node.withNewChildren(currentRewrittenChildren.toArray))
+  @inline final override def transformNode(
+    node: T,
+    rewrittenChildren: List[T],
+    stack: Stack
+  ): NonEmptyStack = {
+    val (currentRewrittenChildren, rewrittenForAncestors) =
+      rewrittenChildren.splitAt(node.children.length)
+    val rewrittenNode = rule(
+      node.withNewChildren(currentRewrittenChildren.toArray)
+    )
     stack.push(Done(rewrittenNode :: rewrittenForAncestors))
   }
 }
@@ -162,27 +180,39 @@ case class BottomUpStackSafe[T <: TreeNode[T] : ClassTag](
 /**
   * Applies the given partial function starting from the root of this tree.
   *
-  * @note Note the applied rule cannot insert new parent nodes.
-  * @note This is a stack-safe version of [[TopDown]].
+  * @note
+  *   Note the applied rule cannot insert new parent nodes.
+  * @note
+  *   This is a stack-safe version of [[TopDown]].
   */
-case class TopDownStackSafe[T <: TreeNode[T] : ClassTag](
+case class TopDownStackSafe[T <: TreeNode[T]: ClassTag](
   partial: PartialFunction[T, T]
 ) extends SameTypeTransformerStackSafe[T] {
 
-  @inline final override def transformChildren(node: T, rewrittenChildren: List[T], stack: Stack): NonEmptyStack = {
+  @inline final override def transformChildren(
+    node: T,
+    rewrittenChildren: List[T],
+    stack: Stack
+  ): NonEmptyStack = {
     val updatedNode = rule(node)
     if (updatedNode.children.isEmpty) {
       stack.push(Done(updatedNode :: rewrittenChildren))
     } else {
-      updatedNode.children.foldLeft(stack.push(TransformNode(updatedNode, rewrittenChildren))) {
-        case (currentStack, child) =>
-          currentStack.push(TransformChildren(child))
+      updatedNode.children.foldLeft(
+        stack.push(TransformNode(updatedNode, rewrittenChildren))
+      ) { case (currentStack, child) =>
+        currentStack.push(TransformChildren(child))
       }
     }
   }
 
-  @inline final override def transformNode(node: T, rewrittenChildren: List[T], stack: Stack): NonEmptyStack = {
-    val (currentRewrittenChildren, rewrittenForAncestors) = rewrittenChildren.splitAt(node.children.length)
+  @inline final override def transformNode(
+    node: T,
+    rewrittenChildren: List[T],
+    stack: Stack
+  ): NonEmptyStack = {
+    val (currentRewrittenChildren, rewrittenForAncestors) =
+      rewrittenChildren.splitAt(node.children.length)
     val rewrittenNode = node.withNewChildren(currentRewrittenChildren.toArray)
     stack.push(Done(rewrittenNode :: rewrittenForAncestors))
   }
@@ -192,24 +222,36 @@ case class TopDownStackSafe[T <: TreeNode[T] : ClassTag](
 /**
   * Applies the given transformation starting from the leaves of this tree.
   *
-  * @note This is a stack-safe version of [[Transform]].
+  * @note
+  *   This is a stack-safe version of [[Transform]].
   */
-case class TransformStackSafe[I <: TreeNode[I] : ClassTag, O](
+case class TransformStackSafe[I <: TreeNode[I]: ClassTag, O](
   transform: (I, List[O]) => O
 ) extends TransformerStackSafe[I, O] {
 
-  @inline final override def transformChildren(node: I, transformedChildren: List[O], stack: Stack): NonEmptyStack = {
+  @inline final override def transformChildren(
+    node: I,
+    transformedChildren: List[O],
+    stack: Stack
+  ): NonEmptyStack = {
     if (node.children.isEmpty) {
       stack.push(Done(transform(node, List.empty[O]) :: transformedChildren))
     } else {
-      node.children.foldLeft(stack.push(TransformNode(node, transformedChildren))) { case (currentStack, child) =>
+      node.children.foldLeft(
+        stack.push(TransformNode(node, transformedChildren))
+      ) { case (currentStack, child) =>
         currentStack.push(TransformChildren(child))
       }
     }
   }
 
-  @inline final override def transformNode(node: I, transformedChildren: List[O], stack: Stack): NonEmptyStack = {
-    val (transformedChildrenForCurrentNode, transformedChildrenForAncestors) = transformedChildren.splitAt(node.children.length)
+  @inline final override def transformNode(
+    node: I,
+    transformedChildren: List[O],
+    stack: Stack
+  ): NonEmptyStack = {
+    val (transformedChildrenForCurrentNode, transformedChildrenForAncestors) =
+      transformedChildren.splitAt(node.children.length)
     val transformedNode = transform(node, transformedChildrenForCurrentNode)
     stack.push(Done(transformedNode :: transformedChildrenForAncestors))
   }

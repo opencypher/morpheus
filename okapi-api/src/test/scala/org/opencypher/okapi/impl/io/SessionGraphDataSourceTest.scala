@@ -64,16 +64,20 @@ class SessionGraphDataSourceTest extends ApiBaseTest {
   it("schema should throw for non-existing graph") {
     val source = new SessionGraphDataSource
     val testGraphName = GraphName("test")
-    a [GraphNotFoundException] shouldBe thrownBy(source.schema(testGraphName))
+    a[GraphNotFoundException] shouldBe thrownBy(source.schema(testGraphName))
   }
 
   it("schema should return schema for existing graph") {
     val source = new SessionGraphDataSource
     val testGraphName = GraphName("test")
     val propertyGraph = mock[PropertyGraph]
-    when(propertyGraph.schema).thenReturn(PropertyGraphSchema.empty.withRelationshipType("foo"))
+    when(propertyGraph.schema).thenReturn(
+      PropertyGraphSchema.empty.withRelationshipType("foo")
+    )
     source.store(testGraphName, propertyGraph)
-    source.schema(testGraphName).get should be(PropertyGraphSchema.empty.withRelationshipType("foo"))
+    source.schema(testGraphName).get should be(
+      PropertyGraphSchema.empty.withRelationshipType("foo")
+    )
   }
 
   it("graphNames should return all names of stored graphs") {

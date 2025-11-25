@@ -31,12 +31,12 @@ import org.opencypher.okapi.api.value.CypherValue.CypherValue
 import org.opencypher.okapi.impl.exception.IllegalArgumentException
 
 /**
-  * Represents a table in which each row contains one [[org.opencypher.okapi.api.value.CypherValue]] per column and the
-  * values in each column have the same Cypher type.
+  * Represents a table in which each row contains one [[org.opencypher.okapi.api.value.CypherValue]]
+  * per column and the values in each column have the same Cypher type.
   *
-  * This interface is used to access simple Cypher values from a table. When it is implemented with an element mapping
-  * it can also be used to assemble complex Cypher values such as CypherNode/CypherRelationship that are stored over
-  * multiple columns in a low-level Cypher table.
+  * This interface is used to access simple Cypher values from a table. When it is implemented with
+  * an element mapping it can also be used to assemble complex Cypher values such as
+  * CypherNode/CypherRelationship that are stored over multiple columns in a low-level Cypher table.
   */
 trait CypherTable {
 
@@ -47,24 +47,16 @@ trait CypherTable {
     */
   def physicalColumns: Seq[String]
 
-  /**
-    * Logical column names in this table as requested by a RETURN statement.
-    */
+  /** Logical column names in this table as requested by a RETURN statement. */
   def logicalColumns: Option[Seq[String]] = None
 
-  /**
-    * CypherType of columns stored in this table.
-    */
+  /** CypherType of columns stored in this table. */
   def columnType: Map[String, CypherType]
 
-  /**
-    * Iterator over the rows in this table.
-    */
+  /** Iterator over the rows in this table. */
   def rows: Iterator[String => CypherValue]
 
-  /**
-    * Number of rows in this Table.
-    */
+  /** Number of rows in this Table. */
   def size: Long
 
 }
@@ -76,18 +68,29 @@ object CypherTable {
     /**
       * Checks if the data type of the given column is compatible with the expected type.
       *
-      * @param columnKey    column to be checked
-      * @param expectedType excepted data type
+      * @param columnKey
+      *   column to be checked
+      * @param expectedType
+      *   excepted data type
       */
-    def verifyColumnType(columnKey: String, expectedType: CypherType, keyDescription: String): Unit = {
-      val columnType = table.columnType.getOrElse(columnKey, throw IllegalArgumentException(
-        s"table with column key $columnKey",
-        s"table with columns ${table.physicalColumns.mkString(", ")}"))
+    def verifyColumnType(
+      columnKey: String,
+      expectedType: CypherType,
+      keyDescription: String
+    ): Unit = {
+      val columnType = table.columnType.getOrElse(
+        columnKey,
+        throw IllegalArgumentException(
+          s"table with column key $columnKey",
+          s"table with columns ${table.physicalColumns.mkString(", ")}"
+        )
+      )
 
       if (!columnType.material.subTypeOf(expectedType.material)) {
         throw IllegalArgumentException(
           s"$keyDescription column `$columnKey` of type $expectedType",
-          s"incompatible column type $columnType")
+          s"incompatible column type $columnType"
+        )
       }
     }
   }

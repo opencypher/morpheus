@@ -30,7 +30,9 @@ class CypherSQLRoundtripExampleTest extends ExampleTestBase {
   it("should produce the correct output") {
     validate(
       CypherSQLRoundtripExample.main(Array.empty),
-      getClass.getResource("/example_outputs/CypherSQLRoundtripExample.out").toURI
+      getClass
+        .getResource("/example_outputs/CypherSQLRoundtripExample.out")
+        .toURI
     )
   }
 }

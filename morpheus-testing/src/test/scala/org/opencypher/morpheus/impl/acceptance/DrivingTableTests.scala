@@ -43,97 +43,132 @@ class DrivingTableTests extends MorpheusTestSuite with ScanGraphInit {
     Row(15, "Carol")
   ).asJava
 
-  val schema = StructType(Seq(
-    StructField("age", IntegerType),
-    StructField("name", StringType)
-  ))
+  val schema = StructType(
+    Seq(
+      StructField("age", IntegerType),
+      StructField("name", StringType)
+    )
+  )
 
-  val drivingTable: MorpheusRecords = morpheus.records.wrap(morpheus.sparkSession.createDataFrame(data, schema))
+  val drivingTable: MorpheusRecords =
+    morpheus.records.wrap(morpheus.sparkSession.createDataFrame(data, schema))
 
   describe("simple usages") {
     it("return data from the driving table") {
-      morpheus.cypher(
-        """
+      morpheus
+        .cypher(
+          """
           |RETURN age, name
-        """.stripMargin, drivingTable = Some(drivingTable)).records.toMaps should equal(Bag(
-        CypherMap("age" -> 10, "name" -> "Alice"),
-        CypherMap("age" -> 20, "name" -> "Bob"),
-        CypherMap("age" -> 15, "name" -> "Carol")
-      ))
+        """.stripMargin,
+          drivingTable = Some(drivingTable)
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("age" -> 10, "name" -> "Alice"),
+          CypherMap("age" -> 20, "name" -> "Bob"),
+          CypherMap("age" -> 15, "name" -> "Carol")
+        )
+      )
     }
 
     it("can combine driving table with unwind") {
-      morpheus.cypher(
-        """
+      morpheus
+        .cypher(
+          """
           |UNWIND [1,2] AS i
           |RETURN i, age, name
-        """.stripMargin, drivingTable = Some(drivingTable)).records.toMaps should equal(Bag(
-        CypherMap("i" -> 1, "age" -> 10, "name" -> "Alice"),
-        CypherMap("i" -> 1, "age" -> 20, "name" -> "Bob"),
-        CypherMap("i" -> 1, "age" -> 15, "name" -> "Carol"),
-        CypherMap("i" -> 2, "age" -> 10, "name" -> "Alice"),
-        CypherMap("i" -> 2, "age" -> 20, "name" -> "Bob"),
-        CypherMap("i" -> 2, "age" -> 15, "name" -> "Carol")
-      ))
+        """.stripMargin,
+          drivingTable = Some(drivingTable)
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("i" -> 1, "age" -> 10, "name" -> "Alice"),
+          CypherMap("i" -> 1, "age" -> 20, "name" -> "Bob"),
+          CypherMap("i" -> 1, "age" -> 15, "name" -> "Carol"),
+          CypherMap("i" -> 2, "age" -> 10, "name" -> "Alice"),
+          CypherMap("i" -> 2, "age" -> 20, "name" -> "Bob"),
+          CypherMap("i" -> 2, "age" -> 15, "name" -> "Carol")
+        )
+      )
     }
   }
 
   describe("matching on driving table") {
     it("can use driving table data for filters") {
-      val graph = initGraph(
-        """
+      val graph = initGraph("""
           |CREATE (:Person {name: "George", age: 20})
           |CREATE (:Person {name: "Frank", age: 50})
           |CREATE (:Person {name: "Jon", age: 15})
         """.stripMargin)
 
-      graph.cypher(
-        """
+      graph
+        .cypher(
+          """
           |MATCH (p:Person)
           |WHERE p.age = age
           |RETURN p.name, name
-        """.stripMargin, drivingTable = Some(drivingTable)).records.toMaps should equal(Bag(
-        CypherMap("p.name" -> "George", "name" -> "Bob"),
-        CypherMap("p.name" -> "Jon", "name" -> "Carol")
-      ))
+        """.stripMargin,
+          drivingTable = Some(drivingTable)
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("p.name" -> "George", "name" -> "Bob"),
+          CypherMap("p.name" -> "Jon", "name" -> "Carol")
+        )
+      )
     }
 
     it("can use driving table data for filters inside the pattern") {
-      val graph = initGraph(
-        """
+      val graph = initGraph("""
           |CREATE (:Person {name: "George", age: 20})
           |CREATE (:Person {name: "Frank", age: 50})
           |CREATE (:Person {name: "Jon", age: 15})
         """.stripMargin)
 
-      graph.cypher(
-        """
+      graph
+        .cypher(
+          """
           |MATCH (p:Person {age: age})
           |RETURN p.name, name
-        """.stripMargin, drivingTable = Some(drivingTable)).records.toMaps should equal(Bag(
-        CypherMap("p.name" -> "George", "name" -> "Bob"),
-        CypherMap("p.name" -> "Jon", "name" -> "Carol")
-      ))
+        """.stripMargin,
+          drivingTable = Some(drivingTable)
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("p.name" -> "George", "name" -> "Bob"),
+          CypherMap("p.name" -> "Jon", "name" -> "Carol")
+        )
+      )
     }
 
     it("can use driving table for more complex matches") {
-      val graph = initGraph(
-        """
+      val graph = initGraph("""
           |CREATE (b:B)
           |CREATE (:Person {name: "George", age: 20})-[:REL]->(b)
           |CREATE (:Person {name: "Frank", age: 50})-[:REL]->(b)
           |CREATE (:Person {name: "Jon", age: 15})-[:REL]->(b)
         """.stripMargin)
 
-      graph.cypher(
-        """
+      graph
+        .cypher(
+          """
           |MATCH (p:Person {age: age})
           |MATCH (p)-[]->()
           |RETURN p.name, name
-        """.stripMargin, drivingTable = Some(drivingTable)).records.toMaps should equal(Bag(
-        CypherMap("p.name" -> "George", "name" -> "Bob"),
-        CypherMap("p.name" -> "Jon", "name" -> "Carol")
-      ))
+        """.stripMargin,
+          drivingTable = Some(drivingTable)
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("p.name" -> "George", "name" -> "Bob"),
+          CypherMap("p.name" -> "Jon", "name" -> "Carol")
+        )
+      )
     }
   }
 }

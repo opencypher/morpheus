@@ -45,10 +45,9 @@ class ConvertersTest extends BaseTestSuite {
       BinaryType -> CTIdentity
     )
 
-    mappings.foreach {
-      case (spark, cypher) =>
-        spark.toCypherType(false) should equal(Some(cypher))
-        spark.toCypherType(true) should equal(Some(cypher.nullable))
+    mappings.foreach { case (spark, cypher) =>
+      spark.toCypherType(false) should equal(Some(cypher))
+      spark.toCypherType(true) should equal(Some(cypher.nullable))
     }
   }
 
@@ -74,9 +73,8 @@ class ConvertersTest extends BaseTestSuite {
       CTRelationship("BAR") -> BinaryType
     )
 
-    mappings.foreach {
-      case (cypher, spark) =>
-        cypher.getSparkType should equal(spark)
+    mappings.foreach { case (cypher, spark) =>
+      cypher.getSparkType should equal(spark)
     }
   }
 
@@ -92,13 +90,14 @@ class ConvertersTest extends BaseTestSuite {
       java.lang.Boolean.TRUE -> CTTrue,
       Array(1) -> CTList(CTInteger),
       Array() -> CTEmptyList,
-      Array(Int.box(1), Double.box(3.14)) -> CTList(CTUnion(CTInteger, CTFloat)),
+      Array(Int.box(1), Double.box(3.14)) -> CTList(
+        CTUnion(CTInteger, CTFloat)
+      ),
       Array(null, "foo") -> CTList(CTString.nullable)
     )
 
-    mappings.foreach {
-      case (spark, cypher) =>
-        CypherValue(spark).cypherType should equal(cypher)
+    mappings.foreach { case (spark, cypher) =>
+      CypherValue(spark).cypherType should equal(cypher)
     }
   }
 }

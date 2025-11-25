@@ -34,7 +34,13 @@ import org.opencypher.okapi.ir.api.expr._
 import org.opencypher.okapi.ir.impl.SignatureTyping._
 import org.opencypher.okapi.ir.impl.parse.{functions => f}
 import org.opencypher.okapi.ir.impl.typer.SignatureConverter.Signature
-import org.opencypher.okapi.ir.impl.typer.{InvalidArgument, InvalidContainerAccess, MissingParameter, UnTypedExpr, WrongNumberOfArguments}
+import org.opencypher.okapi.ir.impl.typer.{
+  InvalidArgument,
+  InvalidContainerAccess,
+  MissingParameter,
+  UnTypedExpr,
+  WrongNumberOfArguments
+}
 import org.opencypher.v9_0.expressions.{ExtractScope, functions}
 import org.opencypher.v9_0.{expressions => ast}
 
@@ -46,34 +52,49 @@ final class ExpressionConverter(context: IRBuilderContext) {
 
   private def parameterType(p: ast.Parameter): CypherType = {
     context.parameters.get(p.name) match {
-      case None => throw MissingParameter(p.name)
+      case None        => throw MissingParameter(p.name)
       case Some(param) => param.cypherType
     }
   }
 
   private def extractLong(expr: Expr): Long = {
     expr match {
-      case param: Param => context.parameters(param.name) match {
-        case CypherInteger(i) => i
-        case other => throw IllegalArgumentException("a CypherInteger value", other)
-      }
+      case param: Param =>
+        context.parameters(param.name) match {
+          case CypherInteger(i) => i
+          case other =>
+            throw IllegalArgumentException("a CypherInteger value", other)
+        }
       case l: IntegerLit => l.v
-      case _ => throw IllegalArgumentException("a literal value", expr)
+      case _             => throw IllegalArgumentException("a literal value", expr)
     }
   }
 
-  private def convertFilterScope(variable: ast.LogicalVariable, innerPredicate: ast.Expression, list: Expr)(implicit lambdaVars: Map[String, CypherType]) : (LambdaVar, Expr) = {
-      val listInnerType = list.cypherType match {
-        case CTList(inner) => inner
-        case err => throw IllegalArgumentException("a list to step over", err, "Wrong list comprehension type")
-      }
-      val lambdaVar = LambdaVar(variable.name) (listInnerType) //todo: use normal convert + match instead?
-      val updatedLambdaVars = lambdaVars + (variable.name -> listInnerType)
+  private def convertFilterScope(
+    variable: ast.LogicalVariable,
+    innerPredicate: ast.Expression,
+    list: Expr
+  )(implicit lambdaVars: Map[String, CypherType]): (LambdaVar, Expr) = {
+    val listInnerType = list.cypherType match {
+      case CTList(inner) => inner
+      case err =>
+        throw IllegalArgumentException(
+          "a list to step over",
+          err,
+          "Wrong list comprehension type"
+        )
+    }
+    val lambdaVar = LambdaVar(variable.name)(
+      listInnerType
+    ) // todo: use normal convert + match instead?
+    val updatedLambdaVars = lambdaVars + (variable.name -> listInnerType)
 
-      lambdaVar -> convert(innerPredicate)(updatedLambdaVars)
+    lambdaVar -> convert(innerPredicate)(updatedLambdaVars)
   }
 
-  def convert(e: ast.Expression) (implicit lambdaVars: Map[String, CypherType]): Expr = {
+  def convert(
+    e: ast.Expression
+  )(implicit lambdaVars: Map[String, CypherType]): Expr = {
 
     lazy val child0: Expr = convert(e.arguments.head)
 
@@ -84,19 +105,21 @@ final class ExpressionConverter(context: IRBuilderContext) {
     lazy val convertedChildren: List[Expr] = e.arguments.toList.map(convert(_))
 
     e match {
-      case ast.Variable(name) => lambdaVars.get(name) match {
+      case ast.Variable(name) =>
+        lambdaVars.get(name) match {
           case Some(varType) => LambdaVar(name)(varType)
-          case None => Var(name)(context.knownTypes.getOrElse(e, throw UnTypedExpr(e)))
+          case None =>
+            Var(name)(context.knownTypes.getOrElse(e, throw UnTypedExpr(e)))
         }
-      case p@ast.Parameter(name, _) => Param(name)(parameterType(p))
+      case p @ ast.Parameter(name, _) => Param(name)(parameterType(p))
 
       // Literals
-      case astExpr: ast.IntegerLiteral => IntegerLit(astExpr.value)
+      case astExpr: ast.IntegerLiteral       => IntegerLit(astExpr.value)
       case astExpr: ast.DecimalDoubleLiteral => FloatLit(astExpr.value)
-      case ast.StringLiteral(value) => StringLit(value)
-      case _: ast.True => TrueLit
-      case _: ast.False => FalseLit
-      case _: ast.ListLiteral => ListLit(convertedChildren)
+      case ast.StringLiteral(value)          => StringLit(value)
+      case _: ast.True                       => TrueLit
+      case _: ast.False                      => FalseLit
+      case _: ast.ListLiteral                => ListLit(convertedChildren)
 
       case ast.Property(_, ast.PropertyKeyName(name)) =>
         val owner = child0
@@ -111,16 +134,24 @@ final class ExpressionConverter(context: IRBuilderContext) {
             // User specified label constraints - we can use those for type inference
             ElementProperty(owner, key)(propertyType)
           case CTNode(labels, None) =>
-            val propertyType = schema.nodePropertyKeyType(labels, name).getOrElse(CTNull)
+            val propertyType =
+              schema.nodePropertyKeyType(labels, name).getOrElse(CTNull)
             ElementProperty(owner, key)(propertyType)
           case CTNode(labels, Some(qgn)) =>
-            val propertyType = context.queryLocalCatalog.schema(qgn).nodePropertyKeyType(labels, name).getOrElse(CTNull)
+            val propertyType = context.queryLocalCatalog
+              .schema(qgn)
+              .nodePropertyKeyType(labels, name)
+              .getOrElse(CTNull)
             ElementProperty(owner, key)(propertyType)
           case CTRelationship(types, None) =>
-            val propertyType = schema.relationshipPropertyKeyType(types, name).getOrElse(CTNull)
+            val propertyType =
+              schema.relationshipPropertyKeyType(types, name).getOrElse(CTNull)
             ElementProperty(owner, key)(propertyType)
           case CTRelationship(types, Some(qgn)) =>
-            val propertyType = context.queryLocalCatalog.schema(qgn).relationshipPropertyKeyType(types, name).getOrElse(CTNull)
+            val propertyType = context.queryLocalCatalog
+              .schema(qgn)
+              .relationshipPropertyKeyType(types, name)
+              .getOrElse(CTNull)
             ElementProperty(owner, key)(propertyType)
           case _: CTMap =>
             MapProperty(owner, key)
@@ -135,57 +166,63 @@ final class ExpressionConverter(context: IRBuilderContext) {
 
       // Predicates
       case _: ast.Ands => Ands(convertedChildren: _*)
-      case _: ast.Ors => Ors(convertedChildren: _*)
-      case _: ast.Xor => Ors(Ands(child0, Not(child1)), Ands(Not(child0), child1))
-      case ast.HasLabels(_, labels) => Ands(labels.map(l => HasLabel(child0, Label(l.name))).toSet)
+      case _: ast.Ors  => Ors(convertedChildren: _*)
+      case _: ast.Xor =>
+        Ors(Ands(child0, Not(child1)), Ands(Not(child0), child1))
+      case ast.HasLabels(_, labels) =>
+        Ands(labels.map(l => HasLabel(child0, Label(l.name))).toSet)
       case _: ast.Not => Not(child0)
-      case ast.Equals(f: ast.FunctionInvocation, s: ast.StringLiteral) if f.function == functions.Type =>
+      case ast.Equals(f: ast.FunctionInvocation, s: ast.StringLiteral)
+          if f.function == functions.Type =>
         HasType(convert(f.args.head), RelType(s.value))
-      case _: ast.Equals => Equals(child0, child1)
-      case _: ast.LessThan => LessThan(child0, child1)
-      case _: ast.LessThanOrEqual => LessThanOrEqual(child0, child1)
-      case _: ast.GreaterThan => GreaterThan(child0, child1)
+      case _: ast.Equals             => Equals(child0, child1)
+      case _: ast.LessThan           => LessThan(child0, child1)
+      case _: ast.LessThanOrEqual    => LessThanOrEqual(child0, child1)
+      case _: ast.GreaterThan        => GreaterThan(child0, child1)
       case _: ast.GreaterThanOrEqual => GreaterThanOrEqual(child0, child1)
-      case _: ast.In => In(child0, child1)
-      case _: ast.IsNull => IsNull(child0)
-      case _: ast.IsNotNull => IsNotNull(child0)
-      case _: ast.StartsWith => StartsWith(child0, child1)
-      case _: ast.EndsWith => EndsWith(child0, child1)
-      case _: ast.Contains => Contains(child0, child1)
+      case _: ast.In                 => In(child0, child1)
+      case _: ast.IsNull             => IsNull(child0)
+      case _: ast.IsNotNull          => IsNotNull(child0)
+      case _: ast.StartsWith         => StartsWith(child0, child1)
+      case _: ast.EndsWith           => EndsWith(child0, child1)
+      case _: ast.Contains           => Contains(child0, child1)
 
       // Arithmetics
-      case _: ast.Add => Add(child0, child1)
+      case _: ast.Add      => Add(child0, child1)
       case _: ast.Subtract => Subtract(child0, child1)
       case _: ast.Multiply => Multiply(child0, child1)
-      case _: ast.Divide => Divide(child0, child1)
-      case _: ast.Modulo => Modulo(child0, child1)
+      case _: ast.Divide   => Divide(child0, child1)
+      case _: ast.Modulo   => Modulo(child0, child1)
 
-      case funcInv: ast.FunctionInvocation => funcInv.function match {
-          case functions.Id => Id(child0)
-          case functions.Labels => Labels(child0)
-          case functions.Type => Type(child0)
-          case functions.Avg => Avg(child0)
-          case functions.Max => Max(child0)
-          case functions.Min => Min(child0)
+      case funcInv: ast.FunctionInvocation =>
+        funcInv.function match {
+          case functions.Id             => Id(child0)
+          case functions.Labels         => Labels(child0)
+          case functions.Type           => Type(child0)
+          case functions.Avg            => Avg(child0)
+          case functions.Max            => Max(child0)
+          case functions.Min            => Min(child0)
           case functions.PercentileCont => PercentileCont(child0, child1)
           case functions.PercentileDisc => PercentileDisc(child0, child1)
-          case functions.StdDev => StDev(child0)
-          case functions.StdDevP => StDevP(child0)
-          case functions.Sum => Sum(child0)
-          case functions.Count => Count(child0, funcInv.distinct)
-          case functions.Collect => Collect(child0, funcInv.distinct)
-          case functions.Exists => Exists(child0)
-          case functions.Size => Size(child0)
-          case functions.Keys => Keys(child0)
-          case functions.StartNode => StartNodeFunction(child0)
-          case functions.EndNode => EndNodeFunction(child0)
-          case functions.ToFloat => ToFloat(child0)
-          case functions.ToInteger => ToInteger(child0)
-          case functions.ToString => ToString(child0)
-          case functions.ToBoolean => ToBoolean(child0)
-          case functions.Coalesce =>
+          case functions.StdDev         => StDev(child0)
+          case functions.StdDevP        => StDevP(child0)
+          case functions.Sum            => Sum(child0)
+          case functions.Count          => Count(child0, funcInv.distinct)
+          case functions.Collect        => Collect(child0, funcInv.distinct)
+          case functions.Exists         => Exists(child0)
+          case functions.Size           => Size(child0)
+          case functions.Keys           => Keys(child0)
+          case functions.StartNode      => StartNodeFunction(child0)
+          case functions.EndNode        => EndNodeFunction(child0)
+          case functions.ToFloat        => ToFloat(child0)
+          case functions.ToInteger      => ToInteger(child0)
+          case functions.ToString       => ToString(child0)
+          case functions.ToBoolean      => ToBoolean(child0)
+          case functions.Coalesce       =>
             // Special optimisation for coalesce using short-circuit logic
-            convertedChildren.map(_.cypherType).indexWhere(!_.isNullable) match {
+            convertedChildren
+              .map(_.cypherType)
+              .indexWhere(!_.isNullable) match {
               case 0 =>
                 // first argument is non-nullable; just use it directly without coalesce
                 convertedChildren.head
@@ -197,87 +234,110 @@ final class ExpressionConverter(context: IRBuilderContext) {
                 val relevantArgs = convertedChildren.slice(0, other + 1)
                 Coalesce(relevantArgs)
             }
-          case functions.Range => Range(child0, child1, convertedChildren.lift(2))
-          case functions.Substring => Substring(child0, child1, convertedChildren.lift(2))
+          case functions.Range =>
+            Range(child0, child1, convertedChildren.lift(2))
+          case functions.Substring =>
+            Substring(child0, child1, convertedChildren.lift(2))
           case functions.Split => Split(child0, child1)
-          case functions.Left => Substring(child0, IntegerLit(0), convertedChildren.lift(1))
-          case functions.Right => Substring(child0, Subtract(Multiply(IntegerLit(-1), child1), IntegerLit(1)), None)
+          case functions.Left =>
+            Substring(child0, IntegerLit(0), convertedChildren.lift(1))
+          case functions.Right =>
+            Substring(
+              child0,
+              Subtract(Multiply(IntegerLit(-1), child1), IntegerLit(1)),
+              None
+            )
           case functions.Replace => Replace(child0, child1, child2)
           case functions.Reverse => Reverse(child0)
-          case functions.Trim => Trim(child0)
-          case functions.LTrim => LTrim(child0)
-          case functions.RTrim => RTrim(child0)
+          case functions.Trim    => Trim(child0)
+          case functions.LTrim   => LTrim(child0)
+          case functions.RTrim   => RTrim(child0)
           case functions.ToUpper => ToUpper(child0)
           case functions.ToLower => ToLower(child0)
           case functions.Properties =>
             val outType = child0.cypherType.material match {
               case CTVoid => CTNull
               case CTNode(labels, _) =>
-                CTMap(schema.nodePropertyKeysForCombinations(schema.combinationsFor(labels)))
+                CTMap(
+                  schema.nodePropertyKeysForCombinations(
+                    schema.combinationsFor(labels)
+                  )
+                )
               case CTRelationship(types, _) =>
                 CTMap(schema.relationshipPropertyKeysForTypes(types))
               case m: CTMap => m
-              case _ => throw InvalidArgument(funcInv, funcInv.args(0))
+              case _        => throw InvalidArgument(funcInv, funcInv.args(0))
             }
             Properties(child0)(outType)
-          //List-access functions
+          // List-access functions
           case functions.Last => Last(child0)
           case functions.Head => Head(child0)
           case functions.Tail => ListSliceFrom(child0, IntegerLit(1))
 
           // Logarithmic functions
-          case functions.Sqrt => Sqrt(child0)
-          case functions.Log => Log(child0)
+          case functions.Sqrt  => Sqrt(child0)
+          case functions.Log   => Log(child0)
           case functions.Log10 => Log10(child0)
-          case functions.Exp => Exp(child0)
-          case functions.E => E
-          case functions.Pi => Pi
+          case functions.Exp   => Exp(child0)
+          case functions.E     => E
+          case functions.Pi    => Pi
 
           // Numeric functions
-          case functions.Abs => Abs(child0)
-          case functions.Ceil => Ceil(child0)
+          case functions.Abs   => Abs(child0)
+          case functions.Ceil  => Ceil(child0)
           case functions.Floor => Floor(child0)
-          case functions.Rand => Rand
+          case functions.Rand  => Rand
           case functions.Round => Round(child0)
-          case functions.Sign => Sign(child0)
+          case functions.Sign  => Sign(child0)
 
           // Trigonometric functions
-          case functions.Acos => Acos(child0)
-          case functions.Asin => Asin(child0)
-          case functions.Atan => Atan(child0)
-          case functions.Atan2 => Atan2(child0, child1)
-          case functions.Cos => Cos(child0)
-          case functions.Cot => Cot(child0)
-          case functions.Degrees => Degrees(child0)
+          case functions.Acos     => Acos(child0)
+          case functions.Asin     => Asin(child0)
+          case functions.Atan     => Atan(child0)
+          case functions.Atan2    => Atan2(child0, child1)
+          case functions.Cos      => Cos(child0)
+          case functions.Cot      => Cot(child0)
+          case functions.Degrees  => Degrees(child0)
           case functions.Haversin => Haversin(child0)
-          case functions.Radians => Radians(child0)
-          case functions.Sin => Sin(child0)
-          case functions.Tan => Tan(child0)
+          case functions.Radians  => Radians(child0)
+          case functions.Sin      => Sin(child0)
+          case functions.Tan      => Tan(child0)
 
           // Match by name
-          case functions.UnresolvedFunction => funcInv.name match {
-            // Time functions
-            case f.Timestamp.name => Timestamp
-            case f.LocalDateTime.name => LocalDateTime(convertedChildren.headOption)
-            case f.Date.name => Date(convertedChildren.headOption)
-            case f.Duration.name => Duration(child0)
-            case BigDecimal.name =>
-              e.checkNbrArgs(3, convertedChildren.length)
-              BigDecimal(child0, extractLong(child1), extractLong(child2))
-            case name => throw NotImplementedException(s"Support for converting function '$name' is not yet implemented")
-          }
+          case functions.UnresolvedFunction =>
+            funcInv.name match {
+              // Time functions
+              case f.Timestamp.name => Timestamp
+              case f.LocalDateTime.name =>
+                LocalDateTime(convertedChildren.headOption)
+              case f.Date.name     => Date(convertedChildren.headOption)
+              case f.Duration.name => Duration(child0)
+              case BigDecimal.name =>
+                e.checkNbrArgs(3, convertedChildren.length)
+                BigDecimal(child0, extractLong(child1), extractLong(child2))
+              case name =>
+                throw NotImplementedException(
+                  s"Support for converting function '$name' is not yet implemented"
+                )
+            }
 
           case a: functions.Function =>
-            throw NotImplementedException(s"Support for converting function '${a.name}' is not yet implemented")
+            throw NotImplementedException(
+              s"Support for converting function '${a.name}' is not yet implemented"
+            )
         }
 
       case _: ast.CountStar => CountStar
 
       // Exists (rewritten Pattern Expressions)
-      case org.opencypher.okapi.ir.impl.parse.rewriter.ExistsPattern(subquery, trueVar) =>
+      case org.opencypher.okapi.ir.impl.parse.rewriter
+            .ExistsPattern(subquery, trueVar) =>
         val innerModel = IRBuilder(subquery)(context) match {
           case sq: SingleQuery => sq
-          case _ => throw IllegalArgumentException("ExistsPattern only accepts SingleQuery")
+          case _ =>
+            throw IllegalArgumentException(
+              "ExistsPattern only accepts SingleQuery"
+            )
         }
         ExistsPatternExpr(
           Var(trueVar.name)(CTBoolean),
@@ -286,58 +346,107 @@ final class ExpressionConverter(context: IRBuilderContext) {
 
       // Case When .. Then .. [Else ..] End
       case ast.CaseExpression(None, alternatives, default) =>
-        val convertedAlternatives = alternatives.toList.map { case (left, right) => convert(left) -> convert(right) }
-        val maybeConvertedDefault: Option[Expr] = default.map(expr => convert(expr))
-        val possibleTypes = convertedAlternatives.map { case (_, thenExpr) => thenExpr.cypherType }
-        val defaultCaseType = maybeConvertedDefault.map(_.cypherType).getOrElse(CTNull)
+        val convertedAlternatives = alternatives.toList.map { case (left, right) =>
+          convert(left) -> convert(right)
+        }
+        val maybeConvertedDefault: Option[Expr] =
+          default.map(expr => convert(expr))
+        val possibleTypes = convertedAlternatives.map { case (_, thenExpr) =>
+          thenExpr.cypherType
+        }
+        val defaultCaseType =
+          maybeConvertedDefault.map(_.cypherType).getOrElse(CTNull)
         val returnType = possibleTypes.foldLeft(defaultCaseType)(_ join _)
         CaseExpr(convertedAlternatives, maybeConvertedDefault)(returnType)
 
       case ast.MapExpression(items) =>
-        val convertedMap = items.map { case (key, value) => key.name -> convert(value) }.toMap
+        val convertedMap = items.map { case (key, value) =>
+          key.name -> convert(value)
+        }.toMap
         MapExpression(convertedMap)
 
       // Expression
-      case ast.ListSlice(list, Some(from), Some(to)) => ListSliceFromTo(convert(list), convert(from), convert(to))
-      case ast.ListSlice(list, None, Some(to)) => ListSliceTo(convert(list), convert(to))
-      case ast.ListSlice(list, Some(from), None) => ListSliceFrom(convert(list), convert(from))
+      case ast.ListSlice(list, Some(from), Some(to)) =>
+        ListSliceFromTo(convert(list), convert(from), convert(to))
+      case ast.ListSlice(list, None, Some(to)) =>
+        ListSliceTo(convert(list), convert(to))
+      case ast.ListSlice(list, Some(from), None) =>
+        ListSliceFrom(convert(list), convert(from))
 
-      case ast.ListComprehension(ExtractScope(variable, innerPredicate, extractExpression), expr) =>
+      case ast.ListComprehension(
+            ExtractScope(variable, innerPredicate, extractExpression),
+            expr
+          ) =>
         val listExpr = convert(expr)(lambdaVars)
         val listInnerType = listExpr.cypherType match {
           case CTList(inner) => inner
-          case err => throw IllegalArgumentException("a list to step over", err, "Wrong list comprehension type")
+          case err =>
+            throw IllegalArgumentException(
+              "a list to step over",
+              err,
+              "Wrong list comprehension type"
+            )
         }
-        val updatedLambdaVars: Map[String, CypherType] = lambdaVars + (variable.name -> listInnerType)
-        ListComprehension(convert(variable)(updatedLambdaVars), innerPredicate.map(convert(_)(updatedLambdaVars)),
-          extractExpression.map(convert(_)(updatedLambdaVars)), listExpr)
+        val updatedLambdaVars: Map[String, CypherType] =
+          lambdaVars + (variable.name -> listInnerType)
+        ListComprehension(
+          convert(variable)(updatedLambdaVars),
+          innerPredicate.map(convert(_)(updatedLambdaVars)),
+          extractExpression.map(convert(_)(updatedLambdaVars)),
+          listExpr
+        )
 
-      case ast.ReduceExpression(ast.ReduceScope(accumulator, variable, reduceExpression), _, list) =>
+      case ast.ReduceExpression(
+            ast.ReduceScope(accumulator, variable, reduceExpression),
+            _,
+            list
+          ) =>
         val initExpr = child1
-        val introduceLambdaVars = Map(accumulator.name -> initExpr.cypherType, variable.name -> initExpr.cypherType)
+        val introduceLambdaVars = Map(
+          accumulator.name -> initExpr.cypherType,
+          variable.name -> initExpr.cypherType
+        )
         val updatedLambdaVars = lambdaVars ++ introduceLambdaVars
-        ListReduction(convert(accumulator)(updatedLambdaVars), convert(variable)(updatedLambdaVars),
-          convert(reduceExpression)(updatedLambdaVars), initExpr, convert(list)(updatedLambdaVars))
+        ListReduction(
+          convert(accumulator)(updatedLambdaVars),
+          convert(variable)(updatedLambdaVars),
+          convert(reduceExpression)(updatedLambdaVars),
+          initExpr,
+          convert(list)(updatedLambdaVars)
+        )
 
-      case predExpr: ast.IterablePredicateExpression => predExpr.scope.innerPredicate match {
-        case Some(innerPredicate) => val (lambdaVar, predicate) = convertFilterScope(predExpr.scope.variable, innerPredicate, child0)
-          predExpr match {
-            case _: ast.AnyIterablePredicate => ListAny(lambdaVar, predicate, child0)
-            case _: ast.AllIterablePredicate => ListAll(lambdaVar, predicate, child0)
-            case _: ast.NoneIterablePredicate => ListNone(lambdaVar, predicate, child0)
-            case _: ast.SingleIterablePredicate => ListSingle(lambdaVar, predicate, child0)
-          }
-        case None =>
-          predExpr match {
-            case _ => throw IllegalArgumentException("requires a predicate") //same behaviour as neo4j
-          }
-      }
+      case predExpr: ast.IterablePredicateExpression =>
+        predExpr.scope.innerPredicate match {
+          case Some(innerPredicate) =>
+            val (lambdaVar, predicate) = convertFilterScope(
+              predExpr.scope.variable,
+              innerPredicate,
+              child0
+            )
+            predExpr match {
+              case _: ast.AnyIterablePredicate =>
+                ListAny(lambdaVar, predicate, child0)
+              case _: ast.AllIterablePredicate =>
+                ListAll(lambdaVar, predicate, child0)
+              case _: ast.NoneIterablePredicate =>
+                ListNone(lambdaVar, predicate, child0)
+              case _: ast.SingleIterablePredicate =>
+                ListSingle(lambdaVar, predicate, child0)
+            }
+          case None =>
+            predExpr match {
+              case _ =>
+                throw IllegalArgumentException(
+                  "requires a predicate"
+                ) // same behaviour as neo4j
+            }
+        }
 
       case ast.DesugaredMapProjection(_, items, includeAllProps) =>
         val convertedItems = items.map(x => x.key.name -> convert(x.exp))
         val mapOwner = child0 match {
           case v: Var => v
-          case err => throw IllegalArgumentException("a Var Expr", err)
+          case err    => throw IllegalArgumentException("a Var Expr", err)
         }
         MapProjection(mapOwner, convertedItems, includeAllProps)
 
@@ -351,7 +460,10 @@ final class ExpressionConverter(context: IRBuilderContext) {
                 val key = context.parameters(name).cast[String]
                 innerTypes.getOrElse(key, CTVoid)
               case ast.StringLiteral(key) => innerTypes.getOrElse(key, CTVoid)
-              case _ => innerTypes.values.foldLeft(CTVoid: CypherType)(_ join _).nullable
+              case _ =>
+                innerTypes.values
+                  .foldLeft(CTVoid: CypherType)(_ join _)
+                  .nullable
             }
           case _ => throw InvalidContainerAccess(e)
         }
@@ -360,7 +472,6 @@ final class ExpressionConverter(context: IRBuilderContext) {
       case ast.Null() => NullLit
 
       case ast.RegexMatch(lhs, rhs) => RegexMatch(convert(lhs), convert(rhs))
-
 
       case _ =>
         throw NotImplementedException(s"Not yet able to convert expression: $e")
@@ -372,20 +483,23 @@ final class ExpressionConverter(context: IRBuilderContext) {
 object BigDecimalSignatures {
 
   /**
-    * Signature for BigDecimal arithmetics on the type level. The semantics are based on Spark SQL, which in turn
-    * is based on Hive and SQL Server. See DecimalPrecision in Apache Spark
+    * Signature for BigDecimal arithmetics on the type level. The semantics are based on Spark SQL,
+    * which in turn is based on Hive and SQL Server. See DecimalPrecision in Apache Spark
     *
     * @param precisionScaleOp
     * @return
     */
   // TODO change to tuples
   def arithmeticSignature(precisionScaleOp: PrecisionScaleOp): Signature = {
-    case Seq(CTBigDecimal(p1, s1), CTBigDecimal(p2, s2)) => Some(CTBigDecimal(precisionScaleOp(p1, s1, p2, s2)))
-    case Seq(CTBigDecimal(p, s), CTInteger) => Some(CTBigDecimal(precisionScaleOp(p, s, 20, 0)))
-    case Seq(CTInteger, CTBigDecimal(p, s)) => Some(CTBigDecimal(precisionScaleOp(20, 0, p, s)))
+    case Seq(CTBigDecimal(p1, s1), CTBigDecimal(p2, s2)) =>
+      Some(CTBigDecimal(precisionScaleOp(p1, s1, p2, s2)))
+    case Seq(CTBigDecimal(p, s), CTInteger) =>
+      Some(CTBigDecimal(precisionScaleOp(p, s, 20, 0)))
+    case Seq(CTInteger, CTBigDecimal(p, s)) =>
+      Some(CTBigDecimal(precisionScaleOp(20, 0, p, s)))
     case Seq(_: CTBigDecimal, CTFloat) => Some(CTFloat)
     case Seq(CTFloat, _: CTBigDecimal) => Some(CTFloat)
-    case _ => None
+    case _                             => None
   }
 
   trait PrecisionScaleOp {

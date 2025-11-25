@@ -33,20 +33,19 @@ import org.opencypher.morpheus.api.MorpheusSession._
 import org.opencypher.morpheus.util.App
 import org.opencypher.okapi.api.graph.CypherResult
 
-/**
-  * Shows how to access a Cypher query result as a [[DataFrame]].
-  */
+/** Shows how to access a Cypher query result as a [[DataFrame]]. */
 object DataFrameOutputExample extends App {
 
   // 1) Create Morpheus session and retrieve Spark session
   implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // 2) Load social network data via case class instances
-  val socialNetwork = morpheus.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  val socialNetwork =
+    morpheus.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
   // 3) Query graph with Cypher
-  val results: CypherResult = socialNetwork.cypher(
-    """|MATCH (a:Person)-[r:FRIEND_OF]->(b)
+  val results: CypherResult =
+    socialNetwork.cypher("""|MATCH (a:Person)-[r:FRIEND_OF]->(b)
        |RETURN a.name, b.name, r.since""".stripMargin)
 
   // 4) Extract DataFrame representing the query result
@@ -58,20 +57,20 @@ object DataFrameOutputExample extends App {
   projection.show()
 }
 
-/**
-  * Alternative to accessing a Cypher query result as a [[DataFrame]].
-  */
+/** Alternative to accessing a Cypher query result as a [[DataFrame]]. */
 object DataFrameOutputUsingAliasExample extends App {
   // 1) Create Morpheus session and retrieve Spark session
   implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // 2) Load social network data via case class instances
-  val socialNetwork = morpheus.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  val socialNetwork =
+    morpheus.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
   // 3) Query graph with Cypher
   val results = socialNetwork.cypher(
     """|MATCH (a:Person)-[r:FRIEND_OF]->(b)
-       |RETURN a.name AS person1, b.name AS person2, r.since AS friendsSince""".stripMargin)
+       |RETURN a.name AS person1, b.name AS person2, r.since AS friendsSince""".stripMargin
+  )
 
   // 4) Extract DataFrame representing the query result
   val df: DataFrame = results.records.asDataFrame

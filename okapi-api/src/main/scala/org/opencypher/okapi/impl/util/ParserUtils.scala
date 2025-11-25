@@ -32,14 +32,22 @@ import fastparse._
 object ParserUtils {
   def newline[_: P]: P[Unit] = P("\n" | "\r\n" | "\r" | "\f")
   def invisible[_: P]: P[Unit] = P(" " | "\t" | newline)
-  def comment[_: P]: P[Unit] = P("--" ~ (!newline ~ AnyChar).rep ~ (newline | &(End)))
-  implicit val whitespace: P[_] => P[Unit] = { implicit ctx: ParsingRun[_] => (comment | invisible).rep }
+  def comment[_: P]: P[Unit] = P(
+    "--" ~ (!newline ~ AnyChar).rep ~ (newline | &(End))
+  )
+  implicit val whitespace: P[_] => P[Unit] = { implicit ctx: ParsingRun[_] =>
+    (comment | invisible).rep
+  }
 
   def keyword[_: P](k: String): P[Unit] = P(IgnoreCase(k))
   def digit[_: P]: P[Unit] = P(CharIn("0-9"))
   def integer[_: P]: P[Int] = P(digit.repX(1).!.map(_.toInt))
   def character[_: P]: P[Unit] = P(CharIn("a-zA-Z"))
-  def identifier[_: P]: P[Unit] = P(character ~~ P(character | digit | "_").repX)
-  def escapedIdentifier[_: P]: P[String] = P(identifier.! | ("`" ~~ CharsWhile(_ != '`').! ~~ "`"))
+  def identifier[_: P]: P[Unit] = P(
+    character ~~ P(character | digit | "_").repX
+  )
+  def escapedIdentifier[_: P]: P[String] = P(
+    identifier.! | ("`" ~~ CharsWhile(_ != '`').! ~~ "`")
+  )
   def label[_: P]: P[String] = P(":" ~ (identifier.! | escapedIdentifier))
 }

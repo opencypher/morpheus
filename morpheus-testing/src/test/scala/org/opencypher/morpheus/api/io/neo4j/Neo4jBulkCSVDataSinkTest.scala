@@ -39,7 +39,11 @@ import org.scalatest.BeforeAndAfterAll
 import java.nio.file.{Files, Path}
 import scala.io.Source
 
-class Neo4jBulkCSVDataSinkTest extends MorpheusTestSuite with TeamDataFixture with ScanGraphInit with BeforeAndAfterAll {
+class Neo4jBulkCSVDataSinkTest
+    extends MorpheusTestSuite
+    with TeamDataFixture
+    with ScanGraphInit
+    with BeforeAndAfterAll {
   protected var tempDir: Path = _
 
   private val graphName = GraphName("teamdata")
@@ -48,7 +52,9 @@ class Neo4jBulkCSVDataSinkTest extends MorpheusTestSuite with TeamDataFixture wi
   override protected def beforeAll(): Unit = {
     super.beforeAll()
     tempDir = Files.createTempDirectory(getClass.getSimpleName)
-    val graph: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph(dataFixture)
+    val graph: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph(
+      dataFixture
+    )
     val dataSource = new Neo4jBulkCSVDataSink(tempDir.toAbsolutePath.toString)
     dataSource.store(graphName, graph)
     morpheus.catalog.register(namespace, dataSource)
@@ -59,7 +65,8 @@ class Neo4jBulkCSVDataSinkTest extends MorpheusTestSuite with TeamDataFixture wi
     super.afterAll()
   }
 
-  private def ds: Neo4jBulkCSVDataSink = morpheus.catalog.source(namespace).asInstanceOf[Neo4jBulkCSVDataSink]
+  private def ds: Neo4jBulkCSVDataSink =
+    morpheus.catalog.source(namespace).asInstanceOf[Neo4jBulkCSVDataSink]
 
   it("writes the correct script file") {
     val root = ds.rootPath
@@ -87,19 +94,27 @@ class Neo4jBulkCSVDataSinkTest extends MorpheusTestSuite with TeamDataFixture wi
   }
 
   it("writes the correct schema files") {
-    Source.fromFile(ds.schemaFileForNodes(graphName, Set("Person", "German"))).mkString should equal(
+    Source
+      .fromFile(ds.schemaFileForNodes(graphName, Set("Person", "German")))
+      .mkString should equal(
       "___morpheusID:ID,languages:string[],luckyNumber:int,name:string"
     )
 
-    Source.fromFile(ds.schemaFileForNodes(graphName, Set("Person"))).mkString should equal(
+    Source
+      .fromFile(ds.schemaFileForNodes(graphName, Set("Person")))
+      .mkString should equal(
       "___morpheusID:ID,languages:string[],luckyNumber:int,name:string"
     )
 
-    Source.fromFile(ds.schemaFileForNodes(graphName, Set("Person", "Swede"))).mkString should equal(
+    Source
+      .fromFile(ds.schemaFileForNodes(graphName, Set("Person", "Swede")))
+      .mkString should equal(
       "___morpheusID:ID,luckyNumber:int,name:string"
     )
 
-    Source.fromFile(ds.schemaFileForRelationships(graphName, "KNOWS")).mkString should equal(
+    Source
+      .fromFile(ds.schemaFileForRelationships(graphName, "KNOWS"))
+      .mkString should equal(
       ":START_ID,:END_ID,since:int"
     )
   }

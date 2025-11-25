@@ -40,9 +40,11 @@ import org.opencypher.okapi.relational.impl.planning.RelationalPlanner._
 
 import scala.reflect.runtime.universe.TypeTag
 
-class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[ElementTable[T]], val schema: PropertyGraphSchema)
-  (implicit val session: RelationalCypherSession[T])
-  extends RelationalCypherGraph[T] {
+class ScanGraph[T <: Table[T]: TypeTag](
+  val scans: Seq[ElementTable[T]],
+  val schema: PropertyGraphSchema
+)(implicit val session: RelationalCypherSession[T])
+    extends RelationalCypherGraph[T] {
 
   validate()
 
@@ -51,29 +53,32 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[ElementTable[T]], val sc
   override type Session = RelationalCypherSession[T]
 
   // TODO: ScanGraph should be an operator that gets a set of tables as input
-  private implicit def runtimeContext: RelationalRuntimeContext[T] = session.basicRuntimeContext()
+  private implicit def runtimeContext: RelationalRuntimeContext[T] =
+    session.basicRuntimeContext()
 
   override def tables: Seq[T] = scans.map(_.table)
 
   // TODO: Express `exactLabelMatch` with type
-  override def scanOperator(searchPattern: Pattern, exactLabelMatch: Boolean): RelationalOperator[T] = {
+  override def scanOperator(
+    searchPattern: Pattern,
+    exactLabelMatch: Boolean
+  ): RelationalOperator[T] = {
     val selectedScans = scansForType(searchPattern, exactLabelMatch)
 
-    val alignedElementTableOps = selectedScans.map {
-      case (scan, embedding) =>
-        embedding.foldLeft(scan) {
-          case (acc, (targetElement, inputElement)) =>
-            val inputElementExpressions = scan.header.expressionsFor(inputElement.toVar)
-            val targetHeader = acc.header -- inputElementExpressions ++ schema.headerForElement(targetElement.toVar, exactLabelMatch)
+    val alignedElementTableOps = selectedScans.map { case (scan, embedding) =>
+      embedding.foldLeft(scan) { case (acc, (targetElement, inputElement)) =>
+        val inputElementExpressions =
+          scan.header.expressionsFor(inputElement.toVar)
+        val targetHeader = acc.header -- inputElementExpressions ++ schema
+          .headerForElement(targetElement.toVar, exactLabelMatch)
 
-            acc.alignWith(inputElement.toVar, targetElement.toVar, targetHeader)
-        }
+        acc.alignWith(inputElement.toVar, targetElement.toVar, targetHeader)
+      }
     }
 
     alignedElementTableOps.toList match {
       case Nil =>
-        val scanHeader = searchPattern
-          .elements
+        val scanHeader = searchPattern.elements
           .map { e => schema.headerForElement(e.toVar) }
           .reduce(_ ++ _)
 
@@ -90,7 +95,8 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[ElementTable[T]], val sc
     searchPattern: Pattern,
     exactLabelMatch: Boolean
   ): Seq[(RelationalOperator[T], Map[PatternElement, PatternElement])] = {
-    val qgn = searchPattern.elements.head.cypherType.graph.getOrElse(session.emptyGraphQgn)
+    val qgn = searchPattern.elements.head.cypherType.graph
+      .getOrElse(session.emptyGraphQgn)
 
     val selectedScans = scans.flatMap { scan =>
       val scanPattern = scan.mapping.pattern
@@ -99,8 +105,8 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[ElementTable[T]], val sc
         .map(embedding => scan -> embedding)
     }
 
-    selectedScans.map {
-      case (scan, embedding) => Start(qgn, scan) -> embedding
+    selectedScans.map { case (scan, embedding) =>
+      Start(qgn, scan) -> embedding
     }
   }
 
@@ -108,18 +114,17 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[ElementTable[T]], val sc
     scan.mapping.pattern
   }.toSet
 
-  override def toString = s"ScanGraph(${
-    scans.map(_.mapping.pattern).mkString(", ")
-  })"
+  override def toString =
+    s"ScanGraph(${scans.map(_.mapping.pattern).mkString(", ")})"
 
   def validate(): Unit = {
     schema.labelCombinations.combos.foreach { combo =>
       val hasScan = patterns.exists {
         case NodePattern(nodeType) => nodeType.labels == combo
-        case _ => false
+        case _                     => false
       }
 
-      if(!hasScan) {
+      if (!hasScan) {
         throw IllegalArgumentException(
           s"a scan with NodePattern for label combination $combo",
           patterns
@@ -130,10 +135,10 @@ class ScanGraph[T <: Table[T] : TypeTag](val scans: Seq[ElementTable[T]], val sc
     schema.relationshipTypes.foreach { relType =>
       val hasScan = patterns.exists {
         case RelationshipPattern(relTypes) => relTypes.types.head == relType
-        case _ => false
+        case _                             => false
       }
 
-      if(!hasScan) {
+      if (!hasScan) {
         throw IllegalArgumentException(
           s"a scan with a RelationshipPattern for relationship type $relType",
           patterns

@@ -35,9 +35,13 @@ import org.opencypher.okapi.testing.Bag._
 
 trait RecordsVerificationFixture {
 
-  self: MorpheusTestSuite  =>
+  self: MorpheusTestSuite =>
 
-  protected def verify(records: RelationalCypherRecords[DataFrameTable], expectedExprs: Seq[Expr], expectedData: Bag[Row]): Unit = {
+  protected def verify(
+    records: RelationalCypherRecords[DataFrameTable],
+    expectedExprs: Seq[Expr],
+    expectedData: Bag[Row]
+  ): Unit = {
     val df = records.table.df
     val header = records.header
     val expectedColumns = expectedExprs.map(header.column)
@@ -45,12 +49,16 @@ trait RecordsVerificationFixture {
     df.columns.toSet should equal(expectedColumns.toSet)
 
     // Array equality is based on reference, not structure. Hence, we need to convert to lists.
-    val actual = df.select(expectedColumns.head, expectedColumns.tail: _*).collect().map { r =>
-      Row(r.toSeq.map {
-        case c: Array[_] => c.toList
-        case other => other
-      }: _*)
-    }.toBag
+    val actual = df
+      .select(expectedColumns.head, expectedColumns.tail: _*)
+      .collect()
+      .map { r =>
+        Row(r.toSeq.map {
+          case c: Array[_] => c.toList
+          case other       => other
+        }: _*)
+      }
+      .toBag
 
     actual should equal(expectedData)
   }

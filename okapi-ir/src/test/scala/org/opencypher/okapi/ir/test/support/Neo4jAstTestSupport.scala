@@ -46,12 +46,21 @@ trait Neo4jAstTestSupport extends AstConstructionTestSupport {
 
   import Neo4jAstTestSupport.CypherParserWithoutSemanticChecking
 
-  def parseQuery(queryText: String): (Statement, Map[String, Any], SemanticState) =
-    CypherParserWithoutSemanticChecking.process(queryText)(CypherParser.defaultContext)
+  def parseQuery(
+    queryText: String
+  ): (Statement, Map[String, Any], SemanticState) =
+    CypherParserWithoutSemanticChecking.process(queryText)(
+      CypherParser.defaultContext
+    )
 
   implicit def parseExpr(exprText: String): Expression = {
-    CypherParserWithoutSemanticChecking.process(s"RETURN $exprText")(CypherParser.defaultContext)._1 match {
-      case Query(_, SingleQuery(Return(_, ReturnItems(_, items), _, _, _, _) :: Nil)) =>
+    CypherParserWithoutSemanticChecking
+      .process(s"RETURN $exprText")(CypherParser.defaultContext)
+      ._1 match {
+      case Query(
+            _,
+            SingleQuery(Return(_, ReturnItems(_, items), _, _, _, _) :: Nil)
+          ) =>
         items.head.expression
       case _ => throw IllegalArgumentException("an expression", exprText)
     }
@@ -73,14 +82,19 @@ object Neo4jAstTestSupport {
 
     object NonThrowingSemanticAnalysis extends SemanticAnalysis(true) {
       override def process(from: BaseState, context: BaseContext): BaseState = {
-        val semanticState = NonThrowingChecker.check(from.statement(), context.exceptionCreator)
+        val semanticState =
+          NonThrowingChecker.check(from.statement(), context.exceptionCreator)
         from.withSemanticState(semanticState)
       }
     }
 
     object NonThrowingChecker {
-      def check(statement: Statement, mkException: (String, InputPosition) => CypherException): SemanticState = {
-        val SemanticCheckResult(semanticState, _) = statement.semanticCheck(SemanticState.clean)
+      def check(
+        statement: Statement,
+        mkException: (String, InputPosition) => CypherException
+      ): SemanticState = {
+        val SemanticCheckResult(semanticState, _) =
+          statement.semanticCheck(SemanticState.clean)
         semanticState
       }
     }

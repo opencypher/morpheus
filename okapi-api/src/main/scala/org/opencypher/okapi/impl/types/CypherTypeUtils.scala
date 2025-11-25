@@ -33,25 +33,31 @@ object CypherTypeUtils {
 
   implicit class RichCypherType(val ct: CypherType) extends AnyVal {
 
-    private def notNode() = throw UnsupportedOperationException(s"cannot convert $ct into a CTNode")
-    private def notRel() = throw UnsupportedOperationException(s"cannot convert $ct into a CTRelationship")
+    private def notNode() = throw UnsupportedOperationException(
+      s"cannot convert $ct into a CTNode"
+    )
+    private def notRel() = throw UnsupportedOperationException(
+      s"cannot convert $ct into a CTRelationship"
+    )
 
     def toCTNode: CTNode = ct match {
       case n: CTNode => n
-      case CTUnion(as) => as.toList.collect { case n: CTNode => n } match {
-        case n :: Nil => n
-        // TODO this is Spark specific remove
-        case _ => notNode()
-      }
+      case CTUnion(as) =>
+        as.toList.collect { case n: CTNode => n } match {
+          case n :: Nil => n
+          // TODO this is Spark specific remove
+          case _ => notNode()
+        }
       case _ => notNode()
     }
 
     def toCTRelationship: CTRelationship = ct match {
       case r: CTRelationship => r
-      case CTUnion(as) => as.toList.collect { case r: CTRelationship => r } match {
-        case r :: Nil => r
-        case _ => notRel()
-      }
+      case CTUnion(as) =>
+        as.toList.collect { case r: CTRelationship => r } match {
+          case r :: Nil => r
+          case _        => notRel()
+        }
       case _ => notRel()
     }
   }

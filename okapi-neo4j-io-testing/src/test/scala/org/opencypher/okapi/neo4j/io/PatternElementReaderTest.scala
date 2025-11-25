@@ -37,7 +37,10 @@ class PatternElementReaderTest extends BaseTestSuite {
     .withNodePropertyKeys("A")("foo" -> CTInteger, "bar" -> CTString.nullable)
     .withNodePropertyKeys("B")()
     .withNodePropertyKeys(s"${metaPrefix}C")()
-    .withRelationshipPropertyKeys("TYPE")("foo" -> CTFloat.nullable, "f" -> CTBoolean)
+    .withRelationshipPropertyKeys("TYPE")(
+      "foo" -> CTFloat.nullable,
+      "f" -> CTBoolean
+    )
     .withRelationshipPropertyKeys("TYPE2")()
 
   it("constructs flat node queries from schema") {

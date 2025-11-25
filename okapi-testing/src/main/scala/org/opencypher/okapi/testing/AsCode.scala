@@ -29,14 +29,16 @@ package org.opencypher.okapi.testing
 import org.opencypher.okapi.api.types.CypherType
 
 /**
-  * Returns a string that can be pasted as an object definition for standard case classes,
-  * some other products, collections and objects.
+  * Returns a string that can be pasted as an object definition for standard case classes, some
+  * other products, collections and objects.
   */
 // TODO: remove once MatchHelper can use scalatest again
 object AsCode {
 
   implicit class ImplicitAsCode(a: Any) {
-    def asCode(implicit specialMappings: PartialFunction[Any, String] = Map.empty): String = {
+    def asCode(implicit
+      specialMappings: PartialFunction[Any, String] = Map.empty
+    ): String = {
       anyAsCode(a)(specialMappings)
     }
   }
@@ -49,7 +51,9 @@ object AsCode {
     anyAsCode(a)(specialMappings)
   }
 
-  private def anyAsCode(a: Any)(implicit specialMappings: PartialFunction[Any, String] = Map.empty): String = {
+  private def anyAsCode(a: Any)(implicit
+    specialMappings: PartialFunction[Any, String] = Map.empty
+  ): String = {
     if (specialMappings.isDefinedAt(a)) specialMappings(a)
     else {
       a match {
@@ -70,8 +74,9 @@ object AsCode {
     }
   }
 
-  private def traversableAsCode(t: Traversable[_])(
-      implicit specialMappings: PartialFunction[Any, String] = Map.empty): String = {
+  private def traversableAsCode(t: Traversable[_])(implicit
+    specialMappings: PartialFunction[Any, String] = Map.empty
+  ): String = {
     if (specialMappings.isDefinedAt(t)) specialMappings(t)
     else {
       val elementString = t.map(anyAsCode).mkString(", ")
@@ -90,7 +95,9 @@ object AsCode {
     }
   }
 
-  private def productAsCode(p: Product)(implicit specialMappings: PartialFunction[Any, String] = Map.empty): String = {
+  private def productAsCode(p: Product)(implicit
+    specialMappings: PartialFunction[Any, String] = Map.empty
+  ): String = {
     if (specialMappings.isDefinedAt(p)) specialMappings(p)
     else {
       if (p.productIterator.isEmpty) {

@@ -43,73 +43,88 @@ class BoundedVarExpandTests extends MorpheusTestSuite with ScanGraphInit {
       """
     )
 
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (a:A)
         |MATCH (a)-[:LIKES*0]->(c)
         |RETURN c.name""".stripMargin)
 
-    result.records.toMaps should equal(Bag(
-      CypherMap("c.name" -> "n0")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("c.name" -> "n0")
+      )
+    )
   }
 
   it("bounded to single relationship") {
 
     // Given
-    val given = initGraph("CREATE (s:Node {val: 'source'})-[:REL]->(:Node {val: 'mid1'})-[:REL]->(:Node {val: 'end'})")
+    val given = initGraph(
+      "CREATE (s:Node {val: 'source'})-[:REL]->(:Node {val: 'mid1'})-[:REL]->(:Node {val: 'end'})"
+    )
 
     // When
     val result = given.cypher("MATCH (n:Node)-[r*0..1]->(m:Node) RETURN m.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("m.val" -> "source"),
-      CypherMap("m.val" -> "mid1"),
-      CypherMap("m.val" -> "mid1"),
-      CypherMap("m.val" -> "end"),
-      CypherMap("m.val" -> "end")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("m.val" -> "source"),
+        CypherMap("m.val" -> "mid1"),
+        CypherMap("m.val" -> "mid1"),
+        CypherMap("m.val" -> "end"),
+        CypherMap("m.val" -> "end")
+      )
+    )
   }
 
   it("bounded with lower bound") {
 
     // Given
-    val given = initGraph("CREATE (:Node {val: 'source'})-[:REL]->(:Node {val: 'mid1'})-[:REL]->(:Node {val: 'end'})")
+    val given = initGraph(
+      "CREATE (:Node {val: 'source'})-[:REL]->(:Node {val: 'mid1'})-[:REL]->(:Node {val: 'end'})"
+    )
 
     // When
     val result = given.cypher("MATCH (t:Node)-[r*2..3]->(y:Node) RETURN y.val")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("y.val" -> "end")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("y.val" -> "end")
+      )
+    )
   }
 
   it("var expand with default lower and loop") {
     // Given
-    val given = initGraph("CREATE (a:Node {v: 'a'})-[:REL]->(:Node {v: 'b'})-[:REL]->(:Node {v: 'c'})-[:REL]->(a)")
+    val given = initGraph(
+      "CREATE (a:Node {v: 'a'})-[:REL]->(:Node {v: 'b'})-[:REL]->(:Node {v: 'c'})-[:REL]->(a)"
+    )
 
     // When
     val result = given.cypher("MATCH (a:Node)-[r*..6]->(b:Node) RETURN b.v")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("b.v" -> "a"),
-      CypherMap("b.v" -> "a"),
-      CypherMap("b.v" -> "a"),
-      CypherMap("b.v" -> "b"),
-      CypherMap("b.v" -> "b"),
-      CypherMap("b.v" -> "b"),
-      CypherMap("b.v" -> "c"),
-      CypherMap("b.v" -> "c"),
-      CypherMap("b.v" -> "c")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("b.v" -> "a"),
+        CypherMap("b.v" -> "a"),
+        CypherMap("b.v" -> "a"),
+        CypherMap("b.v" -> "b"),
+        CypherMap("b.v" -> "b"),
+        CypherMap("b.v" -> "b"),
+        CypherMap("b.v" -> "c"),
+        CypherMap("b.v" -> "c"),
+        CypherMap("b.v" -> "c")
+      )
+    )
   }
 
   it("var expand return var length rel as list of relationships") {
     // Given
-    val given = initGraph("CREATE (a:Node {v: 'a'})-[:REL]->(:Node {v: 'b'})-[:REL]->(:Node {v: 'c'})-[:REL]->(a)")
+    val given = initGraph(
+      "CREATE (a:Node {v: 'a'})-[:REL]->(:Node {v: 'b'})-[:REL]->(:Node {v: 'c'})-[:REL]->(a)"
+    )
 
     // When
     val result = given.cypher("MATCH (a:Node)-[r*..6]->(b:Node) RETURN r")
@@ -119,70 +134,87 @@ class BoundedVarExpandTests extends MorpheusTestSuite with ScanGraphInit {
     val rel3 = MorpheusRelationship(5, 3, 0, "REL")
 
     val elements = result.records.toMaps
-    elements should equal(Bag(
-      CypherMap("r" -> CypherList(Seq(rel1))),
-      CypherMap("r" -> CypherList(Seq(rel1, rel2))),
-      CypherMap("r" -> CypherList(Seq(rel1, rel2, rel3))),
-      CypherMap("r" -> CypherList(Seq(rel2))),
-      CypherMap("r" -> CypherList(Seq(rel2, rel3))),
-      CypherMap("r" -> CypherList(Seq(rel2, rel3, rel1))),
-      CypherMap("r" -> CypherList(Seq(rel3))),
-      CypherMap("r" -> CypherList(Seq(rel3, rel1))),
-      CypherMap("r" -> CypherList(Seq(rel3, rel1, rel2)))
-    ))
+    elements should equal(
+      Bag(
+        CypherMap("r" -> CypherList(Seq(rel1))),
+        CypherMap("r" -> CypherList(Seq(rel1, rel2))),
+        CypherMap("r" -> CypherList(Seq(rel1, rel2, rel3))),
+        CypherMap("r" -> CypherList(Seq(rel2))),
+        CypherMap("r" -> CypherList(Seq(rel2, rel3))),
+        CypherMap("r" -> CypherList(Seq(rel2, rel3, rel1))),
+        CypherMap("r" -> CypherList(Seq(rel3))),
+        CypherMap("r" -> CypherList(Seq(rel3, rel1))),
+        CypherMap("r" -> CypherList(Seq(rel3, rel1, rel2)))
+      )
+    )
 
   }
 
   it("var expand with rel type") {
     // Given
-    val given = initGraph("CREATE (a:Node {v: 'a'})-[:LOVES]->(:Node {v: 'b'})-[:KNOWS]->(:Node {v: 'c'})-[:HATES]->(a)")
+    val given = initGraph(
+      "CREATE (a:Node {v: 'a'})-[:LOVES]->(:Node {v: 'b'})-[:KNOWS]->(:Node {v: 'c'})-[:HATES]->(a)"
+    )
 
     // When
-    val result = given.cypher("MATCH (a:Node)-[r:LOVES|KNOWS*..6]->(b:Node) RETURN b.v")
+    val result =
+      given.cypher("MATCH (a:Node)-[r:LOVES|KNOWS*..6]->(b:Node) RETURN b.v")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("b.v" -> "b"),
-      CypherMap("b.v" -> "c"),
-      CypherMap("b.v" -> "c")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("b.v" -> "b"),
+        CypherMap("b.v" -> "c"),
+        CypherMap("b.v" -> "c")
+      )
+    )
   }
 
   // Property predicates on var-length patterns get rewritten in AST to WHERE all(_foo IN r | _foo.prop = value)
   // We could do that better by pre-filtering candidate relationships prior to the iterate step
   ignore("var expand with property filter") {
     // Given
-    val given = initGraph("CREATE (a:Node {v: 'a'})-[:R {v: 1}]->(:Node {v: 'b'})-[:R {v: 2}]->(:Node {v: 'c'})-[:R {v: 2}]->(a)")
+    val given = initGraph(
+      "CREATE (a:Node {v: 'a'})-[:R {v: 1}]->(:Node {v: 'b'})-[:R {v: 2}]->(:Node {v: 'c'})-[:R {v: 2}]->(a)"
+    )
 
     // When
-    val result = given.cypher("MATCH (a:Node)-[r*..6 {v: 2}]->(b:Node) RETURN b.v")
+    val result =
+      given.cypher("MATCH (a:Node)-[r*..6 {v: 2}]->(b:Node) RETURN b.v")
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("b.v" -> "c"),
-      CypherMap("b.v" -> "a"),
-      CypherMap("b.v" -> "a")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("b.v" -> "c"),
+        CypherMap("b.v" -> "a"),
+        CypherMap("b.v" -> "a")
+      )
+    )
   }
 
   it("var expand with additional hop") {
     // Given
-    val given = initGraph("CREATE (a:Node {v: 'a'})-[:KNOWS]->(:Node {v: 'b'})-[:KNOWS]->(:Node {v: 'c'})-[:HATES]->(d:Node {v: 'd'})")
+    val given = initGraph(
+      "CREATE (a:Node {v: 'a'})-[:KNOWS]->(:Node {v: 'b'})-[:KNOWS]->(:Node {v: 'c'})-[:HATES]->(d:Node {v: 'd'})"
+    )
 
     // When
-    val result = given.cypher("MATCH (a:Node)-[r:KNOWS*..6]->(b:Node)-[:HATES]->(c:Node) RETURN c.v")
+    val result = given.cypher(
+      "MATCH (a:Node)-[r:KNOWS*..6]->(b:Node)-[:HATES]->(c:Node) RETURN c.v"
+    )
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("c.v" -> "d"),
-      CypherMap("c.v" -> "d")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap("c.v" -> "d"),
+        CypherMap("c.v" -> "d")
+      )
+    )
   }
 
   it("var expand with expand into") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (a:Person {name: "Philip"})
         |CREATE (b:Person {name: "Stefan"})
         |CREATE (c:City {name: "Berlondon"})
@@ -199,8 +231,14 @@ class BoundedVarExpandTests extends MorpheusTestSuite with ScanGraphInit {
     )
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap("a.name" -> "Philip", "b.name" -> "Stefan", "c.name" -> "Berlondon")
-    ))
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "a.name" -> "Philip",
+          "b.name" -> "Stefan",
+          "c.name" -> "Berlondon"
+        )
+      )
+    )
   }
 }

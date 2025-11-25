@@ -37,19 +37,17 @@ import org.opencypher.okapi.api.value.CypherValue.CypherMap
 
 import scala.collection.JavaConverters._
 
-/**
-  * Demonstrates how to retrieve Property Graph elements as a Dataset and update them.
-  */
+/** Demonstrates how to retrieve Property Graph elements as a Dataset and update them. */
 object UpdateExample extends App {
   // 1) Create Morpheus session and retrieve Spark session
   implicit val session: MorpheusSession = MorpheusSession.local()
 
   // 2) Load social network data via case class instances
-  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  val socialNetwork =
+    session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
   // 3) Query graph with Cypher
-  val results = socialNetwork.cypher(
-    """|MATCH (p:Person)
+  val results = socialNetwork.cypher("""|MATCH (p:Person)
        |WHERE p.age >= 18
        |RETURN p""".stripMargin)
 
@@ -58,7 +56,10 @@ object UpdateExample extends App {
 
   // 5) Add a new label and property to the nodes
   val adults: Dataset[MorpheusNode] = ds.map { record: CypherMap =>
-    record("p").cast[MorpheusNode].withLabel("Adult").withProperty("canVote", true)
+    record("p")
+      .cast[MorpheusNode]
+      .withLabel("Adult")
+      .withProperty("canVote", true)
   }
 
   // 6) Print updated nodes

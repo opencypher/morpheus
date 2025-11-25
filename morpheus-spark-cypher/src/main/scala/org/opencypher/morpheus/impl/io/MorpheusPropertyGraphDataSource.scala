@@ -34,6 +34,8 @@ trait MorpheusPropertyGraphDataSource extends PropertyGraphDataSource {
 
   protected def checkStorable(name: GraphName): Unit = {
     if (hasGraph(name))
-      throw GraphAlreadyExistsException(s"A graph with name $name is already stored in this graph data source.")
+      throw GraphAlreadyExistsException(
+        s"A graph with name $name is already stored in this graph data source."
+      )
   }
 }

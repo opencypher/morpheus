@@ -39,19 +39,28 @@ import org.scalatestplus.scalacheck.Checkers
 class EncodeLongTest extends MorpheusTestSuite with Checkers {
 
   it("encodes longs correctly") {
-    check((l: Long) => {
-      val scala = l.encodeAsMorpheusId.toList
-      val spark = typedLit[Long](l).encodeLongAsMorpheusId.expr.eval().asInstanceOf[Array[Byte]].toList
-      scala === spark
-    }, minSuccessful(1000))
+    check(
+      (l: Long) => {
+        val scala = l.encodeAsMorpheusId.toList
+        val spark = typedLit[Long](l).encodeLongAsMorpheusId.expr
+          .eval()
+          .asInstanceOf[Array[Byte]]
+          .toList
+        scala === spark
+      },
+      minSuccessful(1000)
+    )
   }
 
   it("encoding/decoding is symmetric") {
-    check((l: Long) => {
-      val encoded = l.encodeAsMorpheusId
-      val decoded = decodeLong(encoded)
-      decoded === l
-    }, minSuccessful(1000))
+    check(
+      (l: Long) => {
+        val encoded = l.encodeAsMorpheusId
+        val decoded = decodeLong(encoded)
+        decoded === l
+      },
+      minSuccessful(1000)
+    )
   }
 
   it("scala version encodes longs correctly") {
@@ -59,34 +68,47 @@ class EncodeLongTest extends MorpheusTestSuite with Checkers {
   }
 
   it("spark version encodes longs correctly") {
-    typedLit[Long](0L).encodeLongAsMorpheusId.expr.eval().asInstanceOf[Array[Byte]].array.toList should equal(List(0.toByte))
+    typedLit[Long](0L).encodeLongAsMorpheusId.expr
+      .eval()
+      .asInstanceOf[Array[Byte]]
+      .array
+      .toList should equal(List(0.toByte))
   }
 
   describe("Spark expression") {
 
     it("converts longs into byte arrays using expression interpreter") {
-      check((l: Long) => {
-        val positive = l & Long.MaxValue
-        val inputRow = new GenericInternalRow(Array[Any](positive))
-        val encodeLong = EncodeLong(functions.lit(positive).expr)
-        val interpreted = encodeLong.eval(inputRow).asInstanceOf[Array[Byte]]
-        val decoded = decodeLong(interpreted)
+      check(
+        (l: Long) => {
+          val positive = l & Long.MaxValue
+          val inputRow = new GenericInternalRow(Array[Any](positive))
+          val encodeLong = EncodeLong(functions.lit(positive).expr)
+          val interpreted = encodeLong.eval(inputRow).asInstanceOf[Array[Byte]]
+          val decoded = decodeLong(interpreted)
 
-        decoded === positive
-      }, minSuccessful(1000))
+          decoded === positive
+        },
+        minSuccessful(1000)
+      )
     }
 
     it("converts longs into byte arrays using expression code gen") {
-      check((l: Long) => {
-        val positive = l & Long.MaxValue
-        val inputRow = new GenericInternalRow(Array[Any](positive))
-        val encodeLong = EncodeLong(functions.lit(positive).expr)
-        val plan = GenerateMutableProjection.generate(Alias(encodeLong, s"Optimized($encodeLong)")() :: Nil)
-        val codegen = plan(inputRow).get(0, encodeLong.dataType).asInstanceOf[Array[Byte]]
-        val decoded = decodeLong(codegen)
+      check(
+        (l: Long) => {
+          val positive = l & Long.MaxValue
+          val inputRow = new GenericInternalRow(Array[Any](positive))
+          val encodeLong = EncodeLong(functions.lit(positive).expr)
+          val plan = GenerateMutableProjection.generate(
+            Alias(encodeLong, s"Optimized($encodeLong)")() :: Nil
+          )
+          val codegen =
+            plan(inputRow).get(0, encodeLong.dataType).asInstanceOf[Array[Byte]]
+          val decoded = decodeLong(codegen)
 
-        decoded === positive
-      }, minSuccessful(1000))
+          decoded === positive
+        },
+        minSuccessful(1000)
+      )
     }
 
   }

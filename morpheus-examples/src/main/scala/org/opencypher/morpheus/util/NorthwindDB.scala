@@ -43,19 +43,26 @@ object NorthwindDB {
       connection.setSchema("NORTHWIND")
 
       // create the SQL db schema
-      connection.execute(readResourceAsString("/northwind/sql/northwind_schema.sql"))
+      connection.execute(
+        readResourceAsString("/northwind/sql/northwind_schema.sql")
+      )
 
       // populate tables with data
-      connection.execute(readResourceAsString("/northwind/sql/northwind_data.sql"))
+      connection.execute(
+        readResourceAsString("/northwind/sql/northwind_data.sql")
+      )
 
       // create views that hide problematic columns
-      connection.execute(readResourceAsString("/northwind/sql/northwind_views.sql"))
+      connection.execute(
+        readResourceAsString("/northwind/sql/northwind_views.sql")
+      )
     }
   }
 
   private def readResourceAsString(name: String): String =
-    using(Source.fromFile(getClass.getResource(name).toURI))(_
-      .getLines()
-      .filterNot(line => line.startsWith("#") || line.startsWith("CREATE INDEX"))
-      .mkString(Properties.lineSeparator))
+    using(Source.fromFile(getClass.getResource(name).toURI))(
+      _.getLines()
+        .filterNot(line => line.startsWith("#") || line.startsWith("CREATE INDEX"))
+        .mkString(Properties.lineSeparator)
+    )
 }

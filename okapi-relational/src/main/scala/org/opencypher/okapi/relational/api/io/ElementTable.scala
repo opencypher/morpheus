@@ -37,83 +37,109 @@ import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, Table
 import org.opencypher.okapi.relational.impl.table.RecordHeader
 
 /**
-  * An element table describes how to map an input data frame to a Property Graph element
-  * (i.e. nodes or relationships).
+  * An element table describes how to map an input data frame to a Property Graph element (i.e.
+  * nodes or relationships).
   */
 trait ElementTable[T <: Table[T]] extends RelationalCypherRecords[T] {
 
   verify()
 
   def schema: PropertyGraphSchema = {
-    mapping.pattern.elements.map { element =>
-      element.cypherType match {
-        case CTNode(impliedTypes, _) =>
-          val propertyKeys = mapping.properties(element).toSeq.map {
-            case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
-          }
+    mapping.pattern.elements
+      .map { element =>
+        element.cypherType match {
+          case CTNode(impliedTypes, _) =>
+            val propertyKeys =
+              mapping.properties(element).toSeq.map { case (propertyKey, sourceKey) =>
+                propertyKey -> table.columnType(sourceKey)
+              }
 
-          PropertyGraphSchema.empty.withNodePropertyKeys(impliedTypes.toSeq: _*)(propertyKeys: _*)
+            PropertyGraphSchema.empty.withNodePropertyKeys(
+              impliedTypes.toSeq: _*
+            )(propertyKeys: _*)
 
-        case CTRelationship(relTypes, _) =>
+          case CTRelationship(relTypes, _) =>
+            val propertyKeys =
+              mapping.properties(element).toSeq.map { case (propertyKey, sourceKey) =>
+                propertyKey -> table.columnType(sourceKey)
+              }
 
-          val propertyKeys = mapping.properties(element).toSeq.map {
-            case (propertyKey, sourceKey) => propertyKey -> table.columnType(sourceKey)
-          }
+            relTypes.foldLeft(PropertyGraphSchema.empty) { case (partialSchema, relType) =>
+              partialSchema.withRelationshipPropertyKeys(relType)(
+                propertyKeys: _*
+              )
+            }
 
-          relTypes.foldLeft(PropertyGraphSchema.empty) {
-            case (partialSchema, relType) => partialSchema.withRelationshipPropertyKeys(relType)(propertyKeys: _*)
-          }
-
-        case other => throw IllegalArgumentException("an element with type CTNode or CTRelationship", other)
+          case other =>
+            throw IllegalArgumentException(
+              "an element with type CTNode or CTRelationship",
+              other
+            )
+        }
       }
-    }.reduce(_ ++ _)
+      .reduce(_ ++ _)
   }
 
   def mapping: ElementMapping
 
   def header: RecordHeader = {
-    mapping.pattern.elements.map { element =>
-      element.cypherType match {
-        case n :CTNode =>
-          val nodeVar = Var(element.name)(n)
+    mapping.pattern.elements
+      .map { element =>
+        element.cypherType match {
+          case n: CTNode =>
+            val nodeVar = Var(element.name)(n)
 
-          val idMapping = Map(nodeVar -> mapping.idKeys(element).head._2)
+            val idMapping = Map(nodeVar -> mapping.idKeys(element).head._2)
 
-          val propertyMapping = mapping.properties(element).map {
-            case (key, source) => ElementProperty(nodeVar, PropertyKey(key))(table.columnType(source)) -> source
-          }
+            val propertyMapping =
+              mapping.properties(element).map { case (key, source) =>
+                ElementProperty(nodeVar, PropertyKey(key))(
+                  table.columnType(source)
+                ) -> source
+              }
 
-          RecordHeader(idMapping ++ propertyMapping)
+            RecordHeader(idMapping ++ propertyMapping)
 
-        case r :CTRelationship =>
-          val relVar = Var(element.name)(r)
+          case r: CTRelationship =>
+            val relVar = Var(element.name)(r)
 
-          val idMapping = mapping.idKeys(element).map {
-            case (SourceIdKey, source) => relVar -> source
-            case (SourceStartNodeKey, source) => StartNode(relVar)(CTNode) -> source
-            case (SourceEndNodeKey, source) => EndNode(relVar)(CTNode) -> source
-          }
+            val idMapping = mapping.idKeys(element).map {
+              case (SourceIdKey, source) => relVar -> source
+              case (SourceStartNodeKey, source) =>
+                StartNode(relVar)(CTNode) -> source
+              case (SourceEndNodeKey, source) =>
+                EndNode(relVar)(CTNode) -> source
+            }
 
-          val propertyMapping = mapping.properties(element).map {
-            case (key, source) => ElementProperty(relVar, PropertyKey(key))(table.columnType(source)) -> source
-          }
+            val propertyMapping =
+              mapping.properties(element).map { case (key, source) =>
+                ElementProperty(relVar, PropertyKey(key))(
+                  table.columnType(source)
+                ) -> source
+              }
 
-          RecordHeader(idMapping ++ propertyMapping)
+            RecordHeader(idMapping ++ propertyMapping)
 
-        case other => throw IllegalArgumentException("an element with type CTNode or CTRelationship", other)
+          case other =>
+            throw IllegalArgumentException(
+              "an element with type CTNode or CTRelationship",
+              other
+            )
+        }
       }
-    }.reduce(_ ++ _)
+      .reduce(_ ++ _)
   }
 
   protected def verify(): Unit = {
-    mapping.idKeys.values.toSeq.flatten.foreach {
-      case (_, column) => table.verifyColumnType(column, CTIdentity, "id key")
+    mapping.idKeys.values.toSeq.flatten.foreach { case (_, column) =>
+      table.verifyColumnType(column, CTIdentity, "id key")
     }
 
-    if (table.physicalColumns.toSet != mapping.allSourceKeys.toSet) throw IllegalArgumentException(
-      s"Columns: ${mapping.allSourceKeys.mkString(", ")}",
-      s"Columns: ${table.physicalColumns.mkString(", ")}",
-      s"Use Morpheus[Node|Relationship]Table#fromMapping to create a valid ElementTable")
+    if (table.physicalColumns.toSet != mapping.allSourceKeys.toSet)
+      throw IllegalArgumentException(
+        s"Columns: ${mapping.allSourceKeys.mkString(", ")}",
+        s"Columns: ${table.physicalColumns.mkString(", ")}",
+        s"Use Morpheus[Node|Relationship]Table#fromMapping to create a valid ElementTable"
+      )
   }
 }
-

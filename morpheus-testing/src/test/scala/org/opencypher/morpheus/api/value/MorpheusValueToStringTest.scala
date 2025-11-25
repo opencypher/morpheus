@@ -33,17 +33,57 @@ import org.opencypher.okapi.testing.BaseTestSuite
 class MorpheusValueToStringTest extends BaseTestSuite {
 
   test("node") {
-    MorpheusNode(1L, Set.empty[String], CypherMap.empty).toCypherString should equal("()")
-    MorpheusNode(1L, Set("A"), CypherMap.empty).toCypherString should equal("(:`A`)")
-    MorpheusNode(1L, Set("A", "B"), CypherMap.empty).toCypherString should equal("(:`A`:`B`)")
-    MorpheusNode(1L, Set("A", "B"), CypherMap("a" -> "b")).toCypherString should equal("(:`A`:`B` {`a`: 'b'})")
-    MorpheusNode(1L, Set("A", "B"), CypherMap("a" -> "b", "b" -> 1)).toCypherString should equal("(:`A`:`B` {`a`: 'b', `b`: 1})")
-    MorpheusNode(1L, Set.empty[String], CypherMap("a" -> "b", "b" -> 1)).toCypherString should equal("({`a`: 'b', `b`: 1})")
+    MorpheusNode(
+      1L,
+      Set.empty[String],
+      CypherMap.empty
+    ).toCypherString should equal("()")
+    MorpheusNode(1L, Set("A"), CypherMap.empty).toCypherString should equal(
+      "(:`A`)"
+    )
+    MorpheusNode(
+      1L,
+      Set("A", "B"),
+      CypherMap.empty
+    ).toCypherString should equal("(:`A`:`B`)")
+    MorpheusNode(
+      1L,
+      Set("A", "B"),
+      CypherMap("a" -> "b")
+    ).toCypherString should equal("(:`A`:`B` {`a`: 'b'})")
+    MorpheusNode(
+      1L,
+      Set("A", "B"),
+      CypherMap("a" -> "b", "b" -> 1)
+    ).toCypherString should equal("(:`A`:`B` {`a`: 'b', `b`: 1})")
+    MorpheusNode(
+      1L,
+      Set.empty[String],
+      CypherMap("a" -> "b", "b" -> 1)
+    ).toCypherString should equal("({`a`: 'b', `b`: 1})")
   }
 
   test("relationship") {
-    MorpheusRelationship(1L, 1L, 1L, "A", CypherMap.empty).toCypherString should equal("[:`A`]")
-    MorpheusRelationship(1L, 1L, 1L, "A", CypherMap("a" -> "b")).toCypherString should equal("[:`A` {`a`: 'b'}]")
-    MorpheusRelationship(1L, 1L, 1L, "A", CypherMap("a" -> "b", "b" -> 1)).toCypherString should equal("[:`A` {`a`: 'b', `b`: 1}]")
+    MorpheusRelationship(
+      1L,
+      1L,
+      1L,
+      "A",
+      CypherMap.empty
+    ).toCypherString should equal("[:`A`]")
+    MorpheusRelationship(
+      1L,
+      1L,
+      1L,
+      "A",
+      CypherMap("a" -> "b")
+    ).toCypherString should equal("[:`A` {`a`: 'b'}]")
+    MorpheusRelationship(
+      1L,
+      1L,
+      1L,
+      "A",
+      CypherMap("a" -> "b", "b" -> 1)
+    ).toCypherString should equal("[:`A` {`a`: 'b', `b`: 1}]")
   }
 }

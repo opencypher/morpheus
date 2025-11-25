@@ -49,8 +49,16 @@ object Neo4jWorkflowExample extends App {
   val neo4j = connectNeo4j(personNetwork, boltUrl)
 
   // Register Property Graph Data Sources (PGDS)
-  morpheus.registerSource(Namespace("socialNetwork"), GraphSources.cypher.neo4j(neo4j.config))
-  morpheus.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = getClass.getResource("/fs-graphsource/csv").getFile).csv)
+  morpheus.registerSource(
+    Namespace("socialNetwork"),
+    GraphSources.cypher.neo4j(neo4j.config)
+  )
+  morpheus.registerSource(
+    Namespace("purchases"),
+    GraphSources
+      .fs(rootPath = getClass.getResource("/fs-graphsource/csv").getFile)
+      .csv
+  )
 
   // Access the graphs via their qualified graph names
   val socialNetwork = morpheus.catalog.graph("socialNetwork.graph")
@@ -58,8 +66,9 @@ object Neo4jWorkflowExample extends App {
 
   // Build new integrated graph that connects the social and product graphs and
   // create new edges between users and customers with the same name
-  val integratedGraph = morpheus.cypher(
-    """|FROM GRAPH socialNetwork.graph
+  val integratedGraph = morpheus
+    .cypher(
+      """|FROM GRAPH socialNetwork.graph
        |MATCH (p:Person)
        |FROM GRAPH purchases.products
        |MATCH (c:Customer)
@@ -69,16 +78,19 @@ object Neo4jWorkflowExample extends App {
        |  CREATE (p)-[:IS]->(c)
        |RETURN GRAPH
     """.stripMargin
-  ).getGraph.get
+    )
+    .getGraph
+    .get
 
   // Query for product recommendations and create new edges between users and the product they should buy
-  val recommendationGraph = integratedGraph.cypher(
-    """|MATCH (person:Person)-[:FRIEND_OF]-(friend:Person),
+  val recommendationGraph = integratedGraph
+    .cypher("""|MATCH (person:Person)-[:FRIEND_OF]-(friend:Person),
        |      (friend)-[:IS]->(customer:Customer),
        |      (customer)-[:BOUGHT]->(product:Product)
        |CONSTRUCT
        |      CREATE (person)-[:SHOULD_BUY]->(product)
-       |RETURN GRAPH""".stripMargin).graph
+       |RETURN GRAPH""".stripMargin)
+    .graph
 
   // Use the Neo4jGraphMerge utility to write the products and the recommendations back to Neo4j
 
@@ -87,16 +99,24 @@ object Neo4jWorkflowExample extends App {
   val nodeKeys = Map("Person" -> Set("name"), "Product" -> Set("title"))
 
   // Write the recommendations back to Neo4j
-  Neo4jGraphMerge.merge(entireGraphName, recommendationGraph, neo4j.config, Some(nodeKeys))
+  Neo4jGraphMerge.merge(
+    entireGraphName,
+    recommendationGraph,
+    neo4j.config,
+    Some(nodeKeys)
+  )
 
   // Proof that the write-back to Neo4j worked, retrieve and print updated Neo4j results
   val updatedNeo4jSource = GraphSources.cypher.neo4j(neo4j.config)
   morpheus.registerSource(Namespace("updated-neo4j"), updatedNeo4jSource)
-  val socialNetworkWithRanks = morpheus.catalog.graph(QualifiedGraphName(Namespace("updated-neo4j"), entireGraphName))
-  socialNetworkWithRanks.cypher(
-    """MATCH (person:Person)-[:SHOULD_BUY]->(product:Product)
+  val socialNetworkWithRanks = morpheus.catalog.graph(
+    QualifiedGraphName(Namespace("updated-neo4j"), entireGraphName)
+  )
+  socialNetworkWithRanks
+    .cypher("""MATCH (person:Person)-[:SHOULD_BUY]->(product:Product)
       |RETURN person.name AS person, product.title AS should_buy
-      |ORDER BY person, should_buy""".stripMargin).show
+      |ORDER BY person, should_buy""".stripMargin)
+    .show
 
   // Clear Neo4j test instance and close session / driver
   neo4j.close()

@@ -34,7 +34,11 @@ import org.opencypher.morpheus.api.value.MorpheusElement._
 import org.opencypher.morpheus.api.value.MorpheusNode
 import org.opencypher.morpheus.testing.MorpheusTestSuite
 import org.opencypher.okapi.api.graph.Pattern
-import org.opencypher.okapi.api.io.conversion.{ElementMapping, NodeMappingBuilder, RelationshipMappingBuilder}
+import org.opencypher.okapi.api.io.conversion.{
+  ElementMapping,
+  NodeMappingBuilder,
+  RelationshipMappingBuilder
+}
 import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.CypherMap
@@ -69,29 +73,37 @@ class PatternElementTableTest extends MorpheusTestSuite {
 
   it("mapping from scala classes") {
     val personTableScala = MorpheusNodeTable(List(Person(0, "Alice", 15)))
-    personTableScala.mapping should equal(NodeMappingBuilder
-      .withSourceIdKey("id")
-      .withImpliedLabel("Person")
-      .withPropertyKey("name")
-      .withPropertyKey("age")
-      .build)
+    personTableScala.mapping should equal(
+      NodeMappingBuilder
+        .withSourceIdKey("id")
+        .withImpliedLabel("Person")
+        .withPropertyKey("name")
+        .withPropertyKey("age")
+        .build
+    )
 
-
-    val friends = List(Friend(0, 0, 1, "23/01/1987"), Friend(1, 1, 2, "12/12/2009"))
+    val friends =
+      List(Friend(0, 0, 1, "23/01/1987"), Friend(1, 1, 2, "12/12/2009"))
     val friendTableScala = MorpheusRelationshipTable(friends)
 
-    friendTableScala.mapping should equal(RelationshipMappingBuilder
-      .withSourceIdKey("id")
-      .withSourceStartNodeKey("source")
-      .withSourceEndNodeKey("target")
-      .withRelType("FRIEND_OF")
-      .withPropertyKey("since")
-      .build)
+    friendTableScala.mapping should equal(
+      RelationshipMappingBuilder
+        .withSourceIdKey("id")
+        .withSourceStartNodeKey("source")
+        .withSourceEndNodeKey("target")
+        .withRelType("FRIEND_OF")
+        .withPropertyKey("since")
+        .build
+    )
   }
 
   // TODO: What is the expected column ordering?
-  ignore("throws an IllegalArgumentException when a relationship table does not have the expected column ordering") {
-    val df = sparkSession.createDataFrame(Seq((1, 1, 1, true))).toDF("ID", "TARGET", "SOURCE", "TYPE")
+  ignore(
+    "throws an IllegalArgumentException when a relationship table does not have the expected column ordering"
+  ) {
+    val df = sparkSession
+      .createDataFrame(Seq((1, 1, 1, true)))
+      .toDF("ID", "TARGET", "SOURCE", "TYPE")
     val relMapping = RelationshipMappingBuilder
       .on("ID")
       .from("SOURCE")
@@ -105,28 +117,39 @@ class PatternElementTableTest extends MorpheusTestSuite {
   }
 
   it("NodeTable should create correct schema from given mapping") {
-    val df = sparkSession.createDataFrame(Seq((1L, "Mats", 23L))).toDF("ID", "FOO", "BAR")
+    val df = sparkSession
+      .createDataFrame(Seq((1L, "Mats", 23L)))
+      .toDF("ID", "FOO", "BAR")
 
     val nodeTable = MorpheusElementTable.create(nodeMapping, df)
 
     nodeTable.schema should equal(
       PropertyGraphSchema.empty
-        .withNodePropertyKeys("A", "B")("foo" -> CTString.nullable, "bar" -> CTInteger))
+        .withNodePropertyKeys("A", "B")(
+          "foo" -> CTString.nullable,
+          "bar" -> CTInteger
+        )
+    )
   }
 
   it("NodeTable should create correct header from given mapping") {
-    val df = sparkSession.createDataFrame(Seq((1L, "Mats", 23L))).toDF("ID", "FOO", "BAR")
+    val df = sparkSession
+      .createDataFrame(Seq((1L, "Mats", 23L)))
+      .toDF("ID", "FOO", "BAR")
 
     val nodeTable = MorpheusElementTable.create(nodeMapping, df)
 
     val v = Var(Pattern.DEFAULT_NODE_NAME)(CTNode("A", "B"))
 
-    nodeTable.header should equal(RecordHeader(Map(
-      v -> "ID",
-      ElementProperty(v, PropertyKey("foo"))(CTString) -> "FOO",
-      ElementProperty(v, PropertyKey("bar"))(CTInteger) -> "BAR"
+    nodeTable.header should equal(
+      RecordHeader(
+        Map(
+          v -> "ID",
+          ElementProperty(v, PropertyKey("foo"))(CTString) -> "FOO",
+          ElementProperty(v, PropertyKey("bar"))(CTInteger) -> "BAR"
+        )
+      )
     )
-    ))
   }
 
   it("Relationship table should create correct schema from given mapping") {
@@ -138,7 +161,11 @@ class PatternElementTableTest extends MorpheusTestSuite {
 
     relationshipTable.schema should equal(
       PropertyGraphSchema.empty
-        .withRelationshipPropertyKeys("A")("foo" -> CTString.nullable, "bar" -> CTInteger))
+        .withRelationshipPropertyKeys("A")(
+          "foo" -> CTString.nullable,
+          "bar" -> CTInteger
+        )
+    )
   }
 
   it("Relationship table should create correct header from given mapping") {
@@ -150,23 +177,33 @@ class PatternElementTableTest extends MorpheusTestSuite {
 
     val v = Var(Pattern.DEFAULT_REL_NAME)(CTRelationship("A"))
 
-    relationshipTable.header should equal(RecordHeader(
-      Map(
-        v -> "ID",
-        StartNode(v)(CTNode) -> "FROM",
-        EndNode(v)(CTNode) -> "TO",
-        ElementProperty(v, PropertyKey("foo"))(CTString) -> "FOO",
-        ElementProperty(v, PropertyKey("bar"))(CTInteger) -> "BAR"
+    relationshipTable.header should equal(
+      RecordHeader(
+        Map(
+          v -> "ID",
+          StartNode(v)(CTNode) -> "FROM",
+          EndNode(v)(CTNode) -> "TO",
+          ElementProperty(v, PropertyKey("foo"))(CTString) -> "FOO",
+          ElementProperty(v, PropertyKey("bar"))(CTInteger) -> "BAR"
+        )
       )
-    ))
+    )
   }
 
   it("NodeTable should cast compatible types in input DataFrame") {
     // The ASCII code of character `1` is 49
-    val dfBinary = sparkSession.createDataFrame(Seq((Array[Byte](49.toByte), true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
-    val dfLong = sparkSession.createDataFrame(Seq((49L, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
-    val dfInt = sparkSession.createDataFrame(Seq((49, true, 10.toShort, 23.1f))).toDF("ID", "IS_C", "FOO", "BAR")
-    val dfString = sparkSession.createDataFrame(Seq(("1", 10.toShort, 23.1f))).toDF("ID", "FOO", "BAR")
+    val dfBinary = sparkSession
+      .createDataFrame(Seq((Array[Byte](49.toByte), true, 10.toShort, 23.1f)))
+      .toDF("ID", "IS_C", "FOO", "BAR")
+    val dfLong = sparkSession
+      .createDataFrame(Seq((49L, true, 10.toShort, 23.1f)))
+      .toDF("ID", "IS_C", "FOO", "BAR")
+    val dfInt = sparkSession
+      .createDataFrame(Seq((49, true, 10.toShort, 23.1f)))
+      .toDF("ID", "IS_C", "FOO", "BAR")
+    val dfString = sparkSession
+      .createDataFrame(Seq(("1", 10.toShort, 23.1f)))
+      .toDF("ID", "FOO", "BAR")
 
     val dfs = Seq(dfBinary, dfString, dfLong, dfInt)
 
@@ -175,73 +212,121 @@ class PatternElementTableTest extends MorpheusTestSuite {
 
       nodeTable.schema should equal(
         PropertyGraphSchema.empty
-          .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "bar" -> CTFloat))
+          .withNodePropertyKeys("A", "B")("foo" -> CTInteger, "bar" -> CTFloat)
+      )
 
-      nodeTable.records.df.collect().toSet should equal(Set(Row(49L.encodeAsMorpheusId, 23.1f.toDouble, 10)))
+      nodeTable.records.df.collect().toSet should equal(
+        Set(Row(49L.encodeAsMorpheusId, 23.1f.toDouble, 10))
+      )
     }
   }
 
   it("NodeTable can handle shuffled columns due to cast") {
-    val df = sparkSession.createDataFrame(Seq((1L, 10.toShort, 23.1f))).toDF("ID", "FOO", "BAR")
+    val df = sparkSession
+      .createDataFrame(Seq((1L, 10.toShort, 23.1f)))
+      .toDF("ID", "FOO", "BAR")
 
     val nodeTable = MorpheusElementTable.create(nodeMapping, df)
 
     val graph = morpheus.graphs.create(nodeTable)
-    graph.nodes("n").collect.toSet should equal(Set(
-      CypherMap("n" -> MorpheusNode(1, Set("A", "B"), CypherMap("bar" -> 23.1f, "foo" -> 10)))
-    ))
+    graph.nodes("n").collect.toSet should equal(
+      Set(
+        CypherMap(
+          "n" -> MorpheusNode(
+            1,
+            Set("A", "B"),
+            CypherMap("bar" -> 23.1f, "foo" -> 10)
+          )
+        )
+      )
+    )
   }
 
-  it("NodeTable should not accept wrong source id key type (should be compatible to LongType)") {
+  it(
+    "NodeTable should not accept wrong source id key type (should be compatible to LongType)"
+  ) {
     val e = the[IllegalArgumentException] thrownBy {
-      val df = sparkSession.createDataFrame(Seq(Tuple1(Date.valueOf("1987-01-23")))).toDF("ID")
+      val df = sparkSession
+        .createDataFrame(Seq(Tuple1(Date.valueOf("1987-01-23"))))
+        .toDF("ID")
       val nodeMapping = NodeMappingBuilder.on("ID").withImpliedLabel("A").build
       MorpheusElementTable.create(nodeMapping, df)
     }
-    e.getMessage should (include("Column `ID` should have a valid identifier data type") and include("Unsupported column type `DateType`"))
+    e.getMessage should (include(
+      "Column `ID` should have a valid identifier data type"
+    ) and include("Unsupported column type `DateType`"))
   }
 
-  it("RelationshipTable should not accept wrong sourceId, -StartNode, -EndNode key type") {
-    val relMapping = RelationshipMappingBuilder.on("ID").from("SOURCE").to("TARGET").relType("A").build
+  it(
+    "RelationshipTable should not accept wrong sourceId, -StartNode, -EndNode key type"
+  ) {
+    val relMapping = RelationshipMappingBuilder
+      .on("ID")
+      .from("SOURCE")
+      .to("TARGET")
+      .relType("A")
+      .build
     an[IllegalArgumentException] should be thrownBy {
-      val df = sparkSession.createDataFrame(Seq((1.toByte, 1, 1))).toDF("ID", "SOURCE", "TARGET")
+      val df = sparkSession
+        .createDataFrame(Seq((1.toByte, 1, 1)))
+        .toDF("ID", "SOURCE", "TARGET")
       MorpheusElementTable.create(relMapping, df)
     }
     an[IllegalArgumentException] should be thrownBy {
-      val df = sparkSession.createDataFrame(Seq((1, 1.toByte, 1))).toDF("ID", "SOURCE", "TARGET")
+      val df = sparkSession
+        .createDataFrame(Seq((1, 1.toByte, 1)))
+        .toDF("ID", "SOURCE", "TARGET")
       MorpheusElementTable.create(relMapping, df)
     }
     an[IllegalArgumentException] should be thrownBy {
-      val df = sparkSession.createDataFrame(Seq((1, 1, 1.toByte))).toDF("ID", "SOURCE", "TARGET")
+      val df = sparkSession
+        .createDataFrame(Seq((1, 1, 1.toByte)))
+        .toDF("ID", "SOURCE", "TARGET")
       MorpheusElementTable.create(relMapping, df)
     }
   }
 
   it("NodeTable should infer the correct schema") {
-    val df = sparkSession.createDataFrame(Seq((1L, "Alice", 1984, true, 13.37)))
+    val df = sparkSession
+      .createDataFrame(Seq((1L, "Alice", 1984, true, 13.37)))
       .toDF("id", "name", "birthYear", "isGood", "luckyNumber")
 
     val nodeTable = MorpheusNodeTable(Set("Person"), df)
 
-    nodeTable.schema should equal(PropertyGraphSchema.empty
-      .withNodePropertyKeys("Person")(
-        "name" -> CTString.nullable,
-        "birthYear" -> CTInteger,
-        "isGood" -> CTBoolean,
-        "luckyNumber" -> CTFloat))
+    nodeTable.schema should equal(
+      PropertyGraphSchema.empty
+        .withNodePropertyKeys("Person")(
+          "name" -> CTString.nullable,
+          "birthYear" -> CTInteger,
+          "isGood" -> CTBoolean,
+          "luckyNumber" -> CTFloat
+        )
+    )
   }
 
   it("RelationshipTable should infer the correct schema") {
-    val df = sparkSession.createDataFrame(Seq((1L, 1L, 1L, "Alice", 1984, true, 13.37)))
-      .toDF("id", "source", "target", "name", "birthYear", "isGood", "luckyNumber")
+    val df = sparkSession
+      .createDataFrame(Seq((1L, 1L, 1L, "Alice", 1984, true, 13.37)))
+      .toDF(
+        "id",
+        "source",
+        "target",
+        "name",
+        "birthYear",
+        "isGood",
+        "luckyNumber"
+      )
 
     val relationshipTable = MorpheusRelationshipTable("KNOWS", df)
 
-    relationshipTable.schema should equal(PropertyGraphSchema.empty
-      .withRelationshipPropertyKeys("KNOWS")(
-        "name" -> CTString.nullable,
-        "birthYear" -> CTInteger,
-        "isGood" -> CTBoolean,
-        "luckyNumber" -> CTFloat))
+    relationshipTable.schema should equal(
+      PropertyGraphSchema.empty
+        .withRelationshipPropertyKeys("KNOWS")(
+          "name" -> CTString.nullable,
+          "birthYear" -> CTInteger,
+          "isGood" -> CTBoolean,
+          "luckyNumber" -> CTFloat
+        )
+    )
   }
 }

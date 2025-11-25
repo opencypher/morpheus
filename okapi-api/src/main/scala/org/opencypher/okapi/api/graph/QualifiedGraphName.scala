@@ -30,20 +30,22 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 
 /**
-  * A graph name is used to address a specific graph within a [[Namespace]] and is used for lookups in the
-  * [[org.opencypher.okapi.api.graph.CypherSession]].
+  * A graph name is used to address a specific graph within a [[Namespace]] and is used for lookups
+  * in the [[org.opencypher.okapi.api.graph.CypherSession]].
   *
-  * @param value string representing the graph name
+  * @param value
+  *   string representing the graph name
   */
 case class GraphName(value: String) extends AnyVal {
   override def toString: String = value
 }
 
 /**
-  * A namespace is used to address different [[org.opencypher.okapi.api.io.PropertyGraphDataSource]] implementations within a
-  * [[org.opencypher.okapi.api.graph.CypherSession]].
+  * A namespace is used to address different [[org.opencypher.okapi.api.io.PropertyGraphDataSource]]
+  * implementations within a [[org.opencypher.okapi.api.graph.CypherSession]].
   *
-  * @param value string representing the namespace
+  * @param value
+  *   string representing the namespace
   */
 case class Namespace(value: String) extends AnyVal {
   override def toString: String = value
@@ -52,30 +54,43 @@ case class Namespace(value: String) extends AnyVal {
 object QualifiedGraphName {
 
   /**
-    * Returns a [[org.opencypher.okapi.api.graph.QualifiedGraphName]] from its string representation. A qualified graph name consists of a namespace
-    * part and a graph name part separated by a '.' character. For example,
+    * Returns a [[org.opencypher.okapi.api.graph.QualifiedGraphName]] from its string
+    * representation. A qualified graph name consists of a namespace part and a graph name part
+    * separated by a '.' character. For example,
     *
     * {{{
     *   mynamespace.mygraphname
     *   mynamespace.my.graph.name
     * }}}
     *
-    * are valid qualified graph names. The separation between namespace and graph name is expected to be at the first
-    * occurring '.'. A graph name may contain an arbitrary number of additional '.' characters. Note that a string
-    * without any '.' characters is considered to be associated with the [[org.opencypher.okapi.impl.io.SessionGraphDataSource]].
+    * are valid qualified graph names. The separation between namespace and graph name is expected
+    * to be at the first occurring '.'. A graph name may contain an arbitrary number of additional
+    * '.' characters. Note that a string without any '.' characters is considered to be associated
+    * with the [[org.opencypher.okapi.impl.io.SessionGraphDataSource]].
     *
-    * @param qualifiedGraphName string representation of a qualified graph name
-    * @return qualified graph name
+    * @param qualifiedGraphName
+    *   string representation of a qualified graph name
+    * @return
+    *   qualified graph name
     */
-  def apply(qualifiedGraphName: String): QualifiedGraphName = apply(splitQgn(qualifiedGraphName))
+  def apply(qualifiedGraphName: String): QualifiedGraphName = apply(
+    splitQgn(qualifiedGraphName)
+  )
 
-  private[okapi] def splitQgn(qgn: String): List[String] = qgn.split("\\.").toList
+  private[okapi] def splitQgn(qgn: String): List[String] =
+    qgn.split("\\.").toList
 
-  private[okapi] def apply(parts: List[String]): QualifiedGraphName = parts match {
-    case Nil => throw IllegalArgumentException("qualified graph name or single graph name")
-    case head :: Nil => QualifiedGraphName(SessionGraphDataSource.Namespace, GraphName(head))
-    case head :: tail => QualifiedGraphName(Namespace(head), GraphName(tail.mkString(".")))
-  }
+  private[okapi] def apply(parts: List[String]): QualifiedGraphName =
+    parts match {
+      case Nil =>
+        throw IllegalArgumentException(
+          "qualified graph name or single graph name"
+        )
+      case head :: Nil =>
+        QualifiedGraphName(SessionGraphDataSource.Namespace, GraphName(head))
+      case head :: tail =>
+        QualifiedGraphName(Namespace(head), GraphName(tail.mkString(".")))
+    }
 
 }
 
@@ -90,8 +105,10 @@ object QualifiedGraphName {
   *
   * Here, {{myNamespace.myGraphName}} represents a qualified graph name.
   *
-  * @param namespace namespace part of the qualified graph name
-  * @param graphName graph name part of the qualified graph name
+  * @param namespace
+  *   namespace part of the qualified graph name
+  * @param graphName
+  *   graph name part of the qualified graph name
   */
 case class QualifiedGraphName(namespace: Namespace, graphName: GraphName) {
   override def toString: String = s"$namespace.$graphName"

@@ -37,7 +37,11 @@ class RelTypePropertyMapTest extends ApiBaseTest {
 
   it("|+|") {
     val map1 = RelTypePropertyMap.empty
-      .register("A")("name" -> CTString, "age" -> CTInteger, "gender" -> CTString)
+      .register("A")(
+        "name" -> CTString,
+        "age" -> CTInteger,
+        "gender" -> CTString
+      )
       .register("B")("p" -> CTBoolean)
 
     val map2 = RelTypePropertyMap.empty
@@ -46,7 +50,11 @@ class RelTypePropertyMapTest extends ApiBaseTest {
 
     map1 |+| map2 should equal(
       RelTypePropertyMap.empty
-        .register("A")("name" -> CTString, "age" -> CTInteger, "gender" -> CTUnion(CTString, CTTrue, CTFalse))
+        .register("A")(
+          "name" -> CTString,
+          "age" -> CTInteger,
+          "gender" -> CTUnion(CTString, CTTrue, CTFalse)
+        )
         .register("B")("p" -> CTBoolean)
         .register("C")("name" -> CTString)
     )
@@ -67,8 +75,10 @@ class RelTypePropertyMapTest extends ApiBaseTest {
       .register("A")("name" -> CTString)
       .register("B")("foo" -> CTInteger)
 
-    map.filterForRelTypes(Set("A", "B")) should equal(RelTypePropertyMap.empty
-      .register("A")("name" -> CTString)
-      .register("B")("foo" -> CTInteger))
+    map.filterForRelTypes(Set("A", "B")) should equal(
+      RelTypePropertyMap.empty
+        .register("A")("name" -> CTString)
+        .register("B")("foo" -> CTInteger)
+    )
   }
 }

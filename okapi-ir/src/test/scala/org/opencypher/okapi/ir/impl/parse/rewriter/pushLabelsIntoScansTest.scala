@@ -40,7 +40,8 @@ class pushLabelsIntoScansTest extends BaseTestSuite with RewriterTestSupport {
       """.stripMargin,
       """MATCH (n:Foo)
         |RETURN n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("push labels for multiple nodes into pattern") {
@@ -50,7 +51,8 @@ class pushLabelsIntoScansTest extends BaseTestSuite with RewriterTestSupport {
       """.stripMargin,
       """MATCH (n:Foo)-[:Rel]->(b:Foo:Bar)
         |RETURN n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("keep the node label in the pattern") {
@@ -60,7 +62,8 @@ class pushLabelsIntoScansTest extends BaseTestSuite with RewriterTestSupport {
       """.stripMargin,
       """MATCH (n:Foo)
         |RETURN n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("push additional labels into pattern") {
@@ -71,7 +74,8 @@ class pushLabelsIntoScansTest extends BaseTestSuite with RewriterTestSupport {
       """.stripMargin,
       """MATCH (n:Foo:Bar)
         |RETURN n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("push complex where predicate labels into pattern") {
@@ -82,7 +86,8 @@ class pushLabelsIntoScansTest extends BaseTestSuite with RewriterTestSupport {
       """.stripMargin,
       """MATCH (n:Bar:Baz)
         |RETURN n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("push label predicates from complex where predicate into pattern") {
@@ -94,7 +99,8 @@ class pushLabelsIntoScansTest extends BaseTestSuite with RewriterTestSupport {
       """MATCH (n:Bar)
         |WHERE n.age > 25
         |RETURN n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("do not push OR'ed labels into pattern") {
@@ -106,7 +112,8 @@ class pushLabelsIntoScansTest extends BaseTestSuite with RewriterTestSupport {
       """MATCH (n)
         |WHERE n:Bar OR n:Baz
         |RETURN n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("do not push ORS'ed labels into pattern") {
@@ -118,7 +125,8 @@ class pushLabelsIntoScansTest extends BaseTestSuite with RewriterTestSupport {
       """MATCH (n)
         |WHERE n:Foo OR n:Bar OR n:Baz
         |RETURN n
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   test("do not push NOT'ed labels into pattern") {

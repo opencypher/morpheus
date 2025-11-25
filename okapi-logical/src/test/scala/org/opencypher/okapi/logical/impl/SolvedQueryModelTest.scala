@@ -48,7 +48,8 @@ class SolvedQueryModelTest extends BaseTestSuite with IrConstruction {
   }
 
   test("contains a block") {
-    val block = matchBlock(Pattern.empty.withElement('a).withElement('b).withElement('c))
+    val block =
+      matchBlock(Pattern.empty.withElement('a).withElement('b).withElement('c))
     val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c)
 
     s.contains(block) shouldBe true
@@ -71,7 +72,10 @@ class SolvedQueryModelTest extends BaseTestSuite with IrConstruction {
 
   test("solves") {
     val s = SolvedQueryModel.empty.withField('a).withFields('b, 'c)
-    val p = Pattern.empty.withElement('a -> CTNode).withElement('b -> CTNode).withElement('c -> CTNode)
+    val p = Pattern.empty
+      .withElement('a -> CTNode)
+      .withElement('b -> CTNode)
+      .withElement('c -> CTNode)
 
     s.solves(toField('a)) shouldBe true
     s.solves(toField('b)) shouldBe true
@@ -83,20 +87,29 @@ class SolvedQueryModelTest extends BaseTestSuite with IrConstruction {
   it("can solve a relationship") {
     val s = SolvedQueryModel.empty
 
-    an [IllegalArgumentException] should be thrownBy s.solveRelationship('a)
-    s.solveRelationship('r -> CTRelationship) should equal(SolvedQueryModel.empty.withField('r -> CTRelationship))
+    an[IllegalArgumentException] should be thrownBy s.solveRelationship('a)
+    s.solveRelationship('r -> CTRelationship) should equal(
+      SolvedQueryModel.empty.withField('r -> CTRelationship)
+    )
     s.solveRelationship('r -> CTRelationship("KNOWS")) should equal(
       SolvedQueryModel.empty
         .withField('r -> CTRelationship)
-        .withPredicate(HasType(Var("r")(CTRelationship("KNOWS")), RelType("KNOWS")))
+        .withPredicate(
+          HasType(Var("r")(CTRelationship("KNOWS")), RelType("KNOWS"))
+        )
     )
-    s.solveRelationship('r -> CTRelationship("KNOWS", "LOVES", "HATES")) should equal(
+    s.solveRelationship(
+      'r -> CTRelationship("KNOWS", "LOVES", "HATES")
+    ) should equal(
       SolvedQueryModel.empty
         .withField('r -> CTRelationship)
-        .withPredicate(Ors(
-          HasType(RelationshipVar("r")(), RelType("KNOWS")),
-          HasType(RelationshipVar("r")(), RelType("LOVES")),
-          HasType(RelationshipVar("r")(), RelType("HATES"))))
+        .withPredicate(
+          Ors(
+            HasType(RelationshipVar("r")(), RelType("KNOWS")),
+            HasType(RelationshipVar("r")(), RelType("LOVES")),
+            HasType(RelationshipVar("r")(), RelType("HATES"))
+          )
+        )
     )
   }
 }

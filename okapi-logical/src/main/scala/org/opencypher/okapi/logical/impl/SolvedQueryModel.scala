@@ -42,8 +42,10 @@ case class SolvedQueryModel(
   // extension
   def withField(f: IRField): SolvedQueryModel = copy(fields = fields + f)
   def withFields(fs: IRField*): SolvedQueryModel = copy(fields = fields ++ fs)
-  def withPredicate(pred: Expr): SolvedQueryModel = copy(predicates = predicates + pred)
-  def withPredicates(preds: Expr*): SolvedQueryModel = copy(predicates = predicates ++ preds)
+  def withPredicate(pred: Expr): SolvedQueryModel =
+    copy(predicates = predicates + pred)
+  def withPredicates(preds: Expr*): SolvedQueryModel =
+    copy(predicates = predicates ++ preds)
 
   def ++(other: SolvedQueryModel): SolvedQueryModel =
     copy(fields ++ other.fields, predicates ++ other.predicates)

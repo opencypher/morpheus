@@ -44,40 +44,42 @@ object MorpheusConverters {
   implicit class RichSession(val session: CypherSession) extends AnyVal {
     def asMorpheus: MorpheusSession = session match {
       case asMorpheus: MorpheusSession => asMorpheus
-      case other => unsupported("Morpheus session", other)
+      case other                       => unsupported("Morpheus session", other)
     }
   }
 
   implicit class RichPropertyGraph(val graph: PropertyGraph) extends AnyVal {
 
-
-    def asMorpheus: RelationalCypherGraph[DataFrameTable] = graph.asInstanceOf[RelationalCypherGraph[_]] match {
-      case asMorpheus: RelationalCypherGraph[_] =>
-        Try {
-          asMorpheus.asInstanceOf[RelationalCypherGraph[DataFrameTable]]
-        } match {
-          case Success(value) => value
-          case Failure(_) => unsupported("Morpheus graphs", asMorpheus)
-        }
-      case other => unsupported("Morpheus graphs", other)
-    }
+    def asMorpheus: RelationalCypherGraph[DataFrameTable] =
+      graph.asInstanceOf[RelationalCypherGraph[_]] match {
+        case asMorpheus: RelationalCypherGraph[_] =>
+          Try {
+            asMorpheus.asInstanceOf[RelationalCypherGraph[DataFrameTable]]
+          } match {
+            case Success(value) => value
+            case Failure(_)     => unsupported("Morpheus graphs", asMorpheus)
+          }
+        case other => unsupported("Morpheus graphs", other)
+      }
   }
 
   implicit class RichCypherRecords(val records: CypherRecords) extends AnyVal {
     def asMorpheus: MorpheusRecords = records match {
       case asMorpheus: MorpheusRecords => asMorpheus
-      case other => unsupported("Morpheus records", other)
+      case other                       => unsupported("Morpheus records", other)
     }
   }
 
   implicit class RichCypherResult(val records: CypherResult) extends AnyVal {
-    def asMorpheus(implicit morpheus: MorpheusSession): RelationalCypherResult[DataFrameTable] = records match {
+    def asMorpheus(implicit
+      morpheus: MorpheusSession
+    ): RelationalCypherResult[DataFrameTable] = records match {
       case relational: RelationalCypherResult[_] =>
         Try {
           relational.asInstanceOf[RelationalCypherResult[DataFrameTable]]
         } match {
           case Success(value) => value
-          case Failure(_) => unsupported("Morpheus results", morpheus)
+          case Failure(_)     => unsupported("Morpheus results", morpheus)
         }
       case other => unsupported("Morpheus results", other)
     }

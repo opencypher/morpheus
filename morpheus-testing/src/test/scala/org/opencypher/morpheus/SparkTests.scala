@@ -32,13 +32,16 @@ class SparkTests extends MorpheusTestSuite {
 
   // Reproduces https://issues.apache.org/jira/browse/SPARK-23855, which was relevant to Spark 2.2
   it("should correctly perform a join after a cross") {
-    val df1 = sparkSession.createDataFrame(Seq(Tuple1(0L)))
+    val df1 = sparkSession
+      .createDataFrame(Seq(Tuple1(0L)))
       .toDF("a")
 
-    val df2 = sparkSession.createDataFrame(Seq(Tuple1(1L)))
+    val df2 = sparkSession
+      .createDataFrame(Seq(Tuple1(1L)))
       .toDF("b")
 
-    val df3 = sparkSession.createDataFrame(Seq(Tuple1(0L)))
+    val df3 = sparkSession
+      .createDataFrame(Seq(Tuple1(0L)))
       .toDF("c")
 
     val cross = df1.crossJoin(df2)

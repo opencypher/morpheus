@@ -75,38 +75,47 @@ object Part1_YelpImport extends App {
   def createPropertyGraph(yelpTables: YelpTables): PropertyGraph = {
     // Define node tables
     // (:User)
-    val userNodeTable = MorpheusElementTable.create(NodeMappingBuilder.on(sourceIdKey)
-      .withImpliedLabel(userLabel)
-      .withPropertyKey("name")
-      .withPropertyKey("yelping_since")
-      .withPropertyKey("elite")
-      .build,
-      yelpTables.userDf.prependIdColumn(sourceIdKey, userLabel))
+    val userNodeTable = MorpheusElementTable.create(
+      NodeMappingBuilder
+        .on(sourceIdKey)
+        .withImpliedLabel(userLabel)
+        .withPropertyKey("name")
+        .withPropertyKey("yelping_since")
+        .withPropertyKey("elite")
+        .build,
+      yelpTables.userDf.prependIdColumn(sourceIdKey, userLabel)
+    )
 
     // (:Business)
-    val businessNodeTable = MorpheusElementTable.create(NodeMappingBuilder.on(sourceIdKey)
-      .withImpliedLabel(businessLabel)
-      .withPropertyKey("businessId", "business_id")
-      .withPropertyKey("name")
-      .withPropertyKey("address")
-      .withPropertyKey("city")
-      .withPropertyKey("state")
-      .build,
-      yelpTables.businessDf.prependIdColumn(sourceIdKey, businessLabel))
+    val businessNodeTable = MorpheusElementTable.create(
+      NodeMappingBuilder
+        .on(sourceIdKey)
+        .withImpliedLabel(businessLabel)
+        .withPropertyKey("businessId", "business_id")
+        .withPropertyKey("name")
+        .withPropertyKey("address")
+        .withPropertyKey("city")
+        .withPropertyKey("state")
+        .build,
+      yelpTables.businessDf.prependIdColumn(sourceIdKey, businessLabel)
+    )
 
     // Define relationship tables
     // (:User)-[:REVIEWS]->(:Business)
-    val reviewRelTable = MorpheusElementTable.create(RelationshipMappingBuilder.on(sourceIdKey)
-      .withSourceStartNodeKey(sourceStartNodeKey)
-      .withSourceEndNodeKey(sourceEndNodeKey)
-      .withRelType(reviewRelType)
-      .withPropertyKey("stars")
-      .withPropertyKey("date")
-      .build,
+    val reviewRelTable = MorpheusElementTable.create(
+      RelationshipMappingBuilder
+        .on(sourceIdKey)
+        .withSourceStartNodeKey(sourceStartNodeKey)
+        .withSourceEndNodeKey(sourceEndNodeKey)
+        .withRelType(reviewRelType)
+        .withPropertyKey("stars")
+        .withPropertyKey("date")
+        .build,
       yelpTables.reviewDf
         .prependIdColumn(sourceIdKey, reviewRelType)
         .prependIdColumn(sourceStartNodeKey, userLabel)
-        .prependIdColumn(sourceEndNodeKey, businessLabel))
+        .prependIdColumn(sourceEndNodeKey, businessLabel)
+    )
 
     // Create property graph
     morpheus.graphs.create(businessNodeTable, userNodeTable, reviewRelTable)

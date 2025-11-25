@@ -33,13 +33,19 @@ import org.opencypher.okapi.api.graph.Pattern
 import org.opencypher.okapi.relational.api.graph.RelationalCypherGraph
 
 trait GraphInit {
-  def initGraph(createQuery: String, additionalPatterns: Seq[Pattern] = Seq.empty)
-    (implicit morpheus: MorpheusSession): RelationalCypherGraph[DataFrameTable]
+  def initGraph(
+    createQuery: String,
+    additionalPatterns: Seq[Pattern] = Seq.empty
+  )(implicit morpheus: MorpheusSession): RelationalCypherGraph[DataFrameTable]
 }
 
 trait ScanGraphInit extends GraphInit {
-  def initGraph(createQuery: String, additionalPatterns: Seq[Pattern] = Seq.empty)
-    (implicit morpheus: MorpheusSession): RelationalCypherGraph[DataFrameTable] = {
+  def initGraph(
+    createQuery: String,
+    additionalPatterns: Seq[Pattern] = Seq.empty
+  )(implicit
+    morpheus: MorpheusSession
+  ): RelationalCypherGraph[DataFrameTable] = {
     ScanGraphFactory.initGraph(createQuery, additionalPatterns)
   }
 }

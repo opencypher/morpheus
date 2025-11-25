@@ -49,7 +49,9 @@ abstract class ExampleTestBase extends AnyFunSpec with Matchers with BeforeAndAf
     val source = Source.fromFile(expectedOut)
     val expectedLines = source.getLines().toList
     val appLines = capture(app).split(System.lineSeparator())
-    withClue(s"${appLines.mkString("\n")} not equal to ${expectedLines.mkString("\n")}") {
+    withClue(
+      s"${appLines.mkString("\n")} not equal to ${expectedLines.mkString("\n")}"
+    ) {
       appLines.toBag shouldEqual expectedLines.toBag
     }
   }

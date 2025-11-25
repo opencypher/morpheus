@@ -35,11 +35,21 @@ case object normalizeReturnClauses extends Rewriter {
   def apply(that: AnyRef): AnyRef = instance.apply(that)
 
   private val clauseRewriter: Clause => Seq[Clause] = {
-    case clause @ Return(distinct, ri @ ReturnItems(_, items), None, skip, limit, _) =>
+    case clause @ Return(
+          distinct,
+          ri @ ReturnItems(_, items),
+          None,
+          skip,
+          limit,
+          _
+        ) =>
       val (aliasProjection, finalProjection) = items.map {
         // avoid aliasing of primitive expressions (i.e. variables and properties)
         case item @ AliasedReturnItem(Variable(_), Variable(_)) =>
-          val returnItem = UnaliasedReturnItem(item.variable, item.variable.name)(item.position)
+          val returnItem =
+            UnaliasedReturnItem(item.variable, item.variable.name)(
+              item.position
+            )
           (returnItem, returnItem)
 
         case item @ AliasedReturnItem(Property(_, _), _) =>
@@ -58,22 +68,28 @@ case object normalizeReturnClauses extends Rewriter {
             case None        => Variable(item.name)(item.expression.position.bumped())
           }
 
-          val newVariable = Variable(FreshIdNameGenerator.name(item.expression.position))(item.expression.position)
+          val newVariable = Variable(
+            FreshIdNameGenerator.name(item.expression.position)
+          )(item.expression.position)
 
           (
             AliasedReturnItem(item.expression, newVariable)(item.position),
-            AliasedReturnItem(newVariable.copyId, returnColumn)(item.position))
+            AliasedReturnItem(newVariable.copyId, returnColumn)(item.position)
+          )
       }.unzip
 
-      val introducedVariables = if (ri.includeExisting) aliasProjection.collect {
-        case AliasedReturnItem(_, variable) => variable.name
-      }.toSet
-      else Set.empty[String]
+      val introducedVariables =
+        if (ri.includeExisting) aliasProjection.collect { case AliasedReturnItem(_, variable) =>
+          variable.name
+        }.toSet
+        else Set.empty[String]
 
-      if (aliasProjection.forall {
-            case _: UnaliasedReturnItem => true
-            case _                      => false
-          }) {
+      if (
+        aliasProjection.forall {
+          case _: UnaliasedReturnItem => true
+          case _                      => false
+        }
+      ) {
         Seq(clause)
       } else {
         Seq(
@@ -91,7 +107,8 @@ case object normalizeReturnClauses extends Rewriter {
             orderBy = None,
             skip = None,
             limit = None,
-            excludedNames = introducedVariables)(clause.position)
+            excludedNames = introducedVariables
+          )(clause.position)
         )
       }
 
@@ -99,9 +116,7 @@ case object normalizeReturnClauses extends Rewriter {
       Seq(clause)
   }
 
-  private val instance: Rewriter = bottomUp(Rewriter.lift {
-    case query @ SingleQuery(clauses) =>
-      query.copy(clauses = clauses.flatMap(clauseRewriter))(query.position)
+  private val instance: Rewriter = bottomUp(Rewriter.lift { case query @ SingleQuery(clauses) =>
+    query.copy(clauses = clauses.flatMap(clauseRewriter))(query.position)
   })
 }
-

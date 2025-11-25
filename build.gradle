@@ -3,8 +3,8 @@ plugins {
 
     alias(libs.plugins.champeau.jmh).apply(false)
     alias(libs.plugins.license).apply(false)
-    alias(libs.plugins.scalastyle).apply(false)
     alias(libs.plugins.shadowjar).apply(false)
+    alias(libs.plugins.spotless).apply(false)
 
     alias(libs.plugins.versionCatalogUpdate)
 }

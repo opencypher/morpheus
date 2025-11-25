@@ -53,20 +53,26 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
     val id = 257L
     val prefix = 2.toByte
     val expr = PrefixId(ToId(IntegerLit(id)), prefix)
-    expr.eval.asInstanceOf[Array[_]].toList should equal(prefix :: id.encodeAsMorpheusId.toList)
+    expr.eval.asInstanceOf[Array[_]].toList should equal(
+      prefix :: id.encodeAsMorpheusId.toList
+    )
   }
 
   it("converts a CypherInteger to an ID") {
     val id = 257L
     val expr = ToId(IntegerLit(id))
-    expr.eval.asInstanceOf[Array[_]].toList should equal(id.encodeAsMorpheusId.toList)
+    expr.eval.asInstanceOf[Array[_]].toList should equal(
+      id.encodeAsMorpheusId.toList
+    )
   }
 
   it("converts a CypherInteger to an ID and prefixes it") {
     val id = 257L
     val prefix = 2.toByte
     val expr = PrefixId(ToId(IntegerLit(id)), prefix)
-    expr.eval.asInstanceOf[Array[_]].toList should equal(prefix :: id.encodeAsMorpheusId.toList)
+    expr.eval.asInstanceOf[Array[_]].toList should equal(
+      prefix :: id.encodeAsMorpheusId.toList
+    )
   }
 
   it("converts a CypherInteger literal") {
@@ -80,9 +86,17 @@ class SparkSQLExprMapperTest extends BaseTestSuite with SparkSessionFixture {
   }
   val df: DataFrame = sparkSession.createDataFrame(
     Collections.emptyList[Row](),
-    StructType(Seq(StructField(header.column(vA), IntegerType), StructField(header.column(vB), IntegerType))))
+    StructType(
+      Seq(
+        StructField(header.column(vA), IntegerType),
+        StructField(header.column(vB), IntegerType)
+      )
+    )
+  )
 
-  implicit def extractRecordHeaderFromResult[T](tuple: (RecordHeader, T)): RecordHeader = tuple._1
+  implicit def extractRecordHeaderFromResult[T](
+    tuple: (RecordHeader, T)
+  ): RecordHeader = tuple._1
 }
 
 object ExprEval {
@@ -92,9 +106,13 @@ object ExprEval {
     def eval(implicit spark: SparkSession): Any = {
       val df = spark.createDataFrame(
         Collections.emptyList[Row](),
-        StructType(Seq.empty))
+        StructType(Seq.empty)
+      )
 
-      expr.asSparkSQLExpr(RecordHeader.empty, df, CypherMap.empty).expr.eval(InternalRow.empty)
+      expr
+        .asSparkSQLExpr(RecordHeader.empty, df, CypherMap.empty)
+        .expr
+        .eval(InternalRow.empty)
     }
   }
 }

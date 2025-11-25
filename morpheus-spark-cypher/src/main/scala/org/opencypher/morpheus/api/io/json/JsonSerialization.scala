@@ -43,21 +43,34 @@ trait JsonSerialization {
 
   protected def readJsonMorpheusGraphMetaData(graphName: GraphName): String
 
-  protected def writeJsonMorpheusGraphMetaData(graphName: GraphName, morpheusGraphMetaData: String): Unit
+  protected def writeJsonMorpheusGraphMetaData(
+    graphName: GraphName,
+    morpheusGraphMetaData: String
+  ): Unit
 
-  override protected[io] def readSchema(graphName: GraphName): MorpheusSchema = {
+  override protected[io] def readSchema(
+    graphName: GraphName
+  ): MorpheusSchema = {
     PropertyGraphSchema.fromJson(readJsonSchema(graphName)).asMorpheus
   }
 
-  override protected def writeSchema(graphName: GraphName, schema: MorpheusSchema): Unit = {
+  override protected def writeSchema(
+    graphName: GraphName,
+    schema: MorpheusSchema
+  ): Unit = {
     writeJsonSchema(graphName, schema.schema.toJson)
   }
 
-  override protected def readMorpheusGraphMetaData(graphName: GraphName): MorpheusGraphMetaData = {
+  override protected def readMorpheusGraphMetaData(
+    graphName: GraphName
+  ): MorpheusGraphMetaData = {
     MorpheusGraphMetaData.fromJson(readJsonMorpheusGraphMetaData(graphName))
   }
 
-  override protected def writeMorpheusGraphMetaData(graphName: GraphName, morpheusGraphMetaData: MorpheusGraphMetaData): Unit = {
+  override protected def writeMorpheusGraphMetaData(
+    graphName: GraphName,
+    morpheusGraphMetaData: MorpheusGraphMetaData
+  ): Unit = {
     writeJsonMorpheusGraphMetaData(graphName, morpheusGraphMetaData.toJson)
   }
 

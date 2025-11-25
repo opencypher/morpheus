@@ -35,16 +35,21 @@ import scala.util.Properties
 
 object FileSystemUtils {
 
-  def deleteDirectory(path: Path): Unit = Files.walk(path).iterator().asScala.toList
+  def deleteDirectory(path: Path): Unit = Files
+    .walk(path)
+    .iterator()
+    .asScala
+    .toList
     .reverse
     .map(_.toFile)
     .foreach(_.delete())
 
-  def readFile(fileName: String): String = Source.fromFile(fileName)
+  def readFile(fileName: String): String = Source
+    .fromFile(fileName)
     .getLines()
     .mkString(Properties.lineSeparator)
 
-  def writeFile(fileName: String, content: String): Unit  =
+  def writeFile(fileName: String, content: String): Unit =
     Files.write(Paths.get(fileName), content.getBytes(StandardCharsets.UTF_8))
 
 }

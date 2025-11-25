@@ -39,14 +39,17 @@ class Neo4jPropertyGraphDataSourceEmptyGraphTest extends MorpheusTestSuite with 
   it("can read an empty graph") {
     val graph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
 
-    val result = graph.cypher(
-      """
+    val result = graph
+      .cypher("""
         |MATCH (n)
         |RETURN count(n) as count
-      """.stripMargin).records
+      """.stripMargin)
+      .records
 
-    result.toMaps should equal(Bag(
-      CypherMap("count" -> 0)
-    ))
+    result.toMaps should equal(
+      Bag(
+        CypherMap("count" -> 0)
+      )
+    )
   }
 }

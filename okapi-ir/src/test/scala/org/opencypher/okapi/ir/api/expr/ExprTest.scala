@@ -82,19 +82,31 @@ class ExprTest extends BaseTestSuite {
     val number = Var("number")(CTNumber)
 
     it("types Coalesce correctly") {
-      Coalesce(List(a, b)).cypherType should equal(CTUnion(CTNode, CTInteger, CTString))
+      Coalesce(List(a, b)).cypherType should equal(
+        CTUnion(CTNode, CTInteger, CTString)
+      )
       Coalesce(List(b, c)).cypherType should equal(CTUnion(CTInteger, CTString))
-      Coalesce(List(a, b, c, d)).cypherType should equal(CTUnion(CTNode, CTInteger, CTString))
+      Coalesce(List(a, b, c, d)).cypherType should equal(
+        CTUnion(CTNode, CTInteger, CTString)
+      )
 
-      Coalesce(List(d,e)).cypherType should equal(CTUnion(CTInteger, CTString).nullable)
+      Coalesce(List(d, e)).cypherType should equal(
+        CTUnion(CTInteger, CTString).nullable
+      )
     }
 
     it("types ListSegment correctly") {
-      ListSegment(3, Var("list")(CTList(CTNode))).cypherType should equalWithTracing(
+      ListSegment(
+        3,
+        Var("list")(CTList(CTNode))
+      ).cypherType should equalWithTracing(
         CTNode.nullable
       )
 
-      ListSegment(3, Var("list")(CTUnion(CTList(CTString), CTList(CTInteger)))).cypherType should equalWithTracing(
+      ListSegment(
+        3,
+        Var("list")(CTUnion(CTList(CTString), CTList(CTInteger)))
+      ).cypherType should equalWithTracing(
         CTUnion(CTString, CTInteger).nullable
       )
 
@@ -110,13 +122,21 @@ class ExprTest extends BaseTestSuite {
         "c" -> c,
         "d" -> d
       )
-      MapExpression(mapFields).cypherType should equalWithTracing(CTMap(mapFields.mapValues(_.cypherType)))
+      MapExpression(mapFields).cypherType should equalWithTracing(
+        CTMap(mapFields.mapValues(_.cypherType))
+      )
     }
 
     it("types ListLit correctly") {
-      ListLit(List(a, b)).cypherType should equal(CTList(CTUnion(CTNode, CTInteger, CTString)))
-      ListLit(List(b, c)).cypherType should equal(CTList(CTUnion(CTInteger, CTString.nullable)))
-      ListLit(List(a, b, c, d)).cypherType should equal(CTList(CTUnion(CTNode, CTInteger, CTString).nullable))
+      ListLit(List(a, b)).cypherType should equal(
+        CTList(CTUnion(CTNode, CTInteger, CTString))
+      )
+      ListLit(List(b, c)).cypherType should equal(
+        CTList(CTUnion(CTInteger, CTString.nullable))
+      )
+      ListLit(List(a, b, c, d)).cypherType should equal(
+        CTList(CTUnion(CTNode, CTInteger, CTString).nullable)
+      )
     }
 
     it("types Explode correctly") {
@@ -124,7 +144,9 @@ class ExprTest extends BaseTestSuite {
         CTNode
       )
 
-      Explode(Var("list")(CTUnion(CTList(CTString), CTList(CTInteger)))).cypherType should equalWithTracing(
+      Explode(
+        Var("list")(CTUnion(CTList(CTString), CTList(CTInteger)))
+      ).cypherType should equalWithTracing(
         CTUnion(CTString, CTInteger)
       )
 
@@ -136,29 +158,29 @@ class ExprTest extends BaseTestSuite {
     it("types Avg correctly") {
       Avg(duration).cypherType shouldBe CTDuration
       Avg(number).cypherType shouldBe CTNumber
-      an[NoSuitableSignatureForExpr] shouldBe thrownBy {Avg(datetime)}
+      an[NoSuitableSignatureForExpr] shouldBe thrownBy { Avg(datetime) }
     }
 
     it("types Sum correctly") {
       Sum(duration).cypherType shouldBe CTDuration
       Sum(number).cypherType shouldBe CTNumber
-      an[NoSuitableSignatureForExpr] shouldBe thrownBy {Sum(datetime)}
+      an[NoSuitableSignatureForExpr] shouldBe thrownBy { Sum(datetime) }
     }
 
     it("types Size correctly") {
       Size(e).cypherType shouldBe CTInteger.nullable
-      an[NoSuitableSignatureForExpr] shouldBe thrownBy {Size(datetime)}
+      an[NoSuitableSignatureForExpr] shouldBe thrownBy { Size(datetime) }
     }
 
     it("types Trim correctly") {
       Trim(e).cypherType shouldBe CTString.nullable
-      an[NoSuitableSignatureForExpr] shouldBe thrownBy {Trim(datetime)}
+      an[NoSuitableSignatureForExpr] shouldBe thrownBy { Trim(datetime) }
     }
 
     it("types Range correctly") {
       Range(d, d, None).cypherType shouldBe CTList(CTInteger)
       Range(d, d, Some(d)).cypherType
-      an[NoSuitableSignatureForExpr] shouldBe thrownBy {Range(e, d, None)}
+      an[NoSuitableSignatureForExpr] shouldBe thrownBy { Range(e, d, None) }
     }
 
     it("types TemporalInstants correctly") {

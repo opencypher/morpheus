@@ -41,10 +41,22 @@ import org.opencypher.okapi.ir.impl.parse.CypherParser
 import org.opencypher.okapi.ir.impl.{IRBuilder, IRBuilderContext, QueryLocalCatalog}
 import org.opencypher.okapi.logical.api.configuration.LogicalConfiguration.PrintLogicalPlan
 import org.opencypher.okapi.logical.impl._
-import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{PrintOptimizedRelationalPlan, PrintQueryExecutionStages, PrintRelationalPlan}
+import org.opencypher.okapi.relational.api.configuration.CoraConfiguration.{
+  PrintOptimizedRelationalPlan,
+  PrintQueryExecutionStages,
+  PrintRelationalPlan
+}
 import org.opencypher.okapi.relational.api.io.ElementTable
-import org.opencypher.okapi.relational.api.planning.{RelationalCypherResult, RelationalRuntimeContext}
-import org.opencypher.okapi.relational.api.table.{RelationalCypherRecords, RelationalCypherRecordsFactory, RelationalElementTableFactory, Table}
+import org.opencypher.okapi.relational.api.planning.{
+  RelationalCypherResult,
+  RelationalRuntimeContext
+}
+import org.opencypher.okapi.relational.api.table.{
+  RelationalCypherRecords,
+  RelationalCypherRecordsFactory,
+  RelationalElementTableFactory,
+  Table
+}
 import org.opencypher.okapi.relational.impl.RelationalConverters._
 import org.opencypher.okapi.relational.impl.planning.{RelationalOptimizer, RelationalPlanner}
 
@@ -53,18 +65,18 @@ import scala.reflect.runtime.universe.TypeTag
 /**
   * Base class for relational back ends implementing the OKAPI pipeline.
   *
-  * The class provides a generic implementation of the necessary steps to execute a Cypher query on a relational back
-  * end including parsing, IR planning, logical planning and relational planning.
+  * The class provides a generic implementation of the necessary steps to execute a Cypher query on
+  * a relational back end including parsing, IR planning, logical planning and relational planning.
   *
-  * Implementers need to make sure to provide factories for back end specific record and graph implementations.
+  * Implementers need to make sure to provide factories for back end specific record and graph
+  * implementations.
   *
-  * @tparam T back end specific [[Table]] implementation
+  * @tparam T
+  *   back end specific [[Table]] implementation
   */
-abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSession {
+abstract class RelationalCypherSession[T <: Table[T]: TypeTag] extends CypherSession {
 
-  /**
-    * Back end specific records type
-    */
+  /** Back end specific records type */
   type Records <: RelationalCypherRecords[T]
 
   override type Result = RelationalCypherResult[T]
@@ -74,25 +86,36 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
   /**
     * Reads a graph from a sequence of element tables that contains at least one node table.
     *
-    * @param nodeTable    first parameter to guarantee there is at least one node table
-    * @param elementTables sequence of node and relationship tables defining the graph
-    * @return property graph
+    * @param nodeTable
+    *   first parameter to guarantee there is at least one node table
+    * @param elementTables
+    *   sequence of node and relationship tables defining the graph
+    * @return
+    *   property graph
     */
-  def readFrom(nodeTable: ElementTable[T], elementTables: ElementTable[T]*): RelationalCypherGraph[T] = {
-    graphs.create(nodeTable, elementTables: _ *)
+  def readFrom(
+    nodeTable: ElementTable[T],
+    elementTables: ElementTable[T]*
+  ): RelationalCypherGraph[T] = {
+    graphs.create(nodeTable, elementTables: _*)
   }
 
-  /**
-    * Qualified graph name for the empty graph
-    */
-  private[opencypher] lazy val emptyGraphQgn = QualifiedGraphName(SessionGraphDataSource.Namespace, GraphName("emptyGraph"))
+  /** Qualified graph name for the empty graph */
+  private[opencypher] lazy val emptyGraphQgn = QualifiedGraphName(
+    SessionGraphDataSource.Namespace,
+    GraphName("emptyGraph")
+  )
 
   //   Store empty graph in catalog, so operators that start with an empty graph can refer to its QGN
-  override lazy val catalog: CypherCatalog = CypherCatalog(emptyGraphQgn -> graphs.empty)
+  override lazy val catalog: CypherCatalog = CypherCatalog(
+    emptyGraphQgn -> graphs.empty
+  )
 
   protected val parser: CypherParser = CypherParser
 
-  protected val logicalPlanner: LogicalPlanner = new LogicalPlanner(new LogicalOperatorProducer)
+  protected val logicalPlanner: LogicalPlanner = new LogicalPlanner(
+    new LogicalOperatorProducer
+  )
 
   protected val logicalOptimizer: LogicalOptimizer.type = LogicalOptimizer
 
@@ -104,17 +127,24 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
 
   private[opencypher] def elementTables: RelationalElementTableFactory[T]
 
-  private[opencypher] def graphAt(qgn: QualifiedGraphName): Option[RelationalCypherGraph[T]] =
-    if (catalog.graphNames.contains(qgn)) Some(catalog.graph(qgn).asRelational) else None
+  private[opencypher] def graphAt(
+    qgn: QualifiedGraphName
+  ): Option[RelationalCypherGraph[T]] =
+    if (catalog.graphNames.contains(qgn)) Some(catalog.graph(qgn).asRelational)
+    else None
 
-  private[opencypher] def basicRuntimeContext(parameters: CypherMap = CypherMap.empty): RelationalRuntimeContext[T] =
+  private[opencypher] def basicRuntimeContext(
+    parameters: CypherMap = CypherMap.empty
+  ): RelationalRuntimeContext[T] =
     RelationalRuntimeContext(graphAt, parameters = parameters)(this)
 
   private[opencypher] def time[R](description: String)(code: => R): R = {
     if (PrintTimings.isSet) printTiming(description)(code) else code
   }
 
-  private[opencypher] def mountAmbientGraph(ambient: PropertyGraph): IRCatalogGraph = {
+  private[opencypher] def mountAmbientGraph(
+    ambient: PropertyGraph
+  ): IRCatalogGraph = {
     val qgn = qgnGenerator.generate
     catalog.store(qgn, ambient)
     IRCatalogGraph(qgn, ambient.schema)
@@ -125,7 +155,8 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
     parameters: CypherMap = CypherMap.empty,
     drivingTable: Option[CypherRecords] = None,
     queryCatalog: Map[QualifiedGraphName, PropertyGraph] = Map.empty
-  ): Result = cypherOnGraph(graphs.empty, query, parameters, drivingTable, queryCatalog)
+  ): Result =
+    cypherOnGraph(graphs.empty, query, parameters, drivingTable, queryCatalog)
 
   override private[opencypher] def cypherOnGraph(
     graph: PropertyGraph,
@@ -136,16 +167,20 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
   ): Result = {
     val ambientGraphNew = mountAmbientGraph(graph)
 
-    val maybeRelationalRecords: Option[RelationalCypherRecords[T]] = maybeDrivingTable.map(_.asRelational)
+    val maybeRelationalRecords: Option[RelationalCypherRecords[T]] =
+      maybeDrivingTable.map(_.asRelational)
 
     val inputFields = maybeRelationalRecords match {
       case Some(inputRecords) => inputRecords.header.vars
-      case None => Set.empty[Var]
+      case None               => Set.empty[Var]
     }
 
-    val (stmt, extractedLiterals, semState) = time("AST construction")(parser.process(query, inputFields)(CypherParser.defaultContext))
+    val (stmt, extractedLiterals, semState) = time("AST construction")(
+      parser.process(query, inputFields)(CypherParser.defaultContext)
+    )
 
-    val extractedParameters: CypherMap = extractedLiterals.mapValues(v => CypherValue(v))
+    val extractedParameters: CypherMap =
+      extractedLiterals.mapValues(v => CypherValue(v))
     val allParameters = queryParameters ++ extractedParameters
 
     logStageProgress("IR translation ...", newLine = false)
@@ -161,7 +196,8 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
       inputFields,
       queryCatalog
     )
-    val irOut = time("IR translation")(IRBuilder.process(stmt)(irBuilderContext))
+    val irOut =
+      time("IR translation")(IRBuilder.process(stmt)(irBuilderContext))
 
     val ir = IRBuilder.extract(irOut)
     val queryLocalCatalog = IRBuilder.getContext(irOut).queryLocalCatalog
@@ -174,10 +210,24 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
           println("IR:")
           println(cq.pretty)
         }
-        planCypherQuery(graph, cq, allParameters, inputFields, maybeRelationalRecords, queryLocalCatalog)
+        planCypherQuery(
+          graph,
+          cq,
+          allParameters,
+          inputFields,
+          maybeRelationalRecords,
+          queryLocalCatalog
+        )
 
       case CreateGraphStatement(targetGraph, innerQueryIr) =>
-        val innerResult = planCypherQuery(graph, innerQueryIr, allParameters, inputFields, maybeRelationalRecords, queryLocalCatalog)
+        val innerResult = planCypherQuery(
+          graph,
+          innerQueryIr,
+          allParameters,
+          inputFields,
+          maybeRelationalRecords,
+          queryLocalCatalog
+        )
         val resultGraph = innerResult.graph
         catalog.store(targetGraph.qualifiedGraphName, resultGraph)
         RelationalCypherResult.empty
@@ -206,8 +256,14 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
     maybeDrivingTable: Option[RelationalCypherRecords[T]],
     queryLocalCatalog: QueryLocalCatalog
   ): Result = {
-    val logicalPlan = planLogical(cypherQuery, graph, inputFields, queryLocalCatalog)
-    planRelational(maybeDrivingTable, allParameters, logicalPlan, queryLocalCatalog)
+    val logicalPlan =
+      planLogical(cypherQuery, graph, inputFields, queryLocalCatalog)
+    planRelational(
+      maybeDrivingTable,
+      allParameters,
+      logicalPlan,
+      queryLocalCatalog
+    )
   }
 
   protected def planLogical(
@@ -217,8 +273,14 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
     queryLocalCatalog: QueryLocalCatalog
   ): LogicalOperator = {
     logStageProgress("Logical planning ...", newLine = false)
-    val logicalPlannerContext = LogicalPlannerContext(graph.schema, inputFields, catalog.listSources, queryLocalCatalog)
-    val logicalPlan = time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
+    val logicalPlannerContext = LogicalPlannerContext(
+      graph.schema,
+      inputFields,
+      catalog.listSources,
+      queryLocalCatalog
+    )
+    val logicalPlan =
+      time("Logical planning")(logicalPlanner(ir)(logicalPlannerContext))
     logStageProgress("Done!")
     if (PrintLogicalPlan.isSet) {
       println("Logical plan:")
@@ -226,7 +288,9 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
     }
 
     logStageProgress("Logical optimization ...", newLine = false)
-    val optimizedLogicalPlan = time("Logical optimization")(logicalOptimizer(logicalPlan)(logicalPlannerContext))
+    val optimizedLogicalPlan = time("Logical optimization")(
+      logicalOptimizer(logicalPlan)(logicalPlannerContext)
+    )
     logStageProgress("Done!")
     if (PrintLogicalPlan.isSet) {
       println("Optimized logical plan:")
@@ -243,12 +307,16 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
   ): Result = {
     logStageProgress("Relational planning ... ", newLine = false)
 
-    def queryLocalGraphAt(qgn: QualifiedGraphName): Option[RelationalCypherGraph[T]] =
+    def queryLocalGraphAt(
+      qgn: QualifiedGraphName
+    ): Option[RelationalCypherGraph[T]] =
       Some(new RichPropertyGraph(queryLocalCatalog.graph(qgn)).asRelational[T])
 
-    implicit val context: RelationalRuntimeContext[T] = RelationalRuntimeContext(queryLocalGraphAt, maybeDrivingTable, parameters)
+    implicit val context: RelationalRuntimeContext[T] =
+      RelationalRuntimeContext(queryLocalGraphAt, maybeDrivingTable, parameters)
 
-    val relationalPlan = time("Relational planning")(RelationalPlanner.process(logicalPlan))
+    val relationalPlan =
+      time("Relational planning")(RelationalPlanner.process(logicalPlan))
     logStageProgress("Done!")
     if (PrintRelationalPlan.isSet) {
       println("Relational plan:")
@@ -256,7 +324,9 @@ abstract class RelationalCypherSession[T <: Table[T] : TypeTag] extends CypherSe
     }
 
     logStageProgress("Relational optimization ... ", newLine = false)
-    val optimizedRelationalPlan = time("Relational optimization")(RelationalOptimizer.process(relationalPlan))
+    val optimizedRelationalPlan = time("Relational optimization")(
+      RelationalOptimizer.process(relationalPlan)
+    )
     logStageProgress("Done!")
     if (PrintOptimizedRelationalPlan.isSet) {
       println("Optimized Relational plan:")

@@ -37,7 +37,8 @@ import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
 /**
   * Demonstrates merging a graph into an existing Neo4j database.
   *
-  * This merge requires node and relationship keys to identify same elements in the merge graph and the Neo4j database.
+  * This merge requires node and relationship keys to identify same elements in the merge graph and
+  * the Neo4j database.
   */
 object Neo4jMergeExample extends App {
   val boltUrl = namedArg("--bolt-url").getOrElse("bolt://localhost:7687")
@@ -65,8 +66,8 @@ object Neo4jMergeExample extends App {
   val relKeys = Map("FRIEND_OF" -> Set("id"), "MARRIED_TO" -> Set("id"))
 
   // Create a merge graph with updated data
-  val mergeGraph = morpheus.cypher(
-    """
+  val mergeGraph = morpheus
+    .cypher("""
       |CONSTRUCT
       | CREATE (a:Person { name: 'Alice', age: 11 })
       | CREATE (b:Person { name: 'Bob', age: 21})
@@ -76,37 +77,52 @@ object Neo4jMergeExample extends App {
       | CREATE (b)-[:MARRIED_TO { id: 1 }]->(t)
       | CREATE (c)-[:FRIEND_OF { id: 2, since: '23/01/2019' }]->(t)
       |RETURN GRAPH
-    """.stripMargin).graph
+    """.stripMargin)
+    .graph
 
   // Speed up merge operation. Requires Neo4j Enterprise Edition
   // Neo4jGraphMerge.createIndexes(entireGraphName, neo4j.dataSourceConfig, nodeKeys)
 
   // Merge graph into existing Neo4j database
-  Neo4jGraphMerge.merge(entireGraphName, mergeGraph, neo4j.config, Some(nodeKeys), Some(relKeys))
+  Neo4jGraphMerge.merge(
+    entireGraphName,
+    mergeGraph,
+    neo4j.config,
+    Some(nodeKeys),
+    Some(relKeys)
+  )
 
   // Register Property Graph Data Source (PGDS) to read the updated graph from Neo4j
-  morpheus.registerSource(Namespace("updatedSocialNetwork"), GraphSources.cypher.neo4j(neo4j.config))
+  morpheus.registerSource(
+    Namespace("updatedSocialNetwork"),
+    GraphSources.cypher.neo4j(neo4j.config)
+  )
 
   // Access the graphs via their qualified graph names
-  val updatedSocialNetwork = morpheus.catalog.graph("updatedSocialNetwork.graph")
+  val updatedSocialNetwork =
+    morpheus.catalog.graph("updatedSocialNetwork.graph")
 
-  updatedSocialNetwork.cypher(
-    """
+  updatedSocialNetwork
+    .cypher("""
       |MATCH (p:Person)
       |RETURN p
       |ORDER BY p.name
-    """.stripMargin).records.show
+    """.stripMargin)
+    .records
+    .show
 
-  updatedSocialNetwork.cypher(
-    """
+  updatedSocialNetwork
+    .cypher("""
       |MATCH (p:Person)
       |OPTIONAL MATCH (p)-[r:FRIEND_OF|MARRIED_TO]->(o:Person)
       |RETURN p, r, o
       |ORDER BY p.name, r.since
-    """.stripMargin).records.show
+    """.stripMargin)
+    .records
+    .show
 
   // Reset Neo4j test instance and close the session and driver
   neo4j.close()
 
-  }
+}
 // end::full-example[]

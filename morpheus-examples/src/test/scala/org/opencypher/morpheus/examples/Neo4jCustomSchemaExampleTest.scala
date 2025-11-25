@@ -33,7 +33,11 @@ class Neo4jCustomSchemaExampleTest extends ExampleTestBase with Neo4jServerFixtu
   override def dataFixture: String = ""
 
   it("should produce the correct output") {
-    validate(Neo4jCustomSchemaExample.main(Array("--bolt-url", boltUrl)),
-      getClass.getResource("/example_outputs/Neo4jCustomSchemaExample.out").toURI)
+    validate(
+      Neo4jCustomSchemaExample.main(Array("--bolt-url", boltUrl)),
+      getClass
+        .getResource("/example_outputs/Neo4jCustomSchemaExample.out")
+        .toURI
+    )
   }
 }

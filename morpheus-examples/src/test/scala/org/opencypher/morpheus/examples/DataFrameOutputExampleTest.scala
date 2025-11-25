@@ -28,7 +28,9 @@ package org.opencypher.morpheus.examples
 
 class DataFrameOutputExampleTest extends ExampleTestBase {
   it("should produce the correct output") {
-    validate(DataFrameOutputExample.main(Array.empty),
-      getClass.getResource("/example_outputs/DataFrameOutputExample.out").toURI)
+    validate(
+      DataFrameOutputExample.main(Array.empty),
+      getClass.getResource("/example_outputs/DataFrameOutputExample.out").toURI
+    )
   }
 }

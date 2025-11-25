@@ -69,7 +69,8 @@ class MorpheusValueStructureTest extends MorpheusValueTestSuite {
       val reconstructedValueGroups = originalValueGroups.map { values =>
         values.map {
           case CypherNull => CypherNull
-          case MorpheusNode(id, labels, properties) => MorpheusNode(id, labels, properties)
+          case MorpheusNode(id, labels, properties) =>
+            MorpheusNode(id, labels, properties)
           case other => fail(s"Unexpected value $other")
         }
       }
@@ -82,9 +83,9 @@ class MorpheusValueStructureTest extends MorpheusValueTestSuite {
       val originalValueGroups = MAP_valueGroups
       val reconstructedValueGroups = originalValueGroups.map { values =>
         values.map {
-          case CypherNull => CypherNull
+          case CypherNull   => CypherNull
           case CypherMap(m) => CypherValue(m)
-          case other => fail(s"Unexpected value $other")
+          case other        => fail(s"Unexpected value $other")
         }
       }
       assert(reconstructedValueGroups == originalValueGroups)
@@ -95,13 +96,12 @@ class MorpheusValueStructureTest extends MorpheusValueTestSuite {
       val actual = cypherValueGroups.map { values =>
         values.map {
           case CypherMap(m) => CypherMap(m)
-          case other => fail(s"Unexpected value $other")
+          case other        => fail(s"Unexpected value $other")
         }
       }
       assert(actual == cypherValueGroups)
     }
   }
-
 
   describe("LIST") {
     it("constructs values") {
@@ -110,8 +110,8 @@ class MorpheusValueStructureTest extends MorpheusValueTestSuite {
       val reconstructedValueGroups = originalValueGroups.map { values =>
         values.map {
           case CypherList(l) => CypherList(l)
-          case CypherNull => CypherNull
-          case other => fail(s"Unexpected value $other")
+          case CypherNull    => CypherNull
+          case other         => fail(s"Unexpected value $other")
         }
       }
       reconstructedValueGroups should equal(originalValueGroups)
@@ -122,7 +122,7 @@ class MorpheusValueStructureTest extends MorpheusValueTestSuite {
       val actual = cypherValueGroups.map { values =>
         values.map {
           case CypherList(v) => CypherList(v)
-          case other => fail(s"Unexpected value $other")
+          case other         => fail(s"Unexpected value $other")
         }
       }
       actual should equal(cypherValueGroups)
@@ -135,8 +135,8 @@ class MorpheusValueStructureTest extends MorpheusValueTestSuite {
       val reconstructedValueGroups = originalValueGroups.map { values =>
         values.map {
           case CypherString(s) => CypherString(s)
-          case CypherNull => CypherNull
-          case other => fail(s"Unexpected value $other")
+          case CypherNull      => CypherNull
+          case other           => fail(s"Unexpected value $other")
         }
       }
       reconstructedValueGroups should equal(originalValueGroups)
@@ -144,7 +144,9 @@ class MorpheusValueStructureTest extends MorpheusValueTestSuite {
 
     it("Deconstruct STRING values") {
       val cypherValueGroups = STRING_valueGroups.materialValueGroups
-      val actual = cypherValueGroups.map { values => values.map { case CypherString(v) => CypherString(v) } }
+      val actual = cypherValueGroups.map { values =>
+        values.map { case CypherString(v) => CypherString(v) }
+      }
       actual should equal(cypherValueGroups)
       CypherString.unapply(null.asInstanceOf[CypherString]) should equal(None)
     }
@@ -156,8 +158,8 @@ class MorpheusValueStructureTest extends MorpheusValueTestSuite {
       val reconstructedValueGroups = originalValueGroups.map { values =>
         values.map {
           case CypherBoolean(b) => CypherBoolean(b)
-          case CypherNull => CypherNull
-          case other => fail(s"Unexpected value $other")
+          case CypherNull       => CypherNull
+          case other            => fail(s"Unexpected value $other")
         }
       }
       reconstructedValueGroups should equal(originalValueGroups)
@@ -165,7 +167,9 @@ class MorpheusValueStructureTest extends MorpheusValueTestSuite {
 
     it("Deconstruct BOOLEAN values") {
       val cypherValueGroups = BOOLEAN_valueGroups.materialValueGroups
-      val actual = cypherValueGroups.map { values => values.map { case CypherBoolean(v) => CypherBoolean(v) } }
+      val actual = cypherValueGroups.map { values =>
+        values.map { case CypherBoolean(v) => CypherBoolean(v) }
+      }
       actual should equal(cypherValueGroups)
     }
   }
@@ -176,8 +180,8 @@ class MorpheusValueStructureTest extends MorpheusValueTestSuite {
       val reconstructedValueGroups = originalValueGroups.map { values =>
         values.map {
           case CypherInteger(l) => CypherInteger(l)
-          case CypherNull => CypherNull
-          case other => fail(s"Unexpected value $other")
+          case CypherNull       => CypherNull
+          case other            => fail(s"Unexpected value $other")
         }
       }
       reconstructedValueGroups should equal(originalValueGroups)
@@ -185,7 +189,9 @@ class MorpheusValueStructureTest extends MorpheusValueTestSuite {
 
     it("Deconstruct INTEGER values") {
       val cypherValueGroups = INTEGER_valueGroups.materialValueGroups
-      val actual = cypherValueGroups.map { values => values.map { case CypherInteger(v) => CypherInteger(v) } }
+      val actual = cypherValueGroups.map { values =>
+        values.map { case CypherInteger(v) => CypherInteger(v) }
+      }
       actual should equal(cypherValueGroups)
     }
   }
@@ -196,16 +202,20 @@ class MorpheusValueStructureTest extends MorpheusValueTestSuite {
       val reconstructedValueGroups = originalValueGroups.map { values =>
         values.map {
           case CypherFloat(d) => CypherFloat(d)
-          case CypherNull => CypherNull
-          case other => fail(s"Unexpected value $other")
+          case CypherNull     => CypherNull
+          case other          => fail(s"Unexpected value $other")
         }
       }
-      assert(reconstructedValueGroups.withoutNaNs == originalValueGroups.withoutNaNs)
+      assert(
+        reconstructedValueGroups.withoutNaNs == originalValueGroups.withoutNaNs
+      )
     }
 
     it("Deconstruct FLOAT values") {
       val cypherValueGroups = FLOAT_valueGroups.materialValueGroups
-      val actual = cypherValueGroups.map { values => values.map { case CypherFloat(v) => CypherFloat(v) } }
+      val actual = cypherValueGroups.map { values =>
+        values.map { case CypherFloat(v) => CypherFloat(v) }
+      }
       assert(actual.withoutNaNs == cypherValueGroups.withoutNaNs)
     }
   }
@@ -216,16 +226,20 @@ class MorpheusValueStructureTest extends MorpheusValueTestSuite {
       val reconstructedValueGroups = originalValueGroups.map { values =>
         values.map {
           case CypherBigDecimal(d) => CypherBigDecimal(d)
-          case CypherNull => CypherNull
-          case other => fail(s"Unexpected value $other")
+          case CypherNull          => CypherNull
+          case other               => fail(s"Unexpected value $other")
         }
       }
-      assert(reconstructedValueGroups.withoutNaNs == originalValueGroups.withoutNaNs)
+      assert(
+        reconstructedValueGroups.withoutNaNs == originalValueGroups.withoutNaNs
+      )
     }
 
     it("deconstructs values") {
       val cypherValueGroups = BIGDECIMAL_valueGroups.materialValueGroups
-      val actual = cypherValueGroups.map { values => values.map { case CypherBigDecimal(v) => CypherBigDecimal(v) } }
+      val actual = cypherValueGroups.map { values =>
+        values.map { case CypherBigDecimal(v) => CypherBigDecimal(v) }
+      }
       assert(actual.withoutNaNs == cypherValueGroups.withoutNaNs)
     }
   }
@@ -233,17 +247,18 @@ class MorpheusValueStructureTest extends MorpheusValueTestSuite {
   describe("NUMBER") {
     it("constructs values") {
       val originalValueGroups = NUMBER_valueGroups
-      val reconstructedValueGroups = originalValueGroups.map {
-        values =>
-          values.map {
-            case CypherNull => CypherNull
-            case CypherInteger(l) => CypherInteger(l)
-            case CypherFloat(d) => CypherFloat(d)
-            case CypherBigDecimal(d) => CypherBigDecimal(d)
-            case other => fail(s"Unexpected value $other")
-          }
+      val reconstructedValueGroups = originalValueGroups.map { values =>
+        values.map {
+          case CypherNull          => CypherNull
+          case CypherInteger(l)    => CypherInteger(l)
+          case CypherFloat(d)      => CypherFloat(d)
+          case CypherBigDecimal(d) => CypherBigDecimal(d)
+          case other               => fail(s"Unexpected value $other")
+        }
       }
-      assert(reconstructedValueGroups.withoutNaNs == originalValueGroups.withoutNaNs)
+      assert(
+        reconstructedValueGroups.withoutNaNs == originalValueGroups.withoutNaNs
+      )
     }
 
     it("deconstructs values") {
@@ -253,29 +268,33 @@ class MorpheusValueStructureTest extends MorpheusValueTestSuite {
           case MorpheusNode(id, labels, properties) =>
             CypherValue(MorpheusNode(id, labels, properties))
           case MorpheusRelationship(id, source, target, relType, properties) =>
-            CypherValue(MorpheusRelationship(id, source, target, relType, properties))
-          case CypherMap(map) => CypherValue(map)
-          case CypherList(l) => CypherValue(l)
-          case CypherBoolean(b) => CypherValue(b)
-          case CypherString(s) => CypherString(s)
-          case CypherInteger(l) => CypherValue(l)
-          case CypherFloat(d) => CypherValue(d)
+            CypherValue(
+              MorpheusRelationship(id, source, target, relType, properties)
+            )
+          case CypherMap(map)      => CypherValue(map)
+          case CypherList(l)       => CypherValue(l)
+          case CypherBoolean(b)    => CypherValue(b)
+          case CypherString(s)     => CypherString(s)
+          case CypherInteger(l)    => CypherValue(l)
+          case CypherFloat(d)      => CypherValue(d)
           case CypherBigDecimal(d) => CypherValue(d)
-          case CypherNull => CypherValue(null)
-          case other => fail(s"Unexpected value $other")
+          case CypherNull          => CypherValue(null)
+          case other               => fail(s"Unexpected value $other")
         }
       }
-      assert(reconstructedValueGroups.withoutNaNs == originalValueGroups.withoutNaNs)
+      assert(
+        reconstructedValueGroups.withoutNaNs == originalValueGroups.withoutNaNs
+      )
     }
   }
 
-  describe("ANY"){
+  describe("ANY") {
     it("deconstructs values") {
       val cypherValueGroups = ANY_valueGroups.materialValueGroups
       val actual = cypherValueGroups.map { values =>
         values.map {
           case CypherValue(v) => CypherValue(v)
-          case other => fail(s"Unexpected value $other")
+          case other          => fail(s"Unexpected value $other")
         }
       }
       assert(actual.withoutNaNs == cypherValueGroups.withoutNaNs)

@@ -46,16 +46,21 @@ object MetaLabelSupport {
   }
 
   implicit class RichPropertyKeys(val keys: PropertyKeys) extends AnyVal {
-    def withoutMetaProperty: PropertyKeys = keys.filterKeys(k => k != metaPropertyKey)
+    def withoutMetaProperty: PropertyKeys =
+      keys.filterKeys(k => k != metaPropertyKey)
   }
 
   implicit class LabelPropertyMapWithMetaSupport(val map: LabelPropertyMap) extends AnyVal {
-    def withoutMetaLabel(metaLabel: String): LabelPropertyMap = map.map { case (k, v) => (k - metaLabel) -> v }
-    def withoutMetaProperty: LabelPropertyMap = map.mapValues(_.withoutMetaProperty)
+    def withoutMetaLabel(metaLabel: String): LabelPropertyMap = map.map { case (k, v) =>
+      (k - metaLabel) -> v
+    }
+    def withoutMetaProperty: LabelPropertyMap =
+      map.mapValues(_.withoutMetaProperty)
   }
 
-  implicit class RelTypePropertyMapWithMetaSupport(val map: RelTypePropertyMap) extends AnyVal  {
-    def withoutMetaProperty: RelTypePropertyMap = map.mapValues(_.withoutMetaProperty)
+  implicit class RelTypePropertyMapWithMetaSupport(val map: RelTypePropertyMap) extends AnyVal {
+    def withoutMetaProperty: RelTypePropertyMap =
+      map.mapValues(_.withoutMetaProperty)
   }
 
 }

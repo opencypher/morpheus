@@ -33,9 +33,11 @@ import org.opencypher.v9_0.util.{CypherException, InputPosition}
 import scala.reflect.ClassTag
 
 abstract class BlankBaseContext extends BaseContext {
-  override def tracer: CompilationPhaseTracer = CompilationPhaseTracer.NO_TRACING
+  override def tracer: CompilationPhaseTracer =
+    CompilationPhaseTracer.NO_TRACING
   override def notificationLogger: InternalNotificationLogger = devNullLogger
-  override def exceptionCreator: (String, InputPosition) => CypherException = (_, _) => null
+  override def exceptionCreator: (String, InputPosition) => CypherException =
+    (_, _) => null
 
   override def monitors: Monitors = new Monitors {
     override def newMonitor[T <: AnyRef: ClassTag](tags: String*): T = {

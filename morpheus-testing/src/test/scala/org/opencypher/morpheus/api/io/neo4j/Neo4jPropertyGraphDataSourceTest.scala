@@ -50,81 +50,128 @@ import org.opencypher.okapi.testing.Bag
 import org.opencypher.okapi.testing.Bag._
 
 class Neo4jPropertyGraphDataSourceTest
-  extends MorpheusTestSuite
+    extends MorpheusTestSuite
     with Neo4jServerFixture
     with TeamDataFixture {
 
   it("should cache the schema during and between queries") {
-    val spiedPGDS = spy[Neo4jPropertyGraphDataSource](CypherGraphSources.neo4j(neo4jConfig))
+    val spiedPGDS =
+      spy[Neo4jPropertyGraphDataSource](CypherGraphSources.neo4j(neo4jConfig))
 
     morpheus.registerSource(Namespace("pgds"), spiedPGDS)
 
-    morpheus.cypher(
-      s"""
+    morpheus
+      .cypher(
+        s"""
          |FROM pgds.$entireGraphName
          |MATCH (n)
          |RETURN 1
       """.stripMargin
-    ).records.size
+      )
+      .records
+      .size
 
-    morpheus.cypher(
-      s"""
+    morpheus
+      .cypher(
+        s"""
          |FROM pgds.$entireGraphName
          |MATCH (n)
          |RETURN 1
       """.stripMargin
-    ).records.size
+      )
+      .records
+      .size
 
     // we will request schema many times but should only compute it once
     verify(spiedPGDS, Mockito.atLeast(2)).schema(entireGraphName)
-    verify(spiedPGDS.asInstanceOf[AbstractPropertyGraphDataSource], times(1)).readSchema(entireGraphName)
+    verify(spiedPGDS.asInstanceOf[AbstractPropertyGraphDataSource], times(1))
+      .readSchema(entireGraphName)
   }
 
   it("can read lists from Neo4j") {
-    val graph = CypherGraphSources.neo4j(neo4jConfig).graph(entireGraphName).asMorpheus
-    graph.cypher("MATCH (n) RETURN n.languages").records.iterator.toBag should equal(Bag(
-      CypherMap("n.languages" -> Seq("German", "English", "Klingon")),
-      CypherMap("n.languages" -> Seq()),
-      CypherMap("n.languages" -> CypherNull),
-      CypherMap("n.languages" -> CypherNull),
-      CypherMap("n.languages" -> CypherNull)
-    ))
+    val graph =
+      CypherGraphSources.neo4j(neo4jConfig).graph(entireGraphName).asMorpheus
+    graph
+      .cypher("MATCH (n) RETURN n.languages")
+      .records
+      .iterator
+      .toBag should equal(
+      Bag(
+        CypherMap("n.languages" -> Seq("German", "English", "Klingon")),
+        CypherMap("n.languages" -> Seq()),
+        CypherMap("n.languages" -> CypherNull),
+        CypherMap("n.languages" -> CypherNull),
+        CypherMap("n.languages" -> CypherNull)
+      )
+    )
   }
 
   it("should load a graph from Neo4j via DataSource") {
-    val graph = CypherGraphSources.neo4j(neo4jConfig).graph(entireGraphName).asMorpheus
-    graph.nodes("n").asMorpheus.toCypherMaps.collect.toBag.nodeValuesWithoutIds shouldEqual teamDataGraphNodes.nodeValuesWithoutIds
-    graph.relationships("r").asMorpheus.toCypherMaps.collect.toBag.relValuesWithoutIds shouldEqual teamDataGraphRels.relValuesWithoutIds
+    val graph =
+      CypherGraphSources.neo4j(neo4jConfig).graph(entireGraphName).asMorpheus
+    graph
+      .nodes("n")
+      .asMorpheus
+      .toCypherMaps
+      .collect
+      .toBag
+      .nodeValuesWithoutIds shouldEqual teamDataGraphNodes.nodeValuesWithoutIds
+    graph
+      .relationships("r")
+      .asMorpheus
+      .toCypherMaps
+      .collect
+      .toBag
+      .relValuesWithoutIds shouldEqual teamDataGraphRels.relValuesWithoutIds
   }
 
   it("should load a graph from Neo4j via catalog") {
     val testNamespace = Namespace("myNeo4j")
 
-    morpheus.registerSource(testNamespace, CypherGraphSources.neo4j(neo4jConfig))
+    morpheus.registerSource(
+      testNamespace,
+      CypherGraphSources.neo4j(neo4jConfig)
+    )
 
-    val nodes: CypherResult = morpheus.cypher(s"FROM GRAPH $testNamespace.$entireGraphName MATCH (n) RETURN n")
+    val nodes: CypherResult = morpheus.cypher(
+      s"FROM GRAPH $testNamespace.$entireGraphName MATCH (n) RETURN n"
+    )
     nodes.records.collect.toBag.nodeValuesWithoutIds shouldEqual teamDataGraphNodes.nodeValuesWithoutIds
 
-    val edges = morpheus.cypher(s"FROM GRAPH $testNamespace.$entireGraphName MATCH ()-[r]->() RETURN r")
+    val edges = morpheus.cypher(
+      s"FROM GRAPH $testNamespace.$entireGraphName MATCH ()-[r]->() RETURN r"
+    )
     edges.records.collect.toBag.relValuesWithoutIds shouldEqual teamDataGraphRels.relValuesWithoutIds
   }
 
-  it("should omit properties with unsupported types if corresponding flag is set") {
-    neo4jConfig.cypherWithNewSession(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: duration('P2.5W'), bar: 42 })""")
+  it(
+    "should omit properties with unsupported types if corresponding flag is set"
+  ) {
+    neo4jConfig.cypherWithNewSession(
+      s"""CREATE (n:Unsupported:${metaPrefix}test { foo: duration('P2.5W'), bar: 42 })"""
+    )
 
-    val dataSource = CypherGraphSources.neo4j(neo4jConfig, omitIncompatibleProperties = true)
+    val dataSource =
+      CypherGraphSources.neo4j(neo4jConfig, omitIncompatibleProperties = true)
     val graph = dataSource.graph(GraphName("test")).asMorpheus
     val nodes = graph.nodes("n").asMorpheus.toCypherMaps.collect.toList
     nodes.size shouldBe 1
     nodes.head.value match {
-      case n: MorpheusNode => n should equal(MorpheusNode(n.id, Set("Unsupported"), CypherMap("bar" -> 42L)))
+      case n: MorpheusNode =>
+        n should equal(
+          MorpheusNode(n.id, Set("Unsupported"), CypherMap("bar" -> 42L))
+        )
       case other => IllegalArgumentException("a MorpheusNode", other)
     }
   }
 
-  it("should throw exception if properties with unsupported types are being imported") {
+  it(
+    "should throw exception if properties with unsupported types are being imported"
+  ) {
     a[SchemaException] should be thrownBy {
-      neo4jConfig.cypherWithNewSession(s"""CREATE (n:Unsupported:${metaPrefix}test { foo: time(), bar: 42 })""")
+      neo4jConfig.cypherWithNewSession(
+        s"""CREATE (n:Unsupported:${metaPrefix}test { foo: time(), bar: 42 })"""
+      )
 
       val dataSource = CypherGraphSources.neo4j(neo4jConfig)
       val graph = dataSource.graph(GraphName("test")).asMorpheus

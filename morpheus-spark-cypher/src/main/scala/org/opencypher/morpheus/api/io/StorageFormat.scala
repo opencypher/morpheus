@@ -32,7 +32,8 @@ import org.opencypher.okapi.impl.util.JsonUtils.FlatOption._
 import ujson._
 
 trait StorageFormat {
-  def name: String = getClass.getSimpleName.dropRight("Format$".length).toLowerCase
+  def name: String =
+    getClass.getSimpleName.dropRight("Format$".length).toLowerCase
 }
 
 object StorageFormat {
@@ -47,20 +48,25 @@ object StorageFormat {
   val nonFileFormatNames: Set[String] = nonFileFormats.keySet
 
   private def unexpected(name: String, available: Iterable[String]) =
-    throw IllegalArgumentException(s"Supported storage format (one of ${available.mkString("[", ", ", "]")})", name)
+    throw IllegalArgumentException(
+      s"Supported storage format (one of ${available.mkString("[", ", ", "]")})",
+      name
+    )
 
-  implicit def rwStorageFormat: ReadWriter[StorageFormat] = readwriter[Value].bimap[StorageFormat](
-    (storageFormat: StorageFormat) => storageFormat.name,
-    (storageFormatName: Value) => {
-      val formatString = storageFormatName.str
-      nonFileFormats.getOrElse(formatString, FileFormat(formatString))
-    }
-  )
+  implicit def rwStorageFormat: ReadWriter[StorageFormat] =
+    readwriter[Value].bimap[StorageFormat](
+      (storageFormat: StorageFormat) => storageFormat.name,
+      (storageFormatName: Value) => {
+        val formatString = storageFormatName.str
+        nonFileFormats.getOrElse(formatString, FileFormat(formatString))
+      }
+    )
 
-  implicit def rwFileFormat: ReadWriter[FileFormat] = readwriter[Value].bimap[FileFormat](
-    (fileFormat: FileFormat) => fileFormat.name,
-    (fileFormatName: Value) => FileFormat(fileFormatName.str)
-  )
+  implicit def rwFileFormat: ReadWriter[FileFormat] =
+    readwriter[Value].bimap[FileFormat](
+      (fileFormat: FileFormat) => fileFormat.name,
+      (fileFormatName: Value) => FileFormat(fileFormatName.str)
+    )
 
 }
 
@@ -79,6 +85,9 @@ object FileFormat {
 }
 
 case class FileFormat(override val name: String) extends StorageFormat {
-  assert(!nonFileFormatNames.contains(name),
-    s"Cannot create a file format with a name in ${nonFileFormatNames.mkString("[", ", ", "]")} ")
+  assert(
+    !nonFileFormatNames.contains(name),
+    s"Cannot create a file format with a name in ${nonFileFormatNames
+        .mkString("[", ", ", "]")} "
+  )
 }

@@ -50,13 +50,16 @@ class DefaultFileSystemTest extends MorpheusTestSuite {
   }
 
   it("creates a data source root folder when it does not exist yet") {
-    val graph = morpheus.cypher(
-      """
+    val graph = morpheus
+      .cypher("""
         |CONSTRUCT
         |  CREATE ()
         |RETURN GRAPH
-      """.stripMargin).graph
-    val ds = FSGraphSources(tempDir.toAbsolutePath.resolve("someNewFolder1/someNewFolder2").toString).csv
+      """.stripMargin)
+      .graph
+    val ds = FSGraphSources(
+      tempDir.toAbsolutePath.resolve("someNewFolder1/someNewFolder2").toString
+    ).csv
     ds.store(GraphName("foo"), graph)
   }
 

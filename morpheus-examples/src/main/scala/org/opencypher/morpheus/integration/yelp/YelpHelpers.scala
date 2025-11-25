@@ -41,7 +41,9 @@ object YelpHelpers {
     reviewDf: DataFrame
   )
 
-  def loadYelpTables(inputPath: String)(implicit spark: SparkSession): YelpTables = {
+  def loadYelpTables(
+    inputPath: String
+  )(implicit spark: SparkSession): YelpTables = {
     import spark.implicits._
 
     log("read business.json", 2)
@@ -51,13 +53,27 @@ object YelpHelpers {
     log("read user.json", 2)
     val rawUserDf = spark.read.json(s"$inputPath/user.json")
 
-    val businessDf = rawBusinessDf.select($"business_id".as(sourceIdKey), $"business_id", $"name", $"address", $"city", $"state")
-    val reviewDf = rawReviewDf.select($"review_id".as(sourceIdKey), $"user_id".as(sourceStartNodeKey), $"business_id".as(sourceEndNodeKey), $"stars", $"date".cast(DateType))
+    val businessDf = rawBusinessDf.select(
+      $"business_id".as(sourceIdKey),
+      $"business_id",
+      $"name",
+      $"address",
+      $"city",
+      $"state"
+    )
+    val reviewDf = rawReviewDf.select(
+      $"review_id".as(sourceIdKey),
+      $"user_id".as(sourceStartNodeKey),
+      $"business_id".as(sourceEndNodeKey),
+      $"stars",
+      $"date".cast(DateType)
+    )
     val userDf = rawUserDf.select(
       $"user_id".as(sourceIdKey),
       $"name",
       $"yelping_since".cast(DateType),
-      functions.split($"elite", ",").cast(ArrayType(LongType)).as("elite"))
+      functions.split($"elite", ",").cast(ArrayType(LongType)).as("elite")
+    )
 
     YelpTables(userDf, businessDf, reviewDf)
   }
@@ -69,18 +85,25 @@ object YelpHelpers {
     import spark.implicits._
 
     rawBusinessDf.select($"city", $"state").distinct().show()
-    rawBusinessDf.withColumnRenamed("business_id", "id")
+    rawBusinessDf
+      .withColumnRenamed("business_id", "id")
       .join(rawReviewDf, $"id" === $"business_id")
       .groupBy($"city", $"state")
-      .count().as("count")
+      .count()
+      .as("count")
       .orderBy($"count".desc, $"state".asc)
       .show(100)
   }
 
-  def extractYelpCitySubset(inputPath: String, outputPath: String, city: String)(implicit spark: SparkSession): Unit = {
+  def extractYelpCitySubset(
+    inputPath: String,
+    outputPath: String,
+    city: String
+  )(implicit spark: SparkSession): Unit = {
     import spark.implicits._
 
-    def emailColumn(userId: String): Column = functions.concat($"$userId", functions.lit("@yelp.com"))
+    def emailColumn(userId: String): Column =
+      functions.concat($"$userId", functions.lit("@yelp.com"))
 
     val rawUserDf = spark.read.json(s"$inputPath/user.json")
     val rawReviewDf = spark.read.json(s"$inputPath/review.json")
@@ -97,7 +120,10 @@ object YelpHelpers {
       .join(reviewDf, Seq("user_id"), "left_semi")
       .withColumn("email", emailColumn("user_id"))
     val friendDf = userDf
-      .select($"email".as("user1_email"), functions.explode(functions.split($"friends", ", ")).as("user2_id"))
+      .select(
+        $"email".as("user1_email"),
+        functions.explode(functions.split($"friends", ", ")).as("user2_id")
+      )
       .withColumn("user2_email", emailColumn("user2_id"))
       .select(s"user1_email", s"user2_email")
 
@@ -109,6 +135,8 @@ object YelpHelpers {
 
   implicit class DataFrameOps(df: DataFrame) {
     def prependIdColumn(idColumn: String, prefix: String): DataFrame =
-      df.transformColumns(idColumn)(column => functions.concat(functions.lit(prefix), column).as(idColumn))
+      df.transformColumns(idColumn)(column =>
+        functions.concat(functions.lit(prefix), column).as(idColumn)
+      )
   }
 }

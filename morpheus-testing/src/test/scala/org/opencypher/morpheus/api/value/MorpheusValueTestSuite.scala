@@ -39,7 +39,7 @@ class MorpheusValueTestSuite extends BaseTestSuite with CypherValueEncoders {
   implicit class FilterValues(values: Seq[Any]) {
     def withoutNaNs: Seq[Any] = values.filter {
       case CypherFloat(d) => !d.isNaN
-      case _ => true
+      case _              => true
     }
   }
 

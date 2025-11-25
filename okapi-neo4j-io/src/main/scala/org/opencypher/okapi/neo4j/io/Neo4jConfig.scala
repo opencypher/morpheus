@@ -43,7 +43,8 @@ case class Neo4jConfig(
 ) {
 
   def driver(): Driver = password match {
-    case Some(pwd) => GraphDatabase.driver(uri, AuthTokens.basic(user, pwd), boltConfig())
+    case Some(pwd) =>
+      GraphDatabase.driver(uri, AuthTokens.basic(user, pwd), boltConfig())
     case _ => GraphDatabase.driver(uri, boltConfig())
   }
 

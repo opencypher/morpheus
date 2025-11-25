@@ -30,7 +30,9 @@ import scala.language.postfixOps
 
 package object types {
 
-  val CTNumber: CTUnion = CTUnion(Set[CypherType](CTFloat, CTInteger, CTBigDecimal))
+  val CTNumber: CTUnion = CTUnion(
+    Set[CypherType](CTFloat, CTInteger, CTBigDecimal)
+  )
 
   val CTBoolean: CTUnion = CTUnion(Set[CypherType](CTTrue, CTFalse))
 
@@ -38,9 +40,13 @@ package object types {
 
   val CTAny: CTUnion = CTUnion(Set[CypherType](CTAnyMaterial, CTNull))
 
-  val CTTemporalInstant: CTUnion = CTUnion(Set[CypherType](CTLocalDateTime, CTDate))
+  val CTTemporalInstant: CTUnion = CTUnion(
+    Set[CypherType](CTLocalDateTime, CTDate)
+  )
 
-  val CTTemporal: CTUnion = CTUnion(Set[CypherType](CTLocalDateTime, CTDate, CTDuration))
+  val CTTemporal: CTUnion = CTUnion(
+    Set[CypherType](CTLocalDateTime, CTDate, CTDuration)
+  )
 
   val CTContainer: CTUnion = CTUnion(Set[CypherType](CTList, CTMap))
 

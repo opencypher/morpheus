@@ -50,16 +50,20 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
   protected def fsTestGraphPath: Option[String] = None
 
   protected lazy val cluster: MiniDFSCluster = {
-    val cluster = new MiniDFSCluster.Builder(sparkSession.sparkContext.hadoopConfiguration).build()
+    val cluster = new MiniDFSCluster.Builder(
+      sparkSession.sparkContext.hadoopConfiguration
+    ).build()
     cluster.waitClusterUp()
 
     // copy from local FS to HDFS if necessary
     if (dfsTestGraphPath.isDefined) {
       val dfsPathString = dfsTestGraphPath.get
-      val fsPathString = fsTestGraphPath.getOrElse(getClass.getResource(dfsPathString).toString)
+      val fsPathString =
+        fsTestGraphPath.getOrElse(getClass.getResource(dfsPathString).toString)
       cluster.getFileSystem.copyFromLocalFile(
         new Path(fsPathString),
-        new Path(dfsPathString))
+        new Path(dfsPathString)
+      )
     }
     cluster
   }
@@ -72,11 +76,13 @@ trait MiniDFSClusterFixture extends BaseTestFixture {
 
   protected def clusterConfig: Configuration = {
     sparkSession.sparkContext.hadoopConfiguration
-      .set("fs.default.name", new URIBuilder()
-        .setScheme(HDFS_URI_SCHEME)
-        .setHost(cluster.getNameNode.getHostAndPort)
-        .build()
-        .toString
+      .set(
+        "fs.default.name",
+        new URIBuilder()
+          .setScheme(HDFS_URI_SCHEME)
+          .setHost(cluster.getNameNode.getHostAndPort)
+          .build()
+          .toString
       )
     sparkSession.sparkContext.hadoopConfiguration
   }

@@ -36,5 +36,5 @@ case object CrossJoin extends JoinType
 
 sealed trait Order
 
-case object  Ascending extends Order
-case object  Descending extends Order
+case object Ascending extends Order
+case object Descending extends Order

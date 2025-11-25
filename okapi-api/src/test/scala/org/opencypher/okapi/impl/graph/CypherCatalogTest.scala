@@ -32,17 +32,23 @@ import org.opencypher.okapi.api.io.PropertyGraphDataSource
 import org.opencypher.okapi.impl.exception.{GraphNotFoundException, IllegalArgumentException}
 import org.opencypher.okapi.impl.io.SessionGraphDataSource
 
-class CypherCatalogTest extends ApiBaseTest  {
+class CypherCatalogTest extends ApiBaseTest {
   it("avoids retrieving a non-registered data source") {
-    an[IllegalArgumentException] should be thrownBy new CypherCatalog().source(Namespace("foo"))
+    an[IllegalArgumentException] should be thrownBy new CypherCatalog().source(
+      Namespace("foo")
+    )
   }
 
   it("avoids retrieving a graph not stored in the session") {
-    an[GraphNotFoundException] should be thrownBy new CypherCatalog().graph(QualifiedGraphName("foo"))
+    an[GraphNotFoundException] should be thrownBy new CypherCatalog().graph(
+      QualifiedGraphName("foo")
+    )
   }
 
   it("avoids retrieving a graph from a non-registered data source") {
-    an[IllegalArgumentException] should be thrownBy new CypherCatalog().graph(QualifiedGraphName(Namespace("foo"), GraphName("bar")))
+    an[IllegalArgumentException] should be thrownBy new CypherCatalog().graph(
+      QualifiedGraphName(Namespace("foo"), GraphName("bar"))
+    )
   }
 
   it("returns all available namespaces") {
@@ -51,6 +57,8 @@ class CypherCatalogTest extends ApiBaseTest  {
     val namespace = Namespace("foo")
     val dataSource = mock[PropertyGraphDataSource]
     catalog.register(namespace, dataSource)
-    catalog.namespaces should equal(Set(SessionGraphDataSource.Namespace, namespace))
+    catalog.namespaces should equal(
+      Set(SessionGraphDataSource.Namespace, namespace)
+    )
   }
 }

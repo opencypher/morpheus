@@ -38,35 +38,44 @@ class TypedMatchBlockTest extends IrTestSuite {
   implicit val graph: Some[QualifiedGraphName] = Some(testQualifiedGraphName)
 
   it("computes detailed types of pattern variables") {
-    implicit val (block, globals) = matchBlock("MATCH (n:Person:Foo)-[r:TYPE]->(m) RETURN n")
+    implicit val (block, globals) =
+      matchBlock("MATCH (n:Person:Foo)-[r:TYPE]->(m) RETURN n")
 
     typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(
       Set(
         "n" -> CTNode(Set("Person", "Foo"), Some(testQualifiedGraphName)),
         "r" -> CTRelationship(Set("TYPE"), Some(testQualifiedGraphName)),
         "m" -> CTNode(Set.empty[String], Some(testQualifiedGraphName))
-      ))
+      )
+    )
   }
 
   test("computes detailed type of elements also from WHERE clause") {
-    implicit val (block, globals) = matchBlock("MATCH (n:Person:Foo)-[r:TYPE]->(m) WHERE n:Three RETURN n")
+    implicit val (block, globals) =
+      matchBlock("MATCH (n:Person:Foo)-[r:TYPE]->(m) WHERE n:Three RETURN n")
 
     typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(
       Set(
-        "n" -> CTNode(Set("Person", "Foo", "Three"), Some(testQualifiedGraphName)),
+        "n" -> CTNode(
+          Set("Person", "Foo", "Three"),
+          Some(testQualifiedGraphName)
+        ),
         "r" -> CTRelationship(Set("TYPE"), Some(testQualifiedGraphName)),
         "m" -> CTNode(Set.empty[String], Some(testQualifiedGraphName))
-      ))
+      )
+    )
   }
 
   // TODO: We need to register the string literal as a relationship type in globals extraction -- is this what we want
   ignore("computes detailed relationship type from WHERE clause") {
-    implicit val (block, globals) = matchBlock("MATCH ()-[r]->() WHERE type(r) = 'TYPE' RETURN $noAutoParams")
+    implicit val (block, globals) =
+      matchBlock("MATCH ()-[r]->() WHERE type(r) = 'TYPE' RETURN $noAutoParams")
 
     typedMatchBlock.outputs(block).map(_.toTypedTuple) should equal(
       Set(
         "r" -> CTRelationship("TYPE")
-      ))
+      )
+    )
   }
 
   private def matchBlock(singleMatchQuery: String): (MatchBlock, CypherMap) = {

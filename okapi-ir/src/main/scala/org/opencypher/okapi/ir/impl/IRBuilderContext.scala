@@ -61,20 +61,29 @@ final case class IRBuilderContext(
   private lazy val exprConverter = new ExpressionConverter(self)
   private lazy val patternConverter = new PatternConverter(self)
 
-  def convertPattern(p: ast.Pattern, qgn: Option[QualifiedGraphName] = None): Pattern = {
-    patternConverter.convert(p, knownTypes, qgn.getOrElse(workingGraph.qualifiedGraphName))
+  def convertPattern(
+    p: ast.Pattern,
+    qgn: Option[QualifiedGraphName] = None
+  ): Pattern = {
+    patternConverter.convert(
+      p,
+      knownTypes,
+      qgn.getOrElse(workingGraph.qualifiedGraphName)
+    )
   }
 
-  def convertExpression(e: ast.Expression): Expr = exprConverter.convert(e)(lambdaVars = Map())
+  def convertExpression(e: ast.Expression): Expr =
+    exprConverter.convert(e)(lambdaVars = Map())
 
-  def schemaFor(qgn: QualifiedGraphName): PropertyGraphSchema = queryLocalCatalog.schema(qgn)
+  def schemaFor(qgn: QualifiedGraphName): PropertyGraphSchema =
+    queryLocalCatalog.schema(qgn)
 
-  def withBlocks(reg: BlockRegistry): IRBuilderContext = copy(blockRegistry = reg)
+  def withBlocks(reg: BlockRegistry): IRBuilderContext =
+    copy(blockRegistry = reg)
 
   def withFields(fields: Set[IRField]): IRBuilderContext = {
-    val withFieldTypes = fields.foldLeft(knownTypes) {
-      case (acc, f) =>
-        acc.updated(ast.Variable(f.name)(InputPosition.NONE), f.cypherType)
+    val withFieldTypes = fields.foldLeft(knownTypes) { case (acc, f) =>
+      acc.updated(ast.Variable(f.name)(InputPosition.NONE), f.cypherType)
     }
     copy(knownTypes = withFieldTypes)
   }
@@ -82,21 +91,26 @@ final case class IRBuilderContext(
   def withWorkingGraph(graph: IRGraph): IRBuilderContext =
     copy(workingGraph = graph)
 
-  def updateKnownConnections(fields: List[(IRField, Expr)]): IRBuilderContext = {
+  def updateKnownConnections(
+    fields: List[(IRField, Expr)]
+  ): IRBuilderContext = {
     val remainingConnections = knownConnections.flatMap {
       case (relField: IRField, con: Connection) =>
         val patternFields = Seq(relField, con.source, con.target)
         val renamedFields = patternFields.flatMap(knownPatternField => {
-          fields.find {
-            case (_, expr: Var) => expr.name == knownPatternField.name
-            case _ => false
-          }.map { case (field, _) => field }
+          fields
+            .find {
+              case (_, expr: Var) => expr.name == knownPatternField.name
+              case _              => false
+            }
+            .map { case (field, _) => field }
         })
 
         renamedFields match {
           case (rel: IRField) :: (src: IRField) :: (target: IRField) :: Nil =>
             val renamedEndPoints = Endpoints.two(src -> target)
-            val renamedCon: Connection = ConnectionCopier.copy(con, renamedEndPoints)
+            val renamedCon: Connection =
+              ConnectionCopier.copy(con, renamedEndPoints)
             Some(rel -> renamedCon)
           case _ => None
         }
@@ -106,22 +120,26 @@ final case class IRBuilderContext(
   }
 
   def renameKnownConnections(fields: Map[IRField, Expr]): IRBuilderContext = {
-    val remainingConnections = knownConnections.map {
-      case (relField: IRField, con: Connection) =>
-        val patternFields = Seq(relField, con.source, con.target)
-        val renamedFields = patternFields.map(knownPatternField => {
-          fields.flatMap {
-            case (aliasField, expr: Var) if expr.name == knownPatternField.name => Some(aliasField)
+    val remainingConnections = knownConnections.map { case (relField: IRField, con: Connection) =>
+      val patternFields = Seq(relField, con.source, con.target)
+      val renamedFields = patternFields.map(knownPatternField => {
+        fields
+          .flatMap {
+            case (aliasField, expr: Var) if expr.name == knownPatternField.name =>
+              Some(aliasField)
             case _ => None
-          }.headOption.getOrElse(knownPatternField)
-        })
+          }
+          .headOption
+          .getOrElse(knownPatternField)
+      })
 
-        renamedFields match {
-          case (rel: IRField) :: (src: IRField) :: (target: IRField) :: Nil =>
-            val renamedEndPoints = Endpoints.two(src -> target)
-            val renamedCon: Connection = ConnectionCopier.copy(con, renamedEndPoints)
-            rel -> renamedCon
-        }
+      renamedFields match {
+        case (rel: IRField) :: (src: IRField) :: (target: IRField) :: Nil =>
+          val renamedEndPoints = Endpoints.two(src -> target)
+          val renamedCon: Connection =
+            ConnectionCopier.copy(con, renamedEndPoints)
+          rel -> renamedCon
+      }
     }
 
     copy(knownConnections = remainingConnections)
@@ -135,10 +153,16 @@ final case class IRBuilderContext(
     copy(knownTypes = Map.empty)
   }
 
-  def registerGraph(qgn: QualifiedGraphName, graph: PropertyGraph): IRBuilderContext =
+  def registerGraph(
+    qgn: QualifiedGraphName,
+    graph: PropertyGraph
+  ): IRBuilderContext =
     copy(queryLocalCatalog = queryLocalCatalog.withGraph(qgn, graph))
 
-  def registerSchema(qgn: QualifiedGraphName, schema: PropertyGraphSchema): IRBuilderContext =
+  def registerSchema(
+    qgn: QualifiedGraphName,
+    schema: PropertyGraphSchema
+  ): IRBuilderContext =
     copy(queryLocalCatalog = queryLocalCatalog.withSchema(qgn, schema))
 
   def resetRegistry: IRBuilderContext = {
@@ -146,7 +170,9 @@ final case class IRBuilderContext(
     copy(blockRegistry = BlockRegistry.empty.register(sourceBlock))
   }
 
-  def registerConnections(connections: ListMap[IRField, Connection]): IRBuilderContext = {
+  def registerConnections(
+    connections: ListMap[IRField, Connection]
+  ): IRBuilderContext = {
     copy(knownConnections = knownConnections ++ connections)
   }
 }
@@ -176,8 +202,11 @@ object IRBuilderContext {
       updatedRegistry,
       semState,
       queryLocalCatalog,
-      instantiateView)
+      instantiateView
+    )
 
-    context.withFields(fieldsFromDrivingTable.map(v => IRField(v.name)(v.cypherType)))
+    context.withFields(
+      fieldsFromDrivingTable.map(v => IRField(v.name)(v.cypherType))
+    )
   }
 }

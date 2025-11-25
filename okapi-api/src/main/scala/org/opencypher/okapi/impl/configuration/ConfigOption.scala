@@ -28,11 +28,14 @@ package org.opencypher.okapi.impl.configuration
 
 import scala.util.Try
 
-abstract class ConfigOption[T](val name: String, val defaultValue: T)(val convert: String => Option[T]) {
+abstract class ConfigOption[T](val name: String, val defaultValue: T)(
+  val convert: String => Option[T]
+) {
 
   def set(v: String): Unit = System.setProperty(name, v)
 
-  def get: T = Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
+  def get: T =
+    Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
 
   override def toString: String = {
     val padded = name.padTo(25, " ").mkString("")
@@ -41,7 +44,7 @@ abstract class ConfigOption[T](val name: String, val defaultValue: T)(val conver
 }
 
 abstract class ConfigFlag(name: String, defaultValue: Boolean = false)
-  extends ConfigOption[Boolean](name, defaultValue)(s => Try(s.toBoolean).toOption) {
+    extends ConfigOption[Boolean](name, defaultValue)(s => Try(s.toBoolean).toOption) {
 
   def set(): Unit = set(true.toString)
 
@@ -52,7 +55,8 @@ trait ConfigCaching[T] {
 
   self: ConfigOption[T] =>
 
-  override lazy val get: T = Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
+  override lazy val get: T =
+    Option(System.getProperty(name)).flatMap(convert).getOrElse(defaultValue)
 
   override def set(v: String): Unit = {
     System.setProperty(name, v)

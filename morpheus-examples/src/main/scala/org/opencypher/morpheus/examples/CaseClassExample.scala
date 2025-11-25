@@ -32,8 +32,8 @@ import org.opencypher.morpheus.api.io.{Node, Relationship, RelationshipType}
 import org.opencypher.morpheus.util.App
 
 /**
-  * Demonstrates basic usage of the Morpheus API by loading an example network via Scala case classes and running a Cypher
-  * query on it.
+  * Demonstrates basic usage of the Morpheus API by loading an example network via Scala case
+  * classes and running a Cypher query on it.
   */
 object CaseClassExample extends App {
 
@@ -41,7 +41,8 @@ object CaseClassExample extends App {
   implicit val morpheus: MorpheusSession = MorpheusSession.local()
 
   // 2) Load social network data via case class instances
-  val socialNetwork = morpheus.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  val socialNetwork =
+    morpheus.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
 
   // 3) Query graph with Cypher
   val results = socialNetwork.cypher(
@@ -54,9 +55,7 @@ object CaseClassExample extends App {
   results.show
 }
 
-/**
-  * Specify schema and data with case classes.
-  */
+/** Specify schema and data with case classes. */
 object SocialNetworkData {
 
   case class Person(id: Long, name: String, age: Int) extends Node
@@ -69,6 +68,9 @@ object SocialNetworkData {
   val carol = Person(2, "Carol", 15)
 
   val persons = List(alice, bob, carol)
-  val friendships = List(Friend(0, alice.id, bob.id, "23/01/1987"), Friend(1, bob.id, carol.id, "12/12/2009"))
+  val friendships = List(
+    Friend(0, alice.id, bob.id, "23/01/1987"),
+    Friend(1, bob.id, carol.id, "12/12/2009")
+  )
 }
 // end::full-example[]
