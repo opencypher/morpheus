@@ -41,7 +41,8 @@ import org.opencypher.okapi.impl.exception
 /**
   * Encodes all children to a byte array (BinaryType).
   *
-  * For each child, writes the length of the serialized child followed by the actual serialized child.
+  * For each child, writes the length of the serialized child followed by the actual serialized
+  * child.
   */
 case class Serialize(children: Seq[Expression]) extends Expression {
 
@@ -55,11 +56,16 @@ case class Serialize(children: Seq[Expression]) extends Expression {
     val out = new ByteArrayOutputStream()
     children.foreach { child =>
       child.dataType match {
-        case BinaryType => write(child.eval(input).asInstanceOf[Array[Byte]], out)
-        case StringType => write(child.eval(input).asInstanceOf[UTF8String], out)
+        case BinaryType =>
+          write(child.eval(input).asInstanceOf[Array[Byte]], out)
+        case StringType =>
+          write(child.eval(input).asInstanceOf[UTF8String], out)
         case IntegerType => write(child.eval(input).asInstanceOf[Int], out)
-        case LongType => write(child.eval(input).asInstanceOf[Long], out)
-        case other => throw exception.UnsupportedOperationException(s"Cannot serialize Spark data type $other.")
+        case LongType    => write(child.eval(input).asInstanceOf[Long], out)
+        case other =>
+          throw exception.UnsupportedOperationException(
+            s"Cannot serialize Spark data type $other."
+          )
       }
     }
     out.toByteArray
@@ -71,28 +77,37 @@ case class Serialize(children: Seq[Expression]) extends Expression {
   ): ExprCode = {
     ev.isNull = FalseLiteral
     val out = ctx.freshName("out")
-    val serializeChildren = children.map { child =>
-      val childEval = child.genCode(ctx)
-      s"""|${childEval.code}
+    val serializeChildren = children
+      .map { child =>
+        val childEval = child.genCode(ctx)
+        s"""|${childEval.code}
           |if (!${childEval.isNull}) {
-          |  ${Serialize.getClass.getName.dropRight(1)}.write(${childEval.value}, $out);
+          |  ${Serialize.getClass.getName.dropRight(
+             1
+           )}.write(${childEval.value}, $out);
           |}""".stripMargin
-    }.mkString("\n")
+      }
+      .mkString("\n")
     val baos = classOf[ByteArrayOutputStream].getName
-    ev.copy(
-      code = code"""|$baos $out = new $baos();
+    ev.copy(code = code"""|$baos $out = new $baos();
           |$serializeChildren
           |byte[] ${ev.value} = $out.toByteArray();""".stripMargin)
   }
 
-  override protected def withNewChildrenInternal(newChildren: scala.IndexedSeq[Expression]): Expression = copy(newChildren.toIndexedSeq)
+  override protected def withNewChildrenInternal(
+    newChildren: scala.IndexedSeq[Expression]
+  ): Expression = copy(newChildren.toIndexedSeq)
 }
 
 object Serialize {
 
-  val supportedTypes: Set[DataType] = Set(BinaryType, StringType, IntegerType, LongType)
+  val supportedTypes: Set[DataType] =
+    Set(BinaryType, StringType, IntegerType, LongType)
 
-  @inline final def write(value: Array[Byte], out: ByteArrayOutputStream): Unit = {
+  @inline final def write(
+    value: Array[Byte],
+    out: ByteArrayOutputStream
+  ): Unit = {
     out.write(encodeLong(value.length))
     out.write(value)
   }
@@ -102,14 +117,19 @@ object Serialize {
     out: ByteArrayOutputStream
   ): Unit = write(if (value) 1.toLong else 0.toLong, out)
 
-  @inline final def write(value: Byte, out: ByteArrayOutputStream): Unit = write(value.toLong, out)
+  @inline final def write(value: Byte, out: ByteArrayOutputStream): Unit =
+    write(value.toLong, out)
 
-  @inline final def write(value: Int, out: ByteArrayOutputStream): Unit = write(value.toLong, out)
+  @inline final def write(value: Int, out: ByteArrayOutputStream): Unit =
+    write(value.toLong, out)
 
-  @inline final def write(value: Long, out: ByteArrayOutputStream): Unit = write(encodeLong(value), out)
+  @inline final def write(value: Long, out: ByteArrayOutputStream): Unit =
+    write(encodeLong(value), out)
 
-  @inline final def write(value: UTF8String, out: ByteArrayOutputStream): Unit = write(value.getBytes, out)
+  @inline final def write(value: UTF8String, out: ByteArrayOutputStream): Unit =
+    write(value.getBytes, out)
 
-  @inline final def write(value: String, out: ByteArrayOutputStream): Unit = write(value.getBytes, out)
+  @inline final def write(value: String, out: ByteArrayOutputStream): Unit =
+    write(value.getBytes, out)
 
 }

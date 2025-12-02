@@ -34,54 +34,151 @@ import org.opencypher.okapi.testing.BaseTestSuite
 class SparkConversionsTest extends BaseTestSuite {
 
   it("should produce the correct StructField for non-nested types") {
-    CTInteger.toStructField("foo") should equal(StructField("foo", LongType, nullable = false))
-    CTInteger.nullable.toStructField("foo") should equal(StructField("foo", LongType, nullable = true))
-    CTFloat.toStructField("foo") should equal(StructField("foo", DoubleType, nullable = false))
-    CTFloat.nullable.toStructField("foo") should equal(StructField("foo", DoubleType, nullable = true))
-    CTBigDecimal(38, 12).toStructField("foo") should equal(StructField("foo", DataTypes.createDecimalType(38,12), nullable = false))
-    CTBigDecimal(10, 5).nullable.toStructField("foo") should equal(StructField("foo", DataTypes.createDecimalType(10,5), nullable = true))
-    CTBoolean.toStructField("foo") should equal(StructField("foo", BooleanType, nullable = false))
-    CTBoolean.nullable.toStructField("foo") should equal(StructField("foo", BooleanType, nullable = true))
-    CTString.toStructField("foo") should equal(StructField("foo", StringType, nullable = false))
-    CTString.nullable.toStructField("foo") should equal(StructField("foo", StringType, nullable = true))
-    CTLocalDateTime.toStructField("foo") should equal(StructField("foo", TimestampType, nullable = false))
-    CTLocalDateTime.nullable.toStructField("foo") should equal(StructField("foo", TimestampType, nullable = true))
-    CTDate.toStructField("foo") should equal(StructField("foo", DateType, nullable = false))
-    CTDate.nullable.toStructField("foo") should equal(StructField("foo", DateType, nullable = true))
+    CTInteger.toStructField("foo") should equal(
+      StructField("foo", LongType, nullable = false)
+    )
+    CTInteger.nullable.toStructField("foo") should equal(
+      StructField("foo", LongType, nullable = true)
+    )
+    CTFloat.toStructField("foo") should equal(
+      StructField("foo", DoubleType, nullable = false)
+    )
+    CTFloat.nullable.toStructField("foo") should equal(
+      StructField("foo", DoubleType, nullable = true)
+    )
+    CTBigDecimal(38, 12).toStructField("foo") should equal(
+      StructField("foo", DataTypes.createDecimalType(38, 12), nullable = false)
+    )
+    CTBigDecimal(10, 5).nullable.toStructField("foo") should equal(
+      StructField("foo", DataTypes.createDecimalType(10, 5), nullable = true)
+    )
+    CTBoolean.toStructField("foo") should equal(
+      StructField("foo", BooleanType, nullable = false)
+    )
+    CTBoolean.nullable.toStructField("foo") should equal(
+      StructField("foo", BooleanType, nullable = true)
+    )
+    CTString.toStructField("foo") should equal(
+      StructField("foo", StringType, nullable = false)
+    )
+    CTString.nullable.toStructField("foo") should equal(
+      StructField("foo", StringType, nullable = true)
+    )
+    CTLocalDateTime.toStructField("foo") should equal(
+      StructField("foo", TimestampType, nullable = false)
+    )
+    CTLocalDateTime.nullable.toStructField("foo") should equal(
+      StructField("foo", TimestampType, nullable = true)
+    )
+    CTDate.toStructField("foo") should equal(
+      StructField("foo", DateType, nullable = false)
+    )
+    CTDate.nullable.toStructField("foo") should equal(
+      StructField("foo", DateType, nullable = true)
+    )
 
-    CTNode(Set("A")).toStructField("foo") should equal(StructField("foo", BinaryType, nullable = false))
-    CTNode(Set("A")).nullable.toStructField("foo") should equal(StructField("foo", BinaryType, nullable = true))
-    CTRelationship("A").toStructField("foo") should equal(StructField("foo", BinaryType, nullable = false))
-    CTRelationship("A").nullable.toStructField("foo") should equal(StructField("foo", BinaryType, nullable = true))
+    CTNode(Set("A")).toStructField("foo") should equal(
+      StructField("foo", BinaryType, nullable = false)
+    )
+    CTNode(Set("A")).nullable.toStructField("foo") should equal(
+      StructField("foo", BinaryType, nullable = true)
+    )
+    CTRelationship("A").toStructField("foo") should equal(
+      StructField("foo", BinaryType, nullable = false)
+    )
+    CTRelationship("A").nullable.toStructField("foo") should equal(
+      StructField("foo", BinaryType, nullable = true)
+    )
   }
 
   it("should produce the correct StructField for nested types") {
-    CTList(CTInteger).toStructField("foo") should equal(StructField("foo", ArrayType(LongType, containsNull = false), nullable = false))
-    CTList(CTInteger.nullable).toStructField("foo") should equal(StructField("foo", ArrayType(LongType, containsNull = true), nullable = false))
-    CTList(CTInteger).nullable.toStructField("foo") should equal(StructField("foo", ArrayType(LongType, containsNull = false), nullable = true))
-    CTList(CTInteger.nullable).nullable.toStructField("foo") should equal(StructField("foo", ArrayType(LongType, containsNull = true), nullable = true))
+    CTList(CTInteger).toStructField("foo") should equal(
+      StructField(
+        "foo",
+        ArrayType(LongType, containsNull = false),
+        nullable = false
+      )
+    )
+    CTList(CTInteger.nullable).toStructField("foo") should equal(
+      StructField(
+        "foo",
+        ArrayType(LongType, containsNull = true),
+        nullable = false
+      )
+    )
+    CTList(CTInteger).nullable.toStructField("foo") should equal(
+      StructField(
+        "foo",
+        ArrayType(LongType, containsNull = false),
+        nullable = true
+      )
+    )
+    CTList(CTInteger.nullable).nullable.toStructField("foo") should equal(
+      StructField(
+        "foo",
+        ArrayType(LongType, containsNull = true),
+        nullable = true
+      )
+    )
 
     CTList(CTList(CTInteger)).toStructField("foo") should equal(
-      StructField("foo", ArrayType(ArrayType(LongType, containsNull = false), containsNull = false), nullable = false)
+      StructField(
+        "foo",
+        ArrayType(
+          ArrayType(LongType, containsNull = false),
+          containsNull = false
+        ),
+        nullable = false
+      )
     )
 
     CTList(CTList(CTInteger.nullable)).toStructField("foo") should equal(
-      StructField("foo", ArrayType(ArrayType(LongType, containsNull = true), containsNull = false), nullable = false)
+      StructField(
+        "foo",
+        ArrayType(
+          ArrayType(LongType, containsNull = true),
+          containsNull = false
+        ),
+        nullable = false
+      )
     )
 
-    CTList(CTList(CTInteger.nullable).nullable).toStructField("foo") should equal(
-      StructField("foo", ArrayType(ArrayType(LongType, containsNull = true), containsNull = true), nullable = false)
+    CTList(CTList(CTInteger.nullable).nullable)
+      .toStructField("foo") should equal(
+      StructField(
+        "foo",
+        ArrayType(
+          ArrayType(LongType, containsNull = true),
+          containsNull = true
+        ),
+        nullable = false
+      )
     )
 
-    CTList(CTList(CTInteger.nullable).nullable).nullable.toStructField("foo") should equal(
-      StructField("foo", ArrayType(ArrayType(LongType, containsNull = true), containsNull = true), nullable = true)
+    CTList(CTList(CTInteger.nullable).nullable).nullable
+      .toStructField("foo") should equal(
+      StructField(
+        "foo",
+        ArrayType(
+          ArrayType(LongType, containsNull = true),
+          containsNull = true
+        ),
+        nullable = true
+      )
     )
 
-    CTMap(Map("foo" -> CTInteger, "bar" -> CTString.nullable)).toStructField("myMap") should equal(
-      StructField("myMap", StructType(Seq(
-        StructField("foo", LongType, nullable = false),
-        StructField("bar", StringType, nullable = true)
-      )), nullable = false)
+    CTMap(Map("foo" -> CTInteger, "bar" -> CTString.nullable))
+      .toStructField("myMap") should equal(
+      StructField(
+        "myMap",
+        StructType(
+          Seq(
+            StructField("foo", LongType, nullable = false),
+            StructField("bar", StringType, nullable = true)
+          )
+        ),
+        nullable = false
+      )
     )
   }
 }

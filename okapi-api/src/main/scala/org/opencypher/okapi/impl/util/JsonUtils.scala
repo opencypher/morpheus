@@ -29,22 +29,23 @@ package org.opencypher.okapi.impl.util
 object JsonUtils {
 
   /**
-    * upickle by default represents Options as json arrays of 0 (None case) or 1 (Some case) elements. This overwrites
-    * this behaviour and either skips the key-value pair entirely (None case) or just prints `key : value` (Some case).
+    * upickle by default represents Options as json arrays of 0 (None case) or 1 (Some case)
+    * elements. This overwrites this behaviour and either skips the key-value pair entirely (None
+    * case) or just prints `key : value` (Some case).
     *
     * Note that this does not support nesting options.
     */
   object FlatOption extends upickle.AttributeTagged {
     override implicit def OptionWriter[T: Writer]: Writer[Option[T]] =
       implicitly[Writer[T]].comap[Option[T]] {
-        case None => null.asInstanceOf[T]
+        case None    => null.asInstanceOf[T]
         case Some(x) => x
       }
 
     override implicit def OptionReader[T: Reader]: Reader[Option[T]] =
-      implicitly[Reader[T]].mapNulls{
+      implicitly[Reader[T]].mapNulls {
         case null => None
-        case x => Some(x)
+        case x    => Some(x)
       }
   }
 }

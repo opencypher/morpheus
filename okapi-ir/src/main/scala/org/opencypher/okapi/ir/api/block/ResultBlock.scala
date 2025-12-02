@@ -51,13 +51,18 @@ object TableResultBlock {
 final case class OrderedFields(orderedFields: List[IRField] = List.empty) extends Binds {
   override def fields: Set[IRField] = orderedFields.toSet
 
-  def select(fields: Set[IRField]): OrderedFields = copy(orderedFields = orderedFields.filter(fields.contains))
+  def select(fields: Set[IRField]): OrderedFields =
+    copy(orderedFields = orderedFields.filter(fields.contains))
 }
 
 object OrderedFields {
-  def fieldsFrom[E](fields: IRField*): OrderedFields = OrderedFields(fields.toList)
+  def fieldsFrom[E](fields: IRField*): OrderedFields = OrderedFields(
+    fields.toList
+  )
 
-  def unapplySeq(arg: OrderedFields): Option[Seq[IRField]] = Some(arg.orderedFields)
+  def unapplySeq(arg: OrderedFields): Option[Seq[IRField]] = Some(
+    arg.orderedFields
+  )
 }
 
 final case class GraphResultBlock(

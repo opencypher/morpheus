@@ -60,8 +60,8 @@ object CensusJdbcExample extends App {
   val census = morpheus.catalog.graph("sql." + graphName)
 
   // Run a simple Cypher query
-  census.cypher(
-    s"""
+  census
+    .cypher(s"""
        |FROM GRAPH sql.$graphName
        |MATCH (n:Person)-[r]->(m)
        |WHERE n.age >= 30

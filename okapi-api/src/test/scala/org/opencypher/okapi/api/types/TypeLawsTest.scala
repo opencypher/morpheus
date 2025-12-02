@@ -35,14 +35,22 @@ import org.scalatest.matchers.should.Matchers
 import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 import org.typelevel.discipline.scalatest.FunSpecDiscipline
 
-class TypeLawsTest extends AnyFunSpec with Matchers with ScalaCheckDrivenPropertyChecks with FunSpecDiscipline {
+class TypeLawsTest
+    extends AnyFunSpec
+    with Matchers
+    with ScalaCheckDrivenPropertyChecks
+    with FunSpecDiscipline {
 
   def pickOne[T](gens: List[Gen[T]]): Gen[T] = for {
     i <- Gen.choose(0, gens.size - 1)
     t <- gens(i)
   } yield t
 
-  val maybeGraph: Gen[Option[QualifiedGraphName]] = Gen.oneOf(None, Some(QualifiedGraphName("ns.g1")), Some(QualifiedGraphName("ns.g2")))
+  val maybeGraph: Gen[Option[QualifiedGraphName]] = Gen.oneOf(
+    None,
+    Some(QualifiedGraphName("ns.g1")),
+    Some(QualifiedGraphName("ns.g2"))
+  )
 
   val nodeLabel: Gen[String] = Gen.oneOf("A", "B", "C")
 
@@ -102,7 +110,8 @@ class TypeLawsTest extends AnyFunSpec with Matchers with ScalaCheckDrivenPropert
     fields <- Gen.mapOf(field)
   } yield CTMap(fields)
 
-  val nestedTypes: List[Gen[CypherType]] = List(list, map, Gen.const(CTList), Gen.const(CTMap))
+  val nestedTypes: List[Gen[CypherType]] =
+    List(list, map, Gen.const(CTList), Gen.const(CTMap))
 
   val allTypes: List[Gen[CypherType]] = List(flatTypes, nestedTypes).flatten
 
@@ -122,8 +131,16 @@ class TypeLawsTest extends AnyFunSpec with Matchers with ScalaCheckDrivenPropert
     def combine(x: CypherType, y: CypherType): CypherType = x & y
   }
 
-  checkAll("CypherType.union", cats.kernel.laws.discipline.MonoidTests[CypherType](unionMonoid).monoid)
+  checkAll(
+    "CypherType.union",
+    cats.kernel.laws.discipline.MonoidTests[CypherType](unionMonoid).monoid
+  )
 
-  checkAll("CypherType.intersection", cats.kernel.laws.discipline.MonoidTests[CypherType](intersectionMonoid).monoid)
+  checkAll(
+    "CypherType.intersection",
+    cats.kernel.laws.discipline
+      .MonoidTests[CypherType](intersectionMonoid)
+      .monoid
+  )
 
 }

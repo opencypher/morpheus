@@ -53,8 +53,8 @@ class Neo4JGraphMergeTest extends MorpheusTestSuite with Neo4jServerFixture with
   val nodeKeys = Map("Person" -> Set("id"))
   val relKeys = Map("R" -> Set("id"))
 
-  val initialGraph: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph(
-    """
+  val initialGraph: RelationalCypherGraph[SparkTable.DataFrameTable] =
+    initGraph("""
       |CREATE (s:Person {id: 1, name: "bar"})
       |CREATE (e:Person:Employee {id: 2})
       |CREATE (s)-[r:R {id: 1}]->(e)
@@ -68,55 +68,133 @@ class Neo4JGraphMergeTest extends MorpheusTestSuite with Neo4jServerFixture with
   describe("merging into the entire graph") {
     it("can do basic Neo4j merge") {
       Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
-      Neo4jGraphMerge.merge(entireGraphName, initialGraph, neo4jConfig, Some(nodeKeys), Some(relKeys))
+      Neo4jGraphMerge.merge(
+        entireGraphName,
+        initialGraph,
+        neo4jConfig,
+        Some(nodeKeys),
+        Some(relKeys)
+      )
 
-      val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
+      val readGraph =
+        Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
 
-      readGraph.cypher("MATCH (n) RETURN n.id as id, n.name as name, labels(n) as labels").records.toMaps should equal(Bag(
-        CypherMap("id" -> 1, "name" -> "bar", "labels" -> Seq("Person")),
-        CypherMap("id" -> 2, "name" -> null, "labels" -> Seq("Employee", "Person"))
-      ))
+      readGraph
+        .cypher(
+          "MATCH (n) RETURN n.id as id, n.name as name, labels(n) as labels"
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("id" -> 1, "name" -> "bar", "labels" -> Seq("Person")),
+          CypherMap(
+            "id" -> 2,
+            "name" -> null,
+            "labels" -> Seq("Employee", "Person")
+          )
+        )
+      )
 
-      readGraph.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid").records.toMaps should equal(Bag(
-        CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
-      ))
+      readGraph
+        .cypher(
+          "MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid"
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
+        )
+      )
 
       // Do not change a graph when the same graph is merged as a delta
-      Neo4jGraphMerge.merge(entireGraphName, initialGraph, neo4jConfig, Some(nodeKeys), Some(relKeys))
+      Neo4jGraphMerge.merge(
+        entireGraphName,
+        initialGraph,
+        neo4jConfig,
+        Some(nodeKeys),
+        Some(relKeys)
+      )
       val graphAfterSameMerge = Neo4jPropertyGraphDataSource(neo4jConfig)
         .graph(entireGraphName)
 
-      graphAfterSameMerge.cypher("MATCH (n) RETURN n.id as id, n.name as name, labels(n) as labels").records.toMaps should equal(Bag(
-        CypherMap("id" -> 1, "name" -> "bar", "labels" -> Seq("Person")),
-        CypherMap("id" -> 2, "name" -> null, "labels" -> Seq("Employee", "Person"))
-      ))
+      graphAfterSameMerge
+        .cypher(
+          "MATCH (n) RETURN n.id as id, n.name as name, labels(n) as labels"
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("id" -> 1, "name" -> "bar", "labels" -> Seq("Person")),
+          CypherMap(
+            "id" -> 2,
+            "name" -> null,
+            "labels" -> Seq("Employee", "Person")
+          )
+        )
+      )
 
-      graphAfterSameMerge.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid").records.toMaps should equal(Bag(
-        CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
-      ))
+      graphAfterSameMerge
+        .cypher(
+          "MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid"
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
+        )
+      )
 
       // merge a delta
-      val delta = initGraph(
-        """
+      val delta = initGraph("""
           |CREATE (s:Person {id: 1, name: "baz", bar: 1})
           |CREATE (e:Person {id: 2})
           |CREATE (s)-[r:R {id: 1, name: 1}]->(e)
           |CREATE (s)-[r:R {id: 2}]->(e)
         """.stripMargin)
 
-      Neo4jGraphMerge.merge(entireGraphName, delta, neo4jConfig, Some(nodeKeys), Some(relKeys))
+      Neo4jGraphMerge.merge(
+        entireGraphName,
+        delta,
+        neo4jConfig,
+        Some(nodeKeys),
+        Some(relKeys)
+      )
       val graphAfterDeltaSync = Neo4jPropertyGraphDataSource(neo4jConfig)
         .graph(entireGraphName)
 
-      graphAfterDeltaSync.cypher("MATCH (n) RETURN n.id as id, n.name as name, n.bar as bar, labels(n) as labels").records.toMaps should equal(Bag(
-        CypherMap("id" -> 1, "name" -> "baz", "bar" -> 1, "labels" -> Seq("Person")),
-        CypherMap("id" -> 2, "name" -> null, "bar" -> null, "labels" -> Seq("Employee", "Person"))
-      ))
+      graphAfterDeltaSync
+        .cypher(
+          "MATCH (n) RETURN n.id as id, n.name as name, n.bar as bar, labels(n) as labels"
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap(
+            "id" -> 1,
+            "name" -> "baz",
+            "bar" -> 1,
+            "labels" -> Seq("Person")
+          ),
+          CypherMap(
+            "id" -> 2,
+            "name" -> null,
+            "bar" -> null,
+            "labels" -> Seq("Employee", "Person")
+          )
+        )
+      )
 
-      graphAfterDeltaSync.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, r.name as name, m.id as mid").records.toMaps should equal(Bag(
-        CypherMap("nid" -> 1, "id" -> 1, "name" -> 1, "mid" -> 2),
-        CypherMap("nid" -> 1, "id" -> 2, "name" -> null, "mid" -> 2)
-      ))
+      graphAfterDeltaSync
+        .cypher(
+          "MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, r.name as name, m.id as mid"
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("nid" -> 1, "id" -> 1, "name" -> 1, "mid" -> 2),
+          CypherMap("nid" -> 1, "id" -> 2, "name" -> null, "mid" -> 2)
+        )
+      )
     }
 
     it("merges when using the same element key for all labels") {
@@ -126,23 +204,39 @@ class Neo4JGraphMergeTest extends MorpheusTestSuite with Neo4jServerFixture with
       Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
       val graphName = GraphName("graph")
 
-      val graph = initGraph(
-        """
+      val graph = initGraph("""
           |CREATE (s:Person {id: 1, name: "bar"})
           |CREATE (e:Person:Employee {id: 2 })
           |CREATE (f:Employee {id: 3})
           |CREATE (s)-[r:R {id: 1}]->(e)
         """.stripMargin)
 
-      Neo4jGraphMerge.merge(entireGraphName, graph, neo4jConfig, Some(nodeKeys), Some(relKeys))
+      Neo4jGraphMerge.merge(
+        entireGraphName,
+        graph,
+        neo4jConfig,
+        Some(nodeKeys),
+        Some(relKeys)
+      )
 
       val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(graphName)
 
-      readGraph.cypher("MATCH (n) RETURN n.id as id, n.name as name, labels(n) as labels").records.toMaps should equal(Bag(
-        CypherMap("id" -> 1, "name" -> "bar", "labels" -> Seq("Person")),
-        CypherMap("id" -> 2, "name" -> null, "labels" -> Seq("Employee", "Person")),
-        CypherMap("id" -> 3, "name" -> null, "labels" -> Seq("Employee"))
-      ))
+      readGraph
+        .cypher(
+          "MATCH (n) RETURN n.id as id, n.name as name, labels(n) as labels"
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("id" -> 1, "name" -> "bar", "labels" -> Seq("Person")),
+          CypherMap(
+            "id" -> 2,
+            "name" -> null,
+            "labels" -> Seq("Employee", "Person")
+          ),
+          CypherMap("id" -> 3, "name" -> null, "labels" -> Seq("Employee"))
+        )
+      )
     }
 
     it("merges when using multiple element keys with different names") {
@@ -152,23 +246,50 @@ class Neo4JGraphMergeTest extends MorpheusTestSuite with Neo4jServerFixture with
       Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
       val graphName = GraphName("graph")
 
-      val graph = initGraph(
-        """
+      val graph = initGraph("""
           |CREATE (s:Person {nId: 1, name: "bar"})
           |CREATE (e:Person:Employee {nId: 2, mId: 3 })
           |CREATE (f:Employee {mId: 2})
           |CREATE (s)-[r:R {id: 1}]->(e)
         """.stripMargin)
 
-      Neo4jGraphMerge.merge(entireGraphName, graph, neo4jConfig, Some(nodeKeys), Some(relKeys))
+      Neo4jGraphMerge.merge(
+        entireGraphName,
+        graph,
+        neo4jConfig,
+        Some(nodeKeys),
+        Some(relKeys)
+      )
 
       val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(graphName)
 
-      readGraph.cypher("MATCH (n) RETURN n.nId as nId, n.mId as mId, n.name as name, labels(n) as labels").records.toMaps should equal(Bag(
-        CypherMap("nId" -> 1, "mId" -> null, "name" -> "bar", "labels" -> Seq("Person")),
-        CypherMap("nId" -> 2, "mId" -> 3, "name" -> null, "labels" -> Seq("Employee", "Person")),
-        CypherMap("nId" -> null, "mId" -> 2, "name" -> null, "labels" -> Seq("Employee"))
-      ))
+      readGraph
+        .cypher(
+          "MATCH (n) RETURN n.nId as nId, n.mId as mId, n.name as name, labels(n) as labels"
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap(
+            "nId" -> 1,
+            "mId" -> null,
+            "name" -> "bar",
+            "labels" -> Seq("Person")
+          ),
+          CypherMap(
+            "nId" -> 2,
+            "mId" -> 3,
+            "name" -> null,
+            "labels" -> Seq("Employee", "Person")
+          ),
+          CypherMap(
+            "nId" -> null,
+            "mId" -> 2,
+            "name" -> null,
+            "labels" -> Seq("Employee")
+          )
+        )
+      )
     }
 
     it("merges with element keys set in the schema") {
@@ -176,7 +297,12 @@ class Neo4JGraphMergeTest extends MorpheusTestSuite with Neo4jServerFixture with
         Row(1L, "baz")
       ).asJava
 
-      val df = sparkSession.createDataFrame(data, StructType(Seq(StructField("id", LongType), StructField("name", StringType))))
+      val df = sparkSession.createDataFrame(
+        data,
+        StructType(
+          Seq(StructField("id", LongType), StructField("name", StringType))
+        )
+      )
       morpheus.sql("CREATE DATABASE IF NOT EXISTS db")
       df.write.saveAsTable("db.persons")
 
@@ -193,18 +319,33 @@ class Neo4JGraphMergeTest extends MorpheusTestSuite with Neo4jServerFixture with
           |)
         """.stripMargin
       val hiveDataSourceConfig = SqlDataSourceConfig.Hive
-      val pgds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map("ds1" -> hiveDataSourceConfig))
+      val pgds = SqlPropertyGraphDataSource(
+        GraphDdl(ddlString),
+        Map("ds1" -> hiveDataSourceConfig)
+      )
       val graph = pgds.graph(GraphName("personGraph"))
 
-      Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, graph.schema.nodeKeys)
+      Neo4jGraphMerge.createIndexes(
+        entireGraphName,
+        neo4jConfig,
+        graph.schema.nodeKeys
+      )
 
       Neo4jGraphMerge.merge(entireGraphName, graph, neo4jConfig)
 
-      val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
+      val readGraph =
+        Neo4jPropertyGraphDataSource(neo4jConfig).graph(entireGraphName)
 
-      readGraph.cypher("MATCH (n:Person) RETURN n.id as id, n.name as name, labels(n) as labels").records.toMaps should equal(Bag(
-        CypherMap("id" -> 1, "name" -> "baz", "labels" -> Seq("Person"))
-      ))
+      readGraph
+        .cypher(
+          "MATCH (n:Person) RETURN n.id as id, n.name as name, labels(n) as labels"
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("id" -> 1, "name" -> "baz", "labels" -> Seq("Person"))
+        )
+      )
     }
 
     it("checks if element keys are present in the merge graph") {
@@ -212,38 +353,74 @@ class Neo4JGraphMergeTest extends MorpheusTestSuite with Neo4jServerFixture with
       val relKeys = Map("R" -> Set("id"))
       Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
 
-      val graph = initGraph(
-        """
+      val graph = initGraph("""
           |CREATE (s:Person {nId: 1, name: "bar"})
           |CREATE (e:Person:Employee {nId: 2, mId: 3 })
           |CREATE (f:Employee {mId: 2})
           |CREATE (s)-[r:R {id: 1}]->(e)
         """.stripMargin)
 
-      Try(Neo4jGraphMerge.merge(entireGraphName, graph, neo4jConfig, Some(nodeKeys), Some(relKeys))) match {
+      Try(
+        Neo4jGraphMerge.merge(
+          entireGraphName,
+          graph,
+          neo4jConfig,
+          Some(nodeKeys),
+          Some(relKeys)
+        )
+      ) match {
         case Success(_) => fail
         case Failure(exception) =>
-          exception.getMessage should include("Properties [name] have nullable types")
+          exception.getMessage should include(
+            "Properties [name] have nullable types"
+          )
       }
     }
 
     it("creates indexes correctly") {
-      val nodeKeys = Map("Person" -> Set("name", "bar"), "Employee" -> Set("baz"))
+      val nodeKeys =
+        Map("Person" -> Set("name", "bar"), "Employee" -> Set("baz"))
       val relKeys = Map("REL" -> Set("a"))
 
       Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
 
-      neo4jConfig.cypherWithNewSession("CALL db.constraints YIELD description").toSet should equal(Set(
-        Map("description" -> new CypherString("CONSTRAINT ON ( person:Person ) ASSERT (person.name, person.bar) IS NODE KEY")),
-        Map("description" -> new CypherString("CONSTRAINT ON ( employee:Employee ) ASSERT employee.baz IS NODE KEY"))
-      ))
+      neo4jConfig
+        .cypherWithNewSession("CALL db.constraints YIELD description")
+        .toSet should equal(
+        Set(
+          Map(
+            "description" -> new CypherString(
+              "CONSTRAINT ON ( person:Person ) ASSERT (person.name, person.bar) IS NODE KEY"
+            )
+          ),
+          Map(
+            "description" -> new CypherString(
+              "CONSTRAINT ON ( employee:Employee ) ASSERT employee.baz IS NODE KEY"
+            )
+          )
+        )
+      )
 
-      neo4jConfig.cypherWithNewSession("CALL db.indexes YIELD description").toSet should equal(Set(
-        Map("description" -> new CypherString(s"INDEX ON :Person($metaPropertyKey)")),
-        Map("description" -> new CypherString(s"INDEX ON :Person(name, bar)")),
-        Map("description" -> new CypherString(s"INDEX ON :Employee($metaPropertyKey)")),
-        Map("description" -> new CypherString(s"INDEX ON :Employee(baz)"))
-      ))
+      neo4jConfig
+        .cypherWithNewSession("CALL db.indexes YIELD description")
+        .toSet should equal(
+        Set(
+          Map(
+            "description" -> new CypherString(
+              s"INDEX ON :Person($metaPropertyKey)"
+            )
+          ),
+          Map(
+            "description" -> new CypherString(s"INDEX ON :Person(name, bar)")
+          ),
+          Map(
+            "description" -> new CypherString(
+              s"INDEX ON :Employee($metaPropertyKey)"
+            )
+          ),
+          Map("description" -> new CypherString(s"INDEX ON :Employee(baz)"))
+        )
+      )
     }
   }
 
@@ -252,89 +429,192 @@ class Neo4JGraphMergeTest extends MorpheusTestSuite with Neo4jServerFixture with
       val subGraphName = GraphName("name")
 
       Neo4jGraphMerge.createIndexes(subGraphName, neo4jConfig, nodeKeys)
-      Neo4jGraphMerge.merge(subGraphName, initialGraph, neo4jConfig, Some(nodeKeys), Some(relKeys))
+      Neo4jGraphMerge.merge(
+        subGraphName,
+        initialGraph,
+        neo4jConfig,
+        Some(nodeKeys),
+        Some(relKeys)
+      )
 
-      val readGraph = Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
+      val readGraph =
+        Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
 
-      readGraph.cypher("MATCH (n) RETURN n.id as id, n.name as name, labels(n) as labels").records.toMaps should equal(Bag(
-        CypherMap("id" -> 1, "name" -> "bar", "labels" -> Seq("Person")),
-        CypherMap("id" -> 2, "name" -> null, "labels" -> Seq("Employee", "Person"))
-      ))
+      readGraph
+        .cypher(
+          "MATCH (n) RETURN n.id as id, n.name as name, labels(n) as labels"
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("id" -> 1, "name" -> "bar", "labels" -> Seq("Person")),
+          CypherMap(
+            "id" -> 2,
+            "name" -> null,
+            "labels" -> Seq("Employee", "Person")
+          )
+        )
+      )
 
-      readGraph.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid").records.toMaps should equal(Bag(
-        CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
-      ))
+      readGraph
+        .cypher(
+          "MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid"
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
+        )
+      )
 
       // Do not change a graph when the same graph is synced as a delta
-      Neo4jGraphMerge.merge(entireGraphName, initialGraph, neo4jConfig, Some(nodeKeys), Some(relKeys))
-      val graphAfterSameSync = Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
+      Neo4jGraphMerge.merge(
+        entireGraphName,
+        initialGraph,
+        neo4jConfig,
+        Some(nodeKeys),
+        Some(relKeys)
+      )
+      val graphAfterSameSync =
+        Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
 
-      graphAfterSameSync.cypher("MATCH (n) RETURN n.id as id, n.name as name, labels(n) as labels").records.toMaps should equal(Bag(
-        CypherMap("id" -> 1, "name" -> "bar", "labels" -> Seq("Person")),
-        CypherMap("id" -> 2, "name" -> null, "labels" -> Seq("Employee", "Person"))
-      ))
+      graphAfterSameSync
+        .cypher(
+          "MATCH (n) RETURN n.id as id, n.name as name, labels(n) as labels"
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("id" -> 1, "name" -> "bar", "labels" -> Seq("Person")),
+          CypherMap(
+            "id" -> 2,
+            "name" -> null,
+            "labels" -> Seq("Employee", "Person")
+          )
+        )
+      )
 
-      graphAfterSameSync.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid").records.toMaps should equal(Bag(
-        CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
-      ))
+      graphAfterSameSync
+        .cypher(
+          "MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, m.id as mid"
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("nid" -> 1, "id" -> 1, "mid" -> 2)
+        )
+      )
 
       // Sync a delta
-      val delta = initGraph(
-        """
+      val delta = initGraph("""
           |CREATE (s:Person {id: 1, name: "baz", bar: 1})
           |CREATE (e:Person {id: 2})
           |CREATE (s)-[r:R {id: 1, name: 1}]->(e)
           |CREATE (s)-[r:R {id: 2}]->(e)
         """.stripMargin)
-      Neo4jGraphMerge.merge(subGraphName, delta, neo4jConfig, Some(nodeKeys), Some(relKeys))
-      val graphAfterDeltaSync = Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
+      Neo4jGraphMerge.merge(
+        subGraphName,
+        delta,
+        neo4jConfig,
+        Some(nodeKeys),
+        Some(relKeys)
+      )
+      val graphAfterDeltaSync =
+        Neo4jPropertyGraphDataSource(neo4jConfig).graph(subGraphName)
 
-      graphAfterDeltaSync.cypher("MATCH (n) RETURN n.id as id, n.name as name, n.bar as bar, labels(n) as labels").records.toMaps should equal(Bag(
-        CypherMap("id" -> 1, "name" -> "baz", "bar" -> 1, "labels" -> Seq("Person")),
-        CypherMap("id" -> 2, "name" -> null, "bar" -> null, "labels" -> Seq("Employee", "Person"))
-      ))
+      graphAfterDeltaSync
+        .cypher(
+          "MATCH (n) RETURN n.id as id, n.name as name, n.bar as bar, labels(n) as labels"
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap(
+            "id" -> 1,
+            "name" -> "baz",
+            "bar" -> 1,
+            "labels" -> Seq("Person")
+          ),
+          CypherMap(
+            "id" -> 2,
+            "name" -> null,
+            "bar" -> null,
+            "labels" -> Seq("Employee", "Person")
+          )
+        )
+      )
 
-      graphAfterDeltaSync.cypher("MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, r.name as name, m.id as mid").records.toMaps should equal(Bag(
-        CypherMap("nid" -> 1, "id" -> 1, "name" -> 1, "mid" -> 2),
-        CypherMap("nid" -> 1, "id" -> 2, "name" -> null, "mid" -> 2)
-      ))
+      graphAfterDeltaSync
+        .cypher(
+          "MATCH (n)-[r]->(m) RETURN n.id as nid, r.id as id, r.name as name, m.id as mid"
+        )
+        .records
+        .toMaps should equal(
+        Bag(
+          CypherMap("nid" -> 1, "id" -> 1, "name" -> 1, "mid" -> 2),
+          CypherMap("nid" -> 1, "id" -> 2, "name" -> null, "mid" -> 2)
+        )
+      )
     }
 
     it("creates indexes correctly") {
-      val nodeKeys = Map("Person" -> Set("name", "bar"), "Employee" -> Set("baz"))
+      val nodeKeys =
+        Map("Person" -> Set("name", "bar"), "Employee" -> Set("baz"))
       val relKeys = Map("REL" -> Set("a"))
 
       val subGraphName = GraphName("myGraph")
       Neo4jGraphMerge.createIndexes(subGraphName, neo4jConfig, nodeKeys)
 
-      neo4jConfig.cypherWithNewSession("CALL db.constraints YIELD description").toSet shouldBe empty
+      neo4jConfig
+        .cypherWithNewSession("CALL db.constraints YIELD description")
+        .toSet shouldBe empty
 
-      neo4jConfig.cypherWithNewSession("CALL db.indexes YIELD description").toSet should equal(Set(
-        Map("description" -> new CypherString(s"INDEX ON :${subGraphName.metaLabelForSubgraph}($metaPropertyKey)")),
-        Map("description" -> new CypherString(s"INDEX ON :Person(name, bar)")),
-        Map("description" -> new CypherString(s"INDEX ON :Employee(baz)"))
-      ))
+      neo4jConfig
+        .cypherWithNewSession("CALL db.indexes YIELD description")
+        .toSet should equal(
+        Set(
+          Map(
+            "description" -> new CypherString(
+              s"INDEX ON :${subGraphName.metaLabelForSubgraph}($metaPropertyKey)"
+            )
+          ),
+          Map(
+            "description" -> new CypherString(s"INDEX ON :Person(name, bar)")
+          ),
+          Map("description" -> new CypherString(s"INDEX ON :Employee(baz)"))
+        )
+      )
     }
   }
 
   describe("error handling") {
 
     it("should throw when a node key is missing") {
-      a[SchemaException] should be thrownBy Neo4jGraphMerge.merge(entireGraphName, initialGraph, neo4jConfig)
+      a[SchemaException] should be thrownBy Neo4jGraphMerge.merge(
+        entireGraphName,
+        initialGraph,
+        neo4jConfig
+      )
     }
 
-    it("should throw when a missing element key is not only appearing with an implied label that has an element key") {
+    it(
+      "should throw when a missing element key is not only appearing with an implied label that has an element key"
+    ) {
       val nodeKeys = Map("Person" -> Set("id"))
       Neo4jGraphMerge.createIndexes(entireGraphName, neo4jConfig, nodeKeys)
-      val graph = initGraph(
-        """
+      val graph = initGraph("""
           |CREATE (s:Person {id: 1, name: "bar"})
           |CREATE (e:Person:Employee {id: 2})
           |CREATE (f:Employee {id: 3})
           |CREATE (s)-[r:R {id: 1}]->(e)
         """.stripMargin)
 
-      a[SchemaException] should be thrownBy Neo4jGraphMerge.merge(entireGraphName, graph, neo4jConfig, Some(nodeKeys))
+      a[SchemaException] should be thrownBy Neo4jGraphMerge.merge(
+        entireGraphName,
+        graph,
+        neo4jConfig,
+        Some(nodeKeys)
+      )
     }
 
   }

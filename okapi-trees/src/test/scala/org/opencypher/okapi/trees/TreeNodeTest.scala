@@ -73,14 +73,40 @@ class TreeNodeTest extends AnyFunSpec with Matchers {
   }
 
   it("lists of children") {
-    val addList1 = AddList(NonEmptyList.one(1), Number(1), 2, NonEmptyList.one(Number(2)), NonEmptyList.of[Object]("a", "b"))
+    val addList1 = AddList(
+      NonEmptyList.one(1),
+      Number(1),
+      2,
+      NonEmptyList.one(Number(2)),
+      NonEmptyList.of[Object]("a", "b")
+    )
     addList1.eval should equal(3)
-    val addList2 = AddList(NonEmptyList.one(1), Number(1), 2, NonEmptyList.of(Number(2), Number(3)), NonEmptyList.of[Object]("a", "b"))
+    val addList2 = AddList(
+      NonEmptyList.one(1),
+      Number(1),
+      2,
+      NonEmptyList.of(Number(2), Number(3)),
+      NonEmptyList.of[Object]("a", "b")
+    )
     addList2.eval should equal(6)
     val addList3 =
-      AddList(NonEmptyList.one(1), Number(0), 2, NonEmptyList.one(Number(2)), NonEmptyList.of[Object]("a", "b"))
+      AddList(
+        NonEmptyList.one(1),
+        Number(0),
+        2,
+        NonEmptyList.one(Number(2)),
+        NonEmptyList.of[Object]("a", "b")
+      )
         .withNewChildren(Array(1, 2, 3, 4, 5, 6, 7).map(Number))
-    addList3 should equal(AddList(NonEmptyList.one(1), Number(1), 2, NonEmptyList.of(2, 3, 4, 5, 6, 7).map(Number), NonEmptyList.of[Object]("a", "b")))
+    addList3 should equal(
+      AddList(
+        NonEmptyList.one(1),
+        Number(1),
+        2,
+        NonEmptyList.of(2, 3, 4, 5, 6, 7).map(Number),
+        NonEmptyList.of[Object]("a", "b")
+      )
+    )
     addList3.eval should equal(28)
   }
 
@@ -88,7 +114,13 @@ class TreeNodeTest extends AnyFunSpec with Matchers {
     // Test errors when violating list requirements
 
     intercept[IllegalArgumentException] {
-      val fail = AddList(NonEmptyList.one(1), Number(1), 2, NonEmptyList.one(Number(2)), NonEmptyList.of[Object]("a", "b"))
+      val fail = AddList(
+        NonEmptyList.one(1),
+        Number(1),
+        2,
+        NonEmptyList.one(Number(2)),
+        NonEmptyList.of[Object]("a", "b")
+      )
       fail.children.toSet should equal(Set(Number(1), Number(2)))
       fail.withNewChildren(Array(Number(1)))
     }.getMessage should equal("Cannot create NonEmptyList from empty list")
@@ -98,8 +130,8 @@ class TreeNodeTest extends AnyFunSpec with Matchers {
   it("rewrite") {
     val addNoops: PartialFunction[CalcExpr, CalcExpr] = {
       case Add(n1: Number, n2: Number) => Add(NoOp(n1), NoOp(n2))
-      case Add(n1: Number, n2) => Add(NoOp(n1), n2)
-      case Add(n1, n2: Number) => Add(n1, NoOp(n2))
+      case Add(n1: Number, n2)         => Add(NoOp(n1), n2)
+      case Add(n1, n2: Number)         => Add(n1, NoOp(n2))
     }
 
     val expected = Add(NoOp(Number(5)), Add(NoOp(Number(4)), NoOp(Number(3))))
@@ -122,16 +154,16 @@ class TreeNodeTest extends AnyFunSpec with Matchers {
   }
 
   it("support relatively high trees without stack overflow") {
-    val highTree = (1 to 1000).foldLeft(Number(1): CalcExpr) {
-      case (t, n) => Add(t, Number(n))
+    val highTree = (1 to 1000).foldLeft(Number(1): CalcExpr) { case (t, n) =>
+      Add(t, Number(n))
     }
-    val simplified = BottomUp[CalcExpr] {
-      case Add(Number(n1), Number(n2)) => Number(n1 + n2)
+    val simplified = BottomUp[CalcExpr] { case Add(Number(n1), Number(n2)) =>
+      Number(n1 + n2)
     }.transform(highTree)
     simplified should equal(Number(500501))
 
-    val addNoOpsBeforeLeftAdd: PartialFunction[CalcExpr, CalcExpr] = {
-      case Add(a: Add, b) => Add(NoOp(a), b)
+    val addNoOpsBeforeLeftAdd: PartialFunction[CalcExpr, CalcExpr] = { case Add(a: Add, b) =>
+      Add(NoOp(a), b)
     }
     val noOpTree = TopDown[CalcExpr] {
       addNoOpsBeforeLeftAdd
@@ -142,8 +174,8 @@ class TreeNodeTest extends AnyFunSpec with Matchers {
   it("stack safe rewrite") {
     val addNoops: PartialFunction[CalcExpr, CalcExpr] = {
       case Add(n1: Number, n2: Number) => Add(NoOp(n1), NoOp(n2))
-      case Add(n1: Number, n2) => Add(NoOp(n1), n2)
-      case Add(n1, n2: Number) => Add(n1, NoOp(n2))
+      case Add(n1: Number, n2)         => Add(NoOp(n1), n2)
+      case Add(n1, n2: Number)         => Add(n1, NoOp(n2))
     }
 
     val expected = Add(NoOp(Number(5)), Add(NoOp(Number(4)), NoOp(Number(3))))
@@ -154,15 +186,15 @@ class TreeNodeTest extends AnyFunSpec with Matchers {
 
   it("support arbitrarily high high trees with stack safe rewrites") {
     val height = 50000
-    val highTree = (1 to height).foldLeft(Number(1): CalcExpr) {
-      case (t, n) => Add(t, Number(n))
+    val highTree = (1 to height).foldLeft(Number(1): CalcExpr) { case (t, n) =>
+      Add(t, Number(n))
     }
-    BottomUpStackSafe[CalcExpr] {
-      case Add(Number(n1), Number(n2)) => Number(n1 + n2)
+    BottomUpStackSafe[CalcExpr] { case Add(Number(n1), Number(n2)) =>
+      Number(n1 + n2)
     }.transform(highTree)
 
-    val addNoOpsBeforeLeftAdd: PartialFunction[CalcExpr, CalcExpr] = {
-      case Add(a: Add, b) => Add(NoOp(a), b)
+    val addNoOpsBeforeLeftAdd: PartialFunction[CalcExpr, CalcExpr] = { case Add(a: Add, b) =>
+      Add(NoOp(a), b)
     }
     val noOpTree = TopDownStackSafe[CalcExpr] {
       addNoOpsBeforeLeftAdd
@@ -176,7 +208,9 @@ class TreeNodeTest extends AnyFunSpec with Matchers {
   }
 
   it("option and list arg string") {
-    Dummy(None, List.empty, None, List.empty).argString should equal("print1=None, print2=List()")
+    Dummy(None, List.empty, None, List.empty).argString should equal(
+      "print1=None, print2=List()"
+    )
   }
 
   it("to string") {
@@ -186,8 +220,7 @@ class TreeNodeTest extends AnyFunSpec with Matchers {
 
   it("pretty") {
     val t = Add(Add(Number(4), Number(3)), Add(Number(4), Number(3)))
-    t.pretty should equal(
-      """|╙──Add
+    t.pretty should equal("""|╙──Add
          |    ╟──Add
          |    ║   ╟──Number(v=4)
          |    ║   ╙──Number(v=3)
@@ -197,7 +230,9 @@ class TreeNodeTest extends AnyFunSpec with Matchers {
   }
 
   it("copy with the same children returns the same instance") {
-    calculation.withNewChildren(Array(calculation.left, calculation.right)) should be theSameInstanceAs calculation
+    calculation.withNewChildren(
+      Array(calculation.left, calculation.right)
+    ) should be theSameInstanceAs calculation
   }
 
   it("can infer children for complex case classes") {
@@ -211,53 +246,80 @@ class TreeNodeTest extends AnyFunSpec with Matchers {
       Some(SimpleD())
     )
 
-    instance.children.toList should equal(List(
-      SimpleA(), SimpleA(), SimpleB(), SimpleB(), SimpleD()
-    ))
+    instance.children.toList should equal(
+      List(
+        SimpleA(),
+        SimpleA(),
+        SimpleB(),
+        SimpleB(),
+        SimpleD()
+      )
+    )
 
-    instance.withNewChildren(Array(
-      SimpleA(), SimpleC()
-    )) should equal(Multi(
-      NonEmptyList.one(1),
-      NonEmptyList.of(SimpleA()),
-      List("A", "B"),
-      List(),
-      Some(1L),
-      Some(SimpleC()),
-      None
-    ))
+    instance.withNewChildren(
+      Array(
+        SimpleA(),
+        SimpleC()
+      )
+    ) should equal(
+      Multi(
+        NonEmptyList.one(1),
+        NonEmptyList.of(SimpleA()),
+        List("A", "B"),
+        List(),
+        Some(1L),
+        Some(SimpleC()),
+        None
+      )
+    )
   }
 
-  it("fails with an understandable error message when running out of children to assign") {
+  it(
+    "fails with an understandable error message when running out of children to assign"
+  ) {
     val instance = ListBeforeFixed(List.empty, SimpleA())
 
-    instance.children.toList should equal(List(
-      SimpleA()
-    ))
+    instance.children.toList should equal(
+      List(
+        SimpleA()
+      )
+    )
 
     intercept[IllegalArgumentException] {
-      instance.withNewChildren(Array(
-        SimpleA(), SimpleA()
-      ))
+      instance.withNewChildren(
+        Array(
+          SimpleA(),
+          SimpleA()
+        )
+      )
     }.getMessage should equal(
       """|When updating with new children: Did not have a child left to assign to the child that was previously SimpleA
-         |Inferred constructor parameters so far: ListBeforeFixed(List(SimpleA, SimpleA), ...)""".stripMargin)
+         |Inferred constructor parameters so far: ListBeforeFixed(List(SimpleA, SimpleA), ...)""".stripMargin
+    )
   }
 
-  it("fails with an understandable error message when there are children left over after assignment to constructor arguments") {
+  it(
+    "fails with an understandable error message when there are children left over after assignment to constructor arguments"
+  ) {
     val instance = SimpleList(List(SimpleA()))
 
-    instance.children.toList should equal(List(
-      SimpleA()
-    ))
+    instance.children.toList should equal(
+      List(
+        SimpleA()
+      )
+    )
 
     intercept[IllegalArgumentException] {
-      instance.withNewChildren(Array(
-        SimpleA(), SimpleB()
-      ))
+      instance.withNewChildren(
+        Array(
+          SimpleA(),
+          SimpleB()
+        )
+      )
     }.getMessage should equal(
       """|Could not assign children [SimpleB] to parameters of SimpleList
-         |Inferred constructor parameters: SimpleList(List(SimpleA))""".stripMargin)
+         |Inferred constructor parameters: SimpleList(List(SimpleA))""".stripMargin
+    )
   }
 }
 
@@ -277,7 +339,10 @@ object TreeNodeTest {
 
   case object UnsupportedLeaf2 extends UnsupportedTree2
 
-  case class UnsupportedNode2(elems: NonEmptyList[UnsupportedTree2], elem: UnsupportedTree2) extends UnsupportedTree2
+  case class UnsupportedNode2(
+    elems: NonEmptyList[UnsupportedTree2],
+    elem: UnsupportedTree2
+  ) extends UnsupportedTree2
 
   abstract class CalcExpr extends AbstractTreeNode[CalcExpr] {
     def eval: Int
@@ -298,8 +363,7 @@ object TreeNodeTest {
     dummy2: Int,
     remaining: NonEmptyList[CalcExpr],
     dummy3: NonEmptyList[Object]
-  )
-    extends CalcExpr {
+  ) extends CalcExpr {
     def eval: Int = first.eval + remaining.map(_.eval).toList.sum
   }
 

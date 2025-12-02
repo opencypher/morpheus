@@ -43,7 +43,6 @@ import org.opencypher.okapi.testing.Bag
 
 import scala.math.BigDecimal.RoundingMode
 
-
 class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture with H2Fixture {
 
   private val dataSourceName = "fooDataSource"
@@ -79,16 +78,23 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
     sparkSession
       .createDataFrame(Seq(Tuple1("Alice")))
       .toDF("foo")
-      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
+      .write
+      .mode(SaveMode.Overwrite)
+      .saveAsTable(s"$databaseName.$fooView")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
+    val ds = SqlPropertyGraphDataSource(
+      GraphDdl(ddlString),
+      Map(dataSourceName -> Hive)
+    )
 
     ds.graph(fooGraphName)
       .cypher("MATCH (n) RETURN labels(n) AS labels, n.foo AS foo")
-      .records.toMaps should equal(
+      .records
+      .toMaps should equal(
       Bag(
         CypherMap("labels" -> List("Foo"), "foo" -> "Alice")
-      ))
+      )
+    )
   }
 
   describe("bigdecimal specifics") {
@@ -108,40 +114,57 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
      """.stripMargin
     )
 
-    def testBigDecimalConversion(sourcePrecision: Int, sourceScale: Int, targetPrecision: Int, targetScale: Int): Unit = {
-      val sourceValue = BigDecimal(1*Math.pow(10, sourcePrecision).toInt, sourceScale)
+    def testBigDecimalConversion(
+      sourcePrecision: Int,
+      sourceScale: Int,
+      targetPrecision: Int,
+      targetScale: Int
+    ): Unit = {
+      val sourceValue =
+        BigDecimal(1 * Math.pow(10, sourcePrecision).toInt, sourceScale)
       val sourceType = DecimalType(sourcePrecision, sourceScale)
 
       val targetValue = sourceValue.setScale(targetScale, RoundingMode.HALF_UP)
       val targetType = DecimalType(targetPrecision, targetScale)
 
-      sparkSession.createDataFrame(List(Row(sourceValue)).asJava, StructType(Seq(StructField("num", sourceType))))
-        .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
+      sparkSession
+        .createDataFrame(
+          List(Row(sourceValue)).asJava,
+          StructType(Seq(StructField("num", sourceType)))
+        )
+        .write
+        .mode(SaveMode.Overwrite)
+        .saveAsTable(s"$databaseName.$fooView")
 
-      val ds = SqlPropertyGraphDataSource(graphDdl(targetPrecision, targetScale), Map(dataSourceName -> Hive))
+      val ds = SqlPropertyGraphDataSource(
+        graphDdl(targetPrecision, targetScale),
+        Map(dataSourceName -> Hive)
+      )
 
-      val records = ds.graph(fooGraphName)
+      val records = ds
+        .graph(fooGraphName)
         .cypher("MATCH (n) RETURN labels(n) AS labels, n.num AS num")
         .records
       records.toMaps should equal(
         Bag(
           CypherMap("labels" -> List("Foo"), "num" -> targetValue)
-        ))
+        )
+      )
       records.asMorpheus.table.df.schema.fields(1) should equal(
         StructField("num", targetType)
       )
     }
 
     it("reads bigdecimals as standard properties") {
-      testBigDecimalConversion(10,5, 10,5)
+      testBigDecimalConversion(10, 5, 10, 5)
     }
 
     it("lifts bigdecimals with lower precision, same scale") {
-      testBigDecimalConversion(14,4, 15,4)
+      testBigDecimalConversion(14, 4, 15, 4)
     }
 
     it("lifts bigdecimals with lower precision, lower scale") {
-      testBigDecimalConversion(14,3, 15,4)
+      testBigDecimalConversion(14, 3, 15, 4)
     }
 
     it("prevents bigdecimals with greater precision") {
@@ -149,26 +172,44 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
       val value2 = BigDecimal(123456, 2)
       val typ = DecimalType(6, 2)
 
-      sparkSession.createDataFrame(List(Row(value1), Row(value2)).asJava, StructType(Seq(StructField("num", typ))))
-        .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
+      sparkSession
+        .createDataFrame(
+          List(Row(value1), Row(value2)).asJava,
+          StructType(Seq(StructField("num", typ)))
+        )
+        .write
+        .mode(SaveMode.Overwrite)
+        .saveAsTable(s"$databaseName.$fooView")
 
-      val ds = SqlPropertyGraphDataSource(graphDdl(5, 2), Map(dataSourceName -> Hive))
+      val ds =
+        SqlPropertyGraphDataSource(graphDdl(5, 2), Map(dataSourceName -> Hive))
 
-      val e = the [IllegalArgumentException] thrownBy ds.graph(fooGraphName)
-      e.getMessage should (include("subtype of DecimalType(5,2)") and include("DecimalType(6,2)"))
+      val e = the[IllegalArgumentException] thrownBy ds.graph(fooGraphName)
+      e.getMessage should (include("subtype of DecimalType(5,2)") and include(
+        "DecimalType(6,2)"
+      ))
     }
 
     it("prevents bigdecimals with greater scale") {
       val value = BigDecimal(12345, 3)
       val typ = DecimalType(5, 3)
 
-      sparkSession.createDataFrame(List(Row(value)).asJava, StructType(Seq(StructField("num", typ))))
-        .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
+      sparkSession
+        .createDataFrame(
+          List(Row(value)).asJava,
+          StructType(Seq(StructField("num", typ)))
+        )
+        .write
+        .mode(SaveMode.Overwrite)
+        .saveAsTable(s"$databaseName.$fooView")
 
-      val ds = SqlPropertyGraphDataSource(graphDdl(5, 2), Map(dataSourceName -> Hive))
+      val ds =
+        SqlPropertyGraphDataSource(graphDdl(5, 2), Map(dataSourceName -> Hive))
 
-      val e = the [IllegalArgumentException] thrownBy ds.graph(fooGraphName)
-      e.getMessage should (include("subtype of DecimalType(5,2)") and include("DecimalType(5,3)"))
+      val e = the[IllegalArgumentException] thrownBy ds.graph(fooGraphName)
+      e.getMessage should (include("subtype of DecimalType(5,2)") and include(
+        "DecimalType(5,3)"
+      ))
     }
   }
 
@@ -192,14 +233,24 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
     sparkSession
       .createDataFrame(Seq(Tuple2("Alice", 42L)))
       .toDF("col1", "col2")
-      .write.mode(SaveMode.Overwrite).mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
+      .write
+      .mode(SaveMode.Overwrite)
+      .mode(SaveMode.Overwrite)
+      .saveAsTable(s"$databaseName.$fooView")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
+    val ds = SqlPropertyGraphDataSource(
+      GraphDdl(ddlString),
+      Map(dataSourceName -> Hive)
+    )
 
     ds.graph(fooGraphName)
-      .cypher("MATCH (n) RETURN labels(n) AS labels, n.key1 AS key1, n.key2 as key2")
-      .records.toMaps should equal(
-      Bag(CypherMap("labels" -> List("Foo"), "key1" -> 42L, "key2" -> "Alice")))
+      .cypher(
+        "MATCH (n) RETURN labels(n) AS labels, n.key1 AS key1, n.key2 as key2"
+      )
+      .records
+      .toMaps should equal(
+      Bag(CypherMap("labels" -> List("Foo"), "key1" -> 42L, "key2" -> "Alice"))
+    )
   }
 
   it("is case insensitive on the column names") {
@@ -222,14 +273,24 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
     sparkSession
       .createDataFrame(Seq(Tuple2("Alice", 42L)))
       .toDF("COL1", "COL2")
-      .write.mode(SaveMode.Overwrite).mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
+      .write
+      .mode(SaveMode.Overwrite)
+      .mode(SaveMode.Overwrite)
+      .saveAsTable(s"$databaseName.$fooView")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
+    val ds = SqlPropertyGraphDataSource(
+      GraphDdl(ddlString),
+      Map(dataSourceName -> Hive)
+    )
 
     ds.graph(fooGraphName)
-      .cypher("MATCH (n) RETURN labels(n) AS labels, n.key1 AS key1, n.key2 as key2")
-      .records.toMaps should equal(
-      Bag(CypherMap("labels" -> List("Foo"), "key1" -> 42L, "key2" -> "Alice")))
+      .cypher(
+        "MATCH (n) RETURN labels(n) AS labels, n.key1 AS key1, n.key2 as key2"
+      )
+      .records
+      .toMaps should equal(
+      Bag(CypherMap("labels" -> List("Foo"), "key1" -> 42L, "key2" -> "Alice"))
+    )
   }
 
   it("reads nodes from multiple tables") {
@@ -256,21 +317,32 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
     sparkSession
       .createDataFrame(Seq(Tuple1("Alice")))
       .toDF("foo")
-      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$fooView")
+      .write
+      .mode(SaveMode.Overwrite)
+      .saveAsTable(s"$databaseName.$fooView")
     sparkSession
       .createDataFrame(Seq(Tuple1(0L)))
       .toDF("bar")
-      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$barView")
+      .write
+      .mode(SaveMode.Overwrite)
+      .saveAsTable(s"$databaseName.$barView")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
+    val ds = SqlPropertyGraphDataSource(
+      GraphDdl(ddlString),
+      Map(dataSourceName -> Hive)
+    )
 
     ds.graph(fooGraphName)
-      .cypher("MATCH (n) RETURN labels(n) AS labels, n.foo AS foo, n.bar as bar")
-      .records.toMaps should equal(
+      .cypher(
+        "MATCH (n) RETURN labels(n) AS labels, n.foo AS foo, n.bar as bar"
+      )
+      .records
+      .toMaps should equal(
       Bag(
         CypherMap("labels" -> List("Foo"), "foo" -> "Alice", "bar" -> null),
         CypherMap("labels" -> List("Bar"), "foo" -> null, "bar" -> 0L)
-      ))
+      )
+    )
   }
 
   it("reads relationships from a table") {
@@ -304,30 +376,58 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
     sparkSession
       .createDataFrame(Seq((0L, "Alice")))
       .toDF("person_id", "person_name")
-      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$personView")
+      .write
+      .mode(SaveMode.Overwrite)
+      .saveAsTable(s"$databaseName.$personView")
     sparkSession
       .createDataFrame(Seq((1L, "1984")))
       .toDF("book_id", "book_title")
-      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$bookView")
+      .write
+      .mode(SaveMode.Overwrite)
+      .saveAsTable(s"$databaseName.$bookView")
     sparkSession
       .createDataFrame(Seq((0L, 1L, 42.23)))
       .toDF("person", "book", "rating")
-      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$readsView")
+      .write
+      .mode(SaveMode.Overwrite)
+      .saveAsTable(s"$databaseName.$readsView")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
+    val ds = SqlPropertyGraphDataSource(
+      GraphDdl(ddlString),
+      Map(dataSourceName -> Hive)
+    )
 
     ds.graph(fooGraphName)
-      .cypher("MATCH (n) RETURN labels(n) AS labels, n.name AS name, n.title as title")
-      .records.toMaps should equal(
+      .cypher(
+        "MATCH (n) RETURN labels(n) AS labels, n.name AS name, n.title as title"
+      )
+      .records
+      .toMaps should equal(
       Bag(
-        CypherMap("labels" -> List("Person"), "name" -> "Alice", "title" -> null),
+        CypherMap(
+          "labels" -> List("Person"),
+          "name" -> "Alice",
+          "title" -> null
+        ),
         CypherMap("labels" -> List("Book"), "name" -> null, "title" -> "1984")
-      ))
+      )
+    )
 
     ds.graph(fooGraphName)
-      .cypher("MATCH (a)-[r]->(b) RETURN type(r) AS type, a.name as name, b.title as title, r.rating as rating")
-      .records.toMaps should equal(
-      Bag(CypherMap("type" -> "READS", "name" -> "Alice", "title" -> "1984", "rating" -> 42.23)))
+      .cypher(
+        "MATCH (a)-[r]->(b) RETURN type(r) AS type, a.name as name, b.title as title, r.rating as rating"
+      )
+      .records
+      .toMaps should equal(
+      Bag(
+        CypherMap(
+          "type" -> "READS",
+          "name" -> "Alice",
+          "title" -> "1984",
+          "rating" -> 42.23
+        )
+      )
+    )
   }
 
   it("reads relationships from a table with colliding column names") {
@@ -354,31 +454,66 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
      """.stripMargin
 
     sparkSession
-      .createDataFrame(Seq(
-        (0L, 23L, "startValue", "endValue"),
-        (1L, 42L, "startValue", "endValue")
-      )).repartition(1) // to keep id generation predictable
+      .createDataFrame(
+        Seq(
+          (0L, 23L, "startValue", "endValue"),
+          (1L, 42L, "startValue", "endValue")
+        )
+      )
+      .repartition(1) // to keep id generation predictable
       .toDF("node_id", "id", "start", "end")
-      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$nodesView")
+      .write
+      .mode(SaveMode.Overwrite)
+      .saveAsTable(s"$databaseName.$nodesView")
     sparkSession
       .createDataFrame(Seq((0L, 1L, 1984L, "startValue", "endValue")))
       .toDF("source_id", "target_id", "id", "start", "end")
-      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$relsView")
+      .write
+      .mode(SaveMode.Overwrite)
+      .saveAsTable(s"$databaseName.$relsView")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
+    val ds = SqlPropertyGraphDataSource(
+      GraphDdl(ddlString),
+      Map(dataSourceName -> Hive)
+    )
 
     ds.graph(fooGraphName)
-      .cypher("MATCH (n) RETURN labels(n) AS labels, n.id AS id, n.start as start, n.end as end")
-      .records.toMaps should equal(
+      .cypher(
+        "MATCH (n) RETURN labels(n) AS labels, n.id AS id, n.start as start, n.end as end"
+      )
+      .records
+      .toMaps should equal(
       Bag(
-        CypherMap("labels" -> List("Node"), "id" -> 23, "start" -> "startValue", "end" -> "endValue"),
-        CypherMap("labels" -> List("Node"), "id" -> 42, "start" -> "startValue", "end" -> "endValue")
-      ))
+        CypherMap(
+          "labels" -> List("Node"),
+          "id" -> 23,
+          "start" -> "startValue",
+          "end" -> "endValue"
+        ),
+        CypherMap(
+          "labels" -> List("Node"),
+          "id" -> 42,
+          "start" -> "startValue",
+          "end" -> "endValue"
+        )
+      )
+    )
 
     ds.graph(fooGraphName)
-      .cypher("MATCH (a)-[r]->(b) RETURN type(r) AS type, r.id as id, r.start as start, r.end as end")
-      .records.toMaps should equal(
-      Bag(CypherMap("type" -> "REL", "id" -> 1984L, "start" -> "startValue", "end" -> "endValue")))
+      .cypher(
+        "MATCH (a)-[r]->(b) RETURN type(r) AS type, r.id as id, r.start as start, r.end as end"
+      )
+      .records
+      .toMaps should equal(
+      Bag(
+        CypherMap(
+          "type" -> "REL",
+          "id" -> 1984L,
+          "start" -> "startValue",
+          "end" -> "endValue"
+        )
+      )
+    )
   }
 
   it("reads relationships from multiple tables") {
@@ -415,45 +550,75 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
     sparkSession
       .createDataFrame(Seq((0L, "Alice")))
       .toDF("person_id", "person_name")
-      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$personView")
+      .write
+      .mode(SaveMode.Overwrite)
+      .saveAsTable(s"$databaseName.$personView")
     sparkSession
-      .createDataFrame(Seq((1L, "1984"), (2L, "Scala with Cats"))).repartition(1) // to keep id generation predictable
+      .createDataFrame(Seq((1L, "1984"), (2L, "Scala with Cats")))
+      .repartition(1) // to keep id generation predictable
       .toDF("book_id", "book_title")
-      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$bookView")
+      .write
+      .mode(SaveMode.Overwrite)
+      .saveAsTable(s"$databaseName.$bookView")
     sparkSession
       .createDataFrame(Seq((0L, 1L, 13.37)))
       .toDF("person", "book", "rating")
-      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$readsView1")
+      .write
+      .mode(SaveMode.Overwrite)
+      .saveAsTable(s"$databaseName.$readsView1")
     sparkSession
       .createDataFrame(Seq((0L, 2L, 13.37)))
       .toDF("p_id", "b_id", "rates")
-      .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$readsView2")
+      .write
+      .mode(SaveMode.Overwrite)
+      .saveAsTable(s"$databaseName.$readsView2")
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
+    val ds = SqlPropertyGraphDataSource(
+      GraphDdl(ddlString),
+      Map(dataSourceName -> Hive)
+    )
 
     ds.graph(fooGraphName)
-      .cypher("MATCH (n) RETURN labels(n) AS labels, n.name AS name, n.title as title")
-      .records.toMaps should equal(
+      .cypher(
+        "MATCH (n) RETURN labels(n) AS labels, n.name AS name, n.title as title"
+      )
+      .records
+      .toMaps should equal(
       Bag(
-        CypherMap("labels" -> List("Person"), "name" -> "Alice", "title" -> null),
+        CypherMap(
+          "labels" -> List("Person"),
+          "name" -> "Alice",
+          "title" -> null
+        ),
         CypherMap("labels" -> List("Book"), "name" -> null, "title" -> "1984"),
-        CypherMap("labels" -> List("Book"), "name" -> null, "title" -> "Scala with Cats")
-      ))
+        CypherMap(
+          "labels" -> List("Book"),
+          "name" -> null,
+          "title" -> "Scala with Cats"
+        )
+      )
+    )
 
     ds.graph(fooGraphName)
       .cypher("MATCH ()-[r]->() RETURN type(r) AS type, r.rating as rating")
-      .records.toMaps should equal(
+      .records
+      .toMaps should equal(
       Bag(
         CypherMap("type" -> "READS", "rating" -> 13.37),
         CypherMap("type" -> "READS", "rating" -> 13.37)
-      ))
+      )
+    )
 
     ds.graph(fooGraphName)
-      .cypher("MATCH ()-[r]->() WITH type(r) AS type, id(r) AS id RETURN count(distinct id) AS distinct_ids")
-      .records.toMaps should equal(
+      .cypher(
+        "MATCH ()-[r]->() WITH type(r) AS type, id(r) AS id RETURN count(distinct id) AS distinct_ids"
+      )
+      .records
+      .toMaps should equal(
       Bag(
         CypherMap("distinct_ids" -> 2)
-      ))
+      )
+    )
   }
 
   it("reads nodes from multiple data sources") {
@@ -479,11 +644,15 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
     sparkSession
       .createDataFrame(Seq(Tuple1("Alice")))
       .toDF("foo")
-      .write.mode(SaveMode.Overwrite).saveAsTable(s"db1.$fooView")
+      .write
+      .mode(SaveMode.Overwrite)
+      .saveAsTable(s"db1.$fooView")
     sparkSession
       .createDataFrame(Seq(Tuple1(0L)))
       .toDF("bar")
-      .write.mode(SaveMode.Overwrite).saveAsTable(s"db2.$barView")
+      .write
+      .mode(SaveMode.Overwrite)
+      .saveAsTable(s"db2.$barView")
 
     val configs = Map(
       "ds1" -> Hive,
@@ -492,12 +661,16 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
     val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), configs)
 
     ds.graph(fooGraphName)
-      .cypher("MATCH (n) RETURN labels(n) AS labels, n.foo AS foo, n.bar AS bar")
-      .records.toMaps should equal(
+      .cypher(
+        "MATCH (n) RETURN labels(n) AS labels, n.foo AS foo, n.bar AS bar"
+      )
+      .records
+      .toMaps should equal(
       Bag(
         CypherMap("labels" -> List("Foo"), "foo" -> "Alice", "bar" -> null),
         CypherMap("labels" -> List("Bar"), "foo" -> null, "bar" -> 0L)
-      ))
+      )
+    )
   }
 
   it("reads nodes from hive and h2 data sources") {
@@ -528,7 +701,9 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
     sparkSession
       .createDataFrame(Seq(Tuple1("Alice")))
       .toDF("foo")
-      .write.mode(SaveMode.Overwrite).saveAsTable(s"schema1.$fooView")
+      .write
+      .mode(SaveMode.Overwrite)
+      .saveAsTable(s"schema1.$fooView")
 
     // -- Add h2 data
 
@@ -540,15 +715,22 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
 
     // -- Read graph and validate
 
-    val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map("ds1" -> hiveDataSourceConfig, "ds2" -> h2DataSourceConfig))
+    val ds = SqlPropertyGraphDataSource(
+      GraphDdl(ddlString),
+      Map("ds1" -> hiveDataSourceConfig, "ds2" -> h2DataSourceConfig)
+    )
 
     ds.graph(fooGraphName)
-      .cypher("MATCH (n) RETURN labels(n) AS labels, n.foo AS foo, n.bar as bar")
-      .records.toMaps should equal(
+      .cypher(
+        "MATCH (n) RETURN labels(n) AS labels, n.foo AS foo, n.bar as bar"
+      )
+      .records
+      .toMaps should equal(
       Bag(
         CypherMap("labels" -> List("Foo"), "foo" -> "Alice", "bar" -> null),
         CypherMap("labels" -> List("Bar"), "foo" -> null, "bar" -> 123L)
-      ))
+      )
+    )
   }
 
   it("should not auto-cast IntegerType columns to LongType") {
@@ -556,7 +738,12 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
       Row(1, 10L),
       Row(15, 800L)
     ).asJava
-    val df = sparkSession.createDataFrame(data, StructType(Seq(StructField("int", IntegerType), StructField("long", LongType))))
+    val df = sparkSession.createDataFrame(
+      data,
+      StructType(
+        Seq(StructField("int", IntegerType), StructField("long", LongType))
+      )
+    )
 
     morpheus.sql("CREATE DATABASE IF NOT EXISTS db")
     df.write.saveAsTable("db.int_long")
@@ -573,12 +760,19 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
         |)
       """.stripMargin
 
-    val pgds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map("ds1" -> Hive))
+    val pgds =
+      SqlPropertyGraphDataSource(GraphDdl(ddlString), Map("ds1" -> Hive))
 
-    pgds.graph(GraphName("fooGraph")).cypher("MATCH (n) RETURN n.int, n.long").records.toMaps should equal(Bag(
-      CypherMap("n.int" -> 1, "n.long" -> 10),
-      CypherMap("n.int" -> 15, "n.long" -> 800)
-    ))
+    pgds
+      .graph(GraphName("fooGraph"))
+      .cypher("MATCH (n) RETURN n.int, n.long")
+      .records
+      .toMaps should equal(
+      Bag(
+        CypherMap("n.int" -> 1, "n.long" -> 10),
+        CypherMap("n.int" -> 15, "n.long" -> 800)
+      )
+    )
   }
 
   it("should give good error message on bad SqlDataSource config") {
@@ -590,10 +784,16 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
         |)
       """.stripMargin
 
-    val pgds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map("known1" -> Hive, "known2" -> Hive))
+    val pgds = SqlPropertyGraphDataSource(
+      GraphDdl(ddlString),
+      Map("known1" -> Hive, "known2" -> Hive)
+    )
 
-    val e = the[SqlDataSourceConfigException] thrownBy pgds.graph(GraphName("g"))
-    e.getMessage should (include("unknown") and include("known1") and include("known2"))
+    val e =
+      the[SqlDataSourceConfigException] thrownBy pgds.graph(GraphName("g"))
+    e.getMessage should (include("unknown") and include("known1") and include(
+      "known2"
+    ))
   }
 
   it("reads nodes and rels from file-based sources") {
@@ -615,28 +815,38 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
     // -- Read graph and validate
     val ds = SqlPropertyGraphDataSource(
       GraphDdl(ddlString),
-      Map("parquet" -> File(
-        format = FileFormat.parquet,
-        basePath = Some("file://" + getClass.getResource("/parquet").getPath)
-      ))
+      Map(
+        "parquet" -> File(
+          format = FileFormat.parquet,
+          basePath = Some("file://" + getClass.getResource("/parquet").getPath)
+        )
+      )
     )
 
     ds.graph(fooGraphName)
-      .cypher("MATCH (n) RETURN n.id AS id, labels(n) AS labels, n.name AS name")
-      .records.toMaps should equal(
+      .cypher(
+        "MATCH (n) RETURN n.id AS id, labels(n) AS labels, n.name AS name"
+      )
+      .records
+      .toMaps should equal(
       Bag(
         CypherMap("id" -> 1, "labels" -> List("Person"), "name" -> "Alice"),
         CypherMap("id" -> 2, "labels" -> List("Person"), "name" -> "Bob"),
         CypherMap("id" -> 3, "labels" -> List("Person"), "name" -> "Eve")
-      ))
+      )
+    )
 
     ds.graph(fooGraphName)
-      .cypher("MATCH (a)-[r]->(b) RETURN type(r) AS type, a.id as startId, b.id as endId")
-      .records.toMaps should equal(
+      .cypher(
+        "MATCH (a)-[r]->(b) RETURN type(r) AS type, a.id as startId, b.id as endId"
+      )
+      .records
+      .toMaps should equal(
       Bag(
         CypherMap("type" -> "KNOWS", "startId" -> 1, "endId" -> 2),
         CypherMap("type" -> "KNOWS", "startId" -> 2, "endId" -> 3)
-      ))
+      )
+    )
   }
 
   it("reads nodes and rels from file-based sources with absolute paths") {
@@ -659,29 +869,38 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
     // -- Read graph and validate
     val ds = SqlPropertyGraphDataSource(
       GraphDdl(ddlString),
-      Map("parquet" -> File(
-        format = FileFormat.parquet
-      ))
+      Map(
+        "parquet" -> File(
+          format = FileFormat.parquet
+        )
+      )
     )
 
     ds.graph(fooGraphName)
-      .cypher("MATCH (n) RETURN n.id AS id, labels(n) AS labels, n.name AS name")
-      .records.toMaps should equal(
+      .cypher(
+        "MATCH (n) RETURN n.id AS id, labels(n) AS labels, n.name AS name"
+      )
+      .records
+      .toMaps should equal(
       Bag(
         CypherMap("id" -> 1, "labels" -> List("Person"), "name" -> "Alice"),
         CypherMap("id" -> 2, "labels" -> List("Person"), "name" -> "Bob"),
         CypherMap("id" -> 3, "labels" -> List("Person"), "name" -> "Eve")
-      ))
+      )
+    )
 
     ds.graph(fooGraphName)
-      .cypher("MATCH (a)-[r]->(b) RETURN type(r) AS type, a.id as startId, b.id as endId")
-      .records.toMaps should equal(
+      .cypher(
+        "MATCH (a)-[r]->(b) RETURN type(r) AS type, a.id as startId, b.id as endId"
+      )
+      .records
+      .toMaps should equal(
       Bag(
         CypherMap("type" -> "KNOWS", "startId" -> 1, "endId" -> 2),
         CypherMap("type" -> "KNOWS", "startId" -> 2, "endId" -> 3)
-      ))
+      )
+    )
   }
-
 
   describe("Failure handling") {
 
@@ -689,12 +908,16 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
       val e = the[IllegalArgumentException] thrownBy {
         SqlPropertyGraphDataSource(
           GraphDdl.apply(""),
-          Map("IllegalDataSource" -> File(
-            format = FileFormat.csv
-          ))
+          Map(
+            "IllegalDataSource" -> File(
+              format = FileFormat.csv
+            )
+          )
         )
       }
-      e.getMessage should (include(FileFormat.csv.toString) and include("IllegalDataSource"))
+      e.getMessage should (include(FileFormat.csv.toString) and include(
+        "IllegalDataSource"
+      ))
     }
 
     it("does not support relationship types with more than one label") {
@@ -709,11 +932,15 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
            |)
            |CREATE GRAPH fooGraph OF fooSchema ()""".stripMargin
 
-      val e = the[IllegalArgumentException] thrownBy SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive)).graph(GraphName("fooGraph"))
-      e.getMessage should (include("(A)-[A,B]->(A)") and include("single label"))
+      val e = the[IllegalArgumentException] thrownBy SqlPropertyGraphDataSource(
+        GraphDdl(ddlString),
+        Map(dataSourceName -> Hive)
+      ).graph(GraphName("fooGraph"))
+      e.getMessage should (include("(A)-[A,B]->(A)") and include(
+        "single label"
+      ))
     }
   }
-
 
   describe("NodeRelPattern support") {
     val personView = "person_view"
@@ -723,11 +950,15 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
       sparkSession
         .createDataFrame(Seq((0L, "Alice", 1L, 2010)))
         .toDF("person_id", "person_name", "city_id", "since")
-        .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$personView")
+        .write
+        .mode(SaveMode.Overwrite)
+        .saveAsTable(s"$databaseName.$personView")
       sparkSession
         .createDataFrame(Seq((1L, "Leipzig")))
         .toDF("city_id", "city_name")
-        .write.mode(SaveMode.Overwrite).saveAsTable(s"$databaseName.$cityView")
+        .write
+        .mode(SaveMode.Overwrite)
+        .saveAsTable(s"$databaseName.$cityView")
     }
 
     it("reads NodeRelPatterns") {
@@ -756,7 +987,10 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
 
       prepareData()
 
-      val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
+      val ds = SqlPropertyGraphDataSource(
+        GraphDdl(ddlString),
+        Map(dataSourceName -> Hive)
+      )
 
       val graph = ds.graph(fooGraphName)
 
@@ -766,15 +1000,20 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
 
       graph.asMorpheus.scanOperator(pattern, true).table.df.count() should be(1)
 
-      val result = graph.cypher(
-        """
+      val result = graph.cypher("""
           |MATCH (p:Person)-[l:LIVES_IN]->(c:City)
           |RETURN p.name, l.since, c.name
         """.stripMargin)
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("p.name" -> "Alice", "l.since" -> 2010, "c.name" -> "Leipzig")
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap(
+            "p.name" -> "Alice",
+            "l.since" -> 2010,
+            "c.name" -> "Leipzig"
+          )
+        )
+      )
     }
 
     it("handles naming conflicts") {
@@ -803,19 +1042,23 @@ class SqlPropertyGraphDataSourceTest extends MorpheusTestSuite with HiveFixture 
 
       prepareData()
 
-      val ds = SqlPropertyGraphDataSource(GraphDdl(ddlString), Map(dataSourceName -> Hive))
+      val ds = SqlPropertyGraphDataSource(
+        GraphDdl(ddlString),
+        Map(dataSourceName -> Hive)
+      )
 
       val graph = ds.graph(fooGraphName)
 
-      val result = graph.cypher(
-        """
+      val result = graph.cypher("""
           |MATCH (p:Person)-[l:LIVES_IN]->(c:City)
           |RETURN p.since, l.since
         """.stripMargin)
 
-      result.records.toMaps should equal(Bag(
-        CypherMap("p.since" -> 2010, "l.since" -> 2010)
-      ))
+      result.records.toMaps should equal(
+        Bag(
+          CypherMap("p.since" -> 2010, "l.since" -> 2010)
+        )
+      )
     }
   }
 }

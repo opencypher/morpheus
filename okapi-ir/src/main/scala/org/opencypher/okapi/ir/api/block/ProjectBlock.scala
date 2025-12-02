@@ -30,11 +30,11 @@ import org.opencypher.okapi.ir.api._
 import org.opencypher.okapi.ir.api.expr.Expr
 
 final case class ProjectBlock(
-    after: List[Block],
-    binds: Fields = Fields(),
-    where: Set[Expr] = Set.empty[Expr],
-    graph: IRGraph,
-    distinct: Boolean = false
+  after: List[Block],
+  binds: Fields = Fields(),
+  where: Set[Expr] = Set.empty[Expr],
+  graph: IRGraph,
+  distinct: Boolean = false
 ) extends BasicBlock[Fields](BlockType("project"))
 
 final case class Fields(items: Map[IRField, Expr] = Map.empty[IRField, Expr]) extends Binds {

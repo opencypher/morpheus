@@ -30,34 +30,42 @@ import org.opencypher.okapi.api.graph._
 import org.opencypher.okapi.api.types.CTNode
 
 object NodeMappingBuilder {
+
   /**
     * Alias for [[withSourceIdKey]].
     *
-    * @param sourceIdKey key to access the node identifier in the source data
-    * @return node mapping
+    * @param sourceIdKey
+    *   key to access the node identifier in the source data
+    * @return
+    *   node mapping
     */
   def on(sourceIdKey: String): NodeMappingBuilder =
     withSourceIdKey(sourceIdKey)
 
   /**
-    *
-    * @param sourceIdKey represents a key to the node identifier within the source data. The retrieved value
-    *                    from the source data is expected to be a [[Long]] value that is unique among nodes.
-    * @return node mapping
+    * @param sourceIdKey
+    *   represents a key to the node identifier within the source data. The retrieved value from the
+    *   source data is expected to be a [[Long]] value that is unique among nodes.
+    * @return
+    *   node mapping
     */
   def withSourceIdKey(sourceIdKey: String): NodeMappingBuilder =
     NodeMappingBuilder(sourceIdKey)
 
   /**
-    * Creates a NodeMapping where optional labels and property keys match with their corresponding keys in the source
-    * data.
+    * Creates a NodeMapping where optional labels and property keys match with their corresponding
+    * keys in the source data.
     *
     * See [[NodeMappingBuilder]] for further information.
     *
-    * @param nodeIdKey      key to access the node identifier in the source data
-    * @param impliedLabels  set of node labels
-    * @param propertyKeys   set of property keys
-    * @return node mapping
+    * @param nodeIdKey
+    *   key to access the node identifier in the source data
+    * @param impliedLabels
+    *   set of node labels
+    * @param propertyKeys
+    *   set of property keys
+    * @return
+    *   node mapping
     */
   def create(
     nodeIdKey: String,
@@ -65,35 +73,43 @@ object NodeMappingBuilder {
     propertyKeys: Set[String] = Set.empty
   ): ElementMapping = {
 
-    val mappingWithImpliedLabels = impliedLabels.foldLeft(NodeMappingBuilder.withSourceIdKey(nodeIdKey)) {
-      (mapping, label) => mapping.withImpliedLabel(label)
-    }
+    val mappingWithImpliedLabels =
+      impliedLabels.foldLeft(NodeMappingBuilder.withSourceIdKey(nodeIdKey)) { (mapping, label) =>
+        mapping.withImpliedLabel(label)
+      }
 
-    propertyKeys.foldLeft(mappingWithImpliedLabels) {
-      (mapping, property) => mapping.withPropertyKey(property)
-    }.build
+    propertyKeys
+      .foldLeft(mappingWithImpliedLabels) { (mapping, property) =>
+        mapping.withPropertyKey(property)
+      }
+      .build
   }
 }
 
 /**
   * Builder to build ElementMapping with a [[NodePattern]].
   *
-  * Represents a mapping from a source with key-based access of node components (e.g. a table definition) to a Cypher
-  * node. The purpose of this class is to define a mapping from an external data source to a property graph.
+  * Represents a mapping from a source with key-based access of node components (e.g. a table
+  * definition) to a Cypher node. The purpose of this class is to define a mapping from an external
+  * data source to a property graph.
   *
   * Construct a [[NodeMappingBuilder]] starting with [[NodeMappingBuilder#on]].
   *
-  * The [[nodeIdKey]] represents a key to the node identifier within the source data. The retrieved value from the
-  * source data is expected to be a [[scala.Long]] value that is unique among nodes.
+  * The [[nodeIdKey]] represents a key to the node identifier within the source data. The retrieved
+  * value from the source data is expected to be a [[scala.Long]] value that is unique among nodes.
   *
   * The [[impliedNodeLabels]] represent a set of node labels.
   *
-  * The [[propertyMapping]] represents a map from node property keys to keys in the source data. The retrieved value
-  * from the source is expected to be convertible to a valid [[org.opencypher.okapi.api.value.CypherValue]].
+  * The [[propertyMapping]] represents a map from node property keys to keys in the source data. The
+  * retrieved value from the source is expected to be convertible to a valid
+  * [[org.opencypher.okapi.api.value.CypherValue]].
   *
-  * @param nodeIdKey          key to access the node identifier in the source data
-  * @param impliedNodeLabels  set of node labels
-  * @param propertyMapping    mapping from property key to source property key
+  * @param nodeIdKey
+  *   key to access the node identifier in the source data
+  * @param impliedNodeLabels
+  *   set of node labels
+  * @param propertyMapping
+  *   mapping from property key to source property key
   */
 final case class NodeMappingBuilder(
   nodeIdKey: String,
@@ -109,13 +125,19 @@ final case class NodeMappingBuilder(
   def withImpliedLabel(label: String): NodeMappingBuilder =
     copy(impliedNodeLabels = impliedNodeLabels + label)
 
-  override protected def updatePropertyMapping(updatedPropertyMapping: Map[String, String]): NodeMappingBuilder =
+  override protected def updatePropertyMapping(
+    updatedPropertyMapping: Map[String, String]
+  ): NodeMappingBuilder =
     copy(propertyMapping = updatedPropertyMapping)
 
   override def build: ElementMapping = {
     val pattern: NodePattern = NodePattern(CTNode(impliedNodeLabels))
-    val properties: Map[PatternElement, Map[String, String]] = Map(pattern.nodeElement -> propertyMapping)
-    val idKeys: Map[PatternElement, Map[IdKey, String]] = Map(pattern.nodeElement -> Map(SourceIdKey -> nodeIdKey))
+    val properties: Map[PatternElement, Map[String, String]] = Map(
+      pattern.nodeElement -> propertyMapping
+    )
+    val idKeys: Map[PatternElement, Map[IdKey, String]] = Map(
+      pattern.nodeElement -> Map(SourceIdKey -> nodeIdKey)
+    )
 
     validate()
 

@@ -37,7 +37,8 @@ import org.opencypher.okapi.testing.Bag._
 
 class QualifiedGraphNameAcceptance extends MorpheusTestSuite with ScanGraphInit {
 
-  val defaultGraph: RelationalCypherGraph[SparkTable.DataFrameTable] = initGraph("CREATE (:A)-[:REL]->(:B)")
+  val defaultGraph: RelationalCypherGraph[SparkTable.DataFrameTable] =
+    initGraph("CREATE (:A)-[:REL]->(:B)")
 
   def defaultDS: SessionGraphDataSource = {
     val ds = new SessionGraphDataSource()
@@ -53,15 +54,21 @@ class QualifiedGraphNameAcceptance extends MorpheusTestSuite with ScanGraphInit 
 
   describe("FROM GRAPH") {
     def assertFromGraph(namespace: String, graphName: String) = {
-      morpheus.cypher(
-        s"""
+      morpheus
+        .cypher(
+          s"""
            |FROM GRAPH $namespace.$graphName
            |MATCH (n)
            |RETURN COUNT(n) as cnt
         """.stripMargin
-      ).records.iterator.toBag should equal(Bag(
-        CypherMap("cnt" -> 2)
-      ))
+        )
+        .records
+        .iterator
+        .toBag should equal(
+        Bag(
+          CypherMap("cnt" -> 2)
+        )
+      )
     }
 
     it("can load from escaped namespaces") {
@@ -83,29 +90,41 @@ class QualifiedGraphNameAcceptance extends MorpheusTestSuite with ScanGraphInit 
       val sessionDS = morpheus.catalog.source(morpheus.catalog.sessionNamespace)
       sessionDS.store(GraphName("my best graph"), defaultGraph)
 
-      morpheus.cypher(
-        s"""
+      morpheus
+        .cypher(
+          s"""
            |FROM GRAPH `my best graph`
            |MATCH (n)
            |RETURN COUNT(n) as cnt
         """.stripMargin
-      ).records.iterator.toBag should equal(Bag(
-        CypherMap("cnt" -> 2)
-      ))
+        )
+        .records
+        .iterator
+        .toBag should equal(
+        Bag(
+          CypherMap("cnt" -> 2)
+        )
+      )
     }
   }
 
   describe("CONSTRUCT ON") {
     def assertConstructOn(namespace: String, graphName: String) = {
-      morpheus.cypher(
-        s"""
+      morpheus
+        .cypher(
+          s"""
            |CONSTRUCT ON $namespace.$graphName
            |MATCH (n)
            |RETURN COUNT(n) as cnt
         """.stripMargin
-      ).records.iterator.toBag should equal(Bag(
-        CypherMap("cnt" -> 2)
-      ))
+        )
+        .records
+        .iterator
+        .toBag should equal(
+        Bag(
+          CypherMap("cnt" -> 2)
+        )
+      )
     }
 
     it("can construct on escaped namespaces") {
@@ -127,15 +146,21 @@ class QualifiedGraphNameAcceptance extends MorpheusTestSuite with ScanGraphInit 
       val sessionDS = morpheus.catalog.source(morpheus.catalog.sessionNamespace)
       sessionDS.store(GraphName("my best graph"), defaultGraph)
 
-      morpheus.cypher(
-        s"""
+      morpheus
+        .cypher(
+          s"""
            |CONSTRUCT ON `my best graph`
            |MATCH (n)
            |RETURN COUNT(n) as cnt
         """.stripMargin
-      ).records.iterator.toBag should equal(Bag(
-        CypherMap("cnt" -> 2)
-      ))
+        )
+        .records
+        .iterator
+        .toBag should equal(
+        Bag(
+          CypherMap("cnt" -> 2)
+        )
+      )
     }
   }
 
@@ -180,8 +205,8 @@ class QualifiedGraphNameAcceptance extends MorpheusTestSuite with ScanGraphInit 
           """.stripMargin
       )
 
-      morpheus
-        .catalog.source(morpheus.catalog.sessionNamespace)
+      morpheus.catalog
+        .source(morpheus.catalog.sessionNamespace)
         .hasGraph(GraphName("my best constructed graph")) should be(true)
     }
   }

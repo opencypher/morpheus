@@ -39,20 +39,21 @@ import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
   * Example: Customer360
   *
   * A business has a record of interactions between its customers and its employed customer reps.
-  * This record is modelled as a stream of events that get logged in a simple CSV file.
-  * As time progresses, more data is added to the file.
+  * This record is modelled as a stream of events that get logged in a simple CSV file. As time
+  * progresses, more data is added to the file.
   *
-  * A graph perspective is applied to this dataset, where we can identify customers who interact with
-  * customer reps with policies and accounts.
-  * From a business analysis perspective, we are interested in finding out which customers and which
-  * customer reps are involved in the most problematic interactions, such as cancellations.
+  * A graph perspective is applied to this dataset, where we can identify customers who interact
+  * with customer reps with policies and accounts. From a business analysis perspective, we are
+  * interested in finding out which customers and which customer reps are involved in the most
+  * problematic interactions, such as cancellations.
   *
-  * Using Graph DDL we load a set of Hive views into a graph, which we seed into a Neo4j transactional database.
-  * As time progresses, we need to update our transactional database with the incoming deltas, which are taken
-  * at regular time intervals.
-  * In this demo we showcase one such time interval, and merge a delta graph into the Neo4j database.
+  * Using Graph DDL we load a set of Hive views into a graph, which we seed into a Neo4j
+  * transactional database. As time progresses, we need to update our transactional database with
+  * the incoming deltas, which are taken at regular time intervals. In this demo we showcase one
+  * such time interval, and merge a delta graph into the Neo4j database.
   *
-  * One may observe that the Cypher queries shown here may also be executed directly in Neo4j, with the same results.
+  * One may observe that the Cypher queries shown here may also be executed directly in Neo4j, with
+  * the same results.
   */
 object Customer360Example extends App {
   val boltUrl = namedArg("--bolt-url").getOrElse("bolt://localhost:7687")
@@ -80,7 +81,10 @@ object Customer360Example extends App {
 
   // Register a Neo4j PGDS in the session's catalog
   // This enables reading graphs from a Neo4j database into Morpheus
-  morpheus.registerSource(Namespace("transactional"), GraphSources.cypher.neo4j(neo4j.config))
+  morpheus.registerSource(
+    Namespace("transactional"),
+    GraphSources.cypher.neo4j(neo4j.config)
+  )
 
   // Register a file system PGDS in the session's catalog
   // This allows storing snapshots of graphs persistently for processing in later Morpheus sessions
@@ -88,31 +92,34 @@ object Customer360Example extends App {
   // We also integrate this with Hive so that the dataframes stored on disk are also visible in Hive views
   // To make this work we ensure that there the Hive database exists
   morpheus.sql("CREATE DATABASE IF NOT EXISTS snapshots")
-  morpheus.registerSource(Namespace("snapshots"),
+  morpheus.registerSource(
+    Namespace("snapshots"),
     GraphSources.fs("snapshots-root", Some("snapshots")).parquet
   )
 
   println("PGDSs registered")
 
-  val c360Seed = morpheus.cypher(
-    """
+  val c360Seed = morpheus
+    .cypher("""
       |FROM c360.interactions_seed
       |RETURN GRAPH
-    """.stripMargin).graph
+    """.stripMargin)
+    .graph
 
   /*
    * Find customers who have reported the most problematic interactions (complaints or cancellations)
    * List the top 6 customers and their interaction statistics
    */
-  c360Seed.cypher(
-    """
+  c360Seed
+    .cypher("""
       |MATCH (c:Customer)--(i:Interaction)--(:CustomerRep)
       |WITH c, i.type AS type, count(*) AS cnt
       |WHERE type IN ['cancel', 'complaint']
       |RETURN c, type, cnt
       |ORDER BY cnt DESC
       |LIMIT 42
-    """.stripMargin).show
+    """.stripMargin)
+    .show
 
   // Speed up merge operation. Requires Neo4j Enterprise Edition
 //  Neo4jGraphMerge.createIndexes(entireGraphName, neo4j.dataSourceConfig, c360Seed.schema.nodeKeys)
@@ -125,8 +132,8 @@ object Customer360Example extends App {
   /*
    * We can also execute the same query based on the graph we merged into the Neo4j instance, seeing the same results.
    */
-  morpheus.cypher(
-    s"""
+  morpheus
+    .cypher(s"""
        |FROM transactional.$entireGraphName
        |MATCH (c:Customer)--(i:Interaction)--(rep:CustomerRep)
        |WITH c, i.type AS type, count(*) AS cnt
@@ -134,14 +141,15 @@ object Customer360Example extends App {
        |RETURN c, type, cnt
        |ORDER BY cnt DESC
        |LIMIT 42
-    """.stripMargin).show
+    """.stripMargin)
+    .show
 
   /*
    * Find customer reps who have received the most problematic reports (complaints or cancellations)
    * List the top 9 customer reps and their interaction statistics
    */
-  morpheus.cypher(
-    """
+  morpheus
+    .cypher("""
       |FROM c360.interactions_seed
       |MATCH (c:Customer)--(i:Interaction)--(rep:CustomerRep)
       |WITH rep, i.type AS type, count(*) AS cnt
@@ -149,13 +157,14 @@ object Customer360Example extends App {
       |RETURN rep, type, cnt
       |ORDER BY cnt DESC
       |LIMIT 12
-    """.stripMargin).show
+    """.stripMargin)
+    .show
 
   /*
    * We can also execute the same query based on the graph we merged into the Neo4j instance, seeing the same results.
    */
-  morpheus.cypher(
-    s"""
+  morpheus
+    .cypher(s"""
        |FROM transactional.$entireGraphName
        |MATCH (c:Customer)--(i:Interaction)--(rep:CustomerRep)
        |WITH rep, i.type AS type, count(*) AS cnt
@@ -163,7 +172,8 @@ object Customer360Example extends App {
        |RETURN rep, type, cnt
        |ORDER BY cnt DESC
        |LIMIT 12
-    """.stripMargin).show
+    """.stripMargin)
+    .show
 
   // Time moves forward and more interactions happen
   // We want to synchronize our transactional database with the new data
@@ -178,8 +188,8 @@ object Customer360Example extends App {
 
   // Find the updated statistics on customer rep interactions
   // Here we execute the query from Spark by importing the necessary data from Neo4j on the fly
-  morpheus.cypher(
-    s"""
+  morpheus
+    .cypher(s"""
        |FROM transactional.$entireGraphName
        |MATCH (c:Customer)--(i:Interaction)--(rep:CustomerRep)
        |WITH rep, i.type AS type, count(*) AS cnt
@@ -187,7 +197,8 @@ object Customer360Example extends App {
        |RETURN rep, type, cnt
        |ORDER BY cnt DESC
        |LIMIT 19
-    """.stripMargin).show
+    """.stripMargin)
+    .show
 
   // Reset Neo4j test instance and close the session and driver
   neo4j.close()

@@ -41,7 +41,9 @@ class Neo4jHelpersTest extends BaseTestSuite {
     }
 
     it("works for multiple label") {
-      Set("Foo", "Bar", "Baz with Space").cypherLabelPredicate should equal(":`Foo`:`Bar`:`Baz with Space`")
+      Set("Foo", "Bar", "Baz with Space").cypherLabelPredicate should equal(
+        ":`Foo`:`Bar`:`Baz with Space`"
+      )
     }
   }
 

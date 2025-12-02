@@ -28,7 +28,9 @@ package org.opencypher.morpheus.examples
 
 class ViewsExampleTest extends ExampleTestBase {
   it("should produce the correct output") {
-    validate(ViewsExample.main(Array.empty),
-      getClass.getResource("/example_outputs/ViewsExample.out").toURI)
+    validate(
+      ViewsExample.main(Array.empty),
+      getClass.getResource("/example_outputs/ViewsExample.out").toURI
+    )
   }
 }

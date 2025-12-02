@@ -45,7 +45,8 @@ sealed trait Connection {
   def target: IRField
 
   override def hashCode(): Int = orientation.hash(endpoints, seed)
-  override def equals(obj: scala.Any): Boolean = super.equals(obj) || (obj != null && equalsIfNotEq(obj))
+  override def equals(obj: scala.Any): Boolean =
+    super.equals(obj) || (obj != null && equalsIfNotEq(obj))
 
   protected def seed: Int
   protected def equalsIfNotEq(obj: scala.Any): Boolean
@@ -89,42 +90,57 @@ sealed trait SingleRelationship extends Connection {
   final protected override def seed: Int = SingleRelationship.seed
 }
 
-final case class DirectedRelationship(endpoints: DifferentEndpoints, semanticDirection: SemanticDirection)
-  extends SingleRelationship with DirectedConnection {
+final case class DirectedRelationship(
+  endpoints: DifferentEndpoints,
+  semanticDirection: SemanticDirection
+) extends SingleRelationship
+    with DirectedConnection {
 
   protected def equalsIfNotEq(obj: scala.Any): Boolean = obj match {
-    case other: DirectedRelationship => orientation.eqv(endpoints, other.endpoints)
+    case other: DirectedRelationship =>
+      orientation.eqv(endpoints, other.endpoints)
     case _ => false
   }
 }
 
 case object DirectedRelationship {
-  def apply(source: IRField, target: IRField, semanticDirection: SemanticDirection = OUTGOING): SingleRelationship = Endpoints(source, target) match {
+  def apply(
+    source: IRField,
+    target: IRField,
+    semanticDirection: SemanticDirection = OUTGOING
+  ): SingleRelationship = Endpoints(source, target) match {
     case ends: IdenticalEndpoints => CyclicRelationship(ends)
-    case ends: DifferentEndpoints => DirectedRelationship(ends, semanticDirection)
+    case ends: DifferentEndpoints =>
+      DirectedRelationship(ends, semanticDirection)
   }
 }
 
 final case class UndirectedRelationship(endpoints: DifferentEndpoints)
-  extends SingleRelationship with UndirectedConnection {
+    extends SingleRelationship
+    with UndirectedConnection {
 
   protected def equalsIfNotEq(obj: scala.Any): Boolean = obj match {
-    case other: UndirectedRelationship => orientation.eqv(endpoints, other.endpoints)
+    case other: UndirectedRelationship =>
+      orientation.eqv(endpoints, other.endpoints)
     case _ => false
   }
 }
 
 case object UndirectedRelationship {
-  def apply(source: IRField, target: IRField): SingleRelationship = Endpoints(source, target) match {
-    case ends: IdenticalEndpoints => CyclicRelationship(ends)
-    case ends: DifferentEndpoints => UndirectedRelationship(ends)
-  }
+  def apply(source: IRField, target: IRField): SingleRelationship =
+    Endpoints(source, target) match {
+      case ends: IdenticalEndpoints => CyclicRelationship(ends)
+      case ends: DifferentEndpoints => UndirectedRelationship(ends)
+    }
 }
 
-final case class CyclicRelationship(endpoints: IdenticalEndpoints) extends SingleRelationship with CyclicConnection {
+final case class CyclicRelationship(endpoints: IdenticalEndpoints)
+    extends SingleRelationship
+    with CyclicConnection {
 
   protected def equalsIfNotEq(obj: scala.Any): Boolean = obj match {
-    case other: CyclicRelationship => orientation.eqv(endpoints, other.endpoints)
+    case other: CyclicRelationship =>
+      orientation.eqv(endpoints, other.endpoints)
     case _ => false
   }
 }
@@ -147,27 +163,39 @@ final case class DirectedVarLengthRelationship(
   lower: Int,
   upper: Option[Int],
   semanticDirection: SemanticDirection = OUTGOING
-) extends VarLengthRelationship with DirectedConnection {
+) extends VarLengthRelationship
+    with DirectedConnection {
 
   override protected def equalsIfNotEq(obj: Any): Boolean = obj match {
-    case other: DirectedVarLengthRelationship => orientation.eqv(endpoints, other.endpoints)
+    case other: DirectedVarLengthRelationship =>
+      orientation.eqv(endpoints, other.endpoints)
     case _ => false
   }
 }
 
-final case class UndirectedVarLengthRelationship(edgeType: CTRelationship, endpoints: DifferentEndpoints, lower: Int, upper: Option[Int]) extends VarLengthRelationship with UndirectedConnection {
+final case class UndirectedVarLengthRelationship(
+  edgeType: CTRelationship,
+  endpoints: DifferentEndpoints,
+  lower: Int,
+  upper: Option[Int]
+) extends VarLengthRelationship
+    with UndirectedConnection {
 
   override protected def equalsIfNotEq(obj: Any): Boolean = obj match {
-    case other: UndirectedVarLengthRelationship => orientation.eqv(endpoints, other.endpoints)
+    case other: UndirectedVarLengthRelationship =>
+      orientation.eqv(endpoints, other.endpoints)
     case _ => false
   }
 }
 
 case object ConnectionCopier {
-  def copy(con: Connection, endpoints: DifferentEndpoints) : Connection = con match {
-    case r: DirectedRelationship => DirectedRelationship(endpoints, r.semanticDirection)
-    case r: DirectedVarLengthRelationship => r.copy(endpoints = endpoints)
-    case _: UndirectedRelationship | _: CyclicRelationship => UndirectedRelationship(endpoints)
-    case r: UndirectedVarLengthRelationship => r.copy(endpoints = endpoints)
-  }
+  def copy(con: Connection, endpoints: DifferentEndpoints): Connection =
+    con match {
+      case r: DirectedRelationship =>
+        DirectedRelationship(endpoints, r.semanticDirection)
+      case r: DirectedVarLengthRelationship => r.copy(endpoints = endpoints)
+      case _: UndirectedRelationship | _: CyclicRelationship =>
+        UndirectedRelationship(endpoints)
+      case r: UndirectedVarLengthRelationship => r.copy(endpoints = endpoints)
+    }
 }

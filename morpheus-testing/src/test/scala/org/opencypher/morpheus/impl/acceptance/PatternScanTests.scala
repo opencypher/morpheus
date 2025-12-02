@@ -47,20 +47,25 @@ class PatternScanTests extends MorpheusTestSuite with ScanGraphInit {
       Seq(pattern)
     )
 
-    val res = g.cypher(
-      """
+    val res = g.cypher("""
         |MATCH (a:Person)-[:KNOWS]->(b:Person)
         |RETURN a.name, b.name
       """.stripMargin)
 
-    res.records.toMaps should equal(Bag(
-      CypherMap("a.name" -> "Alice", "b.name" -> "Bob")
-    ))
+    res.records.toMaps should equal(
+      Bag(
+        CypherMap("a.name" -> "Alice", "b.name" -> "Bob")
+      )
+    )
   }
 
   it("can combine multiple pattern scans") {
     val pattern1 = NodeRelPattern(CTNode("Person"), CTRelationship("KNOWS"))
-    val pattern2 = TripletPattern(CTNode("Person"), CTRelationship("LOVES"), CTNode("Person"))
+    val pattern2 = TripletPattern(
+      CTNode("Person"),
+      CTRelationship("LOVES"),
+      CTNode("Person")
+    )
 
     val g = initGraph(
       """
@@ -74,21 +79,23 @@ class PatternScanTests extends MorpheusTestSuite with ScanGraphInit {
       Seq(pattern1, pattern2)
     )
 
-    val res = g.cypher(
-      """
+    val res = g.cypher("""
         |MATCH (a:Person)-[:KNOWS]->(b:Person),
         |      (a)-[:LOVES]->(c:Person)
         |RETURN a.name, b.name, c.name
       """.stripMargin)
 
-    res.records.toMaps should equal(Bag(
-      CypherMap("a.name" -> "Alice", "b.name" -> "Bob", "c.name" -> "Carol")
-    ))
+    res.records.toMaps should equal(
+      Bag(
+        CypherMap("a.name" -> "Alice", "b.name" -> "Bob", "c.name" -> "Carol")
+      )
+    )
   }
 
   it("combines multiple pattern scans") {
     val pattern1 = NodeRelPattern(CTNode("Person"), CTRelationship("KNOWS"))
-    val pattern2 = NodeRelPattern(CTNode("Person", "Employee"), CTRelationship("KNOWS"))
+    val pattern2 =
+      NodeRelPattern(CTNode("Person", "Employee"), CTRelationship("KNOWS"))
 
     val g = initGraph(
       """
@@ -102,16 +109,17 @@ class PatternScanTests extends MorpheusTestSuite with ScanGraphInit {
       Seq(pattern1, pattern2)
     )
 
-    val res = g.cypher(
-      """
+    val res = g.cypher("""
         |MATCH (a:Person)-[:KNOWS]->(b:Person)
         |RETURN a.name, b.name
       """.stripMargin)
 
-    res.records.toMaps should equal(Bag(
-      CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
-      CypherMap("a.name" -> "Garfield", "b.name" -> "Bob")
-    ))
+    res.records.toMaps should equal(
+      Bag(
+        CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
+        CypherMap("a.name" -> "Garfield", "b.name" -> "Bob")
+      )
+    )
   }
 
   it("works if node rel scans do not cover all node label combinations") {
@@ -129,16 +137,17 @@ class PatternScanTests extends MorpheusTestSuite with ScanGraphInit {
       Seq(pattern1)
     )
 
-    val res = g.cypher(
-      """
+    val res = g.cypher("""
         |MATCH (a:Person)-[:KNOWS]->(b:Person)
         |RETURN a.name, b.name
       """.stripMargin)
 
-    res.records.toMaps should equal(Bag(
-      CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
-      CypherMap("a.name" -> "Garfield", "b.name" -> "Bob")
-    ))
+    res.records.toMaps should equal(
+      Bag(
+        CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
+        CypherMap("a.name" -> "Garfield", "b.name" -> "Bob")
+      )
+    )
   }
 
   it("works if node rel scans do not cover all rel type combinations") {
@@ -155,20 +164,25 @@ class PatternScanTests extends MorpheusTestSuite with ScanGraphInit {
       Seq(pattern1)
     )
 
-    val res = g.cypher(
-      """
+    val res = g.cypher("""
         |MATCH (a:Person)-[:KNOWS|LOVES]->(b:Person)
         |RETURN a.name, b.name
       """.stripMargin)
 
-    res.records.toMaps should equal(Bag(
-      CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
-      CypherMap("a.name" -> "Alice", "b.name" -> "Bob")
-    ))
+    res.records.toMaps should equal(
+      Bag(
+        CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
+        CypherMap("a.name" -> "Alice", "b.name" -> "Bob")
+      )
+    )
   }
 
   it("works if triplet scans do not cover all source node labels") {
-    val pattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Person"))
+    val pattern = TripletPattern(
+      CTNode("Person"),
+      CTRelationship("KNOWS"),
+      CTNode("Person")
+    )
 
     val g = initGraph(
       """
@@ -182,20 +196,25 @@ class PatternScanTests extends MorpheusTestSuite with ScanGraphInit {
       Seq(pattern)
     )
 
-    val res = g.cypher(
-      """
+    val res = g.cypher("""
         |MATCH (a)-[:KNOWS]->(b:Person)
         |RETURN a.name, b.name
       """.stripMargin)
 
-    res.records.toMaps should equal(Bag(
-      CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
-      CypherMap("a.name" -> "Garfield", "b.name" -> "Bob")
-    ))
+    res.records.toMaps should equal(
+      Bag(
+        CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
+        CypherMap("a.name" -> "Garfield", "b.name" -> "Bob")
+      )
+    )
   }
 
   it("works if triplet scans do not cover all target node labels") {
-    val pattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Person"))
+    val pattern = TripletPattern(
+      CTNode("Person"),
+      CTRelationship("KNOWS"),
+      CTNode("Person")
+    )
 
     val g = initGraph(
       """
@@ -209,20 +228,25 @@ class PatternScanTests extends MorpheusTestSuite with ScanGraphInit {
       Seq(pattern)
     )
 
-    val res = g.cypher(
-      """
+    val res = g.cypher("""
         |MATCH (a)-[:KNOWS]->(b)
         |RETURN a.name, b.name
       """.stripMargin)
 
-    res.records.toMaps should equal(Bag(
-      CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
-      CypherMap("a.name" -> "Alice", "b.name" -> "Garfield")
-    ))
+    res.records.toMaps should equal(
+      Bag(
+        CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
+        CypherMap("a.name" -> "Alice", "b.name" -> "Garfield")
+      )
+    )
   }
 
   it("works if they do not cover all rel types") {
-    val pattern = TripletPattern(CTNode("Person"), CTRelationship("KNOWS"), CTNode("Person"))
+    val pattern = TripletPattern(
+      CTNode("Person"),
+      CTRelationship("KNOWS"),
+      CTNode("Person")
+    )
 
     val g = initGraph(
       """
@@ -235,15 +259,16 @@ class PatternScanTests extends MorpheusTestSuite with ScanGraphInit {
       Seq(pattern)
     )
 
-    val res = g.cypher(
-      """
+    val res = g.cypher("""
         |MATCH (a)-[:KNOWS|LOVES]->(b)
         |RETURN a.name, b.name
       """.stripMargin)
 
-    res.records.toMaps should equal(Bag(
-      CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
-      CypherMap("a.name" -> "Alice", "b.name" -> "Bob")
-    ))
+    res.records.toMaps should equal(
+      Bag(
+        CypherMap("a.name" -> "Alice", "b.name" -> "Bob"),
+        CypherMap("a.name" -> "Alice", "b.name" -> "Bob")
+      )
+    )
   }
 }

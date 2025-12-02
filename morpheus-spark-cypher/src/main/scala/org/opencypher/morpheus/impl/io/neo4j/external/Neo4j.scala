@@ -76,18 +76,24 @@ object Neo4j {
 }
 
 case class Partitions(
-    partitions: Long = 1,
-    batchSize: Long = Neo4j.UNDEFINED,
-    rows: Long = Neo4j.UNDEFINED,
-    rowSource: Option[() => Long] = None) {
+  partitions: Long = 1,
+  batchSize: Long = Neo4j.UNDEFINED,
+  rows: Long = Neo4j.UNDEFINED,
+  rowSource: Option[() => Long] = None
+) {
 
-  def upper(v1: Long, v2: Long): Long = v1 / v2 + Math.signum(v1 % v2).asInstanceOf[Long]
+  def upper(v1: Long, v2: Long): Long =
+    v1 / v2 + Math.signum(v1 % v2).asInstanceOf[Long]
 
   def effective(): Partitions = {
-    if (this.batchSize == Neo4j.UNDEFINED && this.rows == Neo4j.UNDEFINED) return Partitions()
-    if (this.batchSize == Neo4j.UNDEFINED) return this.copy(batchSize = upper(rows, partitions))
-    if (this.rows == Neo4j.UNDEFINED) return this.copy(rows = this.batchSize * this.partitions)
-    if (this.partitions == 1) return this.copy(partitions = upper(rows, batchSize))
+    if (this.batchSize == Neo4j.UNDEFINED && this.rows == Neo4j.UNDEFINED)
+      return Partitions()
+    if (this.batchSize == Neo4j.UNDEFINED)
+      return this.copy(batchSize = upper(rows, partitions))
+    if (this.rows == Neo4j.UNDEFINED)
+      return this.copy(rows = this.batchSize * this.partitions)
+    if (this.partitions == 1)
+      return this.copy(partitions = upper(rows, batchSize))
     this
   }
 
@@ -100,7 +106,10 @@ case class Partitions(
   }
 }
 
-case class Neo4j(config: Neo4jConfig, session: SparkSession) extends QueriesDsl with PartitionsDsl with LoadDsl {
+case class Neo4j(config: Neo4jConfig, session: SparkSession)
+    extends QueriesDsl
+    with PartitionsDsl
+    with LoadDsl {
 
   var nodes: Query = Query(null)
   var rels: Query = Query(null)
@@ -109,7 +118,10 @@ case class Neo4j(config: Neo4jConfig, session: SparkSession) extends QueriesDsl 
 
   // configure plain query
 
-  override def cypher(cypher: String, params: Map[String, Any] = Map.empty): Neo4j = {
+  override def cypher(
+    cypher: String,
+    params: Map[String, Any] = Map.empty
+  ): Neo4j = {
     this.nodes = Query(cypher, this.nodes.params ++ params)
     this
   }
@@ -127,7 +139,10 @@ case class Neo4j(config: Neo4jConfig, session: SparkSession) extends QueriesDsl 
   override def nodes(cypher: String, params: Map[String, Any]): Neo4j =
     this.cypher(cypher, params)
 
-  override def rels(cypher: String, params: Map[String, Any] = Map.empty): Neo4j = {
+  override def rels(
+    cypher: String,
+    params: Map[String, Any] = Map.empty
+  ): Neo4j = {
     this.rels = Query(cypher, params)
     this
   }
@@ -158,14 +173,26 @@ case class Neo4j(config: Neo4jConfig, session: SparkSession) extends QueriesDsl 
 
   override def loadNodeRdds: RDD[Row] =
     if (!nodes.isEmpty) {
-      new Neo4jRDD(session.sparkContext, nodes.query, config, nodes.params, partitions)
+      new Neo4jRDD(
+        session.sparkContext,
+        nodes.query,
+        config,
+        nodes.params,
+        partitions
+      )
     } else {
       throw IllegalArgumentException("node query")
     }
 
   override def loadRelRdd: RDD[Row] =
     if (!rels.isEmpty) {
-      new Neo4jRDD(session.sparkContext, rels.query, config, rels.params, partitions)
+      new Neo4jRDD(
+        session.sparkContext,
+        rels.query,
+        config,
+        rels.params,
+        partitions
+      )
     } else {
       throw IllegalArgumentException("relationship query")
     }

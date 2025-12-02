@@ -32,7 +32,9 @@ import org.scalatestplus.scalacheck.ScalaCheckDrivenPropertyChecks
 
 class StringEncodingUtilitiesTest extends BaseTestSuite with ScalaCheckDrivenPropertyChecks {
 
-  it("encodes arbitrary strings with only letters, digits, underscores, hashes, and 'at' symbols") {
+  it(
+    "encodes arbitrary strings with only letters, digits, underscores, hashes, and 'at' symbols"
+  ) {
     forAll { s: String =>
       val encoded = s.encodeSpecialCharacters
       val decoded = encoded.decodeSpecialCharacters

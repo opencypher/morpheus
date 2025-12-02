@@ -49,7 +49,8 @@ class normalizeCaseExpressionTest extends BaseTestSuite with RewriterTestSupport
         |    WHEN n.val = "foo" THEN 1
         |    WHEN n.val = "bar" THEN 2
         |  END AS val
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   it("should rewrite simple CASE statement with default") {
@@ -71,7 +72,8 @@ class normalizeCaseExpressionTest extends BaseTestSuite with RewriterTestSupport
         |    WHEN n.val = "bar" THEN 2
         |    ELSE 3
         |  END AS val
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 
   it("should not rewrite generic CASE statement") {
@@ -93,6 +95,7 @@ class normalizeCaseExpressionTest extends BaseTestSuite with RewriterTestSupport
         |    WHEN n.val = "bar" THEN 2
         |    ELSE 3
         |  END AS val
-      """.stripMargin)
+      """.stripMargin
+    )
   }
 }

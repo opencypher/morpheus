@@ -33,7 +33,9 @@ class Neo4jWorkflowExampleTest extends ExampleTestBase with Neo4jServerFixture {
   override def dataFixture: String = ""
 
   it("should produce the correct output") {
-    validate(Neo4jWorkflowExample.main(Array("--bolt-url", boltUrl)),
-      getClass.getResource("/example_outputs/Neo4jWorkflowExample.out").toURI)
+    validate(
+      Neo4jWorkflowExample.main(Array("--bolt-url", boltUrl)),
+      getClass.getResource("/example_outputs/Neo4jWorkflowExample.out").toURI
+    )
   }
 }

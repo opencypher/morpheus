@@ -42,16 +42,18 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
   private val header = RecordHeader(exprToColumn.toMap)
 
   override def apply(row: Row): CypherMap = {
-    val values = header.returnItems.map(r => r.name -> constructValue(row, r)).toSeq
+    val values =
+      header.returnItems.map(r => r.name -> constructValue(row, r)).toSeq
     CypherMap(values: _*)
   }
 
   // TODO: Validate all column types. At the moment null values are cast to the expected type...
   private def constructValue(row: Row, v: Var): CypherValue = {
     v.cypherType.material match {
-      case n if n.subTypeOf(CTNode.nullable) => collectNode(row, v)
+      case n if n.subTypeOf(CTNode.nullable)         => collectNode(row, v)
       case r if r.subTypeOf(CTRelationship.nullable) => collectRel(row, v)
-      case l if l.subTypeOf(CTList.nullable) && !header.exprToColumn.contains(v) => collectComplexList(row, v)
+      case l if l.subTypeOf(CTList.nullable) && !header.exprToColumn.contains(v) =>
+        collectComplexList(row, v)
       case _ => constructFromExpression(row, v)
     }
   }
@@ -66,7 +68,6 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
     idValue match {
       case null => CypherNull
       case id: Array[_] =>
-
         val labels = header
           .labelsFor(v)
           .map { l => l.label.name -> row.getAs[Boolean](header.column(l)) }
@@ -79,7 +80,10 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
           .toMap
 
         MorpheusNode(id.asInstanceOf[Array[Byte]], labels, properties)
-      case invalidID => throw UnsupportedOperationException(s"MorpheusNode ID has to be an Array[Byte] instead of ${invalidID.getClass}")
+      case invalidID =>
+        throw UnsupportedOperationException(
+          s"MorpheusNode ID has to be an Array[Byte] instead of ${invalidID.getClass}"
+        )
     }
   }
 
@@ -108,21 +112,29 @@ final case class rowToCypherMap(exprToColumn: Seq[(Expr, String)]) extends (Row 
           source.asInstanceOf[Array[Byte]],
           target.asInstanceOf[Array[Byte]],
           relType,
-          properties)
-      case invalidID => throw UnsupportedOperationException(s"MorpheusRelationship ID has to be an Array[Byte] instead of ${invalidID.getClass}")
+          properties
+        )
+      case invalidID =>
+        throw UnsupportedOperationException(
+          s"MorpheusRelationship ID has to be an Array[Byte] instead of ${invalidID.getClass}"
+        )
     }
   }
 
   private def collectComplexList(row: Row, expr: Var): CypherList = {
-    val elements = header.ownedBy(expr).collect {
-      case p: ListSegment => p
-    }.toSeq.sortBy(_.index)
+    val elements = header
+      .ownedBy(expr)
+      .collect { case p: ListSegment =>
+        p
+      }
+      .toSeq
+      .sortBy(_.index)
 
     val values = elements
       .map(constructValue(row, _))
       .filter {
         case CypherNull => false
-        case _ => true
+        case _          => true
       }
 
     CypherList(values)

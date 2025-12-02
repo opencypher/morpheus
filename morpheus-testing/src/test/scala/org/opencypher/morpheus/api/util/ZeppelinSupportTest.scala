@@ -51,8 +51,7 @@ class ZeppelinSupportTest extends MorpheusTestSuite with TeamDataFixture with Sc
   // scalastyle:on line.contains.tab
 
   it("can render a graph from records") {
-    val graph = initGraph(
-      """
+    val graph = initGraph("""
         |CREATE (a:Person {val1: 1, val2: "foo"})
         |CREATE (b:Person:Swedish {val1: 2, val2: "bar"})
         |CREATE (c:Person {val1: 3, val2: "baz"})
@@ -60,7 +59,9 @@ class ZeppelinSupportTest extends MorpheusTestSuite with TeamDataFixture with Sc
         |CREATE (a)-[:KNOWS {since: 2016}]->(c)
         |CREATE (b)-[:KNOWS {since: 2017}]->(c)
       """.stripMargin)
-    val result = graph.cypher("MATCH (p:Person)-[k:KNOWS]->(p2:Person) RETURN p, k, p2 ORDER BY p.val1, k.since")
+    val result = graph.cypher(
+      "MATCH (p:Person)-[k:KNOWS]->(p2:Person) RETURN p, k, p2 ORDER BY p.val1, k.since"
+    )
 
     val asGraph = result.records.toZeppelinGraph
 
@@ -149,7 +150,10 @@ class ZeppelinSupportTest extends MorpheusTestSuite with TeamDataFixture with Sc
   def sorted(v: ujson.Value): ujson.Value = v match {
     case ujson.Obj(x) =>
       val res = ujson.Obj()
-      x.mapValues(sorted(_)).toSeq.sortBy(_._1).foreach(e => res.value.put(e._1, e._2))
+      x.mapValues(sorted(_))
+        .toSeq
+        .sortBy(_._1)
+        .foreach(e => res.value.put(e._1, e._2))
       res
     case ujson.Arr(x) =>
       val res = ujson.Arr()
@@ -159,10 +163,16 @@ class ZeppelinSupportTest extends MorpheusTestSuite with TeamDataFixture with Sc
   }
 
   it("supports Zeppelin network representation") {
-    val graph = morpheus.graphs.create(personTable, bookTable, readsTable, knowsTable, influencesTable)
-    val asJson = graph.toZeppelinJson()(CypherValue.Format.defaultValueFormatter)
-    val expected = ujson.read(
-      s"""
+    val graph = morpheus.graphs.create(
+      personTable,
+      bookTable,
+      readsTable,
+      knowsTable,
+      influencesTable
+    )
+    val asJson =
+      graph.toZeppelinJson()(CypherValue.Format.defaultValueFormatter)
+    val expected = ujson.read(s"""
          |{
          |  "nodes": [
          |    {

@@ -41,17 +41,27 @@ object SessionGraphDataSource {
 
 class SessionGraphDataSource() extends PropertyGraphDataSource {
 
-  private val graphMap: mutable.Map[GraphName, PropertyGraph] = mutable.Map.empty
+  private val graphMap: mutable.Map[GraphName, PropertyGraph] =
+    mutable.Map.empty
 
   override def graph(name: GraphName): PropertyGraph =
-    graphMap.getOrElse(name, throw GraphNotFoundException(s"Session graph with name `$name`."))
+    graphMap.getOrElse(
+      name,
+      throw GraphNotFoundException(s"Session graph with name `$name`.")
+    )
 
-  override def schema(name: GraphName): Option[PropertyGraphSchema] = Some(graph(name).schema)
+  override def schema(name: GraphName): Option[PropertyGraphSchema] = Some(
+    graph(name).schema
+  )
 
-  override def store(name: GraphName, graph: PropertyGraph): Unit = graphMap.get(name) match {
-    case None => graphMap.update(name, graph)
-    case Some(_) => throw GraphAlreadyExistsException(s"A graph with name $name is already stored in the session.")
-  }
+  override def store(name: GraphName, graph: PropertyGraph): Unit =
+    graphMap.get(name) match {
+      case None => graphMap.update(name, graph)
+      case Some(_) =>
+        throw GraphAlreadyExistsException(
+          s"A graph with name $name is already stored in the session."
+        )
+    }
 
   override def delete(name: GraphName): Unit = graphMap.remove(name)
 

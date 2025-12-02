@@ -67,38 +67,68 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
     it("converts to GraphDDL IR") {
       val graphDdl = GraphDdl(ddlString)
 
-      val maybeSetSchema = Some(SetSchemaDefinition("dataSourceName", "fooDatabaseName"))
+      val maybeSetSchema =
+        Some(SetSchemaDefinition("dataSourceName", "fooDatabaseName"))
 
-      val personKey1 = NodeViewKey(NodeType("Person"), ViewId(maybeSetSchema, List("personView1")))
-      val personKey2 = NodeViewKey(NodeType("Person"), ViewId(maybeSetSchema, List("personView2")))
-      val bookKey = NodeViewKey(NodeType("Book"), ViewId(maybeSetSchema, List("bookView")))
-      val readsKey1 = EdgeViewKey(RelationshipType("Person", "READS", "Book"), ViewId(maybeSetSchema, List("readsView1")))
-      val readsKey2 = EdgeViewKey(RelationshipType("Person", "READS", "Book"), ViewId(maybeSetSchema, List("readsView2")))
+      val personKey1 = NodeViewKey(
+        NodeType("Person"),
+        ViewId(maybeSetSchema, List("personView1"))
+      )
+      val personKey2 = NodeViewKey(
+        NodeType("Person"),
+        ViewId(maybeSetSchema, List("personView2"))
+      )
+      val bookKey =
+        NodeViewKey(NodeType("Book"), ViewId(maybeSetSchema, List("bookView")))
+      val readsKey1 = EdgeViewKey(
+        RelationshipType("Person", "READS", "Book"),
+        ViewId(maybeSetSchema, List("readsView1"))
+      )
+      val readsKey2 = EdgeViewKey(
+        RelationshipType("Person", "READS", "Book"),
+        ViewId(maybeSetSchema, List("readsView2"))
+      )
 
       val expected = GraphDdl(
         Map(
-          GraphName("fooGraph") -> Graph(GraphName("fooGraph"),
+          GraphName("fooGraph") -> Graph(
+            GraphName("fooGraph"),
             GraphType.empty
               .withName("fooSchema")
-              .withElementType(ElementType("Person", Set.empty, Map("name" -> CTString, "age" -> CTInteger)))
-              .withElementType(ElementType("Book", Set.empty, Map("title" -> CTString)))
-              .withElementType(ElementType("READS", Set.empty, Map("rating" -> CTFloat)))
+              .withElementType(
+                ElementType(
+                  "Person",
+                  Set.empty,
+                  Map("name" -> CTString, "age" -> CTInteger)
+                )
+              )
+              .withElementType(
+                ElementType("Book", Set.empty, Map("title" -> CTString))
+              )
+              .withElementType(
+                ElementType("READS", Set.empty, Map("rating" -> CTFloat))
+              )
               .withNodeType(NodeType("Person"))
               .withNodeType(NodeType("Book"))
-              .withRelationshipType(RelationshipType("Person", "READS", "Book")),
+              .withRelationshipType(
+                RelationshipType("Person", "READS", "Book")
+              ),
             Map(
               personKey1 -> NodeToViewMapping(
                 nodeType = NodeType("Person"),
                 view = personKey1.viewId,
-                propertyMappings = Map("name" -> "person_name1", "age" -> "age")),
+                propertyMappings = Map("name" -> "person_name1", "age" -> "age")
+              ),
               personKey2 -> NodeToViewMapping(
                 nodeType = NodeType("Person"),
                 view = personKey2.viewId,
-                propertyMappings = Map("name" -> "person_name2", "age" -> "age")),
+                propertyMappings = Map("name" -> "person_name2", "age" -> "age")
+              ),
               bookKey -> NodeToViewMapping(
                 nodeType = NodeType("Book"),
                 view = bookKey.viewId,
-                propertyMappings = Map("title" -> "book_title"))
+                propertyMappings = Map("title" -> "book_title")
+              )
             ),
             List(
               EdgeToViewMapping(
@@ -106,13 +136,15 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
                 view = readsKey1.viewId,
                 startNode = StartNode(personKey1, List(Join("person_id1", "person"))),
                 endNode = EndNode(bookKey, List(Join("book_id", "book"))),
-                propertyMappings = Map("rating" -> "value1")),
+                propertyMappings = Map("rating" -> "value1")
+              ),
               EdgeToViewMapping(
                 relType = RelationshipType("Person", "READS", "Book"),
                 view = readsKey2.viewId,
                 startNode = StartNode(personKey2, List(Join("person_id2", "person"))),
                 endNode = EndNode(bookKey, List(Join("book_id", "book"))),
-                propertyMappings = Map("rating" -> "value2"))
+                propertyMappings = Map("rating" -> "value2")
+              )
             )
           )
         )
@@ -122,8 +154,7 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
     }
 
     it("allows compact inline graph definition") {
-      val ddl = GraphDdl(
-        """SET SCHEMA ds1.db1
+      val ddl = GraphDdl("""SET SCHEMA ds1.db1
           |CREATE GRAPH myGraph (
           |  A (x STRING), B (y STRING),
           |  (A) FROM a,
@@ -133,7 +164,10 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
           |)
         """.stripMargin)
 
-      val A_a = NodeViewKey(NodeType("A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")))
+      val A_a = NodeViewKey(
+        NodeType("A"),
+        ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a"))
+      )
 
       ddl.graphs(GraphName("myGraph")) shouldEqual Graph(
         name = GraphName("myGraph"),
@@ -144,10 +178,16 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
           .withNodeType(NodeType("A"))
           .withRelationshipType(RelationshipType("A", "B", "A")),
         nodeToViewMappings = Map(
-          A_a -> NodeToViewMapping(NodeType("A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")), Map("x" -> "x"))
+          A_a -> NodeToViewMapping(
+            NodeType("A"),
+            ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")),
+            Map("x" -> "x")
+          )
         ),
         edgeToViewMappings = List(
-          EdgeToViewMapping(RelationshipType("A", "B", "A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("b")),
+          EdgeToViewMapping(
+            RelationshipType("A", "B", "A"),
+            ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("b")),
             StartNode(A_a, List(Join("id", "id"))),
             EndNode(A_a, List(Join("id", "id"))),
             Map("y" -> "y")
@@ -159,8 +199,7 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
     it("allows these equivalent graph definitions") {
       val ddls = List(
         // most compact form
-        GraphDdl(
-          """SET SCHEMA ds1.db1
+        GraphDdl("""SET SCHEMA ds1.db1
             |CREATE GRAPH myGraph (
             |  A (x STRING), B (y STRING),
             |  (A) FROM a,
@@ -170,8 +209,7 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
             |)
           """.stripMargin),
         // mixed order
-        GraphDdl(
-          """SET SCHEMA ds1.db1
+        GraphDdl("""SET SCHEMA ds1.db1
             |CREATE GRAPH myGraph (
             |  (A)-[B]->(A) FROM b e
             |    START NODES (A) FROM a n JOIN ON e.id = n.id
@@ -181,8 +219,7 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
             |)
           """.stripMargin),
         // explicit node and rel type definition
-        GraphDdl(
-          """SET SCHEMA ds1.db1
+        GraphDdl("""SET SCHEMA ds1.db1
             |CREATE GRAPH myGraph (
             |  A (x STRING), B (y STRING),
             |  (A), (A)-[B]->(A),
@@ -193,8 +230,7 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
             |)
           """.stripMargin),
         // pure type definitions extracted to graph type
-        GraphDdl(
-          """SET SCHEMA ds1.db1
+        GraphDdl("""SET SCHEMA ds1.db1
             |CREATE GRAPH TYPE myType (
             |  A (x STRING), B (y STRING),
             |  (A), (A)-[B]->(A)
@@ -207,8 +243,7 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
             |)
           """.stripMargin),
         // shadowing
-        GraphDdl(
-          """SET SCHEMA ds1.db1
+        GraphDdl("""SET SCHEMA ds1.db1
             |CREATE GRAPH TYPE myType (
             |  A (x STRING), B (foo STRING),
             |  (A), (A)-[B]->(A)
@@ -222,8 +257,7 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
             |)
           """.stripMargin),
         // only label types in graph type
-        GraphDdl(
-          """SET SCHEMA ds1.db1
+        GraphDdl("""SET SCHEMA ds1.db1
             |CREATE GRAPH TYPE myType (
             |  A (x STRING), B (foo STRING)
             |)
@@ -248,8 +282,7 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
     it("allows these equivalent graph type definitions") {
       val ddls = List(
         // explicit node and rel type definitions
-        GraphDdl(
-          """CREATE GRAPH TYPE myType (
+        GraphDdl("""CREATE GRAPH TYPE myType (
             |  A (x STRING), B (y STRING), C (z STRING),
             |  (A), (C),
             |  (A)-[B]->(C)
@@ -257,8 +290,7 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
             |CREATE GRAPH myGraph OF myType ()
           """.stripMargin),
         // shadowing
-        GraphDdl(
-          """CREATE ELEMENT TYPE A (foo STRING)
+        GraphDdl("""CREATE ELEMENT TYPE A (foo STRING)
             |CREATE GRAPH TYPE myType (
             |  A (x STRING), B (y STRING), C (z STRING),
             |  (A), (C),
@@ -315,7 +347,9 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
 
       GraphDdl(ddl).graphs(graphName).graphType shouldEqual expected
       expected.nodePropertyKeys("A") shouldEqual Map("name" -> CTString)
-      expected.relationshipPropertyKeys("A", "A", "A") shouldEqual Map("name" -> CTString)
+      expected.relationshipPropertyKeys("A", "A", "A") shouldEqual Map(
+        "name" -> CTString
+      )
     }
 
     it("can construct schema with node and edge labels") {
@@ -342,7 +376,11 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
       GraphDdl(ddl).graphs(graphName).graphType shouldEqual expected
       expected.nodePropertyKeys("Node1") shouldEqual Map("val" -> CTString)
       expected.nodePropertyKeys("Node2") shouldEqual Map("val" -> CTString)
-      expected.relationshipPropertyKeys("Node1", "REL", "Node2") shouldEqual Map("name" -> CTString)
+      expected.relationshipPropertyKeys(
+        "Node1",
+        "REL",
+        "Node2"
+      ) shouldEqual Map("name" -> CTString)
     }
 
     it("can construct schema with inherited node and edge labels") {
@@ -380,11 +418,34 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
         .withRelationshipType("Node2", "REL3", "Node2")
       GraphDdl(ddl).graphs(graphName).graphType shouldEqual expected
       expected.nodePropertyKeys("Node1") shouldEqual Map("foo" -> CTString)
-      expected.nodePropertyKeys("Node1", "Node2") shouldEqual Map("foo" -> CTString, "bar" -> CTInteger)
-      expected.nodePropertyKeys("Node1", "Node2", "Node3") shouldEqual Map("foo" -> CTString, "bar" -> CTInteger, "baz" -> CTBoolean)
-      expected.relationshipPropertyKeys(Set("Node1"), Set("REL1"), Set("Node1")) shouldEqual Map("name" -> CTString)
-      expected.relationshipPropertyKeys(Set("Node1"), Set("REL1", "REL2"), Set("Node1", "Node2")) shouldEqual Map("name" -> CTString, "since" -> CTInteger)
-      expected.relationshipPropertyKeys(Set("Node1", "Node2"), Set("REL1", "REL2", "REL3"), Set("Node1", "Node2")) shouldEqual Map("name" -> CTString, "since" -> CTInteger, "age" -> CTBoolean)
+      expected.nodePropertyKeys("Node1", "Node2") shouldEqual Map(
+        "foo" -> CTString,
+        "bar" -> CTInteger
+      )
+      expected.nodePropertyKeys("Node1", "Node2", "Node3") shouldEqual Map(
+        "foo" -> CTString,
+        "bar" -> CTInteger,
+        "baz" -> CTBoolean
+      )
+      expected.relationshipPropertyKeys(
+        Set("Node1"),
+        Set("REL1"),
+        Set("Node1")
+      ) shouldEqual Map("name" -> CTString)
+      expected.relationshipPropertyKeys(
+        Set("Node1"),
+        Set("REL1", "REL2"),
+        Set("Node1", "Node2")
+      ) shouldEqual Map("name" -> CTString, "since" -> CTInteger)
+      expected.relationshipPropertyKeys(
+        Set("Node1", "Node2"),
+        Set("REL1", "REL2", "REL3"),
+        Set("Node1", "Node2")
+      ) shouldEqual Map(
+        "name" -> CTString,
+        "since" -> CTInteger,
+        "age" -> CTBoolean
+      )
     }
 
     it("prefers local label over global label") {
@@ -418,9 +479,9 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
             |""".stripMargin
 
       val expected = GraphType(typeName)
-        .withElementType(ElementType(
-          name = "Node",
-          maybeKey = Some("akey" -> Set("val"))))
+        .withElementType(
+          ElementType(name = "Node", maybeKey = Some("akey" -> Set("val")))
+        )
         .withNodeType("Node")
       GraphDdl(ddl).graphs(graphName).graphType shouldEqual expected
     }
@@ -450,7 +511,11 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
             |""".stripMargin
 
       val expected = GraphType(typeName)
-        .withElementType("MyLabel", "property" -> CTString, "data" -> CTInteger.nullable)
+        .withElementType(
+          "MyLabel",
+          "property" -> CTString,
+          "data" -> CTInteger.nullable
+        )
         .withElementType("LocalLabel1", "property" -> CTString)
         .withElementType("LocalLabel2")
         .withElementType("REL_TYPE1", "property" -> CTBoolean)
@@ -458,14 +523,33 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
         .withNodeType("MyLabel")
         .withNodeType("LocalLabel1")
         .withNodeType("LocalLabel1", "LocalLabel2")
-        .withRelationshipType(Set("MyLabel"), Set("REL_TYPE1"), Set("LocalLabel1"))
-        .withRelationshipType(Set("LocalLabel1", "LocalLabel2"), Set("REL_TYPE2"), Set("MyLabel"))
+        .withRelationshipType(
+          Set("MyLabel"),
+          Set("REL_TYPE1"),
+          Set("LocalLabel1")
+        )
+        .withRelationshipType(
+          Set("LocalLabel1", "LocalLabel2"),
+          Set("REL_TYPE2"),
+          Set("MyLabel")
+        )
       GraphDdl(ddl).graphs(graphName).graphType shouldEqual expected
-      expected.nodePropertyKeys("MyLabel") shouldEqual Map("property" -> CTString, "data" -> CTInteger.nullable)
-      expected.nodePropertyKeys("LocalLabel1") shouldEqual Map("property" -> CTString)
+      expected.nodePropertyKeys("MyLabel") shouldEqual Map(
+        "property" -> CTString,
+        "data" -> CTInteger.nullable
+      )
+      expected.nodePropertyKeys("LocalLabel1") shouldEqual Map(
+        "property" -> CTString
+      )
       expected.nodePropertyKeys("LocalLabel2") shouldEqual Map.empty
-      expected.nodePropertyKeys("LocalLabel1", "LocalLabel2") shouldEqual Map("property" -> CTString)
-      expected.relationshipPropertyKeys(Set("MyLabel"), Set("REL_TYPE1"), Set("LocalLabel1")) shouldEqual Map("property" -> CTBoolean)
+      expected.nodePropertyKeys("LocalLabel1", "LocalLabel2") shouldEqual Map(
+        "property" -> CTString
+      )
+      expected.relationshipPropertyKeys(
+        Set("MyLabel"),
+        Set("REL_TYPE1"),
+        Set("LocalLabel1")
+      ) shouldEqual Map("property" -> CTBoolean)
     }
 
     it("merges property keys for label combination") {
@@ -488,10 +572,15 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
         .withNodeType("A", "B")
       GraphDdl(ddl).graphs(graphName).graphType shouldEqual expected
       expected.nodePropertyKeys("A") shouldEqual Map("foo" -> CTString)
-      expected.nodePropertyKeys("A", "B") shouldEqual Map("foo" -> CTString, "bar" -> CTString)
+      expected.nodePropertyKeys("A", "B") shouldEqual Map(
+        "foo" -> CTString,
+        "bar" -> CTString
+      )
     }
 
-    it("merges property keys for label combination based on element type hierarchy") {
+    it(
+      "merges property keys for label combination based on element type hierarchy"
+    ) {
       // Given
       val ddl =
         s"""|CREATE ELEMENT TYPE A ( foo STRING )
@@ -506,15 +595,26 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
 
       val expected = GraphType(typeName)
         .withElementType("A", "foo" -> CTString)
-        .withElementType(ElementType(name = "B", parents = Set("A"), properties = Map("bar" -> CTString)))
+        .withElementType(
+          ElementType(
+            name = "B",
+            parents = Set("A"),
+            properties = Map("bar" -> CTString)
+          )
+        )
         .withNodeType("A")
         .withNodeType("A", "B")
       GraphDdl(ddl).graphs(graphName).graphType shouldEqual expected
       expected.nodePropertyKeys("A") shouldEqual Map("foo" -> CTString)
-      expected.nodePropertyKeys("A", "B") shouldEqual Map("foo" -> CTString, "bar" -> CTString)
+      expected.nodePropertyKeys("A", "B") shouldEqual Map(
+        "foo" -> CTString,
+        "bar" -> CTString
+      )
     }
 
-    it("merges property keys for label combination based on element type with multi-inheritance") {
+    it(
+      "merges property keys for label combination based on element type with multi-inheritance"
+    ) {
       // Given
       val ddl =
         s"""|CREATE ELEMENT TYPE A ( a STRING )
@@ -536,9 +636,27 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
 
       val expected = GraphType(typeName)
         .withElementType("A", "a" -> CTString)
-        .withElementType(ElementType(name = "B", parents = Set("A"), properties = Map("b" -> CTString)))
-        .withElementType(ElementType(name = "C", parents = Set("A"), properties = Map("c" -> CTString)))
-        .withElementType(ElementType(name = "D", parents = Set("B", "C"), properties = Map("d" -> CTInteger)))
+        .withElementType(
+          ElementType(
+            name = "B",
+            parents = Set("A"),
+            properties = Map("b" -> CTString)
+          )
+        )
+        .withElementType(
+          ElementType(
+            name = "C",
+            parents = Set("A"),
+            properties = Map("c" -> CTString)
+          )
+        )
+        .withElementType(
+          ElementType(
+            name = "D",
+            parents = Set("B", "C"),
+            properties = Map("d" -> CTInteger)
+          )
+        )
         .withElementType("E", "e" -> CTFloat)
         .withNodeType("A")
         .withNodeType("A", "B")
@@ -548,11 +666,31 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
         .withNodeType("A", "B", "C", "D", "E")
       GraphDdl(ddl).graphs(graphName).graphType shouldEqual expected
       expected.nodePropertyKeys("A") shouldEqual Map("a" -> CTString)
-      expected.nodePropertyKeys("A", "B") shouldEqual Map("a" -> CTString, "b" -> CTString)
-      expected.nodePropertyKeys("A", "C") shouldEqual Map("a" -> CTString, "c" -> CTString)
-      expected.nodePropertyKeys("A", "B", "C", "D") shouldEqual Map("a" -> CTString, "b" -> CTString, "c" -> CTString, "d" -> CTInteger)
-      expected.nodePropertyKeys("A", "E") shouldEqual Map("a" -> CTString, "e" -> CTFloat)
-      expected.nodePropertyKeys("A", "B", "C", "D", "E") shouldEqual Map("a" -> CTString, "b" -> CTString, "c" -> CTString, "d" -> CTInteger, "e" -> CTFloat)
+      expected.nodePropertyKeys("A", "B") shouldEqual Map(
+        "a" -> CTString,
+        "b" -> CTString
+      )
+      expected.nodePropertyKeys("A", "C") shouldEqual Map(
+        "a" -> CTString,
+        "c" -> CTString
+      )
+      expected.nodePropertyKeys("A", "B", "C", "D") shouldEqual Map(
+        "a" -> CTString,
+        "b" -> CTString,
+        "c" -> CTString,
+        "d" -> CTInteger
+      )
+      expected.nodePropertyKeys("A", "E") shouldEqual Map(
+        "a" -> CTString,
+        "e" -> CTFloat
+      )
+      expected.nodePropertyKeys("A", "B", "C", "D", "E") shouldEqual Map(
+        "a" -> CTString,
+        "b" -> CTString,
+        "c" -> CTString,
+        "d" -> CTInteger,
+        "e" -> CTFloat
+      )
     }
 
     it("merges identical property keys with same type") {
@@ -579,8 +717,7 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
     }
 
     it("parses correct schema") {
-      val ddlDefinition: DdlDefinition = parseDdl(
-        s"""|SET SCHEMA foo.bar;
+      val ddlDefinition: DdlDefinition = parseDdl(s"""|SET SCHEMA foo.bar;
             |
             |CREATE ELEMENT TYPE A ( name STRING )
             |
@@ -615,47 +752,92 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
             |)
             |""".stripMargin)
       ddlDefinition should equalWithTracing(
-        DdlDefinition(List(
-          SetSchemaDefinition("foo", "bar"),
-          ElementTypeDefinition("A", properties = Map("name" -> CTString)),
-          ElementTypeDefinition("B", properties = Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)),
-          ElementTypeDefinition("TYPE_1"),
-          ElementTypeDefinition("TYPE_2", properties = Map("prop" -> CTBoolean.nullable)),
-          GraphTypeDefinition(
-            name = typeName,
-            statements = List(
-              ElementTypeDefinition("A", properties = Map("foo" -> CTInteger)),
-              ElementTypeDefinition("C"),
-              NodeTypeDefinition("A"),
-              NodeTypeDefinition("B"),
-              NodeTypeDefinition("A", "B"),
-              NodeTypeDefinition("C"),
-              RelationshipTypeDefinition("A", "TYPE_1", "B"),
-              RelationshipTypeDefinition("A", "B")("TYPE_2")("C")
-            )),
-          GraphDefinition(
-            name = graphName.value,
-            maybeGraphTypeName = Some(typeName),
-            statements = List(
-              NodeMappingDefinition(NodeTypeDefinition("A"), List(NodeToViewDefinition(List("foo")))),
-              RelationshipMappingDefinition(
+        DdlDefinition(
+          List(
+            SetSchemaDefinition("foo", "bar"),
+            ElementTypeDefinition("A", properties = Map("name" -> CTString)),
+            ElementTypeDefinition(
+              "B",
+              properties = Map(
+                "sequence" -> CTInteger,
+                "nationality" -> CTString.nullable,
+                "age" -> CTInteger.nullable
+              )
+            ),
+            ElementTypeDefinition("TYPE_1"),
+            ElementTypeDefinition(
+              "TYPE_2",
+              properties = Map("prop" -> CTBoolean.nullable)
+            ),
+            GraphTypeDefinition(
+              name = typeName,
+              statements = List(
+                ElementTypeDefinition(
+                  "A",
+                  properties = Map("foo" -> CTInteger)
+                ),
+                ElementTypeDefinition("C"),
+                NodeTypeDefinition("A"),
+                NodeTypeDefinition("B"),
+                NodeTypeDefinition("A", "B"),
+                NodeTypeDefinition("C"),
                 RelationshipTypeDefinition("A", "TYPE_1", "B"),
-                List(RelationshipTypeToViewDefinition(
-                  viewDef = ViewDefinition(List("baz"), "edge"),
-                  startNodeTypeToView = NodeTypeToViewDefinition(
-                    NodeTypeDefinition("A"),
-                    ViewDefinition(List("foo"), "alias_foo"),
-                    JoinOnDefinition(List((List("alias_foo", "COLUMN_A"), List("edge", "COLUMN_A"))))),
-                  endNodeTypeToView = NodeTypeToViewDefinition(
-                    NodeTypeDefinition("B"),
-                    ViewDefinition(List("bar"), "alias_bar"),
-                    JoinOnDefinition(List((List("alias_bar", "COLUMN_A"), List("edge", "COLUMN_A")))))
-                )))))
-        ))
+                RelationshipTypeDefinition("A", "B")("TYPE_2")("C")
+              )
+            ),
+            GraphDefinition(
+              name = graphName.value,
+              maybeGraphTypeName = Some(typeName),
+              statements = List(
+                NodeMappingDefinition(
+                  NodeTypeDefinition("A"),
+                  List(NodeToViewDefinition(List("foo")))
+                ),
+                RelationshipMappingDefinition(
+                  RelationshipTypeDefinition("A", "TYPE_1", "B"),
+                  List(
+                    RelationshipTypeToViewDefinition(
+                      viewDef = ViewDefinition(List("baz"), "edge"),
+                      startNodeTypeToView = NodeTypeToViewDefinition(
+                        NodeTypeDefinition("A"),
+                        ViewDefinition(List("foo"), "alias_foo"),
+                        JoinOnDefinition(
+                          List(
+                            (
+                              List("alias_foo", "COLUMN_A"),
+                              List("edge", "COLUMN_A")
+                            )
+                          )
+                        )
+                      ),
+                      endNodeTypeToView = NodeTypeToViewDefinition(
+                        NodeTypeDefinition("B"),
+                        ViewDefinition(List("bar"), "alias_bar"),
+                        JoinOnDefinition(
+                          List(
+                            (
+                              List("alias_bar", "COLUMN_A"),
+                              List("edge", "COLUMN_A")
+                            )
+                          )
+                        )
+                      )
+                    )
+                  )
+                )
+              )
+            )
+          )
+        )
       )
       val expected = GraphType(typeName)
         .withElementType("A", "foo" -> CTInteger)
-        .withElementType("B", "sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
+        .withElementType(
+          "B",
+          "sequence" -> CTInteger,
+          "nationality" -> CTString.nullable,
+          "age" -> CTInteger.nullable
+        )
         .withElementType("C")
         .withElementType("TYPE_1")
         .withElementType("TYPE_2", "prop" -> CTBoolean.nullable)
@@ -667,11 +849,28 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
         .withRelationshipType(Set("A", "B"), Set("TYPE_2"), Set("C"))
       GraphDdl(ddlDefinition).graphs(graphName).graphType shouldEqual expected
       expected.nodePropertyKeys("A") shouldEqual Map("foo" -> CTInteger)
-      expected.nodePropertyKeys("B") shouldEqual Map("sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
-      expected.nodePropertyKeys("A", "B") shouldEqual Map("foo" -> CTInteger, "sequence" -> CTInteger, "nationality" -> CTString.nullable, "age" -> CTInteger.nullable)
+      expected.nodePropertyKeys("B") shouldEqual Map(
+        "sequence" -> CTInteger,
+        "nationality" -> CTString.nullable,
+        "age" -> CTInteger.nullable
+      )
+      expected.nodePropertyKeys("A", "B") shouldEqual Map(
+        "foo" -> CTInteger,
+        "sequence" -> CTInteger,
+        "nationality" -> CTString.nullable,
+        "age" -> CTInteger.nullable
+      )
       expected.nodePropertyKeys("C") shouldEqual Map.empty
-      expected.relationshipPropertyKeys("A", "TYPE_1", "B") shouldEqual Map.empty
-      expected.relationshipPropertyKeys(Set("A", "B"), Set("TYPE_2"), Set("C")) shouldEqual Map("prop" -> CTBoolean.nullable)
+      expected.relationshipPropertyKeys(
+        "A",
+        "TYPE_1",
+        "B"
+      ) shouldEqual Map.empty
+      expected.relationshipPropertyKeys(
+        Set("A", "B"),
+        Set("TYPE_2"),
+        Set("C")
+      ) shouldEqual Map("prop" -> CTBoolean.nullable)
     }
 
     it("creates implicit node/edge types from mappings") {
@@ -708,7 +907,11 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
       expected.nodePropertyKeys("A") shouldEqual Map("foo" -> CTInteger)
       expected.nodePropertyKeys("B") shouldEqual Map.empty
       expected.nodePropertyKeys("A", "B") shouldEqual Map("foo" -> CTInteger)
-      expected.relationshipPropertyKeys("A", "TYPE_1", "B") shouldEqual Map.empty
+      expected.relationshipPropertyKeys(
+        "A",
+        "TYPE_1",
+        "B"
+      ) shouldEqual Map.empty
     }
 
     it("resolves element types from parent graph type") {
@@ -747,7 +950,11 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
       expected.nodePropertyKeys("A") shouldEqual Map("foo" -> CTInteger)
       expected.nodePropertyKeys("B") shouldEqual Map.empty
       expected.nodePropertyKeys("A", "B") shouldEqual Map("foo" -> CTInteger)
-      expected.relationshipPropertyKeys("A", "TYPE_1", "B") shouldEqual Map.empty
+      expected.relationshipPropertyKeys(
+        "A",
+        "TYPE_1",
+        "B"
+      ) shouldEqual Map.empty
     }
 
     it("resolves shadowed element types") {
@@ -788,7 +995,11 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
       expected.nodePropertyKeys("A") shouldEqual Map("bar" -> CTString)
       expected.nodePropertyKeys("B") shouldEqual Map.empty
       expected.nodePropertyKeys("A", "B") shouldEqual Map("bar" -> CTString)
-      expected.relationshipPropertyKeys("A", "TYPE_1", "B") shouldEqual Map.empty
+      expected.relationshipPropertyKeys(
+        "A",
+        "TYPE_1",
+        "B"
+      ) shouldEqual Map.empty
     }
 
     it("resolves most local element type") {
@@ -819,26 +1030,46 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
   describe("Join key extraction") {
 
     it("extracts join keys for a given node view key in start node position") {
-      val maybeJoinColumns = GraphDdl(ddlString).graphs(GraphName("fooGraph"))
-        .nodeIdColumnsFor(NodeViewKey(
-          NodeType("Person"),
-          ViewId(Some(SetSchemaDefinition("dataSourceName", "fooDatabaseName")), List("personView1"))))
+      val maybeJoinColumns = GraphDdl(ddlString)
+        .graphs(GraphName("fooGraph"))
+        .nodeIdColumnsFor(
+          NodeViewKey(
+            NodeType("Person"),
+            ViewId(
+              Some(SetSchemaDefinition("dataSourceName", "fooDatabaseName")),
+              List("personView1")
+            )
+          )
+        )
 
       maybeJoinColumns shouldEqual Some(List("person_id1"))
     }
 
     it("extracts join keys for a given node view key in end node position") {
-      val maybeJoinColumns = GraphDdl(ddlString).graphs(GraphName("fooGraph"))
-        .nodeIdColumnsFor(NodeViewKey(
-          NodeType("Book"),
-          ViewId(Some(SetSchemaDefinition("dataSourceName", "fooDatabaseName")), List("bookView"))))
+      val maybeJoinColumns = GraphDdl(ddlString)
+        .graphs(GraphName("fooGraph"))
+        .nodeIdColumnsFor(
+          NodeViewKey(
+            NodeType("Book"),
+            ViewId(
+              Some(SetSchemaDefinition("dataSourceName", "fooDatabaseName")),
+              List("bookView")
+            )
+          )
+        )
 
       maybeJoinColumns shouldEqual Some(List("book_id"))
     }
 
     it("does not extract join keys for an invalid node view key") {
-      val maybeJoinColumns = GraphDdl(ddlString).graphs(GraphName("fooGraph"))
-        .nodeIdColumnsFor(NodeViewKey(NodeType("A"), ViewId(None, List("dataSourceName", "fooDatabaseName", "A"))))
+      val maybeJoinColumns = GraphDdl(ddlString)
+        .graphs(GraphName("fooGraph"))
+        .nodeIdColumnsFor(
+          NodeViewKey(
+            NodeType("A"),
+            ViewId(None, List("dataSourceName", "fooDatabaseName", "A"))
+          )
+        )
 
       maybeJoinColumns shouldEqual None
     }
@@ -847,8 +1078,7 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
   describe("SET SCHEMA") {
 
     it("allows SET SCHEMA and fully qualified names") {
-      val ddl = GraphDdl(
-        """SET SCHEMA ds1.db1
+      val ddl = GraphDdl("""SET SCHEMA ds1.db1
           |
           |CREATE GRAPH TYPE fooSchema (
           |  Person,
@@ -863,20 +1093,34 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
         """.stripMargin)
 
       ddl.graphs(GraphName("fooGraph")).nodeToViewMappings.keys shouldEqual Set(
-        NodeViewKey(NodeType("Person"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("personView"))),
-        NodeViewKey(NodeType("Account"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("ds2", "db2", "accountView")))
+        NodeViewKey(
+          NodeType("Person"),
+          ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("personView"))
+        ),
+        NodeViewKey(
+          NodeType("Account"),
+          ViewId(
+            Some(SetSchemaDefinition("ds1", "db1")),
+            List("ds2", "db2", "accountView")
+          )
+        )
       )
     }
   }
 
   describe("validate EXTENDS syntax for mappings") {
 
-    val A_a = NodeViewKey(NodeType("A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")))
-    val A_ab = NodeViewKey(NodeType("A", "B"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a_b")))
+    val A_a = NodeViewKey(
+      NodeType("A"),
+      ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a"))
+    )
+    val A_ab = NodeViewKey(
+      NodeType("A", "B"),
+      ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a_b"))
+    )
 
     it("allows compact inline graph definition with complex node type") {
-      val ddl = GraphDdl(
-        """SET SCHEMA ds1.db1
+      val ddl = GraphDdl("""SET SCHEMA ds1.db1
           |CREATE GRAPH myGraph (
           |  A (x STRING),
           |  B (y STRING),
@@ -907,18 +1151,32 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
           .withNodeType(NodeType("A"))
           .withNodeType(NodeType("A", "B"))
           .withRelationshipType(RelationshipType("A", "R", "A"))
-          .withRelationshipType(RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A"))),
+          .withRelationshipType(
+            RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A"))
+          ),
         nodeToViewMappings = Map(
-          A_a -> NodeToViewMapping(NodeType("A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")), Map("x" -> "x")),
-          A_ab -> NodeToViewMapping(NodeType("A", "B"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a_b")), Map("x" -> "x", "y" -> "y"))
+          A_a -> NodeToViewMapping(
+            NodeType("A"),
+            ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")),
+            Map("x" -> "x")
+          ),
+          A_ab -> NodeToViewMapping(
+            NodeType("A", "B"),
+            ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a_b")),
+            Map("x" -> "x", "y" -> "y")
+          )
         ),
         edgeToViewMappings = List(
-          EdgeToViewMapping(RelationshipType("A", "R", "A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
+          EdgeToViewMapping(
+            RelationshipType("A", "R", "A"),
+            ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
             StartNode(A_a, List(Join("id", "id"))),
             EndNode(A_a, List(Join("id", "id"))),
             Map("y" -> "y")
           ),
-          EdgeToViewMapping(RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A")), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
+          EdgeToViewMapping(
+            RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A")),
+            ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
             StartNode(A_ab, List(Join("id", "id"))),
             EndNode(A_a, List(Join("id", "id"))),
             Map("y" -> "y")
@@ -927,9 +1185,10 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
       )
     }
 
-    it("allows compact inline graph definition with complex node type based on inheritance") {
-      val ddl = GraphDdl(
-        """SET SCHEMA ds1.db1
+    it(
+      "allows compact inline graph definition with complex node type based on inheritance"
+    ) {
+      val ddl = GraphDdl("""SET SCHEMA ds1.db1
           |CREATE GRAPH myGraph (
           |  A (x STRING),
           |  B EXTENDS A (y STRING),
@@ -959,18 +1218,32 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
           .withNodeType(NodeType("A"))
           .withNodeType(NodeType("A", "B"))
           .withRelationshipType(RelationshipType("A", "R", "A"))
-          .withRelationshipType(RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A"))),
+          .withRelationshipType(
+            RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A"))
+          ),
         nodeToViewMappings = Map(
-          A_a -> NodeToViewMapping(NodeType("A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")), Map("x" -> "x")),
-          A_ab -> NodeToViewMapping(NodeType("A", "B"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a_b")), Map("x" -> "x", "y" -> "y"))
+          A_a -> NodeToViewMapping(
+            NodeType("A"),
+            ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a")),
+            Map("x" -> "x")
+          ),
+          A_ab -> NodeToViewMapping(
+            NodeType("A", "B"),
+            ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("a_b")),
+            Map("x" -> "x", "y" -> "y")
+          )
         ),
         edgeToViewMappings = List(
-          EdgeToViewMapping(RelationshipType("A", "R", "A"), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
+          EdgeToViewMapping(
+            RelationshipType("A", "R", "A"),
+            ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
             StartNode(A_a, List(Join("id", "id"))),
             EndNode(A_a, List(Join("id", "id"))),
             Map("y" -> "y")
           ),
-          EdgeToViewMapping(RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A")), ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
+          EdgeToViewMapping(
+            RelationshipType(NodeType("A", "B"), Set("R"), NodeType("A")),
+            ViewId(Some(SetSchemaDefinition("ds1", "db1")), List("r")),
             StartNode(A_ab, List(Join("id", "id"))),
             EndNode(A_a, List(Join("id", "id"))),
             Map("y" -> "y")
@@ -993,7 +1266,9 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
           |)
         """.stripMargin
       )
-      e.getFullMessage should (include("fooSchema") and include("node type") and include("(A,B)"))
+      e.getFullMessage should (include("fooSchema") and include(
+        "node type"
+      ) and include("(A,B)"))
     }
 
     it("fails on duplicate anonymous node types") {
@@ -1009,7 +1284,9 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
           |)
         """.stripMargin
       )
-      e.getFullMessage should (include("fooSchema") and include("node type") and include("(A,B,X)"))
+      e.getFullMessage should (include("fooSchema") and include(
+        "node type"
+      ) and include("(A,B,X)"))
     }
 
     it("fails on duplicate relationship types") {
@@ -1023,7 +1300,9 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
           |)
         """.stripMargin
       )
-      e.getFullMessage should (include("fooSchema") and include("relationship type") and include("(A)-[B]->(A)"))
+      e.getFullMessage should (include("fooSchema") and include(
+        "relationship type"
+      ) and include("(A)-[B]->(A)"))
     }
 
     it("fails on duplicate relationship types using anonymous node types") {
@@ -1039,12 +1318,13 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
           |)
         """.stripMargin
       )
-      e.getFullMessage should (include("fooSchema") and include("relationship type") and include("(A,B)-[FOO]->(X)"))
+      e.getFullMessage should (include("fooSchema") and include(
+        "relationship type"
+      ) and include("(A,B)-[FOO]->(X)"))
     }
 
     it("fails on duplicate node mappings") {
-      val e = the[GraphDdlException] thrownBy GraphDdl(
-        """
+      val e = the[GraphDdlException] thrownBy GraphDdl("""
           |SET SCHEMA db.schema
           |
           |CREATE GRAPH TYPE fooSchema (
@@ -1056,12 +1336,13 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
           |           FROM personView
           |)
         """.stripMargin)
-      e.getFullMessage should (include("fooGraph") and include("(Person)") and include("personView"))
+      e.getFullMessage should (include("fooGraph") and include(
+        "(Person)"
+      ) and include("personView"))
     }
 
     it("fails on duplicate relationship mappings") {
-      val e = the[GraphDdlException] thrownBy GraphDdl(
-        """
+      val e = the[GraphDdlException] thrownBy GraphDdl("""
           |SET SCHEMA db.schema
           |
           |CREATE GRAPH TYPE fooSchema (
@@ -1080,12 +1361,13 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
           |     END   NODES (Person) FROM a n JOIN ON e.id = n.id
           |)
         """.stripMargin)
-      e.getFullMessage should (include("fooGraph") and include("(Person)-[KNOWS]->(Person)") and include("pkpView"))
+      e.getFullMessage should (include("fooGraph") and include(
+        "(Person)-[KNOWS]->(Person)"
+      ) and include("pkpView"))
     }
 
     it("fails on duplicate global labels") {
-      val e = the[GraphDdlException] thrownBy GraphDdl(
-        """
+      val e = the[GraphDdlException] thrownBy GraphDdl("""
           |CREATE ELEMENT TYPE Person
           |CREATE ELEMENT TYPE Person
         """.stripMargin)
@@ -1093,8 +1375,7 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
     }
 
     it("fails on duplicate local labels") {
-      val e = the[GraphDdlException] thrownBy GraphDdl(
-        """
+      val e = the[GraphDdlException] thrownBy GraphDdl("""
           |CREATE GRAPH TYPE fooSchema (
           | Person,
           | Person
@@ -1104,8 +1385,7 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
     }
 
     it("fails on duplicate graph types") {
-      val e = the[GraphDdlException] thrownBy GraphDdl(
-        """
+      val e = the[GraphDdlException] thrownBy GraphDdl("""
           |CREATE GRAPH TYPE fooSchema ()
           |CREATE GRAPH TYPE fooSchema ()
         """.stripMargin)
@@ -1113,8 +1393,7 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
     }
 
     it("fails on duplicate graphs") {
-      val e = the[GraphDdlException] thrownBy GraphDdl(
-        """
+      val e = the[GraphDdlException] thrownBy GraphDdl("""
           |CREATE GRAPH TYPE fooSchema ()
           |CREATE GRAPH fooGraph OF fooSchema ()
           |CREATE GRAPH fooGraph OF fooSchema ()
@@ -1123,53 +1402,58 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
     }
 
     it("fails on unresolved graph type") {
-      val e = the[GraphDdlException] thrownBy GraphDdl(
-        """
+      val e = the[GraphDdlException] thrownBy GraphDdl("""
           |CREATE GRAPH TYPE fooSchema ()
           |CREATE GRAPH fooGraph OF barSchema ()
         """.stripMargin)
-      e.getFullMessage should (include("fooGraph") and include("fooSchema") and include("barSchema"))
+      e.getFullMessage should (include("fooGraph") and include(
+        "fooSchema"
+      ) and include("barSchema"))
     }
 
     it("fails on unresolved labels") {
-      val e = the[GraphDdlException] thrownBy GraphDdl(
-        """
+      val e = the[GraphDdlException] thrownBy GraphDdl("""
           |CREATE GRAPH TYPE fooSchema (
           | Person1,
           | Person2,
           | (Person3, Person4)
           |)
         """.stripMargin)
-      e.getFullMessage should (include("fooSchema") and include("Person3") and include("Person4"))
+      e.getFullMessage should (include("fooSchema") and include(
+        "Person3"
+      ) and include("Person4"))
     }
 
     it("fails on unresolved labels in mapping") {
-      val e = the[GraphDdlException] thrownBy GraphDdl(
-        """
+      val e = the[GraphDdlException] thrownBy GraphDdl("""
           |CREATE GRAPH fooGraph (
           | Person1,
           | Person2,
           | (Person3, Person4) FROM x
           |)
         """.stripMargin)
-      e.getFullMessage should (include("fooGraph") and include("Person3") and include("Person4"))
+      e.getFullMessage should (include("fooGraph") and include(
+        "Person3"
+      ) and include("Person4"))
     }
 
     it("fails on incompatible property types") {
-      val e = the[GraphDdlException] thrownBy GraphDdl(
-        """
+      val e = the[GraphDdlException] thrownBy GraphDdl("""
           |CREATE GRAPH TYPE fooSchema (
           | Person1 ( age STRING ) ,
           | Person2 ( age INTEGER ) ,
           | (Person1, Person2)
           |)
         """.stripMargin)
-      e.getFullMessage should (include("fooSchema") and include("Person1") and include("Person2") and include("age") and include("STRING") and include("INTEGER"))
+      e.getFullMessage should (include("fooSchema") and include(
+        "Person1"
+      ) and include("Person2") and include("age") and include(
+        "STRING"
+      ) and include("INTEGER"))
     }
 
     it("fails on unresolved property names") {
-      val e = the[GraphDdlException] thrownBy GraphDdl(
-        """
+      val e = the[GraphDdlException] thrownBy GraphDdl("""
           |SET SCHEMA a.b
           |CREATE GRAPH TYPE fooSchema (
           | Person ( age1 STRING ) ,
@@ -1179,12 +1463,13 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
           |  (Person) FROM personView ( person_name AS age2 )
           |)
         """.stripMargin)
-      e.getFullMessage should (include("fooGraph") and include("Person") and include("personView") and include("age1") and include("age2"))
+      e.getFullMessage should (include("fooGraph") and include(
+        "Person"
+      ) and include("personView") and include("age1") and include("age2"))
     }
 
     it("fails on unresolved inherited element types") {
-      val e = the[GraphDdlException] thrownBy GraphDdl(
-        """
+      val e = the[GraphDdlException] thrownBy GraphDdl("""
           |SET SCHEMA a.b
           |CREATE GRAPH TYPE fooSchema (
           | Person ( name STRING ) ,
@@ -1195,12 +1480,15 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
           |  (Employee) FROM employeeView ( person_name AS name, emp_dept AS dept )
           |)
         """.stripMargin)
-      e.getFullMessage should (include("fooSchema") and include("Employee") and include("MissingPerson"))
+      e.getFullMessage should (include("fooSchema") and include(
+        "Employee"
+      ) and include("MissingPerson"))
     }
 
-    it("fails on unresolved inherited element types within inlined graph type") {
-      val e = the[GraphDdlException] thrownBy GraphDdl(
-        """
+    it(
+      "fails on unresolved inherited element types within inlined graph type"
+    ) {
+      val e = the[GraphDdlException] thrownBy GraphDdl("""
           |SET SCHEMA a.b
           |CREATE GRAPH fooGraph (
           |  Person ( name STRING ),
@@ -1209,12 +1497,13 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
           |  (Employee) FROM employeeView ( person_name AS name, emp_dept AS dept )
           |)
         """.stripMargin)
-      e.getFullMessage should (include("fooGraph") and include("Employee") and include("MissingPerson"))
+      e.getFullMessage should (include("fooGraph") and include(
+        "Employee"
+      ) and include("MissingPerson"))
     }
 
     it("fails on cyclic element type inheritance") {
-      val e = the[GraphDdlException] thrownBy GraphDdl(
-        """
+      val e = the[GraphDdlException] thrownBy GraphDdl("""
           |SET SCHEMA a.b
           |CREATE GRAPH fooGraph (
           |  A EXTENDS B ( a STRING ),
@@ -1224,12 +1513,13 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
           |  (B) FROM b ( A_a AS a, B_b AS b )
           |)
         """.stripMargin)
-      e.getFullMessage should (include("Circular dependency") and include("A -> B -> A"))
+      e.getFullMessage should (include("Circular dependency") and include(
+        "A -> B -> A"
+      ))
     }
 
     it("fails on conflicting property types in inheritance hierarchy") {
-      val e = the[GraphDdlException] thrownBy GraphDdl(
-        """
+      val e = the[GraphDdlException] thrownBy GraphDdl("""
           |SET SCHEMA a.b
           |CREATE GRAPH fooGraph (
           |  A ( x STRING ),
@@ -1239,7 +1529,9 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
           |  (C)
           |)
         """.stripMargin)
-      e.getFullMessage should (include("(A,B,C)") and include("x") and include("INTEGER") and include("STRING"))
+      e.getFullMessage should (include("(A,B,C)") and include("x") and include(
+        "INTEGER"
+      ) and include("STRING"))
     }
 
     it("fails if an unknown property key is mapped to a column") {
@@ -1284,7 +1576,9 @@ class GraphDdlTest extends AnyFunSpec with Matchers {
 
         GraphDdl(parseDdl(ddlString)).graphs(GraphName("myGraph"))
       }
-      e.getFullMessage should (include("Inconsistent join column definition") and include("(A)") and include("view_A"))
+      e.getFullMessage should (include(
+        "Inconsistent join column definition"
+      ) and include("(A)") and include("view_A"))
     }
   }
 }

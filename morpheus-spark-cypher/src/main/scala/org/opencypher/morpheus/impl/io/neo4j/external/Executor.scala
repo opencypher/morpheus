@@ -48,13 +48,17 @@ private object Executor {
 
   private def toJava(x: Any): AnyRef = x match {
     case y: Seq[_] => y.asJava
-    case _ => x.asInstanceOf[AnyRef]
+    case _         => x.asInstanceOf[AnyRef]
   }
 
   val EMPTY = Array.empty[Any]
 
-  class Neo4jQueryResult(val schema: StructType, val rows: Iterator[Array[Any]]) {
-    def sparkRows: Iterator[Row] = rows.map(row => new GenericRowWithSchema(row, schema))
+  class Neo4jQueryResult(
+    val schema: StructType,
+    val rows: Iterator[Array[Any]]
+  ) {
+    def sparkRows: Iterator[Row] =
+      rows.map(row => new GenericRowWithSchema(row, schema))
 
     def fields: Array[String] = schema.fieldNames
   }
@@ -65,7 +69,11 @@ private object Executor {
     i
   }
 
-  def execute(config: Neo4jConfig, query: String, parameters: Map[String, Any]): Neo4jQueryResult = {
+  def execute(
+    config: Neo4jConfig,
+    query: String,
+    parameters: Map[String, Any]
+  ): Neo4jQueryResult = {
     config.withSession { session =>
       val result: StatementResult = session.run(query, toJava(parameters))
       if (!result.hasNext) {
@@ -75,12 +83,17 @@ private object Executor {
       val keyCount = peek.size()
       if (keyCount == 0) {
         val res: Neo4jQueryResult =
-          new Neo4jQueryResult(new StructType(), Array.fill[Array[Any]](rows(result))(EMPTY).toIterator)
+          new Neo4jQueryResult(
+            new StructType(),
+            Array.fill[Array[Any]](rows(result))(EMPTY).toIterator
+          )
         result.consume()
         return res
       }
       val keys = peek.keys().asScala
-      val fields = keys.map(k => (k, peek.get(k).`type`())).map(keyType => CypherTypes.field(keyType))
+      val fields = keys
+        .map(k => (k, peek.get(k).`type`()))
+        .map(keyType => CypherTypes.field(keyType))
       val schema = StructType(fields)
 
       val it = result.asScala.map { record =>
@@ -103,11 +116,16 @@ private object Executor {
 
     v match {
       case l: ListValue => l.asList(mapFunction).toArray
-      case d: LocalDateTimeValue => java.sql.Timestamp.valueOf(d.asLocalDateTime())
+      case d: LocalDateTimeValue =>
+        java.sql.Timestamp.valueOf(d.asLocalDateTime())
       case d: DateValue => java.sql.Date.valueOf(d.asLocalDate())
       case d: DurationValue =>
         val iso = d.asIsoDuration()
-        new CalendarInterval(iso.months().toInt, iso.days().toInt, iso.nanoseconds() / 1000)
+        new CalendarInterval(
+          iso.months().toInt,
+          iso.days().toInt,
+          iso.nanoseconds() / 1000
+        )
       case other => other.asObject()
     }
   }
@@ -121,20 +139,23 @@ private object CypherTypes {
   val NULL: NullType.type = types.NullType
 
   def apply(typ: String): DataType = typ.toUpperCase match {
-    case "LONG" => INTEGER
-    case "INT" => INTEGER
+    case "LONG"    => INTEGER
+    case "INT"     => INTEGER
     case "INTEGER" => INTEGER
-    case "FLOAT" => FlOAT
-    case "DOUBLE" => FlOAT
+    case "FLOAT"   => FlOAT
+    case "DOUBLE"  => FlOAT
     case "NUMERIC" => FlOAT
-    case "STRING" => STRING
+    case "STRING"  => STRING
     case "BOOLEAN" => BOOLEAN
-    case "BOOL" => BOOLEAN
-    case "NULL" => NULL
-    case _ => STRING
+    case "BOOL"    => BOOLEAN
+    case "NULL"    => NULL
+    case _         => STRING
   }
 
-  def toSparkType(typeSystem: TypeSystem, typ: Type): org.apache.spark.sql.types.DataType =
+  def toSparkType(
+    typeSystem: TypeSystem,
+    typ: Type
+  ): org.apache.spark.sql.types.DataType =
     if (typ == typeSystem.BOOLEAN()) CypherTypes.BOOLEAN
     else if (typ == typeSystem.STRING()) CypherTypes.STRING
     else if (typ == typeSystem.INTEGER()) CypherTypes.INTEGER
@@ -143,16 +164,23 @@ private object CypherTypes {
     else CypherTypes.STRING
 
   def field(keyType: (String, Type)): StructField = {
-    StructField(keyType._1, CypherTypes.toSparkType(InternalTypeSystem.TYPE_SYSTEM, keyType._2))
+    StructField(
+      keyType._1,
+      CypherTypes.toSparkType(InternalTypeSystem.TYPE_SYSTEM, keyType._2)
+    )
   }
 
   def schemaFromNamedType(schemaInfo: Seq[(String, String)]): StructType = {
-    val fields = schemaInfo.map(field => StructField(field._1, CypherTypes(field._2), nullable = true))
+    val fields =
+      schemaInfo.map(field => StructField(field._1, CypherTypes(field._2), nullable = true))
     StructType(fields)
   }
 
-  def schemaFromDataType(schemaInfo: Seq[(String, types.DataType)]): StructType = {
-    val fields = schemaInfo.map(field => StructField(field._1, field._2, nullable = true))
+  def schemaFromDataType(
+    schemaInfo: Seq[(String, types.DataType)]
+  ): StructType = {
+    val fields =
+      schemaInfo.map(field => StructField(field._1, field._2, nullable = true))
     StructType(fields)
   }
 }

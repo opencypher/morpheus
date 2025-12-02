@@ -32,14 +32,18 @@ import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 
 case object HiveTableName {
 
-  def apply(databaseName: String,
+  def apply(
+    databaseName: String,
     graphName: GraphName,
     elementType: GraphElementType,
-    elementIdentifiers: Set[String]): String = {
+    elementIdentifiers: Set[String]
+  ): String = {
 
     val elementString = elementType.name.toLowerCase
 
-    val tableName = s"${graphName.path.replace('/', '_')}_${elementString}_${elementIdentifiers.toSeq.sorted.mkString("_")}".encodeSpecialCharacters
+    val tableName =
+      s"${graphName.path.replace('/', '_')}_${elementString}_${elementIdentifiers.toSeq.sorted
+          .mkString("_")}".encodeSpecialCharacters
     s"$databaseName.$tableName"
   }
 

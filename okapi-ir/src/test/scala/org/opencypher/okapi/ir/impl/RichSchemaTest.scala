@@ -35,56 +35,62 @@ import org.opencypher.okapi.testing.BaseTestSuite
 import scala.collection.immutable.ListMap
 
 class RichSchemaTest extends BaseTestSuite {
-    describe("fromFields") {
-      it("can convert fields in a pattern") {
-        val schema = PropertyGraphSchema.empty
-          .withNodePropertyKeys("Person")("name" -> CTString)
-          .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
-          .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
-          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
+  describe("fromFields") {
+    it("can convert fields in a pattern") {
+      val schema = PropertyGraphSchema.empty
+        .withNodePropertyKeys("Person")("name" -> CTString)
+        .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
+        .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
+        .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
 
-        val actual = Pattern(
-          Set(
+      val actual = Pattern(
+        Set(
+          IRField("n")(CTNode("Person")),
+          IRField("r")(CTRelationship("BAR")),
+          IRField("m")(CTNode("Person"))
+        ),
+        ListMap(
+          IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(
             IRField("n")(CTNode("Person")),
-            IRField("r")(CTRelationship("BAR")),
             IRField("m")(CTNode("Person"))
-          ),
-          ListMap(
-            IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode("Person")))
           )
-        ).fields.map(f => schema.forElementType(f.cypherType)).reduce(_ ++ _)
+        )
+      ).fields.map(f => schema.forElementType(f.cypherType)).reduce(_ ++ _)
 
-        val expected = PropertyGraphSchema.empty
-          .withNodePropertyKeys("Person")("name" -> CTString)
-          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
+      val expected = PropertyGraphSchema.empty
+        .withNodePropertyKeys("Person")("name" -> CTString)
+        .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
 
-        actual should be(expected)
-      }
-
-      it("can compute a schema when a field is unknown") {
-        val schema = PropertyGraphSchema.empty
-          .withNodePropertyKeys("Person")("name" -> CTString)
-          .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
-          .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
-          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
-
-        val actual = Pattern(
-          Set(
-            IRField("n")(CTNode("Person")),
-            IRField("r")(CTRelationship("BAR")),
-            IRField("m")(CTNode())
-          ),
-          ListMap(
-            IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(IRField("n")(CTNode("Person")), IRField("m")(CTNode()))
-          )
-        ).fields.map(f => schema.forElementType(f.cypherType)).reduce(_ ++ _)
-
-        val expected = PropertyGraphSchema.empty
-          .withNodePropertyKeys("Person")("name" -> CTString)
-          .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
-          .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
-
-        actual should be(expected)
-      }
+      actual should be(expected)
     }
+
+    it("can compute a schema when a field is unknown") {
+      val schema = PropertyGraphSchema.empty
+        .withNodePropertyKeys("Person")("name" -> CTString)
+        .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
+        .withRelationshipPropertyKeys("KNOWS")("since" -> CTFloat.nullable)
+        .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
+
+      val actual = Pattern(
+        Set(
+          IRField("n")(CTNode("Person")),
+          IRField("r")(CTRelationship("BAR")),
+          IRField("m")(CTNode())
+        ),
+        ListMap(
+          IRField("r")(CTRelationship("BAR")) -> DirectedRelationship(
+            IRField("n")(CTNode("Person")),
+            IRField("m")(CTNode())
+          )
+        )
+      ).fields.map(f => schema.forElementType(f.cypherType)).reduce(_ ++ _)
+
+      val expected = PropertyGraphSchema.empty
+        .withNodePropertyKeys("Person")("name" -> CTString)
+        .withNodePropertyKeys("City")("name" -> CTString, "region" -> CTBoolean)
+        .withRelationshipPropertyKeys("BAR")("foo" -> CTInteger)
+
+      actual should be(expected)
+    }
+  }
 }

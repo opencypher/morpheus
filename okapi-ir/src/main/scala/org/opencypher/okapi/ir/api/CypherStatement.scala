@@ -35,7 +35,7 @@ sealed trait CypherStatement
 sealed trait CypherQuery extends Block with CypherStatement
 
 final case class SingleQuery(
-    model: QueryModel
+  model: QueryModel
 ) extends CypherQuery {
   override def after: List[Block] = model.after
 
@@ -61,8 +61,8 @@ final case class UnionQuery(
 }
 
 final case class CreateGraphStatement(
-    graph: IRGraph,
-    innerQuery: SingleQuery
+  graph: IRGraph,
+  innerQuery: SingleQuery
 ) extends CypherStatement
 
 final case class CreateViewStatement(
@@ -71,7 +71,6 @@ final case class CreateViewStatement(
   innerQueryString: String
 ) extends CypherStatement
 
-
 final case class DeleteGraphStatement(
   qgn: QualifiedGraphName
 ) extends CypherStatement
@@ -79,5 +78,3 @@ final case class DeleteGraphStatement(
 final case class DeleteViewStatement(
   qgn: QualifiedGraphName
 ) extends CypherStatement
-
-

@@ -50,11 +50,10 @@ trait RewriterTestSupport extends AstConstructionTestSupport {
     assert(result === expected, "\n" + originalQuery)
   }
 
-  private def parseForRewriting(queryText: String): Statement = parser.parse(queryText.replace("\r\n", "\n"))
+  private def parseForRewriting(queryText: String): Statement =
+    parser.parse(queryText.replace("\r\n", "\n"))
 
   private def rewrite(original: Statement): AnyRef =
     original.rewrite(rewriter)
 
 }
-
-

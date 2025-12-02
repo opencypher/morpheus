@@ -19,7 +19,7 @@ mockito = "5.18.0"
 neo4j-driver = "1.7.2"
 netty = "4.2.7.Final"
 # @pin - let's prevent automatic updates for the moment
-scala-full = "2.12.20"
+scala-full = "2.12.20" # Note, needs to stay aligned with scalafmt.conf
 # @pin - let's prevent automatic updates for the moment
 scala-major = "2.12"
 scalacheck = "1.19.0"
@@ -83,6 +83,6 @@ testing-scalatest-junit = { module = "org.scalatestplus:junit-5-13_2.12", versio
 champeau-jmh = "me.champeau.jmh:0.7.3"
 # @pin - version is self-hosted
 license = "com.github.hierynomus.license:0.16.3-63da64d"
-scalastyle = "com.github.alisiikh.scalastyle:3.5.0"
+spotless = "com.diffplug.spotless:8.1.0"
 shadowjar = "com.gradleup.shadow:9.2.2"
 versionCatalogUpdate = "nl.littlerobots.version-catalog-update:1.0.1"

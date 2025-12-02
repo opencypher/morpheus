@@ -37,19 +37,25 @@ import org.opencypher.okapi.impl.io.SessionGraphDataSource
 class CypherSessionTest extends ApiBaseTest {
 
   it("avoid de-registering the session data source") {
-    an[org.opencypher.okapi.impl.exception.UnsupportedOperationException] should be thrownBy
+    an[
+      org.opencypher.okapi.impl.exception.UnsupportedOperationException
+    ] should be thrownBy
       createSession.deregisterSource(SessionGraphDataSource.Namespace)
   }
 
   it("avoid de-registering a non-registered data source") {
-    an[IllegalArgumentException] should be thrownBy createSession.deregisterSource(Namespace("foo"))
+    an[IllegalArgumentException] should be thrownBy createSession
+      .deregisterSource(Namespace("foo"))
   }
 
   it("avoids registering a data source with an existing namespace") {
     val session = createSession
     val namespace = Namespace("foo")
     session.registerSource(namespace, mock[PropertyGraphDataSource])
-    an[IllegalArgumentException] should be thrownBy session.registerSource(namespace, mock[PropertyGraphDataSource])
+    an[IllegalArgumentException] should be thrownBy session.registerSource(
+      namespace,
+      mock[PropertyGraphDataSource]
+    )
   }
 
   it("register data source") {
@@ -67,17 +73,25 @@ class CypherSessionTest extends ApiBaseTest {
     session.registerSource(namespace, dataSource)
     session.catalog.source(namespace) should equal(dataSource)
     session.deregisterSource(namespace)
-    an[IllegalArgumentException] should be thrownBy session.catalog.source(namespace)
-    an[IllegalArgumentException] should be thrownBy session.catalog.source(namespace)
+    an[IllegalArgumentException] should be thrownBy session.catalog.source(
+      namespace
+    )
+    an[IllegalArgumentException] should be thrownBy session.catalog.source(
+      namespace
+    )
   }
 
   it("namespaces") {
     val session = createSession
-    session.catalog.namespaces should equal(Set(SessionGraphDataSource.Namespace))
+    session.catalog.namespaces should equal(
+      Set(SessionGraphDataSource.Namespace)
+    )
     val namespace = Namespace("foo")
     val dataSource = mock[PropertyGraphDataSource]
     session.registerSource(namespace, dataSource)
-    session.catalog.namespaces should equal(Set(SessionGraphDataSource.Namespace, namespace))
+    session.catalog.namespaces should equal(
+      Set(SessionGraphDataSource.Namespace, namespace)
+    )
   }
 
   private def createSession: CypherSession = new CypherSession {
@@ -87,9 +101,16 @@ class CypherSessionTest extends ApiBaseTest {
       query: String,
       parameters: CypherMap,
       drivingTable: Option[CypherRecords],
-      queryCatalog: Map[QualifiedGraphName, PropertyGraph]): Result = ???
+      queryCatalog: Map[QualifiedGraphName, PropertyGraph]
+    ): Result = ???
 
-    override private[opencypher] def cypherOnGraph(graph: PropertyGraph, query: String, parameters: CypherMap, drivingTable: Option[CypherRecords], queryCatalog: Map[QualifiedGraphName, PropertyGraph]) = ???
+    override private[opencypher] def cypherOnGraph(
+      graph: PropertyGraph,
+      query: String,
+      parameters: CypherMap,
+      drivingTable: Option[CypherRecords],
+      queryCatalog: Map[QualifiedGraphName, PropertyGraph]
+    ) = ???
 
     override def generateQualifiedGraphName: QualifiedGraphName = ???
   }

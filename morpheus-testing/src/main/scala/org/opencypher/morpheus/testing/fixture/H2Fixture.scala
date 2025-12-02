@@ -30,16 +30,19 @@ import org.opencypher.morpheus.api.io.sql.SqlDataSourceConfig
 import org.opencypher.morpheus.testing.utils.H2Utils._
 import org.opencypher.okapi.testing.BaseTestSuite
 
-
 trait H2Fixture extends SparkSessionFixture {
   self: BaseTestSuite =>
 
   def createH2Database(cfg: SqlDataSourceConfig.Jdbc, name: String): Unit = {
-    withConnection(cfg) { conn => conn.execute(s"CREATE SCHEMA IF NOT EXISTS $name")}
+    withConnection(cfg) { conn =>
+      conn.execute(s"CREATE SCHEMA IF NOT EXISTS $name")
+    }
   }
 
   def dropH2Database(cfg: SqlDataSourceConfig.Jdbc, name: String): Unit = {
-    withConnection(cfg) { conn => conn.execute(s"DROP SCHEMA IF EXISTS $name CASCADE")}
+    withConnection(cfg) { conn =>
+      conn.execute(s"DROP SCHEMA IF EXISTS $name CASCADE")
+    }
   }
 
   def freshH2Database(cfg: SqlDataSourceConfig.Jdbc, name: String): Unit = {

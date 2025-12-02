@@ -30,10 +30,10 @@ import org.opencypher.okapi.ir.api.expr.Expr
 import org.opencypher.okapi.ir.api.{IRField, IRGraph}
 
 final case class AggregationBlock(
-    after: List[Block],
-    binds: Aggregations,
-    group: Set[IRField],
-    graph: IRGraph
+  after: List[Block],
+  binds: Aggregations,
+  group: Set[IRField],
+  graph: IRGraph
 ) extends BasicBlock[Aggregations](BlockType("aggregation")) {
 
   override val where: Set[Expr] = Set.empty[Expr] // no filtering in aggregation blocks

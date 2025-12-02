@@ -27,10 +27,12 @@
 package org.opencypher.morpheus.examples
 
 class CustomDataFrameInputExampleTest extends ExampleTestBase {
-    it("should produce the correct output") {
-      validate(
-        CustomDataFrameInputExample.main(Array.empty),
-        getClass.getResource("/example_outputs/CustomDataFrameInputExample.out").toURI
-      )
-    }
+  it("should produce the correct output") {
+    validate(
+      CustomDataFrameInputExample.main(Array.empty),
+      getClass
+        .getResource("/example_outputs/CustomDataFrameInputExample.out")
+        .toURI
+    )
+  }
 }

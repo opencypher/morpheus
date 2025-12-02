@@ -42,7 +42,10 @@ trait EscapeAtSymbol extends FSGraphSource {
     super.writeTable(path, newTable)
   }
 
-  abstract override def readTable(path: String, schema: StructType): DataFrame = {
+  abstract override def readTable(
+    path: String,
+    schema: StructType
+  ): DataFrame = {
     val readMapping = encodedColumnNames(schema).toMap
     val readSchema = StructType(schema.fields.map { f =>
       f.copy(name = readMapping.getOrElse(f.name, f.name))
@@ -55,12 +58,16 @@ trait EscapeAtSymbol extends FSGraphSource {
   private def encodedColumnNames(schema: StructType): Seq[(String, String)] = {
     schema.fields
       .map(f => f.name -> f.name.replaceAll(atSymbol, unicodeEscaping))
-      .filterNot { case (from, to) => from == to}
+      .filterNot { case (from, to) => from == to }
   }
 
   private def schemaCheck(schema: StructType): Unit = {
-    val invalidFields = schema.fields.filter(f => f.name.contains(unicodeEscaping)).map(_.name)
-    if (invalidFields.nonEmpty) sys.error(s"Orc fields: $invalidFields cannot contain special encoding string: '$unicodeEscaping'")
+    val invalidFields =
+      schema.fields.filter(f => f.name.contains(unicodeEscaping)).map(_.name)
+    if (invalidFields.nonEmpty)
+      sys.error(
+        s"Orc fields: $invalidFields cannot contain special encoding string: '$unicodeEscaping'"
+      )
   }
 
 }

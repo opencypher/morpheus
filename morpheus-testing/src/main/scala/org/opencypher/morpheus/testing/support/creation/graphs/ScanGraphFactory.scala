@@ -46,18 +46,25 @@ import org.opencypher.okapi.impl.exception.{IllegalArgumentException, IllegalSta
 import org.opencypher.okapi.impl.temporal.Duration
 import org.opencypher.okapi.impl.util.StringEncodingUtilities._
 import org.opencypher.okapi.relational.impl.graph.ScanGraph
-import org.opencypher.okapi.testing.propertygraph.{InMemoryTestGraph, InMemoryTestNode, InMemoryTestRelationship}
+import org.opencypher.okapi.testing.propertygraph.{
+  InMemoryTestGraph,
+  InMemoryTestNode,
+  InMemoryTestRelationship
+}
 
 import scala.collection.JavaConverters._
 
 object ScanGraphFactory extends TestGraphFactory with ElementTableCreationSupport {
 
-  override def apply(propertyGraph: InMemoryTestGraph, additionalPatterns: Seq[Pattern])
-    (implicit morpheus: MorpheusSession): ScanGraph[DataFrameTable] = {
+  override def apply(
+    propertyGraph: InMemoryTestGraph,
+    additionalPatterns: Seq[Pattern]
+  )(implicit morpheus: MorpheusSession): ScanGraph[DataFrameTable] = {
 
     val schema = computeSchema(propertyGraph).asMorpheus
 
-    val nodePatterns = schema.labelCombinations.combos.map(labels => NodePattern(CTNode(labels)))
+    val nodePatterns =
+      schema.labelCombinations.combos.map(labels => NodePattern(CTNode(labels)))
     val relPatterns = schema.relationshipTypes.map(typ => RelationshipPattern(CTRelationship(typ)))
 
     val scans = (nodePatterns ++ relPatterns ++ additionalPatterns).map { pattern =>
@@ -70,8 +77,13 @@ object ScanGraphFactory extends TestGraphFactory with ElementTableCreationSuppor
 
   override def name: String = "ScanGraphFactory"
 
-  private def extractEmbeddings(pattern: Pattern, graph: InMemoryTestGraph, schema: PropertyGraphSchema)
-    (implicit morpheus: MorpheusSession): Seq[Map[PatternElement, Element[Long]]] = {
+  private def extractEmbeddings(
+    pattern: Pattern,
+    graph: InMemoryTestGraph,
+    schema: PropertyGraphSchema
+  )(implicit
+    morpheus: MorpheusSession
+  ): Seq[Map[PatternElement, Element[Long]]] = {
 
     val candidates = pattern.elements.map { element =>
       element.cypherType match {
@@ -79,41 +91,52 @@ object ScanGraphFactory extends TestGraphFactory with ElementTableCreationSuppor
           element -> graph.nodes.filter(_.labels == labels)
         case CTRelationship(types, _) =>
           element -> graph.relationships.filter(rel => types.contains(rel.relType))
-        case other => throw IllegalArgumentException("Node or Relationship type", other)
+        case other =>
+          throw IllegalArgumentException("Node or Relationship type", other)
       }
     }.toMap
 
     val unitEmbedding = Seq(
       Map.empty[PatternElement, Element[Long]]
     )
-    val initialEmbeddings = pattern.elements.foldLeft(unitEmbedding) {
-      case (acc, patternElement) =>
-        val elementCandidates = candidates(patternElement)
+    val initialEmbeddings = pattern.elements.foldLeft(unitEmbedding) { case (acc, patternElement) =>
+      val elementCandidates = candidates(patternElement)
 
-        for {
-          row <- acc
-          elementCandidate <- elementCandidates
-        } yield row.updated(patternElement, elementCandidate)
+      for {
+        row <- acc
+        elementCandidate <- elementCandidates
+      } yield row.updated(patternElement, elementCandidate)
     }
 
-    pattern.topology.foldLeft(initialEmbeddings) {
-      case (acc, (relElement, connection)) =>
-        connection match {
-          case Connection(Some(sourceNode), None, _) => acc.filter { row =>
-            row(sourceNode).id == row(relElement).asInstanceOf[InMemoryTestRelationship].startId
+    pattern.topology.foldLeft(initialEmbeddings) { case (acc, (relElement, connection)) =>
+      connection match {
+        case Connection(Some(sourceNode), None, _) =>
+          acc.filter { row =>
+            row(sourceNode).id == row(relElement)
+              .asInstanceOf[InMemoryTestRelationship]
+              .startId
           }
 
-          case Connection(None, Some(targetElement), _) => acc.filter { row =>
-            row(targetElement).id == row(relElement).asInstanceOf[InMemoryTestRelationship].endId
+        case Connection(None, Some(targetElement), _) =>
+          acc.filter { row =>
+            row(targetElement).id == row(relElement)
+              .asInstanceOf[InMemoryTestRelationship]
+              .endId
           }
 
-          case Connection(Some(sourceNode), Some(targetElement), _) => acc.filter { row =>
+        case Connection(Some(sourceNode), Some(targetElement), _) =>
+          acc.filter { row =>
             val rel = row(relElement).asInstanceOf[InMemoryTestRelationship]
-            row(sourceNode).id == rel.startId && row(targetElement).id == rel.endId
+            row(sourceNode).id == rel.startId && row(
+              targetElement
+            ).id == rel.endId
           }
 
-          case Connection(None, None, _) => throw IllegalStateException("Connection without source or target node")
-        }
+        case Connection(None, None, _) =>
+          throw IllegalStateException(
+            "Connection without source or target node"
+          )
+      }
     }
   }
 
@@ -123,53 +146,75 @@ object ScanGraphFactory extends TestGraphFactory with ElementTableCreationSuppor
     schema: PropertyGraphSchema
   )(implicit morpheus: MorpheusSession): MorpheusElementTable = {
 
-    val unitData: Seq[Seq[Any]] = Seq(embeddings.indices.map(_ => Seq.empty[Any]): _*)
+    val unitData: Seq[Seq[Any]] = Seq(
+      embeddings.indices.map(_ => Seq.empty[Any]): _*
+    )
 
-    val (columns, data) = pattern.elements.foldLeft(Seq.empty[StructField] -> unitData) {
-      case ((accColumns, accData), element) =>
+    val (columns, data) =
+      pattern.elements.foldLeft(Seq.empty[StructField] -> unitData) {
+        case ((accColumns, accData), element) =>
+          element.cypherType match {
+            case CTNode(labels, _) =>
+              val propertyKeys = schema.nodePropertyKeys(labels)
+              val propertyFields =
+                getPropertyStructFields(element, propertyKeys)
 
-        element.cypherType match {
-          case CTNode(labels, _) =>
-            val propertyKeys = schema.nodePropertyKeys(labels)
-            val propertyFields = getPropertyStructFields(element, propertyKeys)
+              val nodeData = embeddings.map { embedding =>
+                val node = embedding(element).asInstanceOf[InMemoryTestNode]
 
-            val nodeData = embeddings.map { embedding =>
-              val node = embedding(element).asInstanceOf[InMemoryTestNode]
+                val propertyValues = propertyKeys.keySet.toSeq.map(p =>
+                  node.properties.get(p).map(toSparkValue).orNull
+                )
+                Seq(node.id) ++ propertyValues
+              }
 
-              val propertyValues = propertyKeys.keySet.toSeq.map(p => node.properties.get(p).map(toSparkValue).orNull)
-              Seq(node.id) ++ propertyValues
-            }
+              val newData = accData.zip(nodeData).map { case (l, r) => l ++ r }
+              val newColumns = accColumns ++ Seq(
+                StructField(
+                  s"${element.name.encodeSpecialCharacters}_id",
+                  LongType
+                )
+              ) ++ propertyFields
 
-            val newData = accData.zip(nodeData).map { case (l, r) => l ++ r }
-            val newColumns = accColumns ++ Seq(StructField(s"${element.name.encodeSpecialCharacters}_id", LongType)) ++ propertyFields
+              newColumns -> newData
 
-            newColumns -> newData
+            case CTRelationship(types, _) =>
+              val propertyKeys = schema.relationshipPropertyKeys(types.head)
+              val propertyFields =
+                getPropertyStructFields(element, propertyKeys)
 
+              val relData = embeddings.map { embedding =>
+                val rel =
+                  embedding(element).asInstanceOf[InMemoryTestRelationship]
+                val propertyValues =
+                  propertyKeys.keySet.toSeq.map(p => rel.properties.get(p).map(toSparkValue).orNull)
+                Seq(rel.id, rel.startId, rel.endId) ++ propertyValues
+              }
 
-          case CTRelationship(types, _) =>
-            val propertyKeys = schema.relationshipPropertyKeys(types.head)
-            val propertyFields = getPropertyStructFields(element, propertyKeys)
+              val newData = accData.zip(relData).map { case (l, r) => l ++ r }
+              val newColumns = accColumns ++
+                Seq(
+                  StructField(
+                    s"${element.name.encodeSpecialCharacters}_id",
+                    LongType
+                  ),
+                  StructField(
+                    s"${element.name.encodeSpecialCharacters}_source",
+                    LongType
+                  ),
+                  StructField(
+                    s"${element.name.encodeSpecialCharacters}_target",
+                    LongType
+                  )
+                ) ++
+                propertyFields
 
-            val relData = embeddings.map { embedding =>
-              val rel = embedding(element).asInstanceOf[InMemoryTestRelationship]
-              val propertyValues = propertyKeys.keySet.toSeq.map(p => rel.properties.get(p).map(toSparkValue).orNull)
-              Seq(rel.id, rel.startId, rel.endId) ++ propertyValues
-            }
+              newColumns -> newData
 
-            val newData = accData.zip(relData).map { case (l, r) => l ++ r }
-            val newColumns = accColumns ++
-              Seq(
-                StructField(s"${element.name.encodeSpecialCharacters}_id", LongType),
-                StructField(s"${element.name.encodeSpecialCharacters}_source", LongType),
-                StructField(s"${element.name.encodeSpecialCharacters}_target", LongType)
-              ) ++
-              propertyFields
-
-            newColumns -> newData
-
-          case other => throw IllegalArgumentException("Node or Relationship type", other)
-        }
-    }
+            case other =>
+              throw IllegalArgumentException("Node or Relationship type", other)
+          }
+      }
 
     val df = morpheus.sparkSession.createDataFrame(
       data.map { r => Row(r: _*) }.asJava,
@@ -179,20 +224,29 @@ object ScanGraphFactory extends TestGraphFactory with ElementTableCreationSuppor
     constructElementTable(pattern, df)
   }
 
-  protected def getPropertyStructFields(patternElement: PatternElement, propKeys: PropertyKeys): Seq[StructField] = {
+  protected def getPropertyStructFields(
+    patternElement: PatternElement,
+    propKeys: PropertyKeys
+  ): Seq[StructField] = {
     propKeys.foldLeft(Seq.empty[StructField]) { case (fields, key) =>
-      fields :+ StructField(s"${patternElement.name}_${key._1.encodeSpecialCharacters}_property", key._2.getSparkType, key._2.isNullable)
+      fields :+ StructField(
+        s"${patternElement.name}_${key._1.encodeSpecialCharacters}_property",
+        key._2.getSparkType,
+        key._2.isNullable
+      )
     }
   }
 
   private def toSparkValue(v: CypherValue): Any = {
     v.getValue match {
       case Some(date: LocalDate) => java.sql.Date.valueOf(date)
-      case Some(localDateTime: LocalDateTime) => java.sql.Timestamp.valueOf(localDateTime)
+      case Some(localDateTime: LocalDateTime) =>
+        java.sql.Timestamp.valueOf(localDateTime)
       case Some(dur: Duration) => dur.toCalendarInterval
-      case Some(l: List[_]) => l.collect { case c: CypherValue => toSparkValue(c) }
+      case Some(l: List[_]) =>
+        l.collect { case c: CypherValue => toSparkValue(c) }
       case Some(other) => other
-      case None => null
+      case None        => null
     }
   }
 }

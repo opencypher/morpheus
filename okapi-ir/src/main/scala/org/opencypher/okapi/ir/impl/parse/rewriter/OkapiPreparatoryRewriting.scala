@@ -27,7 +27,10 @@
 package org.opencypher.v9_0.frontend.phases
 
 import org.opencypher.okapi.ir.impl.parse.rewriter.legacy
-import org.opencypher.okapi.ir.impl.parse.rewriter.legacy.{normalizeReturnClauses, normalizeWithClauses}
+import org.opencypher.okapi.ir.impl.parse.rewriter.legacy.{
+  normalizeReturnClauses,
+  normalizeWithClauses
+}
 import org.opencypher.v9_0.rewriting.rewriters._
 import org.opencypher.v9_0.util.inSequence
 import org.opencypher.v9_0.frontend.phases.CompilationPhaseTracer.CompilationPhase.AST_REWRITE
@@ -36,18 +39,24 @@ case object OkapiPreparatoryRewriting extends Phase[BaseContext, BaseState, Base
 
   override def process(from: BaseState, context: BaseContext): BaseState = {
 
-    val rewrittenStatement = from.statement().endoRewrite(inSequence(
-      legacy.normalizeReturnClauses(context.exceptionCreator),
-      normalizeWithClauses(context.exceptionCreator),
-      expandCallWhere,
-      mergeInPredicates))
+    val rewrittenStatement = from
+      .statement()
+      .endoRewrite(
+        inSequence(
+          legacy.normalizeReturnClauses(context.exceptionCreator),
+          normalizeWithClauses(context.exceptionCreator),
+          expandCallWhere,
+          mergeInPredicates
+        )
+      )
 
     from.withStatement(rewrittenStatement)
   }
 
   override val phase = AST_REWRITE
 
-  override val description = "rewrite the AST into a shape that semantic analysis can be performed on"
+  override val description =
+    "rewrite the AST into a shape that semantic analysis can be performed on"
 
   override def postConditions: Set[Condition] = Set.empty
 }

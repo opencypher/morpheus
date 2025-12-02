@@ -43,7 +43,9 @@ object CypherParser extends CypherParser {
       // TODO: Remove when frontend supports CLONE clause
       val filteredErrors = errors.filterNot(_.msg.contains("already declared"))
       if (filteredErrors.nonEmpty) {
-        throw ParsingException(s"Errors during semantic checking: ${filteredErrors.mkString(", ")}")
+        throw ParsingException(
+          s"Errors during semantic checking: ${filteredErrors.mkString(", ")}"
+        )
       }
     }
   }
@@ -51,11 +53,15 @@ object CypherParser extends CypherParser {
 
 trait CypherParser {
 
-  def apply(query: String)(implicit context: BaseContext): Statement = process(query)._1
+  def apply(query: String)(implicit context: BaseContext): Statement = process(
+    query
+  )._1
 
-  def process(query: String, drivingTableFields: Set[Var] = Set.empty)
-    (implicit context: BaseContext): (Statement, Map[String, Any], SemanticState) = {
-    val fieldsWithFrontendTypes = drivingTableFields.map(v => v.name -> toFrontendType(v.cypherType)).toMap
+  def process(query: String, drivingTableFields: Set[Var] = Set.empty)(implicit
+    context: BaseContext
+  ): (Statement, Map[String, Any], SemanticState) = {
+    val fieldsWithFrontendTypes =
+      drivingTableFields.map(v => v.name -> toFrontendType(v.cypherType)).toMap
     val startState = InitialState(query, None, null, fieldsWithFrontendTypes)
     val endState = pipeLine.transform(startState, context)
     val params = endState.extractedParams
@@ -67,11 +73,25 @@ trait CypherParser {
     Parsing.adds(BaseContains[Statement]) andThen
       SyntaxDeprecationWarnings(V2) andThen
       OkapiPreparatoryRewriting andThen
-      SemanticAnalysis(warn = true, SemanticFeature.Cypher10Support, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature)
+      SemanticAnalysis(
+        warn = true,
+        SemanticFeature.Cypher10Support,
+        SemanticFeature.MultipleGraphs,
+        SemanticFeature.WithInitialQuerySignature
+      )
         .adds(BaseContains[SemanticState]) andThen
-      AstRewriting(RewriterStepSequencer.newPlain, Forced, getDegreeRewriting = false) andThen
+      AstRewriting(
+        RewriterStepSequencer.newPlain,
+        Forced,
+        getDegreeRewriting = false
+      ) andThen
       isolateAggregation andThen
-      SemanticAnalysis(warn = false, SemanticFeature.Cypher10Support, SemanticFeature.MultipleGraphs, SemanticFeature.WithInitialQuerySignature) andThen
+      SemanticAnalysis(
+        warn = false,
+        SemanticFeature.Cypher10Support,
+        SemanticFeature.MultipleGraphs,
+        SemanticFeature.WithInitialQuerySignature
+      ) andThen
       Namespacer andThen
       CNFNormalizer andThen
       LateAstRewriting andThen

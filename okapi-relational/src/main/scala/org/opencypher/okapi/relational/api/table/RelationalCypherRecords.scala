@@ -50,7 +50,11 @@ trait RelationalCypherRecordsFactory[T <: Table[T]] {
 
   def fromElementTable(elementTable: ElementTable[T]): Records
 
-  def from(header: RecordHeader, table: T, returnItems: Option[Seq[String]] = None): Records
+  def from(
+    header: RecordHeader,
+    table: T,
+    returnItems: Option[Seq[String]] = None
+  ): Records
 }
 
 trait RelationalCypherRecords[T <: Table[T]] extends CypherRecords {

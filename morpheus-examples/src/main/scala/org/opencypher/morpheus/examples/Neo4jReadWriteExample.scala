@@ -44,28 +44,31 @@ object Neo4jReadWriteExample extends App {
   val neo4j = connectNeo4j("", boltUrl)
 
   // Register Property Graph Data Sources (PGDS)
-  private val neo4jPgds: Neo4jPropertyGraphDataSource = GraphSources.cypher.neo4j(neo4j.config)
-  private val filePgds: FSGraphSource = GraphSources.fs(rootPath = getClass.getResource("/fs-graphsource/csv").getFile).csv
+  private val neo4jPgds: Neo4jPropertyGraphDataSource =
+    GraphSources.cypher.neo4j(neo4j.config)
+  private val filePgds: FSGraphSource = GraphSources
+    .fs(rootPath = getClass.getResource("/fs-graphsource/csv").getFile)
+    .csv
 
   morpheus.registerSource(Namespace("Neo4j"), neo4jPgds)
   morpheus.registerSource(Namespace("CSV"), filePgds)
 
   // Copy products graph from File-based PGDS to Neo4j PGDS
-  morpheus.cypher(
-    s"""
+  morpheus.cypher(s"""
        |CATALOG CREATE GRAPH Neo4j.products {
        |  FROM GRAPH CSV.products RETURN GRAPH
        |}
      """.stripMargin)
 
   // Read graph from Neo4j and run a Cypher query
-  morpheus.cypher(
-    s"""
+  morpheus
+    .cypher(s"""
        |FROM Neo4j.products
        |MATCH (n:Customer)-[r:BOUGHT]->(m:Product)
        |RETURN m.title AS product, avg(r.rating) AS avg_rating, count(n) AS purchases
        |ORDER BY avg_rating DESC, purchases DESC, product ASC
-     """.stripMargin).show
+     """.stripMargin)
+    .show
 
   // Clear Neo4j test instance and close session / driver
   neo4j.close()

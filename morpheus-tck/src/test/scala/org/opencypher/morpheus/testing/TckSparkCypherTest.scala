@@ -42,23 +42,37 @@ class TckSparkCypherTest extends MorpheusTestSuite {
 
   // Defines the graphs to run on
   private val factories = Table(
-    ("factory","additional_blacklist"),
+    ("factory", "additional_blacklist"),
     (ScanGraphFactory, Set.empty[String])
   )
 
   private val defaultFactory: TestGraphFactory = ScanGraphFactory
 
-  private val failingBlacklist = getClass.getResource("/failing_blacklist").getFile
-  private val temporalBlacklist = getClass.getResource("/temporal_blacklist").getFile
-  private val wontFixBlacklistFile = getClass.getResource("/wont_fix_blacklist").getFile
-  private val failureReportingBlacklistFile = getClass.getResource("/failure_reporting_blacklist").getFile
-  private val scenarios = ScenariosFor(failingBlacklist, temporalBlacklist, wontFixBlacklistFile, failureReportingBlacklistFile)
+  private val failingBlacklist =
+    getClass.getResource("/failing_blacklist").getFile
+  private val temporalBlacklist =
+    getClass.getResource("/temporal_blacklist").getFile
+  private val wontFixBlacklistFile =
+    getClass.getResource("/wont_fix_blacklist").getFile
+  private val failureReportingBlacklistFile =
+    getClass.getResource("/failure_reporting_blacklist").getFile
+  private val scenarios = ScenariosFor(
+    failingBlacklist,
+    temporalBlacklist,
+    wontFixBlacklistFile,
+    failureReportingBlacklistFile
+  )
 
   // white list tests are run on all factories
   forAll(factories) { (factory, additional_blacklist) =>
     forAll(scenarios.whiteList) { scenario =>
       if (!additional_blacklist.contains(scenario.toString)) {
-        test(s"[${factory.name}, ${WhiteList.name}] $scenario", WhiteList, tckMorpheusTag, Tag(factory.name)) {
+        test(
+          s"[${factory.name}, ${WhiteList.name}] $scenario",
+          WhiteList,
+          tckMorpheusTag,
+          Tag(factory.name)
+        ) {
           scenario(TCKGraph(factory, morpheus.graphs.empty)).execute()
         }
       }
@@ -67,12 +81,18 @@ class TckSparkCypherTest extends MorpheusTestSuite {
 
   // black list tests are run on default factory
   forAll(scenarios.blackList) { scenario =>
-    test(s"[${defaultFactory.name}, ${BlackList.name}] $scenario", BlackList, tckMorpheusTag) {
+    test(
+      s"[${defaultFactory.name}, ${BlackList.name}] $scenario",
+      BlackList,
+      tckMorpheusTag
+    ) {
       val tckGraph = TCKGraph(defaultFactory, morpheus.graphs.empty)
 
       Try(scenario(tckGraph).execute()) match {
         case Success(_) =>
-          throw new RuntimeException(s"A blacklisted scenario actually worked: $scenario")
+          throw new RuntimeException(
+            s"A blacklisted scenario actually worked: $scenario"
+          )
         case Failure(_) =>
           ()
       }
@@ -83,31 +103,37 @@ class TckSparkCypherTest extends MorpheusTestSuite {
     val white = scenarios.whiteList.groupBy(_.featureName).mapValues(_.size)
     val black = scenarios.blackList.groupBy(_.featureName).mapValues(_.size)
 
-    val failingScenarios = using(Source.fromFile(failingBlacklist))(_.getLines().size)
-    val failingTemporalScenarios = using(Source.fromFile(temporalBlacklist))(_.getLines().size)
-    val failureReportingScenarios = using(Source.fromFile(failureReportingBlacklistFile))(_.getLines().size)
+    val failingScenarios =
+      using(Source.fromFile(failingBlacklist))(_.getLines().size)
+    val failingTemporalScenarios =
+      using(Source.fromFile(temporalBlacklist))(_.getLines().size)
+    val failureReportingScenarios =
+      using(Source.fromFile(failureReportingBlacklistFile))(_.getLines().size)
 
     val allFeatures = white.keySet ++ black.keySet
-    val perFeatureCoverage = allFeatures.foldLeft(Map.empty[String, Float]) {
-      case (acc, feature) =>
-        val w = white.getOrElse(feature, 0).toFloat
-        val b = black.getOrElse(feature, 0).toFloat
-        val percentage = (w / (w + b)) * 100
-        acc.updated(feature, percentage)
+    val perFeatureCoverage = allFeatures.foldLeft(Map.empty[String, Float]) { case (acc, feature) =>
+      val w = white.getOrElse(feature, 0).toFloat
+      val b = black.getOrElse(feature, 0).toFloat
+      val percentage = (w / (w + b)) * 100
+      acc.updated(feature, percentage)
     }
 
-    val allScenarios = scenarios.blacklist.size + scenarios.whiteList.size.toFloat
-    val readOnlyScenarios = scenarios.whiteList.size + failingScenarios + failureReportingScenarios.toFloat + failingTemporalScenarios
-    val smallReadOnlyScenarios = scenarios.whiteList.size + failingScenarios.toFloat
+    val allScenarios =
+      scenarios.blacklist.size + scenarios.whiteList.size.toFloat
+    val readOnlyScenarios =
+      scenarios.whiteList.size + failingScenarios + failureReportingScenarios.toFloat + failingTemporalScenarios
+    val smallReadOnlyScenarios =
+      scenarios.whiteList.size + failingScenarios.toFloat
 
     val overallCoverage = scenarios.whiteList.size / allScenarios
     val readOnlyCoverage = scenarios.whiteList.size / readOnlyScenarios
-    val smallReadOnlyCoverage = scenarios.whiteList.size / smallReadOnlyScenarios
+    val smallReadOnlyCoverage =
+      scenarios.whiteList.size / smallReadOnlyScenarios
 
     val featureCoverageReport = perFeatureCoverage.toSeq
       .sortBy { case (_, coverage) => coverage }
       .reverse
-      .map{ case (feature, coverage) => s" $feature: $coverage%" }
+      .map { case (feature, coverage) => s" $feature: $coverage%" }
       .mkString("\n")
 
     val report = s"""
@@ -129,7 +155,8 @@ class TckSparkCypherTest extends MorpheusTestSuite {
   }
 
   ignore("run single scenario") {
-    scenarios.get("Should add or subtract duration to or from date")
+    scenarios
+      .get("Should add or subtract duration to or from date")
       .foreach(scenario => scenario(TCKGraph(defaultFactory, morpheus.graphs.empty)).execute())
   }
 }

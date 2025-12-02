@@ -34,9 +34,9 @@ import org.opencypher.okapi.neo4j.io.MetaLabelSupport._
 import org.opencypher.okapi.neo4j.io.testing.Neo4jTestUtils._
 
 /**
-  * This application demonstrates the integration of three data sources into a single graph which is used for computing
-  * recommendations. Two graphs are loaded from separate Neo4j databases, one graph is loaded from csv files stored in
-  * the local file system.
+  * This application demonstrates the integration of three data sources into a single graph which is
+  * used for computing recommendations. Two graphs are loaded from separate Neo4j databases, one
+  * graph is loaded from csv files stored in the local file system.
   */
 object RecommendationExample extends App {
   val boltUrl1 = namedArg("--bolt-url-1").getOrElse("bolt://localhost:7687")
@@ -53,18 +53,29 @@ object RecommendationExample extends App {
 
   // The graph within Neo4j is partitioned into regions using a property key. Within the data source, we map each
   // partition to a separate graph name (i.e. US and EU)
-  morpheus.registerSource(Namespace("usSocialNetwork"), GraphSources.cypher.neo4j(neo4jServerUS.config))
-  morpheus.registerSource(Namespace("euSocialNetwork"), GraphSources.cypher.neo4j(neo4jServerEU.config))
+  morpheus.registerSource(
+    Namespace("usSocialNetwork"),
+    GraphSources.cypher.neo4j(neo4jServerUS.config)
+  )
+  morpheus.registerSource(
+    Namespace("euSocialNetwork"),
+    GraphSources.cypher.neo4j(neo4jServerEU.config)
+  )
 
   // File-based CSV GDS
-  morpheus.registerSource(Namespace("purchases"), GraphSources.fs(rootPath = s"${getClass.getResource("/fs-graphsource/csv").getFile}").csv)
+  morpheus.registerSource(
+    Namespace("purchases"),
+    GraphSources
+      .fs(rootPath = s"${getClass.getResource("/fs-graphsource/csv").getFile}")
+      .csv
+  )
 
   // Start analytical workload
 
   /**
-    * Returns a query that creates a graph containing persons that live in the same city and
-    * know each other via 1 to 2 hops. The created graph contains a CLOSE_TO relationship between
-    * each such pair of persons and is stored in the session catalog using the given graph name.
+    * Returns a query that creates a graph containing persons that live in the same city and know
+    * each other via 1 to 2 hops. The created graph contains a CLOSE_TO relationship between each
+    * such pair of persons and is stored in the session catalog using the given graph name.
     */
   def cityFriendsQuery(fromGraph: String): String =
     s"""FROM GRAPH $fromGraph
@@ -77,16 +88,18 @@ object RecommendationExample extends App {
       """.stripMargin
 
   // Find persons that are close to each other in the US social network
-  val usFriends = morpheus.cypher(cityFriendsQuery(s"usSocialNetwork.$entireGraphName")).graph
+  val usFriends =
+    morpheus.cypher(cityFriendsQuery(s"usSocialNetwork.$entireGraphName")).graph
   // Find persons that are close to each other in the EU social network
-  val euFriends = morpheus.cypher(cityFriendsQuery(s"euSocialNetwork.$entireGraphName")).graph
+  val euFriends =
+    morpheus.cypher(cityFriendsQuery(s"euSocialNetwork.$entireGraphName")).graph
 
   // Union the US and EU graphs into a single graph 'allFriends' and store it in the session
   morpheus.catalog.store("allFriends", usFriends.unionAll(euFriends))
 
   // Connect the social network with the products network using equal person and customer emails
-  val connectedCustomers = morpheus.cypher(
-    s"""FROM GRAPH allFriends
+  val connectedCustomers = morpheus
+    .cypher(s"""FROM GRAPH allFriends
        |MATCH (p:Person)
        |FROM GRAPH purchases.products
        |MATCH (c:Customer)
@@ -94,19 +107,21 @@ object RecommendationExample extends App {
        |CONSTRUCT ON purchases.products, allFriends
        |  CREATE (c)-[:IS]->(p)
        |RETURN GRAPH
-      """.stripMargin).graph
+      """.stripMargin)
+    .graph
 
   // Compute recommendations for 'target' based on their interests and what persons close to the
   // 'target' have already bought and given a helpful and positive rating
-  val recommendationTable = connectedCustomers.cypher(
-    s"""|MATCH (target:Person)<-[:CLOSE_TO]-(person:Person),
+  val recommendationTable = connectedCustomers
+    .cypher(s"""|MATCH (target:Person)<-[:CLOSE_TO]-(person:Person),
         |      (target)-[:HAS_INTEREST]->(i:Interest),
         |      (person)<-[:IS]-(x:Customer)-[b:BOUGHT]->(product:Product {category: i.name})
         |WHERE b.rating >= 4 AND (b.helpful * 1.0) / b.votes > 0.6
         |WITH * ORDER BY product.rank
         |RETURN DISTINCT product.title AS product, target.name AS name
         |LIMIT 3
-      """.stripMargin).records
+      """.stripMargin)
+    .records
 
   // Print the results
   recommendationTable.show

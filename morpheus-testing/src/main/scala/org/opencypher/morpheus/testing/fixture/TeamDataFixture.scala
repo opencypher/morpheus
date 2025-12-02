@@ -29,7 +29,11 @@ package org.opencypher.morpheus.testing.fixture
 import org.apache.spark.sql.{DataFrame, Row}
 import org.opencypher.morpheus.api.io.MorpheusElementTable
 import org.opencypher.morpheus.api.value.{MorpheusNode, MorpheusRelationship}
-import org.opencypher.okapi.api.io.conversion.{ElementMapping, NodeMappingBuilder, RelationshipMappingBuilder}
+import org.opencypher.okapi.api.io.conversion.{
+  ElementMapping,
+  NodeMappingBuilder,
+  RelationshipMappingBuilder
+}
 import org.opencypher.okapi.api.schema.PropertyGraphSchema
 import org.opencypher.okapi.api.types._
 import org.opencypher.okapi.api.value.CypherValue.{CypherList, CypherMap}
@@ -50,10 +54,14 @@ trait TeamDataFixture extends TestDataFixture {
   val nHasLabelPerson: Expr = HasLabel(n, Label("Person"))
   val nHasLabelProgrammer: Expr = HasLabel(n, Label("Programmer"))
   val nHasLabelBrogrammer: Expr = HasLabel(n, Label("Brogrammer"))
-  val nHasPropertyLanguage: Expr = ElementProperty(n, PropertyKey("language"))(CTString)
-  val nHasPropertyLuckyNumber: Expr = ElementProperty(n, PropertyKey("luckyNumber"))(CTInteger)
-  val nHasPropertyTitle: Expr = ElementProperty(n, PropertyKey("title"))(CTString)
-  val nHasPropertyYear: Expr = ElementProperty(n, PropertyKey("year"))(CTInteger)
+  val nHasPropertyLanguage: Expr =
+    ElementProperty(n, PropertyKey("language"))(CTString)
+  val nHasPropertyLuckyNumber: Expr =
+    ElementProperty(n, PropertyKey("luckyNumber"))(CTInteger)
+  val nHasPropertyTitle: Expr =
+    ElementProperty(n, PropertyKey("title"))(CTString)
+  val nHasPropertyYear: Expr =
+    ElementProperty(n, PropertyKey("year"))(CTInteger)
   val nHasPropertyName: Expr = ElementProperty(n, PropertyKey("name"))(CTString)
 
   val r: Var = Var("r")(CTRelationship)
@@ -62,8 +70,10 @@ trait TeamDataFixture extends TestDataFixture {
   val rHasTypeKnows: Expr = HasType(r, RelType("KNOWS"))
   val rHasTypeReads: Expr = HasType(r, RelType("READS"))
   val rHasTypeInfluences: Expr = HasType(r, RelType("INFLUENCES"))
-  val rHasPropertyRecommends: Expr = ElementProperty(r, PropertyKey("recommends"))(CTBoolean)
-  val rHasPropertySince: Expr = ElementProperty(r, PropertyKey("since"))(CTInteger)
+  val rHasPropertyRecommends: Expr =
+    ElementProperty(r, PropertyKey("recommends"))(CTBoolean)
+  val rHasPropertySince: Expr =
+    ElementProperty(r, PropertyKey("since"))(CTInteger)
 
   override def dataFixture =
     """
@@ -78,9 +88,20 @@ trait TeamDataFixture extends TestDataFixture {
     """
 
   lazy val dataFixtureSchema: PropertyGraphSchema = PropertyGraphSchema.empty
-    .withNodePropertyKeys("Person", "German")("name" -> CTString, "luckyNumber" -> CTInteger, "languages" -> CTList(CTString).nullable)
-    .withNodePropertyKeys("Person", "Swede")("name" -> CTString, "luckyNumber" -> CTInteger)
-    .withNodePropertyKeys("Person")("name" -> CTString, "luckyNumber" -> CTInteger, "languages" -> CTEmptyList)
+    .withNodePropertyKeys("Person", "German")(
+      "name" -> CTString,
+      "luckyNumber" -> CTInteger,
+      "languages" -> CTList(CTString).nullable
+    )
+    .withNodePropertyKeys("Person", "Swede")(
+      "name" -> CTString,
+      "luckyNumber" -> CTInteger
+    )
+    .withNodePropertyKeys("Person")(
+      "name" -> CTString,
+      "luckyNumber" -> CTInteger,
+      "languages" -> CTEmptyList
+    )
     .withRelationshipPropertyKeys("KNOWS")("since" -> CTInteger)
 
   override lazy val nbrNodes = 4
@@ -88,44 +109,128 @@ trait TeamDataFixture extends TestDataFixture {
   override def nbrRels = 3
 
   lazy val teamDataGraphNodes: Bag[CypherMap] = Bag(
-    CypherMap("n" -> MorpheusNode(0L, Set("Person", "German"), CypherMap("name" -> "Stefan", "luckyNumber" -> 42L, "languages" -> CypherList("German", "English", "Klingon")))),
-    CypherMap("n" -> MorpheusNode(1L, Set("Person", "Swede"), CypherMap("name" -> "Mats", "luckyNumber" -> 23L))),
-    CypherMap("n" -> MorpheusNode(2L, Set("Person", "German"), CypherMap("name" -> "Martin", "luckyNumber" -> 1337L))),
-    CypherMap("n" -> MorpheusNode(3L, Set("Person", "German"), CypherMap("name" -> "Max", "luckyNumber" -> 8L))),
-    CypherMap("n" -> MorpheusNode(4L, Set("Person"), CypherMap("name" -> "Donald", "luckyNumber" -> 8L, "languages" -> CypherList())))
+    CypherMap(
+      "n" -> MorpheusNode(
+        0L,
+        Set("Person", "German"),
+        CypherMap(
+          "name" -> "Stefan",
+          "luckyNumber" -> 42L,
+          "languages" -> CypherList("German", "English", "Klingon")
+        )
+      )
+    ),
+    CypherMap(
+      "n" -> MorpheusNode(
+        1L,
+        Set("Person", "Swede"),
+        CypherMap("name" -> "Mats", "luckyNumber" -> 23L)
+      )
+    ),
+    CypherMap(
+      "n" -> MorpheusNode(
+        2L,
+        Set("Person", "German"),
+        CypherMap("name" -> "Martin", "luckyNumber" -> 1337L)
+      )
+    ),
+    CypherMap(
+      "n" -> MorpheusNode(
+        3L,
+        Set("Person", "German"),
+        CypherMap("name" -> "Max", "luckyNumber" -> 8L)
+      )
+    ),
+    CypherMap(
+      "n" -> MorpheusNode(
+        4L,
+        Set("Person"),
+        CypherMap(
+          "name" -> "Donald",
+          "luckyNumber" -> 8L,
+          "languages" -> CypherList()
+        )
+      )
+    )
   )
 
   lazy val teamDataGraphRels: Bag[CypherMap] = Bag(
-    CypherMap("r" -> MorpheusRelationship(0, 0, 1, "KNOWS", CypherMap("since" -> 2016))),
-    CypherMap("r" -> MorpheusRelationship(1, 1, 2, "KNOWS", CypherMap("since" -> 2016))),
-    CypherMap("r" -> MorpheusRelationship(2, 2, 3, "KNOWS", CypherMap("since" -> 2016)))
+    CypherMap(
+      "r" -> MorpheusRelationship(0, 0, 1, "KNOWS", CypherMap("since" -> 2016))
+    ),
+    CypherMap(
+      "r" -> MorpheusRelationship(1, 1, 2, "KNOWS", CypherMap("since" -> 2016))
+    ),
+    CypherMap(
+      "r" -> MorpheusRelationship(2, 2, 3, "KNOWS", CypherMap("since" -> 2016))
+    )
   )
 
   /**
     * Returns the expected graph tags for the test graph in /resources/csv/sn
     *
-    * @return expected graph tags
+    * @return
+    *   expected graph tags
     */
   lazy val csvTestGraphTags: Set[Int] = Set(0, 1)
 
   /**
     * Returns the expected nodes for the test graph in /resources/csv/sn
     *
-    * @return expected nodes
+    * @return
+    *   expected nodes
     */
   lazy val csvTestGraphNodes: Bag[Row] = Bag(
-    Row(1L, true, true, true, false, wrap(Array("german", "english")), 42L, "Stefan"),
-    Row(2L, true, false, true, true, wrap(Array("swedish", "english", "german")), 23L, "Mats"),
-    Row(3L, true, true, true, false, wrap(Array("german", "english")), 1337L, "Martin"),
-    Row(4L, true, true, true, false, wrap(Array("german", "swedish", "english")), 8L, "Max")
+    Row(
+      1L,
+      true,
+      true,
+      true,
+      false,
+      wrap(Array("german", "english")),
+      42L,
+      "Stefan"
+    ),
+    Row(
+      2L,
+      true,
+      false,
+      true,
+      true,
+      wrap(Array("swedish", "english", "german")),
+      23L,
+      "Mats"
+    ),
+    Row(
+      3L,
+      true,
+      true,
+      true,
+      false,
+      wrap(Array("german", "english")),
+      1337L,
+      "Martin"
+    ),
+    Row(
+      4L,
+      true,
+      true,
+      true,
+      false,
+      wrap(Array("german", "swedish", "english")),
+      8L,
+      "Max"
+    )
   )
 
   // TODO: figure out why the column order is different for the calls in this and the next method
   /**
     * Returns the rels for the test graph in /resources/csv/sn as expected by a
-    * [[org.opencypher.okapi.relational.api.graph.RelationalCypherGraph[DataFrameTable]#relationships]] call.
+    * [[org.opencypher.okapi.relational.api.graph.RelationalCypherGraph[DataFrameTable]#relationships]]
+    * call.
     *
-    * @return expected rels
+    * @return
+    *   expected rels
     */
   lazy val csvTestGraphRels: Bag[Row] = Bag(
     Row(1L, 10L, "KNOWS", 2L, 2016L),
@@ -135,9 +240,11 @@ trait TeamDataFixture extends TestDataFixture {
 
   /**
     * Returns the rels for the test graph in /resources/csv/sn as expected by a
-    * [[[org.opencypher.okapi.relational.api.graph.RelationalCypherGraph[DataFrameTable]#records]] call.
+    * [[[org.opencypher.okapi.relational.api.graph.RelationalCypherGraph[DataFrameTable]#records]]
+    * call.
     *
-    * @return expected rels
+    * @return
+    *   expected rels
     */
   lazy val csvTestGraphRelsFromRecords: Bag[Row] = Bag(
     Row(10L, 1L, "KNOWS", 2L, 2016L),
@@ -183,35 +290,43 @@ trait TeamDataFixture extends TestDataFixture {
     .withPropertyKey("luckyNumber" -> "NUM")
     .build
 
-  protected lazy val personDF: DataFrame = morpheus.sparkSession.createDataFrame(
-    Seq(
-      (1L, "Mats", 23L),
-      (2L, "Martin", 42L),
-      (3L, "Max", 1337L),
-      (4L, "Stefan", 9L))
-  ).toDF("ID", "NAME", "NUM")
+  protected lazy val personDF: DataFrame = morpheus.sparkSession
+    .createDataFrame(
+      Seq(
+        (1L, "Mats", 23L),
+        (2L, "Martin", 42L),
+        (3L, "Max", 1337L),
+        (4L, "Stefan", 9L)
+      )
+    )
+    .toDF("ID", "NAME", "NUM")
 
-  lazy val personTable: MorpheusElementTable = MorpheusElementTable.create(personMapping, personDF)
+  lazy val personTable: MorpheusElementTable =
+    MorpheusElementTable.create(personMapping, personDF)
 
   protected lazy val knowsMapping: ElementMapping = RelationshipMappingBuilder
-    .on("ID").from("SRC")
+    .on("ID")
+    .from("SRC")
     .to("DST")
     .relType("KNOWS")
     .withPropertyKey("since" -> "SINCE")
     .build
 
+  protected lazy val knowsDF: DataFrame = morpheus.sparkSession
+    .createDataFrame(
+      Seq(
+        (1L, 1L, 2L, 2017L),
+        (1L, 2L, 3L, 2016L),
+        (1L, 3L, 4L, 2015L),
+        (2L, 4L, 3L, 2016L),
+        (2L, 5L, 4L, 2013L),
+        (3L, 6L, 4L, 2016L)
+      )
+    )
+    .toDF("SRC", "ID", "DST", "SINCE")
 
-  protected lazy val knowsDF: DataFrame = morpheus.sparkSession.createDataFrame(
-    Seq(
-      (1L, 1L, 2L, 2017L),
-      (1L, 2L, 3L, 2016L),
-      (1L, 3L, 4L, 2015L),
-      (2L, 4L, 3L, 2016L),
-      (2L, 5L, 4L, 2013L),
-      (3L, 6L, 4L, 2016L))
-  ).toDF("SRC", "ID", "DST", "SINCE")
-
-  lazy val knowsTable: MorpheusElementTable = MorpheusElementTable.create(knowsMapping, knowsDF)
+  lazy val knowsTable: MorpheusElementTable =
+    MorpheusElementTable.create(knowsMapping, knowsDF)
 
   private lazy val programmerMapping: ElementMapping = NodeMappingBuilder
     .on("ID")
@@ -222,15 +337,19 @@ trait TeamDataFixture extends TestDataFixture {
     .withPropertyKey("language" -> "LANG")
     .build
 
-  private lazy val programmerDF: DataFrame = morpheus.sparkSession.createDataFrame(
-    Seq(
-      (100L, "Alice", 42L, "C"),
-      (200L, "Bob", 23L, "D"),
-      (300L, "Eve", 84L, "F"),
-      (400L, "Carl", 49L, "R")
-    )).toDF("ID", "NAME", "NUM", "LANG")
+  private lazy val programmerDF: DataFrame = morpheus.sparkSession
+    .createDataFrame(
+      Seq(
+        (100L, "Alice", 42L, "C"),
+        (200L, "Bob", 23L, "D"),
+        (300L, "Eve", 84L, "F"),
+        (400L, "Carl", 49L, "R")
+      )
+    )
+    .toDF("ID", "NAME", "NUM", "LANG")
 
-  lazy val programmerTable: MorpheusElementTable= MorpheusElementTable.create(programmerMapping, programmerDF)
+  lazy val programmerTable: MorpheusElementTable =
+    MorpheusElementTable.create(programmerMapping, programmerDF)
 
   private lazy val brogrammerMapping: ElementMapping = NodeMappingBuilder
     .on("ID")
@@ -239,16 +358,20 @@ trait TeamDataFixture extends TestDataFixture {
     .withPropertyKey("language" -> "LANG")
     .build
 
-  private lazy val brogrammerDF = morpheus.sparkSession.createDataFrame(
-    Seq(
-      (100L, "Node"),
-      (200L, "Coffeescript"),
-      (300L, "Javascript"),
-      (400L, "Typescript")
-    )).toDF("ID", "LANG")
+  private lazy val brogrammerDF = morpheus.sparkSession
+    .createDataFrame(
+      Seq(
+        (100L, "Node"),
+        (200L, "Coffeescript"),
+        (300L, "Javascript"),
+        (400L, "Typescript")
+      )
+    )
+    .toDF("ID", "LANG")
 
   // required to test conflicting input data
-  lazy val brogrammerTable: MorpheusElementTable = MorpheusElementTable.create(brogrammerMapping, brogrammerDF)
+  lazy val brogrammerTable: MorpheusElementTable =
+    MorpheusElementTable.create(brogrammerMapping, brogrammerDF)
 
   private lazy val bookMapping: ElementMapping = NodeMappingBuilder
     .on("ID")
@@ -257,34 +380,54 @@ trait TeamDataFixture extends TestDataFixture {
     .withPropertyKey("year" -> "YEAR")
     .build
 
-  private lazy val bookDF: DataFrame = morpheus.sparkSession.createDataFrame(
-    Seq(
-      (10L, "1984", 1949L),
-      (20L, "Cryptonomicon", 1999L),
-      (30L, "The Eye of the World", 1990L),
-      (40L, "The Circle", 2013L)
-    )).toDF("ID", "NAME", "YEAR")
+  private lazy val bookDF: DataFrame = morpheus.sparkSession
+    .createDataFrame(
+      Seq(
+        (10L, "1984", 1949L),
+        (20L, "Cryptonomicon", 1999L),
+        (30L, "The Eye of the World", 1990L),
+        (40L, "The Circle", 2013L)
+      )
+    )
+    .toDF("ID", "NAME", "YEAR")
 
-  lazy val bookTable: MorpheusElementTable = MorpheusElementTable.create(bookMapping, bookDF)
+  lazy val bookTable: MorpheusElementTable =
+    MorpheusElementTable.create(bookMapping, bookDF)
 
   private lazy val readsMapping: ElementMapping = RelationshipMappingBuilder
-    .on("ID").from("SRC").to("DST").relType("READS").withPropertyKey("recommends" -> "RECOMMENDS").build
+    .on("ID")
+    .from("SRC")
+    .to("DST")
+    .relType("READS")
+    .withPropertyKey("recommends" -> "RECOMMENDS")
+    .build
 
-  private lazy val readsDF = morpheus.sparkSession.createDataFrame(
-    Seq(
-      (100L, 100L, 10L, true),
-      (200L, 200L, 40L, true),
-      (300L, 300L, 30L, true),
-      (400L, 400L, 20L, false)
-    )).toDF("SRC", "ID", "DST", "RECOMMENDS")
+  private lazy val readsDF = morpheus.sparkSession
+    .createDataFrame(
+      Seq(
+        (100L, 100L, 10L, true),
+        (200L, 200L, 40L, true),
+        (300L, 300L, 30L, true),
+        (400L, 400L, 20L, false)
+      )
+    )
+    .toDF("SRC", "ID", "DST", "RECOMMENDS")
 
-  lazy val readsTable: MorpheusElementTable = MorpheusElementTable.create(readsMapping, readsDF)
+  lazy val readsTable: MorpheusElementTable =
+    MorpheusElementTable.create(readsMapping, readsDF)
 
-  private lazy val influencesMapping: ElementMapping = RelationshipMappingBuilder
-    .on("ID").from("SRC").to("DST").relType("INFLUENCES").build
+  private lazy val influencesMapping: ElementMapping =
+    RelationshipMappingBuilder
+      .on("ID")
+      .from("SRC")
+      .to("DST")
+      .relType("INFLUENCES")
+      .build
 
-  private lazy val influencesDF: DataFrame = morpheus.sparkSession.createDataFrame(
-    Seq((10L, 1000L, 20L))).toDF("SRC", "ID", "DST")
+  private lazy val influencesDF: DataFrame = morpheus.sparkSession
+    .createDataFrame(Seq((10L, 1000L, 20L)))
+    .toDF("SRC", "ID", "DST")
 
-  lazy val influencesTable: MorpheusElementTable = MorpheusElementTable.create(influencesMapping, influencesDF)
+  lazy val influencesTable: MorpheusElementTable =
+    MorpheusElementTable.create(influencesMapping, influencesDF)
 }

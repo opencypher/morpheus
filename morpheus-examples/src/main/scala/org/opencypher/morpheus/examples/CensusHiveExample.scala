@@ -43,13 +43,12 @@ object CensusHiveExample extends App {
   implicit val sparkSession: SparkSession = morpheus.sparkSession
   // end::create-session[]
 
-
   // tag::register-sql-source-in-session[]
   // Register a SQL source (for Hive) in the Cypher session
   val graphName = "Census_1901"
   val sqlGraphSource = GraphSources
-      .sql(resource("ddl/census.ddl").getFile)
-      .withSqlDataSourceConfigs("CENSUS" -> Hive)
+    .sql(resource("ddl/census.ddl").getFile)
+    .withSqlDataSourceConfigs("CENSUS" -> Hive)
 
   // tag::prepare-sql-database[]
   // Create the data in Hive
@@ -66,8 +65,8 @@ object CensusHiveExample extends App {
 
   // tag::query-graph[]
   // Run a simple Cypher query
-  census.cypher(
-    s"""
+  census
+    .cypher(s"""
        |FROM GRAPH sql.$graphName
        |MATCH (n:Person)-[r]->(m)
        |WHERE n.age >= 30

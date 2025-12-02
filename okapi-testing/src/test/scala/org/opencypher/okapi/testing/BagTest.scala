@@ -36,12 +36,14 @@ class BagTest extends BaseTestSuite {
       CypherMap("p1" -> "a", "p2" -> "b"),
       CypherMap("p1" -> "b", "p2" -> "a"),
       CypherMap("p1" -> "b", "p2" -> "b")
-    ) should equal(Bag(
-      CypherMap("p2" -> "a", "p1" -> "a"),
-      CypherMap("p2" -> "b", "p1" -> "a"),
-      CypherMap("p2" -> "a", "p1" -> "b"),
-      CypherMap("p2" -> "b", "p1" -> "b")
-    ))
+    ) should equal(
+      Bag(
+        CypherMap("p2" -> "a", "p1" -> "a"),
+        CypherMap("p2" -> "b", "p1" -> "a"),
+        CypherMap("p2" -> "a", "p1" -> "b"),
+        CypherMap("p2" -> "b", "p1" -> "b")
+      )
+    )
   }
 
 }

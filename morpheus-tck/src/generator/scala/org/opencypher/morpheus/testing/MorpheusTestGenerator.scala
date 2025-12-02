@@ -32,31 +32,42 @@ import org.opencypher.okapi.impl.exception.IllegalArgumentException
 import org.opencypher.okapi.tck.test.AcceptanceTestGenerator
 
 object MorpheusTestGenerator extends App {
-  val imports = List("import org.opencypher.morpheus.testing.MorpheusTestSuite",
-    "import org.opencypher.morpheus.testing.support.creation.graphs.ScanGraphFactory")
-  val generator = AcceptanceTestGenerator(imports,
+  val imports = List(
+    "import org.opencypher.morpheus.testing.MorpheusTestSuite",
+    "import org.opencypher.morpheus.testing.support.creation.graphs.ScanGraphFactory"
+  )
+  val generator = AcceptanceTestGenerator(
+    imports,
     graphFactoryName = "ScanGraphFactory",
     createGraphMethodName = "initGraph",
     emptyGraphMethodName = "apply(InMemoryTestGraph.empty)",
     testSuiteName = "MorpheusTestSuite",
     targetPackageName = "org.opencypher.morpheus.testing",
     addGitIgnore = true,
-    checkSideEffects = false)
+    checkSideEffects = false
+  )
 
   if (args.isEmpty) {
-    val defaultOutDir = new File("morpheus-tck/src/test/scala/org/opencypher/morpheus/testing/")
-    val defaultResFiles = new File("morpheus-tck/src/test/resources/").listFiles()
+    val defaultOutDir = new File(
+      "morpheus-tck/src/test/scala/org/opencypher/morpheus/testing/"
+    )
+    val defaultResFiles =
+      new File("morpheus-tck/src/test/resources/").listFiles()
     generator.generateAllScenarios(defaultOutDir, defaultResFiles)
-  }
-  else {
-    //parameter names specified in gradle task
-    val (outDir, resFiles) = (new File(args(0)), Option(new File(args(1)).listFiles()))
+  } else {
+    // parameter names specified in gradle task
+    val (outDir, resFiles) =
+      (new File(args(0)), Option(new File(args(1)).listFiles()))
 
     resFiles match {
       case Some(files) =>
         val scenarioNames = args(2)
         if (scenarioNames.nonEmpty)
-          generator.generateGivenScenarios(outDir, files, scenarioNames.split('|'))
+          generator.generateGivenScenarios(
+            outDir,
+            files,
+            scenarioNames.split('|')
+          )
         else
           generator.generateAllScenarios(outDir, files)
       case None => throw IllegalArgumentException("resource Dir does not exist")

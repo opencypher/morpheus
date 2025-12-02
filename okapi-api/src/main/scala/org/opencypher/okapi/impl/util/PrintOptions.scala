@@ -32,16 +32,26 @@ object PrintOptions {
   private val DEFAULT_MAX_COLUMN_WIDTH: Int = Int.MaxValue
 
   implicit lazy val out: PrintOptions =
-    PrintOptions(stream = Console.out, maxColumnWidth = DEFAULT_MAX_COLUMN_WIDTH)
+    PrintOptions(
+      stream = Console.out,
+      maxColumnWidth = DEFAULT_MAX_COLUMN_WIDTH
+    )
 
   lazy val err: PrintOptions =
-    PrintOptions(stream = Console.err, maxColumnWidth = DEFAULT_MAX_COLUMN_WIDTH)
+    PrintOptions(
+      stream = Console.err,
+      maxColumnWidth = DEFAULT_MAX_COLUMN_WIDTH
+    )
 
   def current(implicit options: PrintOptions): PrintOptions =
     options
 }
 
-final case class PrintOptions(stream: PrintStream, maxColumnWidth: Int = PrintOptions.DEFAULT_MAX_COLUMN_WIDTH) {
+final case class PrintOptions(
+  stream: PrintStream,
+  maxColumnWidth: Int = PrintOptions.DEFAULT_MAX_COLUMN_WIDTH
+) {
   def stream(newStream: PrintStream): PrintOptions = copy(stream = newStream)
-  def maxColumnWidth(maxColumnWidth: Int): PrintOptions = copy(maxColumnWidth = maxColumnWidth)
+  def maxColumnWidth(maxColumnWidth: Int): PrintOptions =
+    copy(maxColumnWidth = maxColumnWidth)
 }

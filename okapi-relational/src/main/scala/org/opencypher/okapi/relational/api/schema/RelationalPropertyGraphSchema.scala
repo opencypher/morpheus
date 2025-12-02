@@ -38,20 +38,30 @@ object RelationalPropertyGraphSchema {
 
   implicit class PropertyGraphSchemaOps(val schema: PropertyGraphSchema) extends AnyVal {
 
-    def headerForElement(element: Var, exactLabelMatch: Boolean = false): RecordHeader = {
+    def headerForElement(
+      element: Var,
+      exactLabelMatch: Boolean = false
+    ): RecordHeader = {
       element.cypherType match {
-        case _: CTNode => schema.headerForNode(element, exactLabelMatch)
+        case _: CTNode         => schema.headerForNode(element, exactLabelMatch)
         case _: CTRelationship => schema.headerForRelationship(element)
-        case other => throw IllegalArgumentException("Element", other)
+        case other             => throw IllegalArgumentException("Element", other)
       }
     }
 
-    def headerForNode(node: Var, exactLabelMatch: Boolean = false): RecordHeader = {
+    def headerForNode(
+      node: Var,
+      exactLabelMatch: Boolean = false
+    ): RecordHeader = {
       val labels: Set[String] = node.cypherType.toCTNode.labels
       headerForNode(node, labels, exactLabelMatch)
     }
 
-    def headerForNode(node: Var, labels: Set[String], exactLabelMatch: Boolean): RecordHeader = {
+    def headerForNode(
+      node: Var,
+      labels: Set[String],
+      exactLabelMatch: Boolean
+    ): RecordHeader = {
       val labelCombos = if (exactLabelMatch) {
         Set(labels)
       } else {
@@ -60,7 +70,8 @@ object RelationalPropertyGraphSchema {
           schema.allCombinations
         } else {
           // label scan
-          val impliedLabels = schema.impliedLabels.transitiveImplicationsFor(labels)
+          val impliedLabels =
+            schema.impliedLabels.transitiveImplicationsFor(labels)
           schema.combinationsFor(impliedLabels)
         }
       }
@@ -69,9 +80,10 @@ object RelationalPropertyGraphSchema {
         HasLabel(node, Label(label))
       }
 
-      val propertyExpressions = schema.nodePropertyKeysForCombinations(labelCombos).map {
-        case (k, t) => ElementProperty(node, PropertyKey(k))(t)
-      }
+      val propertyExpressions =
+        schema.nodePropertyKeysForCombinations(labelCombos).map { case (k, t) =>
+          ElementProperty(node, PropertyKey(k))(t)
+        }
 
       RecordHeader.from(labelExpressions ++ propertyExpressions + node)
     }
@@ -95,20 +107,25 @@ object RelationalPropertyGraphSchema {
         .groupBy { case (propertyKey, _) => propertyKey }
         .mapValues { keysWithType =>
           keysWithType.toSeq.unzip match {
-            case (keys, types) if keys.size == relTypes.size && types.forall(_ == types.head) => types.head
+            case (keys, types)
+                if keys.size == relTypes.size && types.forall(
+                  _ == types.head
+                ) =>
+              types.head
             case (_, types) => types.head.nullable
           }
         }
 
-      val propertyExpressions: Set[Expr] = relKeyHeaderProperties.map {
-        case (k, t) => ElementProperty(rel, PropertyKey(k))(t)
+      val propertyExpressions: Set[Expr] = relKeyHeaderProperties.map { case (k, t) =>
+        ElementProperty(rel, PropertyKey(k))(t)
       }.toSet
 
       val startNodeExpr = StartNode(rel)(CTNode)
       val hasTypeExprs = relTypes.map(relType => HasType(rel, RelType(relType)))
       val endNodeExpr = EndNode(rel)(CTNode)
 
-      val relationshipExpressions = hasTypeExprs ++ propertyExpressions + rel + startNodeExpr + endNodeExpr
+      val relationshipExpressions =
+        hasTypeExprs ++ propertyExpressions + rel + startNodeExpr + endNodeExpr
 
       RecordHeader.from(relationshipExpressions)
     }

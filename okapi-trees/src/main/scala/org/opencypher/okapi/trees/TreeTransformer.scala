@@ -28,26 +28,24 @@ package org.opencypher.okapi.trees
 
 import scala.reflect.ClassTag
 
-
-abstract class TreeTransformer[I <: TreeNode[I] : ClassTag, O] {
+abstract class TreeTransformer[I <: TreeNode[I]: ClassTag, O] {
   def transform(tree: I): O
 }
 
-abstract class TreeTransformerWithContext[I <: TreeNode[I] : ClassTag, O, C] {
+abstract class TreeTransformerWithContext[I <: TreeNode[I]: ClassTag, O, C] {
   def transform(tree: I, context: C): (O, C)
 }
 
-abstract class TreeRewriter[T <: TreeNode[T] : ClassTag] extends TreeTransformer[T, T]
+abstract class TreeRewriter[T <: TreeNode[T]: ClassTag] extends TreeTransformer[T, T]
 
-abstract class TreeRewriterWithContext[T <: TreeNode[T] : ClassTag, C] extends TreeTransformerWithContext[T, T, C] {
+abstract class TreeRewriterWithContext[T <: TreeNode[T]: ClassTag, C]
+    extends TreeTransformerWithContext[T, T, C] {
   def transform(tree: T, context: C): (T, C)
 }
 
-
-/**
-  * Applies the given partial function starting from the leaves of this tree.
-  */
-case class BottomUp[T <: TreeNode[T] : ClassTag](rule: PartialFunction[T, T]) extends TreeRewriter[T] {
+/** Applies the given partial function starting from the leaves of this tree. */
+case class BottomUp[T <: TreeNode[T]: ClassTag](rule: PartialFunction[T, T])
+    extends TreeRewriter[T] {
 
   def transform(tree: T): T = {
     val childrenLength = tree.children.length
@@ -71,10 +69,13 @@ case class BottomUp[T <: TreeNode[T] : ClassTag](rule: PartialFunction[T, T]) ex
 }
 
 /**
-  * Applies the given partial function starting from the leaves of this tree. An additional context is being recursively
-  * passed from the leftmost child to its siblings and eventually to its parent.
+  * Applies the given partial function starting from the leaves of this tree. An additional context
+  * is being recursively passed from the leftmost child to its siblings and eventually to its
+  * parent.
   */
-case class BottomUpWithContext[T <: TreeNode[T] : ClassTag, C](rule: PartialFunction[(T, C), (T, C)]) extends TreeRewriterWithContext[T, C] {
+case class BottomUpWithContext[T <: TreeNode[T]: ClassTag, C](
+  rule: PartialFunction[(T, C), (T, C)]
+) extends TreeRewriterWithContext[T, C] {
 
   def transform(tree: T, context: C): (T, C) = {
     val childrenLength = tree.children.length
@@ -103,9 +104,11 @@ case class BottomUpWithContext[T <: TreeNode[T] : ClassTag, C](rule: PartialFunc
 /**
   * Applies the given partial function starting from the root of this tree.
   *
-  * @note Note the applied rule cannot insert new parent nodes.
+  * @note
+  *   Note the applied rule cannot insert new parent nodes.
   */
-case class TopDown[T <: TreeNode[T] : ClassTag](rule: PartialFunction[T, T]) extends TreeRewriter[T] {
+case class TopDown[T <: TreeNode[T]: ClassTag](rule: PartialFunction[T, T])
+    extends TreeRewriter[T] {
 
   def transform(tree: T): T = {
     val afterSelf = if (rule.isDefinedAt(tree)) rule(tree) else tree
@@ -128,10 +131,8 @@ case class TopDown[T <: TreeNode[T] : ClassTag](rule: PartialFunction[T, T]) ext
 
 }
 
-/**
-  * Applies the given transformation starting from the leaves of this tree.
-  */
-case class Transform[I <: TreeNode[I] : ClassTag, O](
+/** Applies the given transformation starting from the leaves of this tree. */
+case class Transform[I <: TreeNode[I]: ClassTag, O](
   transform: (I, List[O]) => O
 ) extends TreeTransformer[I, O] {
 

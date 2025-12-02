@@ -32,8 +32,8 @@ import ujson.Value
 
 import scala.util.{Failure, Success, Try}
 
-case class SqlDataSourceConfigException(msg: String, cause: Throwable = null) extends Throwable(msg, cause)
-
+case class SqlDataSourceConfigException(msg: String, cause: Throwable = null)
+    extends Throwable(msg, cause)
 
 import org.opencypher.okapi.impl.util.JsonUtils.FlatOption._
 
@@ -51,24 +51,29 @@ object SqlDataSourceConfig {
   private final val UJSON_TYPE_KEY = "$type"
   private final val MORPHEUS_TYPE_KEY = "type"
 
-  implicit val rw: ReadWriter[SqlDataSourceConfig] = readwriter[Value].bimap[SqlDataSourceConfig](
-    // Rename discriminator key from ujson default, to a more friendly version
-    cfg => writeJs(cfg)(defaultMacroRW) match {
-      case Obj(obj) => obj.collect {
-        case (UJSON_TYPE_KEY, value) => MORPHEUS_TYPE_KEY -> value
-        case other => other
-      }
-      case other => other // Note, case objects are serialised as strings
-    },
-    // Revert name change so we can use the ujson reader
-    js => read[SqlDataSourceConfig](js match {
-      case Obj(obj) => obj.map {
-        case (MORPHEUS_TYPE_KEY, value) => UJSON_TYPE_KEY -> value
-        case other => other
-      }
-      case _ => js // Note, case objects are serialised as strings
-    })(defaultMacroRW)
-  )
+  implicit val rw: ReadWriter[SqlDataSourceConfig] =
+    readwriter[Value].bimap[SqlDataSourceConfig](
+      // Rename discriminator key from ujson default, to a more friendly version
+      cfg =>
+        writeJs(cfg)(defaultMacroRW) match {
+          case Obj(obj) =>
+            obj.collect {
+              case (UJSON_TYPE_KEY, value) => MORPHEUS_TYPE_KEY -> value
+              case other                   => other
+            }
+          case other => other // Note, case objects are serialised as strings
+        },
+      // Revert name change so we can use the ujson reader
+      js =>
+        read[SqlDataSourceConfig](js match {
+          case Obj(obj) =>
+            obj.map {
+              case (MORPHEUS_TYPE_KEY, value) => UJSON_TYPE_KEY -> value
+              case other                      => other
+            }
+          case _ => js // Note, case objects are serialised as strings
+        })(defaultMacroRW)
+    )
 
   def toJson(dataSource: SqlDataSourceConfig, indent: Int = 4): String =
     write[SqlDataSourceConfig](dataSource, indent)
@@ -80,14 +85,21 @@ object SqlDataSourceConfig {
     Try(read[Map[String, SqlDataSourceConfig]](jsonStr)) match {
       case Success(result) => result
       case Failure(ex) =>
-        throw SqlDataSourceConfigException(s"Malformed SQL configuration file: ${ex.getMessage}", ex)
+        throw SqlDataSourceConfigException(
+          s"Malformed SQL configuration file: ${ex.getMessage}",
+          ex
+        )
     }
 
-  /** Configures a data source that reads tables via JDBC
+  /**
+    * Configures a data source that reads tables via JDBC
     *
-    * @param url     the JDBC URI to use when connecting to the JDBC server
-    * @param driver  class name of the JDBC driver to use for the JDBC connection
-    * @param options extra options passed to Spark when configuring the reader
+    * @param url
+    *   the JDBC URI to use when connecting to the JDBC server
+    * @param driver
+    *   class name of the JDBC driver to use for the JDBC connection
+    * @param options
+    *   extra options passed to Spark when configuring the reader
     */
   @upickle.implicits.key("jdbc")
   case class Jdbc(
@@ -98,8 +110,10 @@ object SqlDataSourceConfig {
     override def format: StorageFormat = JdbcFormat
   }
 
-  /** Configures a data source that reads tables from Hive
-    * @note The Spark session needs to be configured with `.enableHiveSupport()`
+  /**
+    * Configures a data source that reads tables from Hive
+    * @note
+    *   The Spark session needs to be configured with `.enableHiveSupport()`
     */
   @upickle.implicits.key("hive")
   case object Hive extends SqlDataSourceConfig {
@@ -107,11 +121,15 @@ object SqlDataSourceConfig {
     override def options: Map[String, String] = Map.empty
   }
 
-  /** Configures a data source that reads tables from files
+  /**
+    * Configures a data source that reads tables from files
     *
-    * @param format   the file format passed to Spark when configuring the reader
-    * @param basePath the root folder used for file based formats
-    * @param options  extra options passed to Spark when configuring the reader
+    * @param format
+    *   the file format passed to Spark when configuring the reader
+    * @param basePath
+    *   the root folder used for file based formats
+    * @param options
+    *   extra options passed to Spark when configuring the reader
     */
   @upickle.implicits.key("file")
   case class File(

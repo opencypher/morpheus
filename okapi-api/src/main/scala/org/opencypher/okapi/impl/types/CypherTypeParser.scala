@@ -43,7 +43,9 @@ object CypherTypeParser extends Logging {
         val before = index - math.max(index - 20, 0)
         val after = math.min(index + 20, extra.input.length) - index
         val locationPointer =
-          s"""|\t${extra.input.slice(index - before, index + after).replace('\n', ' ')}
+          s"""|\t${extra.input
+               .slice(index - before, index + after)
+               .replace('\n', ' ')}
               |\t${"~" * before + "^" + "~" * after}
            """.stripMargin
         val msg =
@@ -61,33 +63,47 @@ object CypherTypeParser extends Logging {
 
   // Basic types
   def STRING[_: P]: P[CTString.type] = IgnoreCase("STRING").map(_ => CTString)
-  def INTEGER[_: P]: P[CTInteger.type] = IgnoreCase("INTEGER").map(_ => CTInteger)
+  def INTEGER[_: P]: P[CTInteger.type] =
+    IgnoreCase("INTEGER").map(_ => CTInteger)
   def FLOAT[_: P]: P[CTFloat.type] = IgnoreCase("FLOAT").map(_ => CTFloat)
-  def NUMBER[_: P]: P[CTNumber.type ] = IgnoreCase("NUMBER").map(_ => CTNumber)
-  def BOOLEAN[_: P]: P[CTBoolean.type] = IgnoreCase("BOOLEAN").map(_ => CTBoolean)
+  def NUMBER[_: P]: P[CTNumber.type] = IgnoreCase("NUMBER").map(_ => CTNumber)
+  def BOOLEAN[_: P]: P[CTBoolean.type] =
+    IgnoreCase("BOOLEAN").map(_ => CTBoolean)
   def TRUE[_: P]: P[CTTrue.type] = IgnoreCase("TRUE").map(_ => CTTrue)
   def FALSE[_: P]: P[CTFalse.type] = IgnoreCase("FALSE").map(_ => CTFalse)
-  def ANY[_: P]: P[CTAny.type ] = IgnoreCase("ANY?").map(_ => CTAny)
-  def ANYMATERIAL[_: P]: P[CTAnyMaterial.type] = IgnoreCase("ANY").map(_ => CTAnyMaterial)
+  def ANY[_: P]: P[CTAny.type] = IgnoreCase("ANY?").map(_ => CTAny)
+  def ANYMATERIAL[_: P]: P[CTAnyMaterial.type] =
+    IgnoreCase("ANY").map(_ => CTAnyMaterial)
   def VOID[_: P]: P[CTVoid.type] = IgnoreCase("VOID").map(_ => CTVoid)
   def NULL[_: P]: P[CTNull.type] = IgnoreCase("NULL").map(_ => CTNull)
   def DATE[_: P]: P[CTDate.type] = IgnoreCase("DATE").map(_ => CTDate)
-  def LOCALDATETIME[_: P]: P[CTLocalDateTime.type] = IgnoreCase("LOCALDATETIME").map(_ => CTLocalDateTime)
+  def LOCALDATETIME[_: P]: P[CTLocalDateTime.type] =
+    IgnoreCase("LOCALDATETIME").map(_ => CTLocalDateTime)
   def BIGDECIMAL[_: P]: P[CTBigDecimal] =
-    (IgnoreCase("BIGDECIMAL") ~/ "(" ~/ integer ~/ "," ~/ integer ~/ ")").map { case (s, p) => CTBigDecimal(s, p) }
+    (IgnoreCase("BIGDECIMAL") ~/ "(" ~/ integer ~/ "," ~/ integer ~/ ")").map { case (s, p) =>
+      CTBigDecimal(s, p)
+    }
 
   // element types
   def NODE[_: P]: P[CTNode] = P(
-    IgnoreCase("NODE") ~ ("(" ~/ label.rep ~ ")") ~ ("@" ~/ (identifier | ".").rep.!).?
+    IgnoreCase(
+      "NODE"
+    ) ~ ("(" ~/ label.rep ~ ")") ~ ("@" ~/ (identifier | ".").rep.!).?
   ).map { case (l, mg) => CTNode(l.toSet, mg.map(QualifiedGraphName(_))) }
 
   def ANYNODE[_: P]: P[CTNode.type] = P(IgnoreCase("NODE").map(_ => CTNode))
 
   def RELATIONSHIP[_: P]: P[CTRelationship] = P(
-    IgnoreCase("RELATIONSHIP") ~ ("(" ~/ label.rep(sep = "|") ~/ ")") ~ ("@" ~/ (identifier | ".").rep.!).?
-  ).map { case (l, mg) => CTRelationship(l.toSet, mg.map(QualifiedGraphName(_))) }
+    IgnoreCase("RELATIONSHIP") ~ ("(" ~/ label.rep(sep =
+      "|"
+    ) ~/ ")") ~ ("@" ~/ (identifier | ".").rep.!).?
+  ).map { case (l, mg) =>
+    CTRelationship(l.toSet, mg.map(QualifiedGraphName(_)))
+  }
 
-  def ANYRELATIONSHIP[_: P]: P[CTRelationship] = P(IgnoreCase("RELATIONSHIP").map(_ => CTRelationship))
+  def ANYRELATIONSHIP[_: P]: P[CTRelationship] = P(
+    IgnoreCase("RELATIONSHIP").map(_ => CTRelationship)
+  )
 
   def ELEMENT[_: P]: P[CTUnion] = P(IgnoreCase("ELEMENT").map(_ => CTElement))
 
@@ -95,13 +111,18 @@ object CypherTypeParser extends Logging {
 
   // container types
   def ANYLIST[_: P]: P[CTList] = P(IgnoreCase("LIST").map(_ => CTList))
-  def LIST[_: P]: P[CTList] = P(IgnoreCase("LIST") ~ "(" ~/ cypherType ~/ ")").map(inner => CTList(inner))
+  def LIST[_: P]: P[CTList] =
+    P(IgnoreCase("LIST") ~ "(" ~/ cypherType ~/ ")").map(inner => CTList(inner))
 
   private def mapKey[_: P]: P[String] = P(identifier.! | escapedIdentifier)
-  private def kvPair[_: P]: P[(String, CypherType)] = P(mapKey ~/ ":" ~/ cypherType)
+  private def kvPair[_: P]: P[(String, CypherType)] = P(
+    mapKey ~/ ":" ~/ cypherType
+  )
   def ANYMAP[_: P]: P[CTMap] = P(IgnoreCase("MAP").map(_ => CTMap))
-  def MAP[_: P]: P[CTMap] = P(IgnoreCase("MAP") ~ "(" ~/ kvPair.rep(sep = ",") ~/ ")").map { inner => CTMap(inner.toMap)
-  }
+  def MAP[_: P]: P[CTMap] =
+    P(IgnoreCase("MAP") ~ "(" ~/ kvPair.rep(sep = ",") ~/ ")").map { inner =>
+      CTMap(inner.toMap)
+    }
 
   def materialCypherType[_: P]: P[CypherType] = P(
     STRING |
@@ -130,9 +151,11 @@ object CypherTypeParser extends Logging {
       BIGDECIMAL
   )
 
-  def cypherType[_: P]: P[CypherType] = P((materialCypherType ~ "?".!.?.map(_.isDefined)).map {
-    case (ct, isNullable) => if (isNullable) ct.nullable else ct
-  })
+  def cypherType[_: P]: P[CypherType] = P(
+    (materialCypherType ~ "?".!.?.map(_.isDefined)).map { case (ct, isNullable) =>
+      if (isNullable) ct.nullable else ct
+    }
+  )
 
   def cypherTypeFromEntireInput[_: P]: P[CypherType] = Start ~ cypherType ~ End
 }

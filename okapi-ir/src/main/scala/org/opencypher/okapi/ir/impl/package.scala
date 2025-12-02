@@ -44,51 +44,83 @@ package object impl {
 
   type IRBuilderStack[A] = Fx.fx2[MayFail, HasContext]
 
-  implicit final class RichIRBuilderStack[A](val program: Eff[IRBuilderStack[A], A]) {
+  implicit final class RichIRBuilderStack[A](
+    val program: Eff[IRBuilderStack[A], A]
+  ) {
 
-    def run(context: IRBuilderContext): Either[IRBuilderError, (A, IRBuilderContext)] = {
+    def run(
+      context: IRBuilderContext
+    ): Either[IRBuilderError, (A, IRBuilderContext)] = {
       val stateRun = program.runState(context)
       val errorRun = stateRun.runEither[IRBuilderError]
       errorRun.run
     }
   }
 
-  def error[R: _mayFail : _hasContext, A](err: IRBuilderError)(v: A): Eff[R, A] =
+  def error[R: _mayFail: _hasContext, A](err: IRBuilderError)(v: A): Eff[R, A] =
     left[R, IRBuilderError, BlockRegistry](err) >> pure(v)
 
   implicit final class RichSchema(schema: PropertyGraphSchema) {
 
-    def forElementType(cypherType: CypherType): PropertyGraphSchema = cypherType match {
-      case CTNode(labels, _) =>
-        schema.forNode(labels)
-      case r: CTRelationship =>
-        schema.forRelationship(r)
-      case x => throw IllegalArgumentException("element type", x)
-    }
+    def forElementType(cypherType: CypherType): PropertyGraphSchema =
+      cypherType match {
+        case CTNode(labels, _) =>
+          schema.forNode(labels)
+        case r: CTRelationship =>
+          schema.forRelationship(r)
+        case x => throw IllegalArgumentException("element type", x)
+      }
 
-    def addLabelsToCombo(labels: Set[String], combo: Set[String]): PropertyGraphSchema = {
+    def addLabelsToCombo(
+      labels: Set[String],
+      combo: Set[String]
+    ): PropertyGraphSchema = {
       val labelsWithAddition = combo ++ labels
       schema
         .dropPropertiesFor(combo)
-        .withNodePropertyKeys(labelsWithAddition, schema.nodePropertyKeys(combo))
+        .withNodePropertyKeys(
+          labelsWithAddition,
+          schema.nodePropertyKeys(combo)
+        )
     }
 
-    def addPropertyToElement(propertyKey: String, propertyType: CypherType, elementType: CypherType): PropertyGraphSchema = {
+    def addPropertyToElement(
+      propertyKey: String,
+      propertyType: CypherType,
+      elementType: CypherType
+    ): PropertyGraphSchema = {
       elementType match {
         case CTNode(labels, _) =>
           val allRelevantLabelCombinations = schema.combinationsFor(labels)
-          val property = if (allRelevantLabelCombinations.size == 1) propertyType else propertyType.nullable
+          val property =
+            if (allRelevantLabelCombinations.size == 1) propertyType
+            else propertyType.nullable
           allRelevantLabelCombinations.foldLeft(schema) { case (innerCurrentSchema, combo) =>
-            val updatedPropertyKeys = innerCurrentSchema.nodePropertyKeysForCombinations(Set(combo)).updated(propertyKey, property)
-            innerCurrentSchema.withOverwrittenNodePropertyKeys(combo, updatedPropertyKeys)
+            val updatedPropertyKeys = innerCurrentSchema
+              .nodePropertyKeysForCombinations(Set(combo))
+              .updated(propertyKey, property)
+            innerCurrentSchema.withOverwrittenNodePropertyKeys(
+              combo,
+              updatedPropertyKeys
+            )
           }
         case CTRelationship(types, _) =>
-          val typesToUpdate = if (types.isEmpty) schema.relationshipTypes else types
+          val typesToUpdate =
+            if (types.isEmpty) schema.relationshipTypes else types
           typesToUpdate.foldLeft(schema) { case (innerCurrentSchema, relType) =>
-            val updatedPropertyKeys = innerCurrentSchema.relationshipPropertyKeys(relType).updated(propertyKey, propertyType)
-            innerCurrentSchema.withOverwrittenRelationshipPropertyKeys(relType, updatedPropertyKeys)
+            val updatedPropertyKeys = innerCurrentSchema
+              .relationshipPropertyKeys(relType)
+              .updated(propertyKey, propertyType)
+            innerCurrentSchema.withOverwrittenRelationshipPropertyKeys(
+              relType,
+              updatedPropertyKeys
+            )
           }
-        case other => throw IllegalArgumentException("node or relationship to set a property on", other)
+        case other =>
+          throw IllegalArgumentException(
+            "node or relationship to set a property on",
+            other
+          )
       }
     }
 

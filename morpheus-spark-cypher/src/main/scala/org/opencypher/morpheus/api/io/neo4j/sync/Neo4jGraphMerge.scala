@@ -47,32 +47,37 @@ import scala.concurrent.ExecutionContext.Implicits.global
 import scala.concurrent.duration._
 import scala.concurrent.{Await, Future}
 
-/**
-  * Utility class that allows to merge a graph into an existing Neo4j database.
-  */
+/** Utility class that allows to merge a graph into an existing Neo4j database. */
 object Neo4jGraphMerge extends Logging {
 
   /**
     * Defines a set of properties which uniquely identify a node with a given label.
     *
-    * @see [[org.opencypher.okapi.api.schema.PropertyGraphSchema#nodeKeys]]
+    * @see
+    *   [[org.opencypher.okapi.api.schema.PropertyGraphSchema#nodeKeys]]
     */
   type NodeKeys = Map[String, Set[String]]
+
   /**
     * Defines a set of properties which uniquely identify a relationship with a given type.
     *
-    * @see [[org.opencypher.okapi.api.schema.PropertyGraphSchema#relationshipKeys]]
+    * @see
+    *   [[org.opencypher.okapi.api.schema.PropertyGraphSchema#relationshipKeys]]
     */
   type RelationshipKeys = Map[String, Set[String]]
 
   /**
-    * Creates node indexes for the sub-graph specified by `graphName` in the specified Neo4j database.
-    * This speeds up the Neo4j merge feature.
+    * Creates node indexes for the sub-graph specified by `graphName` in the specified Neo4j
+    * database. This speeds up the Neo4j merge feature.
     *
-    * @note This feature requires the Neo4j Enterprise Edition.
-    * @param graphName which sub-graph to create the indexes for
-    * @param config    access config for the Neo4j database on which the indexes are created
-    * @param nodeKeys  node keys that identify a node uniquely
+    * @note
+    *   This feature requires the Neo4j Enterprise Edition.
+    * @param graphName
+    *   which sub-graph to create the indexes for
+    * @param config
+    *   access config for the Neo4j database on which the indexes are created
+    * @param nodeKeys
+    *   node keys that identify a node uniquely
     */
   def createIndexes(
     graphName: GraphName,
@@ -84,50 +89,63 @@ object Neo4jGraphMerge extends Logging {
     config.withSession { session =>
       maybeMetaLabel match {
         case None =>
-          nodeKeys.foreach {
-            case (label, keys) =>
-              val nodeVar = "n"
-              val propertyString = keys.map(k => s"$nodeVar.`$k`").mkString("(", ", ", ")")
-              val query = s"CREATE CONSTRAINT ON ($nodeVar${label.cypherLabelPredicate}) ASSERT $propertyString IS NODE KEY"
-              logger.debug(s"Creating node key constraints: $query")
-              session.run(query).consume
+          nodeKeys.foreach { case (label, keys) =>
+            val nodeVar = "n"
+            val propertyString =
+              keys.map(k => s"$nodeVar.`$k`").mkString("(", ", ", ")")
+            val query =
+              s"CREATE CONSTRAINT ON ($nodeVar${label.cypherLabelPredicate}) ASSERT $propertyString IS NODE KEY"
+            logger.debug(s"Creating node key constraints: $query")
+            session.run(query).consume
           }
 
           nodeKeys.keySet.foreach { label =>
-            val cmd = s"CREATE INDEX ON ${label.cypherLabelPredicate}(`$metaPropertyKey`)"
+            val cmd =
+              s"CREATE INDEX ON ${label.cypherLabelPredicate}(`$metaPropertyKey`)"
             logger.debug(s"Creating index for meta property key: $cmd")
             session.run(cmd).consume
           }
 
         case Some(ml) =>
-          nodeKeys.foreach {
-            case (label, properties) =>
-              val propertyString = properties.map(p => s"`$p`").mkString("(", ", ", ")")
-              val cmd = s"CREATE INDEX ON ${label.cypherLabelPredicate}$propertyString"
-              logger.debug(s"Creating index for node keys: $cmd")
-              session.run(cmd).consume
+          nodeKeys.foreach { case (label, properties) =>
+            val propertyString =
+              properties.map(p => s"`$p`").mkString("(", ", ", ")")
+            val cmd =
+              s"CREATE INDEX ON ${label.cypherLabelPredicate}$propertyString"
+            logger.debug(s"Creating index for node keys: $cmd")
+            session.run(cmd).consume
           }
 
-          val command = s"CREATE INDEX ON ${ml.cypherLabelPredicate}(`$metaPropertyKey`)"
-          logger.debug(s"Creating sub-graph index for meta label and meta property key: $command")
+          val command =
+            s"CREATE INDEX ON ${ml.cypherLabelPredicate}(`$metaPropertyKey`)"
+          logger.debug(
+            s"Creating sub-graph index for meta label and meta property key: $command"
+          )
           session.run(command).consume
       }
     }
   }
 
   /**
-    * Merges the given graph into the sub-graph specified by `graphName` within an existing Neo4j database.
-    * Properties in the Neo4j graph will be overwritten by values in the merge graph, missing ones are added.
+    * Merges the given graph into the sub-graph specified by `graphName` within an existing Neo4j
+    * database. Properties in the Neo4j graph will be overwritten by values in the merge graph,
+    * missing ones are added.
     *
-    * Nodes and relationships are identified by their element keys defined by the graph's schema. They can be overridden
-    * by optional node and relationship keys
+    * Nodes and relationships are identified by their element keys defined by the graph's schema.
+    * They can be overridden by optional node and relationship keys
     *
-    * @param graphName        which sub-graph in the Neo4j graph to merge the delta to
-    * @param graph            graph that is merged into the existing Neo4j database
-    * @param config           access config for the Neo4j database into which the graph is merged
-    * @param nodeKeys         additional node keys that override node keys defined by the schema
-    * @param relationshipKeys additional relationship keys that override relationship keys defined by the schema
-    * @param morpheus         Morpheus session
+    * @param graphName
+    *   which sub-graph in the Neo4j graph to merge the delta to
+    * @param graph
+    *   graph that is merged into the existing Neo4j database
+    * @param config
+    *   access config for the Neo4j database into which the graph is merged
+    * @param nodeKeys
+    *   additional node keys that override node keys defined by the schema
+    * @param relationshipKeys
+    *   additional relationship keys that override relationship keys defined by the schema
+    * @param morpheus
+    *   Morpheus session
     */
   def merge(
     graphName: GraphName,
@@ -136,17 +154,34 @@ object Neo4jGraphMerge extends Logging {
     nodeKeys: Option[NodeKeys] = None,
     relationshipKeys: Option[RelationshipKeys] = None
   )(implicit morpheus: MorpheusSession): Unit = {
-    val updatedSchema = combineElementKeys(graph.schema, nodeKeys, relationshipKeys)
+    val updatedSchema =
+      combineElementKeys(graph.schema, nodeKeys, relationshipKeys)
 
     val maybeMetaLabel = graphName.getMetaLabel
     val maybeMetaLabelString = maybeMetaLabel.toSet[String].cypherLabelPredicate
 
     val writesCompleted = for {
-      _ <- Future.sequence(MergeWriters.writeNodes(maybeMetaLabel, graph, config, updatedSchema.nodeKeys))
-      _ <- Future.sequence(MergeWriters.writeRelationships(maybeMetaLabel, graph, config, updatedSchema.relationshipKeys))
+      _ <- Future.sequence(
+        MergeWriters.writeNodes(
+          maybeMetaLabel,
+          graph,
+          config,
+          updatedSchema.nodeKeys
+        )
+      )
+      _ <- Future.sequence(
+        MergeWriters.writeRelationships(
+          maybeMetaLabel,
+          graph,
+          config,
+          updatedSchema.relationshipKeys
+        )
+      )
       _ <- Future {
         config.withSession { session =>
-          session.run(s"MATCH (n$maybeMetaLabelString) REMOVE n.$metaPropertyKey").consume()
+          session
+            .run(s"MATCH (n$maybeMetaLabelString) REMOVE n.$metaPropertyKey")
+            .consume()
         }
       }
     } yield Future {}
@@ -160,11 +195,11 @@ object Neo4jGraphMerge extends Logging {
     nodeKeys: Option[NodeKeys],
     relationshipKeys: Option[RelationshipKeys]
   ): PropertyGraphSchema = {
-    val withNodeKeys = nodeKeys.getOrElse(Map.empty).foldLeft(schema) {
-      case (acc, (label, keys)) => acc.withNodeKey(label, keys)
+    val withNodeKeys = nodeKeys.getOrElse(Map.empty).foldLeft(schema) { case (acc, (label, keys)) =>
+      acc.withNodeKey(label, keys)
     }
-    relationshipKeys.getOrElse(Map.empty).foldLeft(withNodeKeys) {
-      case (acc, (typ, keys)) => acc.withRelationshipKey(typ, keys)
+    relationshipKeys.getOrElse(Map.empty).foldLeft(withNodeKeys) { case (acc, (typ, keys)) =>
+      acc.withRelationshipKey(typ, keys)
     }
   }
 }
@@ -178,17 +213,28 @@ case object MergeWriters {
   ): Set[Future[Unit]] = {
     val result: Set[Future[Unit]] = graph.schema.labelCombinations.combos.map { combo =>
       val comboWithMetaLabel = combo ++ maybeMetaLabel
-      val nodeScan = graph.nodes("n", CTNode(combo), exactLabelMatch = true).asMorpheus
+      val nodeScan =
+        graph.nodes("n", CTNode(combo), exactLabelMatch = true).asMorpheus
       val mapping = computeMapping(nodeScan, includeId = true)
-      val keys = combo.find(nodeKeys.contains).map(nodeKeys).getOrElse(
-        throw SchemaException(s"Could not find a node key for label combination $combo")
-      )
+      val keys = combo
+        .find(nodeKeys.contains)
+        .map(nodeKeys)
+        .getOrElse(
+          throw SchemaException(
+            s"Could not find a node key for label combination $combo"
+          )
+        )
 
-      nodeScan
-        .df
-        .rdd
+      nodeScan.df.rdd
         .foreachPartitionAsync { i =>
-          if (i.nonEmpty) ElementWriter.mergeNodes(i, mapping, config, comboWithMetaLabel, keys)(rowToListValue)
+          if (i.nonEmpty)
+            ElementWriter.mergeNodes(
+              i,
+              mapping,
+              config,
+              comboWithMetaLabel,
+              keys
+            )(rowToListValue)
         }
     }
     result
@@ -206,16 +252,16 @@ case object MergeWriters {
 
       val header = relScan.header
       val relVar = header.elementVars.head
-      val startExpr = header.expressionsFor(relVar).collect { case s: StartNode => s }.head
-      val endExpr = header.expressionsFor(relVar).collect { case e: EndNode => e }.head
+      val startExpr =
+        header.expressionsFor(relVar).collect { case s: StartNode => s }.head
+      val endExpr =
+        header.expressionsFor(relVar).collect { case e: EndNode => e }.head
       val startColumn = relScan.header.column(startExpr)
       val endColumn = relScan.header.column(endExpr)
       val startIndex = relScan.df.columns.indexOf(startColumn)
       val endIndex = relScan.df.columns.indexOf(endColumn)
 
-      relScan
-        .df
-        .rdd
+      relScan.df.rdd
         .foreachPartitionAsync { i =>
           if (i.nonEmpty) {
             ElementWriter.mergeRelationships(
@@ -243,11 +289,14 @@ case object MergeWriters {
     new ListValue(array: _*)
   }
 
-  private def computeMapping(elementScan: MorpheusRecords, includeId: Boolean): Array[String] = {
+  private def computeMapping(
+    elementScan: MorpheusRecords,
+    includeId: Boolean
+  ): Array[String] = {
     val header = elementScan.header
     val nodeVar = header.elementVars.head
-    val properties: Set[Property] = header.expressionsFor(nodeVar).collect {
-      case p: Property => p
+    val properties: Set[Property] = header.expressionsFor(nodeVar).collect { case p: Property =>
+      p
     }
 
     val columns = elementScan.df.columns

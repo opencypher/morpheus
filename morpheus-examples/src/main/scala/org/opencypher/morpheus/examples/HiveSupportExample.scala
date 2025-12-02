@@ -40,18 +40,21 @@ object HiveSupportExample extends App {
   session.sparkSession.sql(s"DROP DATABASE IF EXISTS $hiveDatabaseName CASCADE")
   session.sparkSession.sql(s"CREATE DATABASE IF NOT EXISTS $hiveDatabaseName")
 
-
-  val socialNetwork = session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
-  val tmp = s"file:///${System.getProperty("java.io.tmpdir").replace("\\", "/")}/${System.currentTimeMillis()}"
+  val socialNetwork =
+    session.readFrom(SocialNetworkData.persons, SocialNetworkData.friendships)
+  val tmp =
+    s"file:///${System.getProperty("java.io.tmpdir").replace("\\", "/")}/${System.currentTimeMillis()}"
 
   val fs = GraphSources.fs(tmp, Some(hiveDatabaseName)).parquet
   val graphName = GraphName("sn")
 
   fs.store(graphName, socialNetwork)
 
-  val nodeTableName = HiveTableName(hiveDatabaseName, graphName, Node, Set("Person"))
+  val nodeTableName =
+    HiveTableName(hiveDatabaseName, graphName, Node, Set("Person"))
 
-  val result = session.sql(s"SELECT * FROM $nodeTableName WHERE property_age >= 15")
+  val result =
+    session.sql(s"SELECT * FROM $nodeTableName WHERE property_age >= 15")
 
   result.show
 

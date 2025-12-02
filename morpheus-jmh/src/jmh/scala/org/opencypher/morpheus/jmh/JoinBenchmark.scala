@@ -73,7 +73,7 @@ class JoinBenchmark {
     leftData = List.fill(leftRandomCount)(Random.nextLong()) ++ joinRange
     rightData = List.fill(rightRandomCount)(Random.nextLong()) ++ joinRange
 
-    def prepareDf[A : TypeTag](data: List[A]): DataFrame = {
+    def prepareDf[A: TypeTag](data: List[A]): DataFrame = {
       sparkSession.createDataFrame(data.map(Tuple1(_))).toDF(idColumn)
     }
 
@@ -89,47 +89,55 @@ class JoinBenchmark {
     leftByteArray = prepareDf(leftData.map(longToByteArray)).partitionAndCache
     rightByteArray = prepareDf(rightData.map(longToByteArray)).partitionAndCache
 
-    leftEfficientString = prepareDf(leftData.map(longToByteArray)).castIdToString.partitionAndCache
-    rightEfficientString = prepareDf(rightData.map(longToByteArray)).castIdToString.partitionAndCache
+    leftEfficientString = prepareDf(
+      leftData.map(longToByteArray)
+    ).castIdToString.partitionAndCache
+    rightEfficientString = prepareDf(
+      rightData.map(longToByteArray)
+    ).castIdToString.partitionAndCache
   }
 
   @Benchmark
   def joinLongIds(): Long = leftLong.join(rightLong, idColumn).count()
 
   @Benchmark
-  def joinArrayLongIds(): Long = leftArrayLong.join(rightArrayLong, idColumn).count()
+  def joinArrayLongIds(): Long =
+    leftArrayLong.join(rightArrayLong, idColumn).count()
 
   @Benchmark
-  def joinNaiveStringIds(): Long = leftNaiveString.join(rightNaiveString, idColumn).count()
+  def joinNaiveStringIds(): Long =
+    leftNaiveString.join(rightNaiveString, idColumn).count()
 
   @Benchmark
-  def joinByteArrayIds(): Long = leftByteArray.join(rightByteArray, idColumn).count()
+  def joinByteArrayIds(): Long =
+    leftByteArray.join(rightByteArray, idColumn).count()
 
   @Benchmark
-  def joinEfficientStringIds(): Long = leftEfficientString.join(rightEfficientString, idColumn).count()
-
+  def joinEfficientStringIds(): Long =
+    leftEfficientString.join(rightEfficientString, idColumn).count()
 
   implicit class DataFrameSetup(df: DataFrame) {
 
-    def partitionAndCache : DataFrame = {
+    def partitionAndCache: DataFrame = {
       val cached = df.repartition(10).persist(StorageLevel.MEMORY_ONLY)
       cached.count()
       cached
     }
 
-    def castIdToString: DataFrame = df.select(df.col(idColumn).cast(StringType).as(idColumn))
+    def castIdToString: DataFrame =
+      df.select(df.col(idColumn).cast(StringType).as(idColumn))
   }
 
   private def longToByteArray(l: Long): Array[Byte] = {
     val a = new Array[Byte](8)
-    a(0) = (l & 0xFF).asInstanceOf[Byte]
-    a(1) = ((l >> 8) & 0xFF).asInstanceOf[Byte]
-    a(2) = ((l >> 16) & 0xFF).asInstanceOf[Byte]
-    a(3) = ((l >> 24) & 0xFF).asInstanceOf[Byte]
-    a(4) = ((l >> 32) & 0xFF).asInstanceOf[Byte]
-    a(5) = ((l >> 40) & 0xFF).asInstanceOf[Byte]
-    a(6) = ((l >> 48) & 0xFF).asInstanceOf[Byte]
-    a(7) = ((l >> 56) & 0xFF).asInstanceOf[Byte]
+    a(0) = (l & 0xff).asInstanceOf[Byte]
+    a(1) = ((l >> 8) & 0xff).asInstanceOf[Byte]
+    a(2) = ((l >> 16) & 0xff).asInstanceOf[Byte]
+    a(3) = ((l >> 24) & 0xff).asInstanceOf[Byte]
+    a(4) = ((l >> 32) & 0xff).asInstanceOf[Byte]
+    a(5) = ((l >> 40) & 0xff).asInstanceOf[Byte]
+    a(6) = ((l >> 48) & 0xff).asInstanceOf[Byte]
+    a(7) = ((l >> 56) & 0xff).asInstanceOf[Byte]
     a
   }
 }

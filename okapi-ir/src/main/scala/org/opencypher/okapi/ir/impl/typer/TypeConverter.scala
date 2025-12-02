@@ -51,10 +51,10 @@ object TypeConverter {
     case frontend.CTMap           => Some(CTMap)
     case frontend.ListType(inner) =>
       TypeConverter.convert(inner) match {
-        case None => None
+        case None    => None
         case Some(t) => Some(CTList(t))
       }
-    case _                        => None
+    case _ => None
   }
 }
 
@@ -64,12 +64,16 @@ object SignatureConverter {
     def apply(input: Seq[CypherType]): Option[CypherType]
   }
 
-  case class FunctionSignature(declaredInput: Seq[CypherType], output: CypherType) extends Signature {
+  case class FunctionSignature(
+    declaredInput: Seq[CypherType],
+    output: CypherType
+  ) extends Signature {
     override def apply(givenInput: Seq[CypherType]): Option[CypherType] = {
-      if (declaredInput.zip(givenInput).forall {
-        case (sigType, argType) =>
+      if (
+        declaredInput.zip(givenInput).forall { case (sigType, argType) =>
           argType.couldBeSameTypeAs(sigType)
-      }) {
+        }
+      ) {
         Some(output)
       } else
         None
@@ -97,12 +101,23 @@ object SignatureConverter {
 
     def expandWithNulls: FunctionSignatures = include(for {
       signature <- sigs
-      alternative <- substitutions(signature.declaredInput, 1, signature.declaredInput.size)(_ => CTNull)
+      alternative <- substitutions(
+        signature.declaredInput,
+        1,
+        signature.declaredInput.size
+      )(_ => CTNull)
     } yield FunctionSignature(alternative, CTNull))
 
-    def expandWithSubstitutions(old: CypherType, rep: CypherType): FunctionSignatures = include(for {
+    def expandWithSubstitutions(
+      old: CypherType,
+      rep: CypherType
+    ): FunctionSignatures = include(for {
       signature <- sigs
-      alternative <- substitutions(signature.declaredInput, 1, signature.declaredInput.size)(replace(old, rep))
+      alternative <- substitutions(
+        signature.declaredInput,
+        1,
+        signature.declaredInput.size
+      )(replace(old, rep))
       if sigs.forall(_.declaredInput != alternative)
     } yield FunctionSignature(alternative, signature.output))
 
@@ -116,11 +131,15 @@ object SignatureConverter {
       mask <- mask(size, hits).permutations
     } yield mask
 
-    private def substituteMasked[T](seq: Seq[T], mask: Int => Boolean)(sub: T => T) = for {
+    private def substituteMasked[T](seq: Seq[T], mask: Int => Boolean)(
+      sub: T => T
+    ) = for {
       (orig, i) <- seq.zipWithIndex
     } yield if (mask(i)) sub(orig) else orig
 
-    private def substitutions[T](seq: Seq[T], minSubs: Int, maxSubs: Int)(sub: T => T): Seq[Seq[T]] =
+    private def substitutions[T](seq: Seq[T], minSubs: Int, maxSubs: Int)(
+      sub: T => T
+    ): Seq[Seq[T]] =
       masks(seq.size, minSubs, maxSubs).map(mask => substituteMasked(seq, mask)(sub))
 
     private def replace[T](old: T, rep: T)(t: T) =

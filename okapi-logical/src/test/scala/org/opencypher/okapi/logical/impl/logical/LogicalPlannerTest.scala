@@ -51,10 +51,13 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
   val irFieldG: IRField = IRField("g")(CTNode("Group"))
   val irFieldR: IRField = IRField("r")(CTRelationship)
 
-  val varA: Var = Var("a")(CTNode(Set("Administrator"), Some(testQualifiedGraphName)))
-  val varB: Var = Var("b")(CTNode(Set.empty[String], Some(testQualifiedGraphName)))
+  val varA: Var =
+    Var("a")(CTNode(Set("Administrator"), Some(testQualifiedGraphName)))
+  val varB: Var =
+    Var("b")(CTNode(Set.empty[String], Some(testQualifiedGraphName)))
   val varG: Var = Var("g")(CTNode(Set("Group"), Some(testQualifiedGraphName)))
-  val varR: Var = Var("r")(CTRelationship(Set.empty[String], Some(testQualifiedGraphName)))
+  val varR: Var =
+    Var("r")(CTRelationship(Set.empty[String], Some(testQualifiedGraphName)))
 
   val aLabelPredicate: HasLabel = HasLabel(varA, Label("Administrator"))
 
@@ -67,8 +70,7 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
   }
 
   it("converts match block") {
-    val pattern = Pattern
-      .empty
+    val pattern = Pattern.empty
       .withElement(irFieldA)
       .withElement(irFieldB)
       .withElement(irFieldR)
@@ -76,20 +78,31 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
 
     val block = matchBlock(pattern)
 
-
-    val scan1 = PatternScan.nodeScan(irFieldA, leafPlan, emptySqm.withField(irFieldA).withPredicate(aLabelPredicate))
-    val scan2 = PatternScan.nodeScan(irFieldB, leafPlan, emptySqm.withField(irFieldB))
+    val scan1 = PatternScan.nodeScan(
+      irFieldA,
+      leafPlan,
+      emptySqm.withField(irFieldA).withPredicate(aLabelPredicate)
+    )
+    val scan2 =
+      PatternScan.nodeScan(irFieldB, leafPlan, emptySqm.withField(irFieldB))
     val ir = irFor(block)
     val result = plan(ir)
 
-    val expected = Expand(irFieldA, irFieldR, irFieldB, Outgoing, scan1, scan2, SolvedQueryModel(Set(irFieldA, irFieldB, irFieldR), Set(aLabelPredicate)))
+    val expected = Expand(
+      irFieldA,
+      irFieldR,
+      irFieldB,
+      Outgoing,
+      scan1,
+      scan2,
+      SolvedQueryModel(Set(irFieldA, irFieldB, irFieldR), Set(aLabelPredicate))
+    )
 
     result should equalWithoutResult(expected)
   }
 
   it("converts cyclic match block") {
-    val pattern = Pattern
-      .empty
+    val pattern = Pattern.empty
       .withElement(irFieldA)
       .withElement(irFieldR)
       .withConnection(irFieldR, CyclicRelationship(irFieldA))
@@ -97,34 +110,56 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
     val block = matchBlock(pattern)
     val ir = irFor(block)
 
-    val scan = PatternScan.nodeScan(irFieldA, leafPlan, emptySqm.withField(irFieldA).withPredicate(aLabelPredicate))
-    val expandInto = ExpandInto(irFieldA, irFieldR, irFieldA, Outgoing, scan, SolvedQueryModel(Set(irFieldA, irFieldR), Set(aLabelPredicate)))
+    val scan = PatternScan.nodeScan(
+      irFieldA,
+      leafPlan,
+      emptySqm.withField(irFieldA).withPredicate(aLabelPredicate)
+    )
+    val expandInto = ExpandInto(
+      irFieldA,
+      irFieldR,
+      irFieldA,
+      Outgoing,
+      scan,
+      SolvedQueryModel(Set(irFieldA, irFieldR), Set(aLabelPredicate))
+    )
 
     plan(ir) should equalWithoutResult(expandInto)
   }
 
   it("converts project block") {
-    val fields = Fields(Map(toField('a) -> ElementProperty('n, PropertyKey("prop"))(CTFloat)))
+    val fields = Fields(
+      Map(toField('a) -> ElementProperty('n, PropertyKey("prop"))(CTFloat))
+    )
     val block = project(fields)
 
     val result = plan(irFor(block))
 
     val expected = Project(
-      ElementProperty('n, PropertyKey("prop"))(CTFloat) -> Some('a), // n is a dangling reference here
+      ElementProperty('n, PropertyKey("prop"))(CTFloat) -> Some(
+        'a
+      ), // n is a dangling reference here
       leafPlan,
-      emptySqm.withFields('a))
+      emptySqm.withFields('a)
+    )
     result should equalWithoutResult(expected)
   }
 
   it("plans query") {
-    val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name".irWithParams(
-      "foo" -> CypherString("test"))
+    val ir =
+      "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name"
+        .irWithParams("foo" -> CypherString("test"))
     val result = plan(ir)
 
     val expected = Project(
-      ElementProperty(varA, PropertyKey("name"))(CTNull) -> Some(Var("a.name")(CTNull)),
+      ElementProperty(varA, PropertyKey("name"))(CTNull) -> Some(
+        Var("a.name")(CTNull)
+      ),
       Filter(
-        Equals(ElementProperty(varG, PropertyKey("name"))(CTNull), Param("foo")(CTString)),
+        Equals(
+          ElementProperty(varG, PropertyKey("name"))(CTNull),
+          Param("foo")(CTString)
+        ),
         Expand(
           varA,
           varR,
@@ -132,12 +167,27 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
           Outgoing,
           PatternScan.nodeScan(
             varA,
-            Start(LogicalCatalogGraph(testQualifiedGraphName, PropertyGraphSchema.empty), emptySqm),
-            SolvedQueryModel(Set(irFieldA), Set(HasLabel(varA, Label("Administrator"))))
+            Start(
+              LogicalCatalogGraph(
+                testQualifiedGraphName,
+                PropertyGraphSchema.empty
+              ),
+              emptySqm
+            ),
+            SolvedQueryModel(
+              Set(irFieldA),
+              Set(HasLabel(varA, Label("Administrator")))
+            )
           ),
           PatternScan.nodeScan(
             varG,
-            Start(LogicalCatalogGraph(testQualifiedGraphName, PropertyGraphSchema.empty), emptySqm),
+            Start(
+              LogicalCatalogGraph(
+                testQualifiedGraphName,
+                PropertyGraphSchema.empty
+              ),
+              emptySqm
+            ),
             SolvedQueryModel(Set(irFieldG), Set(HasLabel(varG, Label("Group"))))
           ),
           SolvedQueryModel(
@@ -153,7 +203,10 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
           Set(
             HasLabel(varA, Label("Administrator")),
             HasLabel(varG, Label("Group")),
-            Equals(ElementProperty(varG, PropertyKey("name"))(CTNull), Param("foo")(CTString))
+            Equals(
+              ElementProperty(varG, PropertyKey("name"))(CTNull),
+              Param("foo")(CTString)
+            )
           )
         )
       ),
@@ -162,7 +215,10 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
         Set(
           HasLabel(varA, Label("Administrator")),
           HasLabel(varG, Label("Group")),
-          Equals(ElementProperty(varG, PropertyKey("name"))(CTNull), Param("foo")(CTString))
+          Equals(
+            ElementProperty(varG, PropertyKey("name"))(CTNull),
+            Param("foo")(CTString)
+          )
         )
       )
     )
@@ -174,15 +230,22 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
       .withNodePropertyKeys("Group")("name" -> CTString)
       .withNodePropertyKeys("Administrator")("name" -> CTFloat)
 
-    val ir = "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name".irWithParams(
-      "foo" -> CypherString("test"))
+    val ir =
+      "MATCH (a:Administrator)-[r]->(g:Group) WHERE g.name = $foo RETURN a.name"
+        .irWithParams("foo" -> CypherString("test"))
 
     val result = plan(ir, schema)
 
     val expected = Project(
-      ElementProperty(Var("a")(CTNode(Set("Administrator"))), PropertyKey("name"))(CTFloat) -> Some(Var("a.name")(CTFloat)),
+      ElementProperty(
+        Var("a")(CTNode(Set("Administrator"))),
+        PropertyKey("name")
+      )(CTFloat) -> Some(Var("a.name")(CTFloat)),
       Filter(
-        Equals(ElementProperty(varG, PropertyKey("name"))(CTString), Param("foo")(CTString)),
+        Equals(
+          ElementProperty(varG, PropertyKey("name"))(CTString),
+          Param("foo")(CTString)
+        ),
         Expand(
           varA,
           Var("r")(CTRelationship),
@@ -197,7 +260,10 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
               ),
               emptySqm
             ),
-            SolvedQueryModel(Set(irFieldA), Set(HasLabel(varA, Label("Administrator"))))
+            SolvedQueryModel(
+              Set(irFieldA),
+              Set(HasLabel(varA, Label("Administrator")))
+            )
           ),
           PatternScan.nodeScan(
             varG,
@@ -210,17 +276,23 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
             ),
             SolvedQueryModel(Set(irFieldG), Set(HasLabel(varG, Label("Group"))))
           ),
-          SolvedQueryModel(Set(irFieldA, irFieldG, irFieldR), Set(
-            HasLabel(varA, Label("Administrator")),
-            HasLabel(varG, Label("Group"))
-          ))
+          SolvedQueryModel(
+            Set(irFieldA, irFieldG, irFieldR),
+            Set(
+              HasLabel(varA, Label("Administrator")),
+              HasLabel(varG, Label("Group"))
+            )
+          )
         ),
         SolvedQueryModel(
           Set(irFieldA, irFieldG, irFieldR),
           Set(
             HasLabel(varA, Label("Administrator")),
             HasLabel(varG, Label("Group")),
-            Equals(ElementProperty(varG, PropertyKey("name"))(CTString), Param("foo")(CTString))
+            Equals(
+              ElementProperty(varG, PropertyKey("name"))(CTString),
+              Param("foo")(CTString)
+            )
           )
         )
       ),
@@ -229,7 +301,10 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
         Set(
           HasLabel(varA, Label("Administrator")),
           HasLabel(varG, Label("Group")),
-          Equals(ElementProperty(varG, PropertyKey("name"))(CTString), Param("foo")(CTString))
+          Equals(
+            ElementProperty(varG, PropertyKey("name"))(CTString),
+            Param("foo")(CTString)
+          )
         )
       )
     )
@@ -239,35 +314,52 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
 
   it("plans query with negation") {
     val ir =
-      "MATCH (a) WHERE NOT $p1 = $p2 RETURN a.prop".irWithParams("p1" -> CypherInteger(1L), "p2" -> CypherBoolean(true))
+      "MATCH (a) WHERE NOT $p1 = $p2 RETURN a.prop".irWithParams(
+        "p1" -> CypherInteger(1L),
+        "p2" -> CypherBoolean(true)
+      )
 
     val result = plan(ir)
 
-    val varA2: Var = Var("a")(CTNode(Set.empty[String], Some(testQualifiedGraphName)))
+    val varA2: Var =
+      Var("a")(CTNode(Set.empty[String], Some(testQualifiedGraphName)))
 
     val expected = Project(
-      ElementProperty(varA2, PropertyKey("prop"))(CTNull) -> Some(Var("a.prop")(CTNull)),
+      ElementProperty(varA2, PropertyKey("prop"))(CTNull) -> Some(
+        Var("a.prop")(CTNull)
+      ),
       Filter(
         Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))),
         PatternScan.nodeScan(
           varA2,
-          Start(LogicalCatalogGraph(testQualifiedGraphName, PropertyGraphSchema.empty), emptySqm),
+          Start(
+            LogicalCatalogGraph(
+              testQualifiedGraphName,
+              PropertyGraphSchema.empty
+            ),
+            emptySqm
+          ),
           SolvedQueryModel(Set(irFieldA), Set())
         ),
         SolvedQueryModel(
           Set(irFieldA),
-          Set(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean)))))
+          Set(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))))
+        )
       ),
       SolvedQueryModel(
         Set(irFieldA, IRField("a.prop")(CTNull)),
-        Set(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean)))))
+        Set(Not(Equals(Param("p1")(CTInteger), Param("p2")(CTBoolean))))
+      )
     )
     result should equalWithoutResult(expected)
   }
 
   private val planner = new LogicalPlanner(new LogicalOperatorProducer)
 
-  private def plan(ir: CypherStatement, schema: PropertyGraphSchema = PropertyGraphSchema.empty): LogicalOperator =
+  private def plan(
+    ir: CypherStatement,
+    schema: PropertyGraphSchema = PropertyGraphSchema.empty
+  ): LogicalOperator =
     plan(ir, schema, testGraphName -> schema)
 
   private def plan(
@@ -300,17 +392,20 @@ class LogicalPlannerTest extends BaseTestSuite with IrConstruction {
           val planMatch = equalWithTracing(in)(plan)
           val solvedMatch = equalWithTracing(in.solved)(plan.solved)
           MatchHelper.combine(planMatch, solvedMatch)
-        case _ => MatchResult(matches = false, "Expected a Select plan on top", "")
+        case _ =>
+          MatchResult(matches = false, "Expected a Select plan on top", "")
       }
     }
   }
 
-  def graphSource(graphWithSchema: (GraphName, PropertyGraphSchema)*): PropertyGraphDataSource = {
+  def graphSource(
+    graphWithSchema: (GraphName, PropertyGraphSchema)*
+  ): PropertyGraphDataSource = {
     import org.mockito.Mockito.when
 
     val graphSource = mock[PropertyGraphDataSource]
-    graphWithSchema.foreach {
-      case (graphName, schema) => when(graphSource.schema(graphName)).thenReturn(Some(schema))
+    graphWithSchema.foreach { case (graphName, schema) =>
+      when(graphSource.schema(graphName)).thenReturn(Some(schema))
     }
 
     graphSource

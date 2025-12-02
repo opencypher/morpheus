@@ -45,24 +45,24 @@ case object OkapiLateRewriting extends Phase[BaseContext, BaseState, BaseState] 
         pushLabelsIntoScans,
         extractSubqueryFromPatternExpression(context.exceptionCreator),
         CNFNormalizer.instance(context)
-      ))
+      )
+    )
 
     // Extract literals of possibly rewritten subqueries
     // TODO: once this gets into neo4j-frontend, it can be done in literalReplacement
     val (rewriters, extractedParams) = rewrittenStatement
-      .treeFold(Seq.empty[(Rewriter, Map[String, Any])]) {
-        case ep: ExistsPattern =>
-          acc =>
-            (acc :+ literalReplacement(ep.query, Forced), None)
+      .treeFold(Seq.empty[(Rewriter, Map[String, Any])]) { case ep: ExistsPattern =>
+        acc => (acc :+ literalReplacement(ep.query, Forced), None)
       }
       .unzip
 
     // rewrite literals
-    val finalStatement = rewriters.foldLeft(rewrittenStatement) {
-      case (acc, rewriter) => acc.endoRewrite(rewriter)
+    val finalStatement = rewriters.foldLeft(rewrittenStatement) { case (acc, rewriter) =>
+      acc.endoRewrite(rewriter)
     }
     // merge extracted params
-    val extractedParameters = extractedParams.foldLeft(Map.empty[String, Any])(_ ++ _)
+    val extractedParameters =
+      extractedParams.foldLeft(Map.empty[String, Any])(_ ++ _)
 
     from
       .withStatement(finalStatement)
@@ -71,7 +71,8 @@ case object OkapiLateRewriting extends Phase[BaseContext, BaseState, BaseState] 
 
   override val phase = AST_REWRITE
 
-  override val description = "rewrite the AST into a shape that semantic analysis can be performed on"
+  override val description =
+    "rewrite the AST into a shape that semantic analysis can be performed on"
 
   override def postConditions: Set[Condition] = Set.empty
 }

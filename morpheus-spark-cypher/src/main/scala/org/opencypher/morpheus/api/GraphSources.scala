@@ -46,13 +46,16 @@ object GraphSources {
     rootPath: String,
     hiveDatabaseName: Option[String] = None,
     filesPerTable: Option[Int] = Some(1)
-  )(implicit session: MorpheusSession) = FSGraphSources(rootPath, hiveDatabaseName, filesPerTable)
+  )(implicit session: MorpheusSession) =
+    FSGraphSources(rootPath, hiveDatabaseName, filesPerTable)
 
   def cypher: CypherGraphSources.type = CypherGraphSources
 
-  def sql(graphDdlPath: String)(implicit session: MorpheusSession) = SqlGraphSources(graphDdlPath)
+  def sql(graphDdlPath: String)(implicit session: MorpheusSession) =
+    SqlGraphSources(graphDdlPath)
 
-  def sql(graphDdl: GraphDdl)(implicit session: MorpheusSession) = SqlGraphSources(graphDdl)
+  def sql(graphDdl: GraphDdl)(implicit session: MorpheusSession) =
+    SqlGraphSources(graphDdl)
 }
 
 object FSGraphSources {
@@ -60,7 +63,8 @@ object FSGraphSources {
     rootPath: String,
     hiveDatabaseName: Option[String] = None,
     filesPerTable: Option[Int] = Some(1)
-  )(implicit session: MorpheusSession): FSGraphSourceFactory = FSGraphSourceFactory(rootPath, hiveDatabaseName, filesPerTable)
+  )(implicit session: MorpheusSession): FSGraphSourceFactory =
+    FSGraphSourceFactory(rootPath, hiveDatabaseName, filesPerTable)
 
   case class FSGraphSourceFactory(
     rootPath: String,
@@ -70,46 +74,84 @@ object FSGraphSources {
 
     def csv: FSGraphSource = new CsvGraphSource(rootPath, filesPerTable)
 
-    def parquet: FSGraphSource = new FSGraphSource(rootPath, FileFormat.parquet, hiveDatabaseName, filesPerTable)
+    def parquet: FSGraphSource = new FSGraphSource(
+      rootPath,
+      FileFormat.parquet,
+      hiveDatabaseName,
+      filesPerTable
+    )
 
-    def orc: FSGraphSource = new FSGraphSource(rootPath, FileFormat.orc, hiveDatabaseName, filesPerTable) with EscapeAtSymbol
+    def orc: FSGraphSource = new FSGraphSource(
+      rootPath,
+      FileFormat.orc,
+      hiveDatabaseName,
+      filesPerTable
+    ) with EscapeAtSymbol
   }
 
   /**
-    * Creates a data sink that is capable of writing a property graph into the Neo4j bulk import CSV format
-    * (see [[https://neo4j.com/docs/operations-manual/current/tools/import/]]). The data sink generates a shell script
-    * within the graph output folder that simplifies the import process.
+    * Creates a data sink that is capable of writing a property graph into the Neo4j bulk import CSV
+    * format (see [[https://neo4j.com/docs/operations-manual/current/tools/import/]]). The data sink
+    * generates a shell script within the graph output folder that simplifies the import process.
     *
-    * @param rootPath       Directory where the graph is being stored in
-    * @param arrayDelimiter Delimiter for array properties
-    * @param morpheus       Morpheus session
-    * @return Neo4j Bulk CSV data sink
+    * @param rootPath
+    *   Directory where the graph is being stored in
+    * @param arrayDelimiter
+    *   Delimiter for array properties
+    * @param morpheus
+    *   Morpheus session
+    * @return
+    *   Neo4j Bulk CSV data sink
     */
-  def neo4jBulk(rootPath: String, arrayDelimiter: String = "|")(implicit morpheus: MorpheusSession): Neo4jBulkCSVDataSink = {
+  def neo4jBulk(rootPath: String, arrayDelimiter: String = "|")(implicit
+    morpheus: MorpheusSession
+  ): Neo4jBulkCSVDataSink = {
     new Neo4jBulkCSVDataSink(rootPath, arrayDelimiter)
   }
 }
 
 object CypherGraphSources {
+
   /**
     * Creates a Neo4j Property Graph Data Source
     *
-    * @param config                     Neo4j connection configuration
-    * @param maybeSchema                Optional Neo4j schema to avoid computation on Neo4j server
-    * @param omitIncompatibleProperties If set to true, import failures do not throw runtime exceptions but omit the unsupported
-    *                                   properties instead and log warnings
-    * @param morpheus                   Morpheus session
-    * @return Neo4j Property Graph Data Source
+    * @param config
+    *   Neo4j connection configuration
+    * @param maybeSchema
+    *   Optional Neo4j schema to avoid computation on Neo4j server
+    * @param omitIncompatibleProperties
+    *   If set to true, import failures do not throw runtime exceptions but omit the unsupported
+    *   properties instead and log warnings
+    * @param morpheus
+    *   Morpheus session
+    * @return
+    *   Neo4j Property Graph Data Source
     */
-  def neo4j(config: Neo4jConfig, maybeSchema: Option[PropertyGraphSchema] = None, omitIncompatibleProperties: Boolean = false)
-    (implicit morpheus: MorpheusSession): Neo4jPropertyGraphDataSource =
-    Neo4jPropertyGraphDataSource(config, maybeSchema = maybeSchema, omitIncompatibleProperties = omitIncompatibleProperties)
+  def neo4j(
+    config: Neo4jConfig,
+    maybeSchema: Option[PropertyGraphSchema] = None,
+    omitIncompatibleProperties: Boolean = false
+  )(implicit morpheus: MorpheusSession): Neo4jPropertyGraphDataSource =
+    Neo4jPropertyGraphDataSource(
+      config,
+      maybeSchema = maybeSchema,
+      omitIncompatibleProperties = omitIncompatibleProperties
+    )
 
   // TODO: document
-  def neo4j(config: Neo4jConfig, schemaFile: String, omitIncompatibleProperties: Boolean)
-    (implicit morpheus: MorpheusSession): Neo4jPropertyGraphDataSource = {
-    val schemaString = using(Source.fromFile(Paths.get(schemaFile).toUri))(_.getLines().mkString(Properties.lineSeparator))
-    Neo4jPropertyGraphDataSource(config, maybeSchema = Some(PropertyGraphSchema.fromJson(schemaString)), omitIncompatibleProperties = omitIncompatibleProperties)
+  def neo4j(
+    config: Neo4jConfig,
+    schemaFile: String,
+    omitIncompatibleProperties: Boolean
+  )(implicit morpheus: MorpheusSession): Neo4jPropertyGraphDataSource = {
+    val schemaString = using(Source.fromFile(Paths.get(schemaFile).toUri))(
+      _.getLines().mkString(Properties.lineSeparator)
+    )
+    Neo4jPropertyGraphDataSource(
+      config,
+      maybeSchema = Some(PropertyGraphSchema.fromJson(schemaString)),
+      omitIncompatibleProperties = omitIncompatibleProperties
+    )
   }
 }
 
@@ -117,30 +159,54 @@ import org.opencypher.morpheus.api.io.sql.IdGenerationStrategy._
 
 object SqlGraphSources {
 
-  case class SqlGraphSourceFactory(graphDdl: GraphDdl, idGenerationStrategy: IdGenerationStrategy)
-    (implicit morpheus: MorpheusSession) {
+  case class SqlGraphSourceFactory(
+    graphDdl: GraphDdl,
+    idGenerationStrategy: IdGenerationStrategy
+  )(implicit morpheus: MorpheusSession) {
 
-    def withIdGenerationStrategy(idGenerationStrategy: IdGenerationStrategy): SqlGraphSourceFactory =
+    def withIdGenerationStrategy(
+      idGenerationStrategy: IdGenerationStrategy
+    ): SqlGraphSourceFactory =
       copy(idGenerationStrategy = idGenerationStrategy)
 
-    def withSqlDataSourceConfigs(sqlDataSourceConfigsPath: String): SqlPropertyGraphDataSource = {
-      val jsonString = using(Source.fromFile(sqlDataSourceConfigsPath, "UTF-8"))(_.getLines().mkString(Properties.lineSeparator))
-      val sqlDataSourceConfigs = SqlDataSourceConfig.dataSourcesFromString(jsonString)
+    def withSqlDataSourceConfigs(
+      sqlDataSourceConfigsPath: String
+    ): SqlPropertyGraphDataSource = {
+      val jsonString = using(
+        Source.fromFile(sqlDataSourceConfigsPath, "UTF-8")
+      )(_.getLines().mkString(Properties.lineSeparator))
+      val sqlDataSourceConfigs =
+        SqlDataSourceConfig.dataSourcesFromString(jsonString)
       withSqlDataSourceConfigs(sqlDataSourceConfigs)
     }
 
-    def withSqlDataSourceConfigs(sqlDataSourceConfigs: (String, SqlDataSourceConfig)*): SqlPropertyGraphDataSource =
+    def withSqlDataSourceConfigs(
+      sqlDataSourceConfigs: (String, SqlDataSourceConfig)*
+    ): SqlPropertyGraphDataSource =
       withSqlDataSourceConfigs(sqlDataSourceConfigs.toMap)
 
-    def withSqlDataSourceConfigs(sqlDataSourceConfigs: Map[String, SqlDataSourceConfig]): SqlPropertyGraphDataSource =
-      SqlPropertyGraphDataSource(graphDdl, sqlDataSourceConfigs, idGenerationStrategy)
+    def withSqlDataSourceConfigs(
+      sqlDataSourceConfigs: Map[String, SqlDataSourceConfig]
+    ): SqlPropertyGraphDataSource =
+      SqlPropertyGraphDataSource(
+        graphDdl,
+        sqlDataSourceConfigs,
+        idGenerationStrategy
+      )
   }
 
-  def apply(graphDdlPath: String)(implicit morpheus: MorpheusSession): SqlGraphSourceFactory = {
+  def apply(
+    graphDdlPath: String
+  )(implicit morpheus: MorpheusSession): SqlGraphSourceFactory = {
     val content = using(Source.fromFile(graphDdlPath, "UTF-8"))(_.mkString)
     SqlGraphSources(GraphDdl(content))
   }
 
-  def apply(graphDdl: GraphDdl)(implicit morpheus: MorpheusSession): SqlGraphSourceFactory =
-    SqlGraphSourceFactory(graphDdl = graphDdl, idGenerationStrategy = SerializedId)
+  def apply(
+    graphDdl: GraphDdl
+  )(implicit morpheus: MorpheusSession): SqlGraphSourceFactory =
+    SqlGraphSourceFactory(
+      graphDdl = graphDdl,
+      idGenerationStrategy = SerializedId
+    )
 }

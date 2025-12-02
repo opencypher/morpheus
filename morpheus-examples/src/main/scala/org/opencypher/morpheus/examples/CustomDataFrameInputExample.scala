@@ -36,8 +36,8 @@ import org.opencypher.morpheus.util.App
 import org.opencypher.okapi.api.io.conversion.{NodeMappingBuilder, RelationshipMappingBuilder}
 
 /**
-  * Demonstrates basic usage of the Morpheus API by loading an example network from existing [[DataFrame]]s including
-  * custom element mappings and running a Cypher query on it.
+  * Demonstrates basic usage of the Morpheus API by loading an example network from existing
+  * [[DataFrame]]s including custom element mappings and running a Cypher query on it.
   */
 object CustomDataFrameInputExample extends App {
 
@@ -55,17 +55,25 @@ object CustomDataFrameInputExample extends App {
 
   // 2) Generate some DataFrames that we'd like to interpret as a property graph.
   // tag::prepare-dataframes[]
-  val nodeData: DataFrame = spark.createDataFrame(Seq(
-    ("Alice", 42L),
-    ("Bob", 23L),
-    ("Eve", 84L)
-  )).toDF("FIRST_NAME", "AGE")
+  val nodeData: DataFrame = spark
+    .createDataFrame(
+      Seq(
+        ("Alice", 42L),
+        ("Bob", 23L),
+        ("Eve", 84L)
+      )
+    )
+    .toDF("FIRST_NAME", "AGE")
   val nodesDF = nodeData.withColumn("ID", nodeData.col("FIRST_NAME"))
 
-  val relsDF: DataFrame = spark.createDataFrame(Seq(
-    (0L, "Alice", "Bob", Date.valueOf("1987-01-23")),
-    (1L, "Bob", "Eve", Date.valueOf("2009-12-12"))
-  )).toDF("REL_ID", "SOURCE_ID", "TARGET_ID", "CONNECTED_SINCE")
+  val relsDF: DataFrame = spark
+    .createDataFrame(
+      Seq(
+        (0L, "Alice", "Bob", Date.valueOf("1987-01-23")),
+        (1L, "Bob", "Eve", Date.valueOf("2009-12-12"))
+      )
+    )
+    .toDF("REL_ID", "SOURCE_ID", "TARGET_ID", "CONNECTED_SINCE")
   // end::prepare-dataframes[]
 
   // 3) Generate node- and relationship tables that wrap the DataFrames and describe their contained data.
@@ -107,11 +115,13 @@ object CustomDataFrameInputExample extends App {
   //    This operation may be very expensive as it materializes results locally.
   // 6a) type safe version, discards values with wrong type
   // tag::collect-results-typesafe[]
-  val safeNames: Set[String] = result.records.collect.flatMap(_ ("n.name").as[String]).toSet
+  val safeNames: Set[String] =
+    result.records.collect.flatMap(_("n.name").as[String]).toSet
   // end::collect-results-typesafe[]
   // 6b) unsafe version, throws an exception when value cannot be cast
   // tag::collect-results-nontypesafe[]
-  val unsafeNames: Set[String] = result.records.collect.map(_ ("n.name").cast[String]).toSet
+  val unsafeNames: Set[String] =
+    result.records.collect.map(_("n.name").cast[String]).toSet
   // end::collect-results-nontypesafe[]
 
   println(safeNames)

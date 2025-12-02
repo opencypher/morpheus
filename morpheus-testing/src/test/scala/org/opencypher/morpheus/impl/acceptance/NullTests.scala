@@ -40,9 +40,9 @@ class NullTests extends MorpheusTestSuite with ScanGraphInit with TestNameFixtur
   private def returnsValue(exp: Any, call: String = testName) =
     morpheus
       .cypher(s"RETURN $call AS res")
-      .records.toMaps
+      .records
+      .toMaps
       .shouldEqual(Bag(CypherMap("res" -> exp)))
-
 
   describe("null input produces null") {
     it("calling: id(null)")(returnsNull())

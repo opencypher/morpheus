@@ -71,58 +71,61 @@ class OptionalMatchTests extends MorpheusTestSuite with ScanGraphInit {
     }
 
     it("supports stacked optional matches") {
-      val g = initGraph(
-        """
+      val g = initGraph("""
           |CREATE (:DoesExist {property: 42})
           |CREATE (:DoesExist {property: 43})
           |CREATE (:DoesExist {property: 44})
         """.stripMargin)
 
-      val res = g.cypher(
-        """
+      val res = g.cypher("""
           |OPTIONAL MATCH (f:DoesExist)
           |OPTIONAL MATCH (n:DoesNotExist)
           |RETURN collect(DISTINCT n.property) AS a, collect(DISTINCT f.property) AS b
         """.stripMargin)
 
-      res.records.collect.toBag should equal(Bag(
-        CypherMap("a" -> List.empty, "b" -> List(42, 43, 44))
-      ))
+      res.records.collect.toBag should equal(
+        Bag(
+          CypherMap("a" -> List.empty, "b" -> List(42, 43, 44))
+        )
+      )
     }
 
     it("throws if spark.sql.crossJoin.enabled=false") {
       morpheus.sparkSession.conf.set("spark.sql.crossJoin.enabled", "false")
-      val e = the[org.opencypher.okapi.impl.exception.UnsupportedOperationException] thrownBy {
+      val e = the[
+        org.opencypher.okapi.impl.exception.UnsupportedOperationException
+      ] thrownBy {
         try {
-          val g = initGraph(
-            """
+          val g = initGraph("""
               |CREATE (:DoesExist {property: 42})
               |CREATE (:DoesExist {property: 43})
               |CREATE (:DoesExist {property: 44})
             """.stripMargin)
 
-          val res = g.cypher(
-            """
+          val res = g.cypher("""
               |OPTIONAL MATCH (f:DoesExist)
               |OPTIONAL MATCH (n:DoesNotExist)
               |RETURN collect(DISTINCT n.property) AS a, collect(DISTINCT f.property) AS b
             """.stripMargin)
 
-          res.records.collect.toBag should equal(Bag(
-            CypherMap("a" -> List.empty, "b" -> List(42, 43, 44))
-          ))
+          res.records.collect.toBag should equal(
+            Bag(
+              CypherMap("a" -> List.empty, "b" -> List(42, 43, 44))
+            )
+          )
         } finally {
           morpheus.sparkSession.conf.set("spark.sql.crossJoin.enabled", "true")
         }
       }
-      e.getMessage should (include("OPTIONAL MATCH") and include("spark.sql.crossJoin.enabled"))
+      e.getMessage should (include("OPTIONAL MATCH") and include(
+        "spark.sql.crossJoin.enabled"
+      ))
     }
   }
 
   it("optionally match") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (p3:Person {name: "Eve"})
@@ -131,67 +134,67 @@ class OptionalMatchTests extends MorpheusTestSuite with ScanGraphInit {
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (p1:Person)
         |OPTIONAL MATCH (p1)-[e1]->(p2)-[e2]->(p3)
         |RETURN p1.name, p2.name, p3.name
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap(
-        "p1.name" -> "Eve",
-        "p2.name" -> null,
-        "p3.name" -> null
-      ),
-      CypherMap(
-        "p1.name" -> "Bob",
-        "p2.name" -> null,
-        "p3.name" -> null
-      ),
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Bob",
-        "p3.name" -> "Eve"
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "p1.name" -> "Eve",
+          "p2.name" -> null,
+          "p3.name" -> null
+        ),
+        CypherMap(
+          "p1.name" -> "Bob",
+          "p2.name" -> null,
+          "p3.name" -> null
+        ),
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Bob",
+          "p3.name" -> "Eve"
+        )
       )
-    ))
+    )
   }
 
   it("can optionally match with predicates") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (p1)-[:KNOWS]->(p2)
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (p1:Person)
         |OPTIONAL MATCH (p1)-[e1:KNOWS]->(p2:Person)
         |RETURN p1.name, p2.name
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap(
-        "p1.name" -> "Bob",
-        "p2.name" -> null
-      ),
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Bob"
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "p1.name" -> "Bob",
+          "p2.name" -> null
+        ),
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Bob"
+        )
       )
-    ))
+    )
   }
 
   it("can optionally match already matched relationships") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (p3:Person {name: "Eve"})
@@ -201,47 +204,47 @@ class OptionalMatchTests extends MorpheusTestSuite with ScanGraphInit {
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person)
         |OPTIONAL MATCH (p1)-[e2:KNOWS]->(p3:Person)
         |RETURN p1.name, p2.name, p3.name
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Bob",
-        "p3.name" -> "Eve"
-      ),
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Eve",
-        "p3.name" -> "Bob"
-      ),
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Bob",
-        "p3.name" -> "Bob"
-      ),
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Eve",
-        "p3.name" -> "Eve"
-      ),
-      CypherMap(
-        "p1.name" -> "Bob",
-        "p2.name" -> "Eve",
-        "p3.name" -> "Eve"
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Bob",
+          "p3.name" -> "Eve"
+        ),
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Eve",
+          "p3.name" -> "Bob"
+        ),
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Bob",
+          "p3.name" -> "Bob"
+        ),
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Eve",
+          "p3.name" -> "Eve"
+        ),
+        CypherMap(
+          "p1.name" -> "Bob",
+          "p2.name" -> "Eve",
+          "p3.name" -> "Eve"
+        )
       )
-    ))
+    )
   }
 
   it("can optionally match incoming relationships") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (p3:Person {name: "Frank"})
@@ -251,32 +254,32 @@ class OptionalMatchTests extends MorpheusTestSuite with ScanGraphInit {
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (p1:Person)-[e1:KNOWS]->(p2:Person)
         |OPTIONAL MATCH (p1)<-[e2:LOVES]-(p3:Person)
         |RETURN p1.name, p2.name, p3.name
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Bob",
-        "p3.name" -> "Frank"
-      ),
-      CypherMap(
-        "p1.name" -> "Bob",
-        "p2.name" -> "Frank",
-        "p3.name" -> null
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Bob",
+          "p3.name" -> "Frank"
+        ),
+        CypherMap(
+          "p1.name" -> "Bob",
+          "p2.name" -> "Frank",
+          "p3.name" -> null
+        )
       )
-    ))
+    )
   }
 
   it("can optionally match with partial matches") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (p3:Person {name: "Eve"})
@@ -285,37 +288,37 @@ class OptionalMatchTests extends MorpheusTestSuite with ScanGraphInit {
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (p1:Person)
         |OPTIONAL MATCH (p1)-[e1:KNOWS]->(p2:Person)-[e2:KNOWS]->(p3:Person)
         |RETURN p1.name, p2.name, p3.name
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap(
-        "p1.name" -> "Alice",
-        "p2.name" -> "Bob",
-        "p3.name" -> "Eve"
-      ),
-      CypherMap(
-        "p1.name" -> "Bob",
-        "p2.name" -> null,
-        "p3.name" -> null
-      ),
-      CypherMap(
-        "p1.name" -> "Eve",
-        "p2.name" -> null,
-        "p3.name" -> null
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "p1.name" -> "Alice",
+          "p2.name" -> "Bob",
+          "p3.name" -> "Eve"
+        ),
+        CypherMap(
+          "p1.name" -> "Bob",
+          "p2.name" -> null,
+          "p3.name" -> null
+        ),
+        CypherMap(
+          "p1.name" -> "Eve",
+          "p2.name" -> null,
+          "p3.name" -> null
+        )
       )
-    ))
+    )
   }
 
   it("can optionally match with duplicates") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (p3:Person {name: "Eve"})
@@ -326,34 +329,34 @@ class OptionalMatchTests extends MorpheusTestSuite with ScanGraphInit {
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (a:Person)-[e1:KNOWS]->(b:Person)
         |OPTIONAL MATCH (b)-[e2:KNOWS]->(c:Person)
         |RETURN b.name, c.name
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap(
-        "b.name" -> "Eve",
-        "c.name" -> "Paul"
-      ),
-      CypherMap(
-        "b.name" -> "Eve",
-        "c.name" -> "Paul"
-      ),
-      CypherMap(
-        "b.name" -> "Paul",
-        "c.name" -> null
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "b.name" -> "Eve",
+          "c.name" -> "Paul"
+        ),
+        CypherMap(
+          "b.name" -> "Eve",
+          "c.name" -> "Paul"
+        ),
+        CypherMap(
+          "b.name" -> "Paul",
+          "c.name" -> null
+        )
       )
-    ))
+    )
   }
 
   it("can optionally match with duplicates and cycle") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
         |CREATE (p3:Person {name: "Eve"})
@@ -365,71 +368,70 @@ class OptionalMatchTests extends MorpheusTestSuite with ScanGraphInit {
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (a:Person)-[e1:KNOWS]->(b:Person)-[e2:KNOWS]->(c:Person)
         |OPTIONAL MATCH (c)-[e3:KNOWS]->(a)
         |RETURN a.name, b.name, c.name, e3.foo
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap(
-        "a.name" -> "Alice",
-        "b.name" -> "Eve",
-        "c.name" -> "Paul",
-        "e3.foo" -> 42
-      ),
-      CypherMap(
-        "a.name" -> "Eve",
-        "b.name" -> "Paul",
-        "c.name" -> "Alice",
-        "e3.foo" -> null
-      ),
-      CypherMap(
-        "a.name" -> "Paul",
-        "b.name" -> "Alice",
-        "c.name" -> "Eve",
-        "e3.foo" -> null
-      ),
-      CypherMap(
-        "a.name" -> "Bob",
-        "b.name" -> "Eve",
-        "c.name" -> "Paul",
-        "e3.foo" -> null
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "a.name" -> "Alice",
+          "b.name" -> "Eve",
+          "c.name" -> "Paul",
+          "e3.foo" -> 42
+        ),
+        CypherMap(
+          "a.name" -> "Eve",
+          "b.name" -> "Paul",
+          "c.name" -> "Alice",
+          "e3.foo" -> null
+        ),
+        CypherMap(
+          "a.name" -> "Paul",
+          "b.name" -> "Alice",
+          "c.name" -> "Eve",
+          "e3.foo" -> null
+        ),
+        CypherMap(
+          "a.name" -> "Bob",
+          "b.name" -> "Eve",
+          "c.name" -> "Paul",
+          "e3.foo" -> null
+        )
       )
-    ))
+    )
   }
 
   it("can match multiple optional matches") {
-    val graph = initGraph(
-      """
+    val graph = initGraph("""
         |CREATE (s {val: 1})
       """.stripMargin)
 
-    val result = graph.cypher(
-      """
+    val result = graph.cypher("""
         |MATCH (a)
         |OPTIONAL MATCH (a)-->(b:NonExistent)
         |OPTIONAL MATCH (a)-->(c:NonExistent)
         |RETURN b,c
       """.stripMargin)
 
-    result.records.collect.toBag should equal(Bag(
-      CypherMap("b" -> CypherNull, "c" -> CypherNull)
-    ))
+    result.records.collect.toBag should equal(
+      Bag(
+        CypherMap("b" -> CypherNull, "c" -> CypherNull)
+      )
+    )
   }
 
   it("can start with an optional match") {
-    val g = initGraph(
-      """
+    val g = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
         |CREATE (p2:Person {name: "Bob"})
       """.stripMargin)
 
     // When
-    val result = g.cypher(
-      """
+    val result = g.cypher("""
         |OPTIONAL MATCH (a:Foo)
         |WITH a
         |MATCH (b:Person)
@@ -437,34 +439,42 @@ class OptionalMatchTests extends MorpheusTestSuite with ScanGraphInit {
       """.stripMargin)
 
     // Then
-    result.records.collect.toBag should equal(Bag(
-      CypherMap("a" -> CypherNull, "b" -> MorpheusNode(0L, Set("Person"), CypherMap("name" -> "Alice"))),
-      CypherMap("a" -> CypherNull, "b" -> MorpheusNode(1L, Set("Person"), CypherMap("name" -> "Bob")))
-    ))
+    result.records.collect.toBag should equal(
+      Bag(
+        CypherMap(
+          "a" -> CypherNull,
+          "b" -> MorpheusNode(0L, Set("Person"), CypherMap("name" -> "Alice"))
+        ),
+        CypherMap(
+          "a" -> CypherNull,
+          "b" -> MorpheusNode(1L, Set("Person"), CypherMap("name" -> "Bob"))
+        )
+      )
+    )
   }
 
   it("returns null IDs") {
     // Given
-    val given = initGraph(
-      """
+    val given = initGraph("""
         |CREATE (p1:Person {name: "Alice"})
       """.stripMargin)
 
     // When
-    val result = given.cypher(
-      """
+    val result = given.cypher("""
         |MATCH (p1:Person)
         |OPTIONAL MATCH (p1)-[e1]->(p2)
         |RETURN id(p1), id(p2)
       """.stripMargin)
 
     // Then
-    result.records.toMaps should equal(Bag(
-      CypherMap(
-        "id(p1)" -> List(0),
-        "id(p2)" -> null
+    result.records.toMaps should equal(
+      Bag(
+        CypherMap(
+          "id(p1)" -> List(0),
+          "id(p2)" -> null
+        )
       )
-    ))
+    )
   }
 
 }

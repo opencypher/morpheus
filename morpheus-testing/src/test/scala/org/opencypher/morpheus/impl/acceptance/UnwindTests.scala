@@ -43,7 +43,8 @@ class UnwindTests extends MorpheusTestSuite with ScanGraphInit {
         CypherMap("item" -> 1),
         CypherMap("item" -> 2),
         CypherMap("item" -> 3)
-      ))
+      )
+    )
   }
 
   it("standalone unwind from literal") {
@@ -56,7 +57,8 @@ class UnwindTests extends MorpheusTestSuite with ScanGraphInit {
         CypherMap("item" -> 1),
         CypherMap("item" -> 2),
         CypherMap("item" -> 3)
-      ))
+      )
+    )
   }
 
   it("unwind after match") {
@@ -68,19 +70,40 @@ class UnwindTests extends MorpheusTestSuite with ScanGraphInit {
 
     result.records.toMaps.map(_.toString) should equal(
       Bag(
-        CypherMap("a" -> MorpheusNode(0L, Set("A"), CypherMap.empty), "item" -> 1),
-        CypherMap("a" -> MorpheusNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
-        CypherMap("a" -> MorpheusNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
-        CypherMap("a" -> MorpheusNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 1),
-        CypherMap("a" -> MorpheusNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 2),
-        CypherMap("a" -> MorpheusNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3)
-      ).map(_.toString))
+        CypherMap(
+          "a" -> MorpheusNode(0L, Set("A"), CypherMap.empty),
+          "item" -> 1
+        ),
+        CypherMap(
+          "a" -> MorpheusNode(0L, Set("A"), CypherMap.empty),
+          "item" -> 2
+        ),
+        CypherMap(
+          "a" -> MorpheusNode(0L, Set("A"), CypherMap.empty),
+          "item" -> 3
+        ),
+        CypherMap(
+          "a" -> MorpheusNode(1L, Set("B"), CypherMap("item" -> "1")),
+          "item" -> 1
+        ),
+        CypherMap(
+          "a" -> MorpheusNode(1L, Set("B"), CypherMap("item" -> "1")),
+          "item" -> 2
+        ),
+        CypherMap(
+          "a" -> MorpheusNode(1L, Set("B"), CypherMap("item" -> "1")),
+          "item" -> 3
+        )
+      ).map(_.toString)
+    )
   }
 
   it("unwind from expression, aggregation") {
-    val graph = initGraph("CREATE (:A {v: 1}), (:A:B {v: 15}), (:A:C {v: -32}), (:A)")
+    val graph =
+      initGraph("CREATE (:A {v: 1}), (:A:B {v: 15}), (:A:C {v: -32}), (:A)")
 
-    val query = "MATCH (a:A) WITH collect(a.v) AS list UNWIND list AS item RETURN item"
+    val query =
+      "MATCH (a:A) WITH collect(a.v) AS list UNWIND list AS item RETURN item"
 
     val result = graph.cypher(query, Map("param" -> CypherList(1, 2, 3)))
 
@@ -89,7 +112,8 @@ class UnwindTests extends MorpheusTestSuite with ScanGraphInit {
         CypherMap("item" -> 1),
         CypherMap("item" -> 15),
         CypherMap("item" -> -32)
-      ))
+      )
+    )
   }
 
   it("unwind from expression") {
@@ -104,7 +128,8 @@ class UnwindTests extends MorpheusTestSuite with ScanGraphInit {
         CypherMap("item" -> 1),
         CypherMap("item" -> 2),
         CypherMap("item" -> -4)
-      ))
+      )
+    )
   }
 
   // https://issues.apache.org/jira/browse/SPARK-23610
@@ -112,7 +137,9 @@ class UnwindTests extends MorpheusTestSuite with ScanGraphInit {
   // We lack a way of encoding empty lists in a way that expands to a specific list type in Spark
   // Like putting it in a column with Array(Integer) as in this test
   ignore("unwind from expression with empty and null lists") {
-    val graph = initGraph("CREATE (:A {v: [1, 2]}), (:A:B {v: [-4]}), (:A:C {v: []}), (:A)")
+    val graph = initGraph(
+      "CREATE (:A {v: [1, 2]}), (:A:B {v: [-4]}), (:A:C {v: []}), (:A)"
+    )
 
     val query = "MATCH (a:A) WITH a.v AS list UNWIND list AS item RETURN item"
 
@@ -123,7 +150,8 @@ class UnwindTests extends MorpheusTestSuite with ScanGraphInit {
         CypherMap("item" -> 1),
         CypherMap("item" -> 2),
         CypherMap("item" -> -4)
-      ))
+      )
+    )
   }
 
   it("unwind from literal null expression") {
@@ -168,10 +196,22 @@ class UnwindTests extends MorpheusTestSuite with ScanGraphInit {
 
     result.records.toMaps should equal(
       Bag(
-        CypherMap("a" -> MorpheusNode(0L, Set("A"), CypherMap.empty), "item" -> 3),
-        CypherMap("a" -> MorpheusNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 3),
-        CypherMap("a" -> MorpheusNode(0L, Set("A"), CypherMap.empty), "item" -> 2),
-        CypherMap("a" -> MorpheusNode(1L, Set("B"), CypherMap("item" -> "1")), "item" -> 2)
+        CypherMap(
+          "a" -> MorpheusNode(0L, Set("A"), CypherMap.empty),
+          "item" -> 3
+        ),
+        CypherMap(
+          "a" -> MorpheusNode(1L, Set("B"), CypherMap("item" -> "1")),
+          "item" -> 3
+        ),
+        CypherMap(
+          "a" -> MorpheusNode(0L, Set("A"), CypherMap.empty),
+          "item" -> 2
+        ),
+        CypherMap(
+          "a" -> MorpheusNode(1L, Set("B"), CypherMap("item" -> "1")),
+          "item" -> 2
+        )
       )
     )
   }
