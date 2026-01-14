@@ -188,6 +188,10 @@ within the `morpheus-examples` module, we just call:
 
 We would love to find out about any [issues](https://github.com/opencypher/morpheus/issues) you encounter and are happy to accept contributions following a Contributors License Agreement (CLA) signature as per the process outlined in our [contribution guidelines](CONTRIBUTING.adoc).
 
+## Disclaimer
+
+This repository is not an official Neo4j product or project. It is maintained by Neo4j employees or contributors in a personal or experimental capacity. The content here is provided “as is,” comes with no guarantees, and is unsupported.
+
 ## License
 
 The project is licensed under the Apache Software License, Version 2.0, with an extended attribution notice as described in [the license header](/etc/licenses/headers/NOTICE-header.txt).
